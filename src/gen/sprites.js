@@ -16,12 +16,12 @@ export const DIRS = ['down', 'up', 'left', 'right'];
 export const ANIMS = { idle: { start: 0, frames: 2 }, walk: { start: 2, frames: 4 } };
 
 // Characters are data. Colours are palette names.
-// hair.style: short | cropped | slick | bun | long. coat: { color, length: long | short, collar?, lapels? }.
+// hair.style: short | bob | cropped | slick | bun | long. lips: palette name (optional), lashes: true (optional). coat: { color, length: long | short, collar?, lapels? }.
 // acc types: implant, belt, apron, sticks (hair sticks), bag, tie, stripe (reflective band), soles (glowing),
 // poncho, trim (poncho hem pattern), hood, visor. Glowing ones are in GLOW.
 export const CHARACTERS = {
   juno: {
-    name: 'Juno Vale', skin: 'bone', eyes: 'ink', hair: { style: 'short', color: 'night' },
+    name: 'Juno Vale', skin: 'bone', eyes: 'ink', hair: { style: 'bob', color: 'night' }, lips: 'rust2', lashes: true,
     top: 'violet', legs: 'grey0', shoes: 'ink', coat: { color: 'grey3', length: 'long', collar: true },
     acc: [{ type: 'implant', color: 'cyan' }, { type: 'belt', color: 'grey0' }],
   },
@@ -62,7 +62,7 @@ const CHAINS = [
   ['cyanDeep', 'cyan', 'cyanLight'],
   ['seaGlass', 'acid', 'amberLight'],
 ];
-const GLOW = new Set(['implant', 'visor', 'eyes', 'stripe', 'soles', 'trim', 'nose']); // flat, no shading or rim
+const GLOW = new Set(['implant', 'visor', 'eyes', 'stripe', 'soles', 'trim', 'nose', 'lips']); // flat, no shading or rim
 
 function ramp(name) {
   const c = CHAINS.find((ch) => ch.includes(name) && ch.indexOf(name) > 0 && ch.indexOf(name) < ch.length - 1)
@@ -221,15 +221,17 @@ function human(def, view, pose, f) {
   if (back) {
     g.rows(Y, HEAD.slice(0, st === 'cropped' ? 6 : 8), 'hair');
     if (st === 'long') g.rows(Y + 4, [12, 12, 12, 12, 12, 10, 10, 8], 'hair');
+    if (st === 'bob') g.rows(Y + 7, [12, 12, 12], 'hair');
   } else if (side) {
     g.ranges(Y, HEAD_SIDE.slice(0, 3), 'hair');
     const backRows = st === 'cropped' ? 4 : 7;
     g.ranges(Y + 3, Array(backRows).fill([12, 16]), 'hair');
-    if (st === 'short' || st === 'long') g.rect(8, Y + 3, 10, Y + 3, 'hair');  // fringe
+    if (st === 'short' || st === 'long' || st === 'bob') g.rect(8, Y + 3, 10, Y + 3, 'hair');  // fringe
+    if (st === 'bob') { g.ranges(Y + 3, Array(6).fill([11, 17]), 'hair'); g.ranges(Y + 9, [[11, 17], [12, 16]], 'hair'); }
     if (st === 'long') g.ranges(Y + 6, Array(7).fill([13, 17]), 'hair');
   } else {
     g.rows(Y, HEAD.slice(0, st === 'cropped' ? 2 : 3), 'hair');
-    if (st === 'short' || st === 'long') {                               // side-swept fringe over one eye
+    if (st === 'short' || st === 'long' || st === 'bob') {              // side-swept fringe over one eye
       g.rect(7, Y + 3, 13, Y + 3, 'hair'); g.rect(7, Y + 4, 10, Y + 4, 'hair'); g.px(7, Y + 5, 'hair');
       g.rect(16, Y + 3, 16, Y + 5, 'hair');
     } else if (st === 'slick') {
@@ -241,6 +243,10 @@ function human(def, view, pose, f) {
       g.rect(7, Y + 2, 8, Y + 3, 'hair'); g.rect(15, Y + 2, 16, Y + 3, 'hair');
     }
     if (st === 'long') { g.rect(6, Y + 4, 7, Y + 12, 'hair'); g.rect(16, Y + 4, 17, Y + 12, 'hair'); }
+    if (st === 'bob') {                                                   // jaw-length curtains framing the face
+      g.rect(6, Y + 3, 7, Y + 9, 'hair'); g.px(7, Y + 10, 'hair');
+      g.rect(16, Y + 3, 17, Y + 9, 'hair'); g.px(16, Y + 10, 'hair');
+    }
   }
   if (acc.hood) {
     if (side) { g.ranges(Y - 1, [[10, 15], [9, 16], [8, 17], [9, 17], [10, 17], [11, 17], [11, 17], [11, 17], [11, 17], [11, 17], [11, 16]], 'hood'); }
@@ -255,7 +261,12 @@ function human(def, view, pose, f) {
     const ey = Y + 6;
     if (slump) { g.rect(9, ey, 10, ey, 'eyes'); g.rect(13, ey, 14, ey, 'eyes'); }
     else if (side) g.px(9, ey - 1, 'eyes');
-    else { g.rect(9, ey - 1, 9, ey, 'eyes'); g.rect(14, ey - 1, 14, ey, 'eyes'); }
+    else {
+      g.rect(9, ey - 1, 9, ey, 'eyes'); g.rect(14, ey - 1, 14, ey, 'eyes');
+      if (def.lashes) { g.px(8, ey - 1, 'eyes'); g.px(15, ey - 1, 'eyes'); }
+      if (def.lips) g.rect(11, ey + 2, 12, ey + 2, 'lips');
+    }
+    if (side && !slump && def.lips) g.px(8, ey + 2, 'lips');
     if (acc.visor) { if (side) g.rect(7, ey - 1, 11, ey - 1, 'visor'); else g.rect(8, ey - 1, 15, ey - 1, 'visor'); }
     if (acc.implant) g.px(side ? 12 : 16, Y + 4, 'implant');
   }
@@ -301,7 +312,7 @@ function materials(def) {
   const m = { skin: def.skin, eyes: def.eyes, hair: def.hair?.color, top: def.top, legs: def.legs, shoes: def.shoes,
     coat: def.coat?.color, fur: def.fur, stripes: def.stripes, nose: def.nose, ...acc };
   Object.assign(m, { legsFar: m.legs, furFar: m.fur, sleeve: m.coat ?? m.top, coatDark: m.coat, apronDark: m.apron,
-    hairShine: m.hair, buckle: 'grey5' });
+    hairShine: m.hair, buckle: 'grey5', lips: def.lips });
   return m;
 }
 
@@ -333,6 +344,7 @@ function paintGrid(img, sheetW, g, ox, oy, names) {
       if (below !== null && below !== k) tone = Math.max(0, tone - 1);   // hem / overlap shadow
       if (k.endsWith('Far') || k.endsWith('Dark')) tone = 0;
       if (k === 'hairShine') tone = 2;
+      if (k === 'skin') tone = x === xl && xr > xl ? 2 : 1; // soft: lit edge only, no dark band (read as stubble)
       // Neon rim on the silhouette edges (not on skin, so faces stay readable).
       if (k !== 'skin') {
         if (rimL && x === first) { put(x, y, rimL); continue; }
