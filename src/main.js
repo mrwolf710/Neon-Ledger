@@ -6,6 +6,9 @@ import { buildDistrict } from './world/district.js';
 import { createDebugPanel, showSprites } from './debug/panel.js';
 import { getSheets } from './gen/sprites.js';
 import { createCast } from './game/npc.js';
+import { createCollision } from './world/collision.js';
+import { createPlayer } from './game/player.js';
+import { createInteractions, INTERACT } from './game/interact.js';
 import { settings, TIERS } from './core/settings.js';
 import { createLights } from './render/lights.js';
 import { createPost, POST } from './render/post.js';
@@ -51,6 +54,25 @@ const particles = createParticles(scene, rng.fork('particles'), Q.rainCount, dis
 const cam = createCamera(window.innerWidth / window.innerHeight);
 const post = createPost(renderer, scene, cam.camera, Q);
 const cast = createCast(scene, getSheets(), district.userData.spots);
+const collision = createCollision(district.userData.blocks);
+const player = createPlayer(cast.byId.juno, collision);
+const interactions = createInteractions(scene);
+for (const b of cast.list) {
+  if (b.id === 'juno') continue;
+  interactions.add({
+    id: b.id, position: b.position, height: b.id === 'miso' ? 0.8 : 2, verb: b.id === 'miso' ? 'Pet' : 'Talk',
+    onInteract: () => {
+      if (b.anim !== 'walk' && b.anim !== 'slump') b.facing = Math.atan2(player.position.x - b.position.x, player.position.z - b.position.z);
+      console.log('interact:', b.id); // Stage 6: dialogue
+    },
+  });
+}
+for (const s of district.userData.spots.filter((p) => p.name === 'vending')) {
+  interactions.add({ id: 'vending', position: new THREE.Vector3(s.x, 0, s.z), height: 1.8, verb: 'Use', onInteract: () => console.log('interact: vending') });
+}
+const ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+const headPos = new THREE.Vector3();
+cam.follow(player.position, true);
 const tod = createTimeOfDay({ scene, lights, post, particles, signs: district.userData.signs, rng: rng.fork('flicker') });
 tod.setTimeOfDay(MAIN.timeOfDay);
 
@@ -90,18 +112,37 @@ renderer.setAnimationLoop((now) => {
 
   input.update();
   if (input.pressed('resetView')) cam.reset();
-  cam.rotate((input.held('rotateR') ? 1 : 0) - (input.held('rotateL') ? 1 : 0), dt);
+  cam.rotate((input.held('rotateR') ? 1 : 0) - (input.held('rotateL') ? 1 : 0) + input.lookX, dt);
   cam.orbit(input.orbitDX, input.orbitDY);
-  cam.dragPan(input.panDX, input.panDY);
   if (input.pressed('debug')) debug.toggle();
   cam.zoom(CAMERA.wheelZoom ** input.zoomSteps * CAMERA.keyZoom ** (input.zoom * dt));
-  cam.pan(input.moveX, input.moveY, dt * (input.held('run') ? 2 : 1)); // ponytail: free-look until Stage 4 player
   cam.tilt((input.held('tiltDown') ? 1 : 0) - (input.held('tiltUp') ? 1 : 0), dt);
+
+  // Click: a person/object walks there then interacts; the ground walks there.
+  if (input.click) {
+    const it = interactions.pick(input.click, cam.camera);
+    if (it) player.walkTo(it.position, INTERACT.range - 0.2, it.onInteract);
+    else {
+      ndc.set((input.click.x / window.innerWidth) * 2 - 1, -(input.click.y / window.innerHeight) * 2 + 1);
+      ray.setFromCamera(ndc, cam.camera);
+      const hit = ray.ray.intersectPlane(ground, new THREE.Vector3());
+      if (hit) player.walkTo(hit);
+    }
+  }
+  player.update(dt, input, cam.yaw);
+  if (input.pressed('interact')) interactions.current?.onInteract();
+  cam.follow(player.position);
   cam.update(dt);
+
+  // Keep the tilt-shift sharp band on Juno.
+  headPos.copy(player.position).setY(player.position.y + 1).project(cam.camera);
+  POST.tilt.center = (headPos.y + 1) / 2;
+  post.applyUniforms();
 
   tod.update(dt);
   particles.update(dt, cam.target, cam.camera);
   cast.update(dt, cam.yaw, district.userData.lights);
+  interactions.update(player.position, player.facing, input.lastDevice, input.padType);
   fog.update(cam.camera, cam.target);
   lights.update(dt, cam.target);
   renderer.info.reset();

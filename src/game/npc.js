@@ -84,8 +84,7 @@ export function createBillboard(sheet, opts) {
   root.add(sprite, shadow);
 
   const pos = new THREE.Vector3(opts.x ?? 0, 0, opts.z ?? 0);
-  let facing = opts.facing ?? 0, time = 0, leg = 0;
-  const pose = opts.pose ?? 'idle';
+  let time = 0, leg = 0;
   const path = opts.path, speed = opts.speed ?? 2;
   if (path) pos.set(path[0][0], 0, path[0][1]);
 
@@ -93,19 +92,19 @@ export function createBillboard(sheet, opts) {
     mat.uniforms.frame.value.set((col * fw) / W, 1 - ((row + 1) * fh) / H, fw / W, fh / H);
   }
 
-  return {
-    root,
-    get position() { return pos; },
+  // facing (radians, 0 = +z), anim (idle | walk | pose name) and fpsScale can be driven from outside (player.js).
+  const api = {
+    root, position: pos, facing: opts.facing ?? 0, anim: opts.pose ?? 'idle', fpsScale: 1,
     // camYaw: camera yaw (radians); lights: registered lights [{ color, intensity, base, position }].
     update(dt, camYaw, lights) {
-      time += dt;
-      let anim = pose;
+      time += dt * api.fpsScale;
+      let { anim, facing } = api;
       if (path) { // walk the loop
         const [tx, tz] = path[(leg + 1) % path.length];
         const dx = tx - pos.x, dz = tz - pos.z, d = Math.hypot(dx, dz), step = speed * dt;
         if (d <= step) { pos.set(tx, 0, tz); leg = (leg + 1) % path.length; } else { pos.x += (dx / d) * step; pos.z += (dz / d) * step; }
-        facing = Math.atan2(dx, dz);
-        anim = 'walk';
+        facing = api.facing = Math.atan2(dx, dz);
+        anim = api.anim = 'walk';
       }
       pos.y = groundY(pos.z);
       root.position.copy(pos);
@@ -139,6 +138,7 @@ export function createBillboard(sheet, opts) {
       mat.uniforms.lightSide.value = THREE.MathUtils.clamp(side, -1, 1);
     },
   };
+  return api;
 }
 
 // Places CAST in the scene. spots: district userData.spots. Returns { list, update(dt, camYaw, lights) }.
@@ -151,8 +151,10 @@ export function createCast(scene, sheets, spots) {
       if (s) facing = s.facing;
     } else if (c.at) [x, z] = c.at;
     const b = createBillboard(sheets[c.id], { x, z, facing, pose: c.pose, path: c.path, speed: c.speed });
+    b.id = c.id;
     scene.add(b.root);
     return b;
   });
-  return { list, update: (dt, camYaw, lights) => list.forEach((b) => b.update(dt, camYaw, lights)) };
+  const byId = Object.fromEntries(list.map((b) => [b.id, b]));
+  return { list, byId, update: (dt, camYaw, lights) => list.forEach((b) => b.update(dt, camYaw, lights)) };
 }

@@ -20,7 +20,7 @@ export function createBatch() {
   const m = new THREE.Matrix4();
   const tmp = new THREE.Matrix4();
   const euler = new THREE.Euler();
-  const data = { lights: [], steam: [], signs: [], spots: [] }; // handed to group.userData by build()
+  const data = { lights: [], steam: [], signs: [], spots: [], blocks: [] }; // handed to group.userData by build()
   let rot = 0;
 
   return {
@@ -53,6 +53,15 @@ export function createBatch() {
     spot(name, x, z) {
       const p = new THREE.Vector3(x, 0, z).applyMatrix4(m);
       data.spots.push({ name, x: p.x, z: p.z, facing: rot });
+    },
+    // Solid footprint w x d centred at local (x, z), stored as a world AABB { x0, z0, x1, z1 } (userData.blocks).
+    block(x, z, w, d) {
+      const xs = [], zs = [];
+      for (const [cx, cz] of [[x - w / 2, z - d / 2], [x + w / 2, z + d / 2]]) {
+        const p = new THREE.Vector3(cx, 0, cz).applyMatrix4(m);
+        xs.push(p.x); zs.push(p.z);
+      }
+      data.blocks.push({ x0: Math.min(...xs), z0: Math.min(...zs), x1: Math.max(...xs), z1: Math.max(...zs) });
     },
     // Sign material + its light, for brightness and flicker (userData.signs).
     sign(mat, light) { data.signs.push({ mat, light }); },

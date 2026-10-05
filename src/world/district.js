@@ -13,7 +13,7 @@ export const DISTRICT = {
   buildingGap: [0.4, 1.6],
   rail: { x: 17, height: 7, deckWidth: 2.5, deckThickness: 0.6, deckLength: 24, pillarSize: 0.8 },
   lamps: { spacing: 10, curbInset: 0.25 },
-  props: { inset: 0.7, gap: [1.5, 4], pillarClear: 1.4 }, // inset from the building line
+  props: { inset: 0.7, gap: [1.5, 4], pillarClear: 1.4, depth: 0.9 }, // inset from the building line; depth = collision
 };
 
 // Who stands where. at: [x, z] or a spot name from the batch (first match), facing: radians (0 = +z).
@@ -64,6 +64,7 @@ export function buildDistrict(rng) {
   batch.box(M.metal, R.deckWidth, R.deckThickness, R.deckLength, R.x, R.height, 0);
   for (const s of [-1, 1]) {
     batch.box(M.metal, R.pillarSize, R.height, R.pillarSize, R.x, R.height / 2, s * walkZ);
+    batch.block(R.x, s * walkZ, R.pillarSize, R.pillarSize);
   }
 
   // Lamp posts on the curbs, staggered between sides.
@@ -73,6 +74,7 @@ export function buildDistrict(rng) {
     for (let x = -D.length / 2 + (s < 0 ? 5 : 10); x < D.length / 2; x += D.lamps.spacing) {
       batch.setTransform(x, s * curbZ, sideRot(s));
       PROP_BUILDERS.lamp(pr, M, batch);
+      batch.block(0, 0, 0.3, 0.3);
     }
   }
 
@@ -85,6 +87,7 @@ export function buildDistrict(rng) {
       if (Math.abs(x + half - R.x) > half + D.props.pillarClear && x + PROPS.width[kind] < D.length / 2) {
         batch.setTransform(x + half, s * propZ, sideRot(s));
         PROP_BUILDERS[kind](pr, M, batch);
+        batch.block(0, -0.1, PROPS.width[kind], D.props.depth);
       }
       x += PROPS.width[kind] + pr.range(...D.props.gap);
     }

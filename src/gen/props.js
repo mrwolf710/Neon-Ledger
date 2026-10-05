@@ -56,6 +56,7 @@ export const PROP_BUILDERS = {
   vending(rng, M, batch) {
     const PM = mats(M);
     batch.box(PM.vendBody, 0.9, 1.8, 0.7, 0, 0.9, 0);
+    batch.spot('vending', 0, 0.6);                                         // in front of the machine (interactable)
     batch.box(PM.vendGlow, 0.6, 1.0, 0.02, -0.08, 1.15, 0.36);
     batch.box(M.frame, 0.12, 0.5, 0.03, 0.32, 1.1, 0.36);                  // coin slot panel
     batch.box(M.frame, 0.6, 0.18, 0.03, -0.08, 0.3, 0.36);                 // drop tray
