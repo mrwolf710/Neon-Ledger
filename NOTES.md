@@ -41,13 +41,13 @@ Running summary for Claude sessions (keep under 60 lines).
   Panel has time, tier (reloads), bloom, tilt, grade RGB, saturation, fog sliders, "log values" (prints JSON to console).
 - `getSheets()` -> { juno, mamaTeo, kit, dex, vendor, miso }: `spriteSheet(def, isCat)` -> { texture, canvas, frameW, frameH,
   rows {down,up,left,right[,slump]}, anims {idle:{start:0,frames:2}, walk:{start:2,frames:4}} }. 24x32 (cat 16x12),
-  auto shading (lit top-left / dark bottom-right edges, tones from CHAINS) + ink outline; right = mirrored left. ?sprites previews.
+  row-run shading (lit left), neon rim (SPRITES.rim) on outermost pixels, ink outline; right = mirrored. ?sprites previews.
 - Tunables: constants at the top of each file (CAMERA, DISTRICT, TEXTURES, BUILDINGS, PROPS, TIERS, LIGHTS, POST, FOG,
   PARTICLES, TIME_OF_DAY, FLICKER, PANEL, MAIN, SPRITES).
 
 ## Data formats
 - Character: { name, skin, eyes, hair:{style,color}, top, legs, shoes, coat?:{color,length,collar}, rolledSleeves?, stoop?,
-  acc:[{type,color}], poses?:['slump'] }. Colours are palette names. Dialogue/echo/board formats come in Stages 6-7.
+  acc:[{type,color}] (implant belt apron sticks bag tie stripe soles poncho trim hood visor), poses?:["slump"] }. Palette names. Dialogue/echo/board formats come in Stages 6-7.
 
 ## Known issues
 - Build warns chunk > 500 kB (three.js). Harmless for now.
