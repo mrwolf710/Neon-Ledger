@@ -16,6 +16,8 @@ export const TUNING = {
   crackle: { vol: 0.12, hp: 3200, bursts: 3 },
   train: { minGap: 38, maxGap: 75, first: 14, duration: 8.5, startZ: -44, endZ: 44, x: DISTRICT.rail.x, y: DISTRICT.rail.height,
     speed: 60, c: 343, vol: 0.5, rumbleFreq: 150, clack: 0.19 },
+  echo: { ambientLevel: 0.05, fadeOut: 0.35, fadeIn: 0.5,   // ambient bus level during an echo, and fade time constants (s)
+    rumble: { vol: 0.55, lowpass: 95, sub: 41, subVol: 0.5, wobble: 0.17, in: 0.7 } },
   ui: { vol: 0.16 },
   voice: { vol: 0.07, dur: 0.05, every: 2 },
   voices: { // per speaker: base Hz and waveform
@@ -34,6 +36,7 @@ export function surfaceAt(x, z) {
 
 export function createSfx(synth) {
   const T = TUNING;
+  let ambient = null, rumble = null, echoOn = false, echoApplied = null;
   let rain = null, hum = null, train = null, lastPlayer = { x: 0, y: 0, z: 0 }, lastYaw = 0;
   let droplet = 0, humTimer = 0, trainTimer = T.train.first, voiceCount = 0, rainLevel = 1;
 
@@ -48,15 +51,30 @@ export function createSfx(synth) {
     };
     const R = T.rain;
     const hiss = mk('lowpass', R.hissFreq, 0.4, 5.3), body = mk('lowpass', R.bodyFreq, 0.5, 4.1), patter = mk('bandpass', R.patterFreq, 0.9, 6.7);
-    hiss.g.connect(synth.buses.sfx); body.g.connect(synth.buses.sfx);
+    hiss.g.connect(ambient); body.g.connect(ambient);
     // Patter: gentle irregular wobble (two slow, unrelated LFOs) applied as a multiplier, never as an additive offset.
     const wob = synth.ctx.createGain(); wob.gain.value = 0.75;
     R.drift.forEach((hz, i) => {
       const lfo = synth.ctx.createOscillator(), amp = synth.ctx.createGain();
       lfo.frequency.value = hz; amp.gain.value = i ? 0.1 : 0.15; lfo.connect(amp); amp.connect(wob.gain); lfo.start();
     });
-    patter.g.connect(wob); wob.connect(synth.buses.sfx);
+    patter.g.connect(wob); wob.connect(ambient);
     rain = { hiss, body, patter, awning: 0 };
+  }
+
+  // ---------- Echo rumble: very low filtered noise + a sub sine, slowly breathing ----------
+  function buildRumble() {
+    const R = T.echo.rumble, ctx = synth.ctx;
+    const g = ctx.createGain(); g.gain.value = 0; g.connect(synth.buses.sfx);
+    const lp = synth.filter('lowpass', R.lowpass, 1.1);
+    synth.noiseLoop(7.1).connect(lp); lp.connect(g);
+    const sub = ctx.createOscillator(), sg = ctx.createGain();
+    sub.type = 'sine'; sub.frequency.value = R.sub; sg.gain.value = R.subVol; sub.connect(sg); sg.connect(g); sub.start();
+    // Slow breathing: the filter and the sub drift with an unhurried LFO.
+    const lfo = ctx.createOscillator(), la = ctx.createGain(), ls = ctx.createGain();
+    lfo.frequency.value = R.wobble; la.gain.value = R.lowpass * 0.35; ls.gain.value = 4;
+    lfo.connect(la); la.connect(lp.frequency); lfo.connect(ls); ls.connect(sub.frequency); lfo.start();
+    rumble = { g };
   }
 
   // ---------- Neon hum: a few buzzing voices parked on the nearest signs ----------
@@ -70,7 +88,7 @@ export function createSfx(synth) {
         o.type = type; o.frequency.value = H.base * mult; g.gain.value = v; o.connect(g); g.connect(lp); o.start();
       });
       lp.connect(out);
-      const p = synth.panner(0, 4, 0, { ref: H.ref });
+      const p = synth.panner(0, 4, 0, { ref: H.ref, to: ambient });
       out.connect(p);
       return { out, p };
     });
@@ -84,7 +102,7 @@ export function createSfx(synth) {
     rumble.connect(lp); lp.connect(g);
     const osc = ctx.createOscillator(), og = ctx.createGain();
     osc.type = 'sawtooth'; osc.frequency.value = 52; og.gain.value = 0.35; osc.connect(og); og.connect(g); osc.start();
-    const p = synth.panner(Tr.x, Tr.y, Tr.startZ, { ref: 10, rolloff: 0.8, max: 120 });
+    const p = synth.panner(Tr.x, Tr.y, Tr.startZ, { ref: 10, rolloff: 0.8, max: 120, to: ambient });
     g.connect(p);
     train = { g, lp, osc, rumble, p, t: 0, clack: 0 };
   }
@@ -132,6 +150,16 @@ export function createSfx(synth) {
       lastPlayer = s.player; lastYaw = s.yaw;
       synth.setListener(s.player.x, 1, s.player.z, s.yaw);
       const t = synth.now, R = T.rain;
+      if (!ambient) { // ambient bus: rain, hum, train, droplets. Ducks during an echo while the rumble swells.
+        ambient = synth.ctx.createGain(); ambient.connect(synth.buses.sfx);
+        buildRumble();
+      }
+      if (echoOn !== echoApplied) {
+        echoApplied = echoOn;
+        const E = T.echo;
+        ambient.gain.setTargetAtTime(echoOn ? E.ambientLevel : 1, t, echoOn ? E.fadeOut : E.fadeIn);
+        rumble.g.gain.setTargetAtTime(echoOn ? E.rumble.vol : 0, t, echoOn ? E.rumble.in : 0.4);
+      }
       if (!rain) buildRain();
       if (!hum) buildHum();
       // Rain: brighter hiss in the open, drumming patter under awnings.
@@ -148,7 +176,7 @@ export function createSfx(synth) {
         const rate = R.droplets.perSecond + (R.droplets.awningPerSecond - R.droplets.perSecond) * rain.awning;
         droplet = (0.5 + synth.rand()) / (rate * rainLevel + 0.1);
         const [lo, hi] = R.droplets.freq, p = (synth.rand() * 2 - 1) * 0.8;
-        const g = synth.ctx.createGain(); g.gain.value = 1; const sp = stereo(synth.buses.sfx, p); g.connect(sp);
+        const g = synth.ctx.createGain(); g.gain.value = 1; const sp = stereo(ambient, p); g.connect(sp);
         synth.tone({ freq: lo + synth.rand() * (hi - lo), type: 'sine', dur: 0.012, release: 0.025, vol: R.droplets.vol * (0.5 + synth.rand()), to: g });
       }
       // Neon hum: re-park the voices on the nearest signs a couple of times a second.
@@ -190,8 +218,11 @@ export function createSfx(synth) {
     },
 
     // ---- Neon crackle when a sign flickers off, at the sign's position ----
+    // Echo mode on / off: ambient sound fades away and a low rumble swells in.
+    setEcho(on) { echoOn = on; },
+
     crackle(pos) {
-      if (!synth.ready || distance(pos) > 22) return;
+      if (!synth.ready || echoOn || distance(pos) > 22) return;
       const C = T.crackle, t = synth.now, p = synth.panner(pos.x, pos.y, pos.z, { ref: 4 });
       for (let i = 0; i < C.bursts; i++) {
         synth.noise({ t: t + i * (0.02 + synth.rand() * 0.03), dur: 0.015, vol: C.vol * (0.5 + synth.rand() * 0.5), filter: { type: 'highpass', freq: C.hp }, to: p });

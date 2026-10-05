@@ -37,7 +37,7 @@ Running summary for Claude sessions (keep under 60 lines).
 - Audio: `synth.start()` runs inside the title tap (createTitle(onStart)); before that every call is a no-op. Volumes music/sfx saved in localStorage
   (debug sliders; a real settings menu comes with the pause menu, 9C); M toggles music. `createSfx(synth)` -> { update(dt, {player, yaw, rainScale, signs}),
   step(surface, pos, run), crackle(pos), ui(kind: move|confirm|back|case|linkOk|linkWrong|echoOn|echoOff|glitch), voice(ch, speakerId) }; rain (louder
-  patter under awnings), neon hum on the 3 nearest signs, train + doppler every 40-75 s (sound only). `createMusic(synth)` -> { setMood(street|scene|echo|
+  patter under awnings), neon hum on the 3 nearest signs, train + doppler every 40-75 s (sound only); setEcho(on) ducks the ambient bus and swells a low rumble. `createMusic(synth)` -> { setMood(street|scene|echo|
   board|silent, fade), addLink(), mood }; main picks echo/board/street. Hooks: dialogue.onChar/onUi, caseFile.onAdd/onUi, board.onLock/onWrong/onUi,
   echo.onUi, tod.onFlicker(i), billboard.onStep(frame). Voices per speaker in sfx TUNING.voices.
 ## Data formats

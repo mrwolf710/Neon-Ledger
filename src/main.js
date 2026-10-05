@@ -211,6 +211,7 @@ renderer.setAnimationLoop((now) => {
   });
   if (input.pressed('music')) { synth.setMusicOn(!synth.musicOn); hud.toast(synth.musicOn ? 'Music on' : 'Music off'); }
   music.setMood(echo.active ? 'echo' : board.isOpen ? 'board' : 'street');
+  sfx.setEcho(echo.active);
   sfx.update(dt, { player: player.position, yaw: cam.yaw, rainScale: particles.rainScale, signs: district.userData.signs });
   tod.update(dt);
   particles.update(dt, cam.target, cam.camera);

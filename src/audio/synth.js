@@ -130,11 +130,11 @@ export const synth = {
   },
 
   // Panner for a world-space sound. Connects to the SFX bus; returns the node.
-  panner(x, y, z, { ref = 3, rolloff = 1.2, max = 70 } = {}) {
+  panner(x, y, z, { ref = 3, rolloff = 1.2, max = 70, to } = {}) {
     const p = this.ctx.createPanner();
     p.panningModel = 'equalpower'; p.distanceModel = 'inverse'; p.refDistance = ref; p.rolloffFactor = rolloff; p.maxDistance = max;
     this.setPos(p, x, y, z);
-    p.connect(this.buses.sfx);
+    p.connect(to ?? this.buses.sfx);
     return p;
   },
   setPos(p, x, y, z) {
