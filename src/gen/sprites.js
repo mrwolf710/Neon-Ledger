@@ -10,19 +10,20 @@ export const SPRITES = {
   w: 40, h: 64, pxPerUnit: 32,
   cat: { w: 16, h: 12, pxPerUnit: 16 },
   rim: { left: 'magentaDeep', right: 'cyanDeep' }, // neon edge light on the silhouette (palette names, null = off)
-  fps: { idle: 2, walk: 5.5 },
+  fps: { idle: 2, walk: 5.5, sneak: 4.5, tablet: 2.5 },
 };
 export const DIRS = ['down', 'up', 'left', 'right'];
 export const ANIMS = { idle: { start: 0, frames: 2 }, walk: { start: 2, frames: 4 } };
 
 // Characters are data. Colours are palette names.
-// hair.style: bob | short | cropped | slick | bun. outfit: trench | jacket | suit | none.
+// hair.style: fringe | bob | short | cropped | slick | bun. anims: extra animations (sneak, tablet). outfit: trench | jacket | suit | none.
 // acc: implant, belt, apron, sticks, bag, tie, stripe (reflective band), soles (glowing), poncho, trim, hood, visor.
 export const CHARACTERS = {
   juno: {
-    name: 'Juno Vale', skin: 'bone', iris: 'cyan', lips: 'rust2', lashes: true, hair: { style: 'bob', color: 'night', shine: 'teal' },
-    top: 'seaGlass', legs: 'grey0', shoes: 'grey1', outfit: { type: 'trench', color: 'grey2', collar: true },
-    acc: [{ type: 'implant', color: 'cyan' }, { type: 'belt', color: 'grey0' }],
+    name: 'Juno Vale', skin: 'bone', iris: 'cyan', lips: 'rust2', lashes: true, hair: { style: 'fringe', color: 'night', shine: 'indigo' },
+    top: 'teal', legs: 'night', shoes: 'rust1', outfit: { type: 'trench', color: 'grey4', collar: true },
+    acc: [{ type: 'implant', color: 'cyan' }, { type: 'belt', color: 'grey0' }, { type: 'patch', color: 'seaGlass' }, { type: 'bag', color: 'rust1' }],
+    anims: ['sneak', 'tablet'],   // extra animation rows: crouched sneaking, and looking down at her tablet
   },
   mamaTeo: {
     name: 'Mama Teo', skin: 'rust3', iris: 'rust0', lips: 'rust1', hair: { style: 'bun', color: 'grey5' },
@@ -67,7 +68,7 @@ const CHAINS = [
   ['teal', 'seaGlass', 'acid', 'amberLight'],
 ];
 // Flat (unshaded, no rim) materials: glows and tiny face features.
-const FLAT = new Set(['implant', 'visor', 'eyes', 'iris', 'stripe', 'soles', 'trim', 'nose', 'lips', 'brow']);
+const FLAT = new Set(['implant', 'visor', 'eyes', 'iris', 'stripe', 'soles', 'trim', 'nose', 'lips', 'brow', 'screen']);
 
 const chainOf = (name) => CHAINS.find((ch) => ch.indexOf(name) > 0 && ch.indexOf(name) < ch.length - 1)
   ?? CHAINS.find((ch) => ch.includes(name));
@@ -152,6 +153,14 @@ const SIDE_WALK = [
   { a: [-10, 38], b: [0, 2], armA: -4, armB: 4 },
 ];
 const FRONT_WALK = [{ lift: [0, 0], arm: [1, -1] }, { lift: [0, 3], arm: [0, 0] }, { lift: [0, 0], arm: [-1, 1] }, { lift: [3, 0], arm: [0, 0] }];
+// Sneak: a deep crouch. Side view legs [thigh, shin] are far more bent than the walk; front view legs spread wide.
+const SIDE_SNEAK = [
+  { a: [-52, -14], b: [30, 38], armA: 10, armB: -8 },
+  { a: [-22, 8], b: [12, 26], armA: 3, armB: -3 },
+  { a: [30, 38], b: [-52, -14], armA: -8, armB: 10 },
+  { a: [12, 26], b: [-22, 8], armA: -3, armB: 3 },
+];
+const FRONT_SNEAK = [{ lift: [0, 0] }, { lift: [0, 2] }, { lift: [0, 0] }, { lift: [2, 0] }];
 const CX = 20, HIP = 35, ANKLE = 57, THIGH = 11, SHIN = 11;
 
 // --- Human figure. view: down | up | left. pose: idle | walk | slump. f: frame within the animation. ---
@@ -160,10 +169,12 @@ function human(def, view, pose, f) {
   const acc = Object.fromEntries((def.acc ?? []).map((a) => [a.type, a]));
   const side = view === 'left', back = view === 'up', slump = pose === 'slump';
   const outfit = def.outfit ?? { type: 'none' }, coat = outfit.type !== 'none';
-  const cx = CX, st = def.hair.style;
+  const cx = CX, st = def.hair.style, full = st === 'bob' || st === 'fringe';
+  const crouch = pose === 'sneak', tab = pose === 'tablet';
 
   // Skeleton offsets: legs place the hips so the planted foot touches the ground; U shifts the upper body.
-  const sw = side && pose === 'walk' ? SIDE_WALK[f] : null, fw = !side && pose === 'walk' ? FRONT_WALK[f] : null;
+  const moveTbl = pose === 'walk' ? [SIDE_WALK, FRONT_WALK] : crouch ? [SIDE_SNEAK, FRONT_SNEAK] : null;
+  const sw = side && moveTbl ? moveTbl[0][f] : null, fw = !side && moveTbl ? moveTbl[1][f] : null;
   let hipY = HIP;
   if (sw) {
     const d = Math.PI / 180, foot = (l) => THIGH * Math.cos(l[0] * d) + SHIN * Math.cos(l[1] * d);
@@ -171,7 +182,8 @@ function human(def, view, pose, f) {
   }
   if (fw && (fw.lift[0] || fw.lift[1])) hipY -= 1;                        // passing frames rise
   if (slump) hipY = 47;
-  const U = hipY - HIP + (pose === 'idle' ? f : 0) + (def.stoop ?? 0);
+  if (crouch && !side) hipY += 4;
+  const U = hipY - HIP + (pose === 'idle' ? f : 0) + (def.stoop ?? 0) + (crouch ? 1 : 0);
 
   // Legs and boots (also redrawn through the coat's front split).
   function legs() {
@@ -194,6 +206,12 @@ function human(def, view, pose, f) {
     }
     for (const [i, s] of [[0, -1], [1, 1]]) {
       const lift = fw ? fw.lift[i] : 0, x = cx + s * 3.3;
+      if (crouch) {
+        const kx = cx + s * 7.5, ky = hipY + 9, ax0 = cx + s * 5.5, ay0 = ANKLE - lift, ax = Math.round(ax0 - 0.5);
+        g.capsule(cx + s * 3.5, hipY, kx, ky, 3.2, 2.7, 'legs'); g.capsule(kx, ky, ax0, ay0, 2.7, 2.2, 'legs');
+        g.rect(ax - 2, ay0 - 1, ax + 3, ay0 + 4, 'shoes'); g.rect(ax - 2, ay0 + 5, ax + 3, ay0 + 5, 'sole');
+        continue;
+      }
       g.capsule(x, hipY, x + s * 0.2, hipY + THIGH - lift / 2, 3, 2.5, 'legs');
       g.capsule(x + s * 0.2, hipY + THIGH - lift / 2, x + s * 0.3, ANKLE - lift, 2.5, 2.1, 'legs');
       const ax = Math.round(x + s * 0.3 - 0.5), ay = ANKLE - lift;
@@ -210,6 +228,24 @@ function human(def, view, pose, f) {
       const s = which === 'l' ? -1 : 1;
       const j = limb(g, cx + s * 7.6, 18 + U, s * 18, s * 6, 9, 8, 2.2, 1.9, 1.6, sleeve);
       g.ellipse(j.ex, j.ey + 1.5, 1.8, 1.8, 'skin');
+      return;
+    }
+    if (tab && !side) { // hands together at the chest, holding a tablet
+      const s2 = which === 'l' ? -1 : 1, hx2 = cx + s2 * 3.4, hy2 = 31 + U;
+      g.capsule(cx + s2 * 9, 18.5 + U, cx + s2 * 9.8, 27 + U, 2.7, 2.2, sleeve); g.capsule(cx + s2 * 9.8, 27 + U, hx2, hy2, 2.2, 1.8, sleeve);
+      g.ellipse(hx2, hy2 + 0.5, 1.8, 1.8, 'skin');
+      return;
+    }
+    if (tab && side) { // the near forearm reaches forward with the tablet; the far arm is hidden
+      if (which === 'far') return;
+      g.capsule(cx + 0.5, 18.5 + U, cx - 1.5, 27 + U, 2.5, 2.1, sleeve); g.capsule(cx - 1.5, 27 + U, cx - 6.5, 29.5 + U, 2.1, 1.8, sleeve);
+      g.ellipse(cx - 7.2, 29.5 + U, 1.8, 1.8, 'skin');
+      return;
+    }
+    if (crouch && !side) { // elbows out, hands low
+      const s2 = which === 'l' ? -1 : 1;
+      g.capsule(cx + s2 * 9, 18.5 + U, cx + s2 * 10.5, 27 + U, 2.7, 2.2, sleeve); g.capsule(cx + s2 * 10.5, 27 + U, cx + s2 * 8, 33 + U, 2.2, 1.8, sleeve);
+      g.ellipse(cx + s2 * 8, 35 + U, 1.8, 2, 'skin');
       return;
     }
     if (side) {
@@ -260,12 +296,12 @@ function human(def, view, pose, f) {
   }
 
   function head() {
-    const hy = 8 + U + (slump ? 2 : 0), hx = slump ? cx + 1.5 : cx;
-    if (st === 'bob' && !back) g.ellipse(side ? hx + 1.5 : hx, hy + 0.5, side ? 5.4 : 6.8, 6.6, 'hair'); // volume behind the face
+    const hy = 8 + U + (slump ? 2 : 0) + (tab ? 1.5 : 0), hx = slump ? cx + 1.5 : crouch && side ? cx - 2 : cx;
+    if (full && !back) g.ellipse(side ? hx + 1.5 : hx, hy + 0.5, side ? 5.4 : 6.8, 6.6, 'hair'); // volume behind the face
     g.rect(hx - 1.6, hy + 4, hx + 1.4, 17 + U, 'neck');                    // neck (shaded under the jaw)
     if (side) g.ellipse(hx - 0.5, hy, 4.8, 5.9, 'skin'); else g.ellipse(hx, hy, 5.2, 5.9, 'skin');
     // Face.
-    const ey = Math.round(hy);
+    const ey = Math.round(hy) + (tab ? 1 : 0);
     if (!back) {
       if (side) {
         g.rect(hx - 6.5, ey + 2, hx - 5.5, ey + 3, 'skin'); g.px(hx - 5.5, ey + 4, 'skinDark'); // nose sticks out past the face edge
@@ -290,14 +326,15 @@ function human(def, view, pose, f) {
     }
     // Hair.
     if (back) {
-      g.ellipse(hx, hy - 0.5, st === 'bob' ? 6.8 : 5.5, st === 'bob' ? 7 : st === 'cropped' ? 4.8 : 5.4, 'hair');
+      g.ellipse(hx, hy - 0.5, full ? 6.8 : 5.5, full ? 7 : st === 'cropped' ? 4.8 : 5.4, 'hair');
     } else if (side) {
-      g.ellipse(hx + 1.8, hy - 0.5, 4.4, st === 'cropped' ? 4.6 : st === 'bob' ? 6.4 : 5.6, 'hair');
+      g.ellipse(hx + 1.8, hy - 0.5, 4.4, st === 'cropped' ? 4.6 : full ? 6.4 : 5.6, 'hair');
       g.ellipse(hx, hy - 3.8, 5.2, 2.6, 'hair');
-      if (st === 'bob' || st === 'short') g.poly([[hx - 5, hy - 4], [hx - 1, hy - 5], [hx - 2, hy - 1.5], [hx - 4.5, hy - 1]], 'hair');
+      if (full || st === 'short') g.poly([[hx - 5, hy - 4], [hx - 1, hy - 5], [hx - 2, hy - 1.5], [hx - 4.5, hy - 1]], 'hair');
     } else {
       g.ellipse(hx, hy - 3.6, 5.8, st === 'cropped' ? 2.4 : 3, 'hair');
-      if (st === 'bob') g.poly([[hx - 5.4, hy - 4], [hx + 3, hy - 5], [hx - 0.5, hy - 1.6], [hx - 4.8, hy + 0.5]], 'hair'); // swept fringe
+      if (full) g.poly([[hx - 5.4, hy - 4], [hx + 3, hy - 5], [hx - 0.5, hy - 1.6], [hx - 4.8, hy + 0.5]], 'hair'); // swept fringe
+      if (st === 'fringe') g.poly([[hx - 5.6, hy - 4.2], [hx + 2.6, hy - 5.2], [hx + 0.8, hy - 0.4], [hx - 0.6, hy + 1.8], [hx - 3.2, hy + 3.0], [hx - 5.4, hy + 2.6]], 'hair'); // long fringe over her left eye
       if (st === 'short') { g.rect(hx - 5, hy - 3, hx - 4, hy, 'hair'); g.rect(hx + 4, hy - 3, hx + 4, hy, 'hair'); }
       if (st === 'slick' || st === 'bun') { g.rect(hx - 5, hy - 3, hx - 5, hy, 'hair'); g.rect(hx + 4, hy - 3, hx + 4, hy, 'hair'); }
     }
@@ -338,9 +375,26 @@ function human(def, view, pose, f) {
     }
   }
 
+  // Things that sit on top of the arms: the shoulder patch, and the tablet when she is reading it.
+  function overArms() {
+    if (acc.patch) {
+      if (side) g.rect(cx - 1, 19 + U, cx + 1, 22 + U, 'patch');
+      else if (back) g.rect(cx - 9, 19 + U, cx - 7, 22 + U, 'patch');
+      else g.rect(cx + 7, 19 + U, cx + 9, 22 + U, 'patch');
+    }
+    if (!tab || back) return;
+    if (side) { // a slab held out in front, screen glowing toward her face; a fingertip taps it
+      g.rect(cx - 10, 27 + U, cx - 5, 31 + U, 'tabletBody'); g.rect(cx - 9, 27 + U, cx - 6, 27 + U, 'screen');
+      g.px(cx - 8 + (f % 2) * 2, 26 + U, 'skin');
+    } else {
+      g.rect(cx - 5, 28 + U, cx + 5, 34 + U, 'tabletBody'); g.rect(cx - 4, 28 + U, cx + 4, 28 + U, 'screen');
+      g.px(cx - 2 + (f % 2) * 4, 29 + U, 'skin');
+    }
+  }
+
   // Draw order.
-  if (side) { legs(); if (!acc.poncho) arm('far'); torso(); extras(); if (!acc.poncho) arm('near'); head(); }
-  else { legs(); torso(); extras(); if (!acc.poncho) { arm('l'); arm('r'); } head(); }
+  if (side) { legs(); if (!acc.poncho) arm('far'); torso(); extras(); if (!acc.poncho) arm('near'); overArms(); head(); }
+  else { legs(); torso(); extras(); if (!acc.poncho) { arm('l'); arm('r'); } overArms(); head(); }
   return g;
 }
 
@@ -386,7 +440,7 @@ function materials(def) {
   Object.assign(m, {
     legsFar: m.legs, shoesFar: m.shoes, sole: 'ink', furFar: m.fur, sleeve: m.coat ?? m.top, sleeveFar: m.coat ?? m.top,
     coatDark: m.coat, apronDark: m.apron, skinDark: m.skin, neck: m.skin, hairShine: def.hair?.shine ?? m.hair, brow: m.hair,
-    buckle: 'grey5', lips: def.lips,
+    buckle: 'grey5', lips: def.lips, tabletBody: 'grey1', screen: 'cyan',
   });
   return m;
 }
@@ -438,11 +492,13 @@ function paintGrid(img, sheetW, g, ox, oy, names) {
 }
 
 // Builds a sheet: { texture, canvas, frameW, frameH, rows: { down, up, left, right, [pose] }, anims: ANIMS }.
+const EXTRA_FRAMES = { sneak: 4, tablet: 2 };
 export function spriteSheet(def, isCat = false) {
   const fw = isCat ? SPRITES.cat.w : SPRITES.w, fh = isCat ? SPRITES.cat.h : SPRITES.h;
   const draw = isCat ? cat : human;
   const poses = def.poses ?? [];
-  const cols = ANIMS.idle.frames + ANIMS.walk.frames, rowsN = DIRS.length + poses.length;
+  const extra = (!isCat && def.anims) || [];
+  const cols = ANIMS.idle.frames + ANIMS.walk.frames, rowsN = DIRS.length + poses.length + extra.length * DIRS.length;
   const canvas = Object.assign(document.createElement('canvas'), { width: fw * cols, height: fh * rowsN });
   const ctx = canvas.getContext('2d'), img = ctx.createImageData(canvas.width, canvas.height);
   const names = materials(def), rows = {};
@@ -460,12 +516,25 @@ export function spriteSheet(def, isCat = false) {
     rows[pose] = DIRS.length + i;
     paintGrid(img, canvas.width, draw(def, 'down', pose, 0), 0, rows[pose] * fh, names);
   });
+  const animRows = {}, anims = { ...ANIMS };
+  extra.forEach((name, i) => {
+    const base = DIRS.length + poses.length + i * DIRS.length, frames = EXTRA_FRAMES[name];
+    animRows[name] = {}; anims[name] = { start: 0, frames };
+    DIRS.forEach((dir, r) => {
+      animRows[name][dir] = base + r;
+      const view = dir === 'right' ? 'left' : dir;
+      for (let f = 0; f < frames; f++) {
+        const g = draw(def, view, name, f);
+        paintGrid(img, canvas.width, dir === 'right' ? g.mirrored() : g, f * fw, (base + r) * fh, names);
+      }
+    });
+  });
   ctx.putImageData(img, 0, 0);
   const texture = new THREE.CanvasTexture(canvas);
   texture.magFilter = texture.minFilter = THREE.NearestFilter;
   texture.generateMipmaps = false;
   texture.colorSpace = THREE.SRGBColorSpace;
-  return { texture, canvas, frameW: fw, frameH: fh, pxPerUnit: isCat ? SPRITES.cat.pxPerUnit : SPRITES.pxPerUnit, rows, anims: ANIMS };
+  return { texture, canvas, frameW: fw, frameH: fh, pxPerUnit: isCat ? SPRITES.cat.pxPerUnit : SPRITES.pxPerUnit, rows, animRows, anims };
 }
 
 // All sheets by id, built once.

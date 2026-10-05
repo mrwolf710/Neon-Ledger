@@ -123,7 +123,7 @@ dialogue.onUi = caseFile.onUi = echo.onUi = board.onUi = (kind) => sfx.ui(kind);
 caseFile.onAdd = () => sfx.ui('case');
 board.onLock = () => { sfx.ui('linkOk'); music.addLink(); };
 board.onWrong = () => sfx.ui('linkWrong');
-cast.byId.juno.onStep = () => sfx.step(world.current.meta.surface ?? surfaceAt(player.position.x, player.position.z), player.position, input.run);
+cast.byId.juno.onStep = (fi, anim) => sfx.step(world.current.meta.surface ?? surfaceAt(player.position.x, player.position.z), player.position, input.run, anim === 'sneak');
 tod.onFlicker = (i) => sfx.crackle(street.signs[i].light.position);
 
 // ?hooks exposes the game objects for the headless test driver (scripts/drive.mjs eval: steps).
@@ -207,7 +207,7 @@ renderer.setAnimationLoop((now) => {
       if (hit) player.walkTo(hit);
     }
   }
-  player.update(dt, input, cam.yaw);
+  player.update(dt, input, cam.yaw, !modal);
   const cfWasOpen = caseFile.isOpen, bdWasOpen = board.isOpen;
   const free = title.done && !beats.locked && !world.busy; // nothing scripted is running
   board.update(input);

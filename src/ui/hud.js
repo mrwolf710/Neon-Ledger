@@ -12,7 +12,7 @@ export const HUD = {
 
 // Rows of the controls panel: [keys, label]. See the design doc's Controls table.
 const CONTROLS = [
-  ['WASD', 'Move'], ['Shift', 'Run'], ['Space', 'Talk / Examine'], ['F', 'Echo-scan'], ['Q / E', 'Rotate'],
+  ['WASD', 'Move'], ['Shift', 'Run'], ['G', 'Sneak'], ['Space', 'Talk / Examine'], ['F', 'Echo-scan'], ['Q / E', 'Rotate'],
   ['Z / X', 'Zoom'], ['Tab', 'Case file'], ['B', 'Board'], ['H', 'Hide this'],
 ];
 

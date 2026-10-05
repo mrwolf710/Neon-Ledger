@@ -227,11 +227,11 @@ export function createSfx(synth) {
     },
 
     // ---- Footsteps: surface, level, world position of the walker ----
-    step(surface, pos, run = false) {
+    step(surface, pos, run = false, quiet = false) {
       if (!synth.ready) return;
       const S = T.steps, d = distance(pos);
       if (d > S.otherRange) return;
-      const v = (1 - d / S.otherRange) ** 1.5 * (run ? S.runBoost : 1) * (1 + (synth.rand() - 0.5) * S.jitter * 2);
+      const v = (1 - d / S.otherRange) ** 1.5 * (run ? S.runBoost : 1) * (quiet ? 0.35 : 1) * (1 + (synth.rand() - 0.5) * S.jitter * 2);
       const out = d > 0.5 ? stereo(synth.buses.sfx, pan(pos)) : synth.buses.sfx;
       if (surface === 'asphalt') {
         const c = S.asphalt;

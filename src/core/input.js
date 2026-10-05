@@ -23,7 +23,7 @@ export const INPUT = {
 export const KEY_BINDINGS = {
   KeyW: 'up', KeyS: 'down', KeyA: 'left', KeyD: 'right',
   ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
-  ShiftLeft: 'run', ShiftRight: 'run',
+  ShiftLeft: 'run', ShiftRight: 'run', KeyG: 'sneak',
   Space: 'interact', Enter: 'interact', Backspace: 'back',
   KeyF: 'echo',
   KeyQ: 'rotateL', KeyE: 'rotateR',

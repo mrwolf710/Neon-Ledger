@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 
 export const PLAYER = {
-  walk: 3, run: 6,       // units per second
+  walk: 3, run: 6, sneak: 1.5,   // units per second
+  fidgetAfter: 7,        // seconds standing still before she checks her tablet
   accel: 12,             // higher = snappier starts and stops
   radius: 0.3,           // collision circle
   moving: 0.3,           // speed above which the walk animation plays
@@ -13,16 +14,19 @@ export const PLAYER = {
 export function createPlayer(billboard, initialCollision) {
   let collision = initialCollision;
   const pos = billboard.position, vel = new THREE.Vector2();
-  let goal = null, stuck = 0;
+  let goal = null, stuck = 0, pose = null, forced = false, idle = 0;
 
   return {
     position: pos,
     cancel() { goal = null; },
+    // Hold a pose while standing ('tablet'); null releases it. Any movement also releases it.
+    setPose(p) { pose = p; forced = !!p; idle = 0; },
     setCollision(c) { collision = c; goal = null; vel.set(0, 0); },
     get facing() { return billboard.facing; },
     // Walk to point (Vector3, may be a live reference), stop within reach, then call onArrive.
     walkTo(point, reach = 0.15, onArrive = null) { goal = { point, reach, onArrive }; stuck = 0; },
-    update(dt, input, camYaw) {
+    // idleOk: false during conversations / menus, so she doesn't start fidgeting mid-scene.
+    update(dt, input, camYaw, idleOk = true) {
       // Stick/keys: W is up the screen at any camera angle.
       const cx = Math.cos(camYaw), sx = Math.sin(camYaw);
       let wx = input.moveX * cx - input.moveY * sx, wz = -input.moveX * sx - input.moveY * cx;
@@ -35,7 +39,8 @@ export function createPlayer(billboard, initialCollision) {
           done?.();
         } else { wx = dx / d; wz = dz / d; }
       }
-      const speed = input.run ? PLAYER.run : PLAYER.walk;
+      const sneaking = input.held('sneak') && !input.run && !goal;
+      const speed = sneaking ? PLAYER.sneak : input.run ? PLAYER.run : PLAYER.walk;
       const k = 1 - Math.exp(-PLAYER.accel * dt);
       vel.x += (wx * speed - vel.x) * k;
       vel.y += (wz * speed - vel.y) * k;
@@ -44,8 +49,11 @@ export function createPlayer(billboard, initialCollision) {
 
       const v = vel.length();
       if (v > PLAYER.moving) billboard.facing = Math.atan2(vel.x, vel.y);
-      billboard.anim = v > PLAYER.moving ? 'walk' : 'idle';
-      billboard.fpsScale = v > PLAYER.moving ? Math.min(PLAYER.runAnim, Math.max(0.6, v / PLAYER.walk)) : 1;
+      const moving = v > PLAYER.moving;
+      if (moving && !forced) { pose = null; idle = 0; } else if (!moving) idle += dt;
+      if (!moving && idleOk && pose === null && idle > PLAYER.fidgetAfter) pose = 'tablet';
+      billboard.anim = moving ? (sneaking ? 'sneak' : 'walk') : (pose ?? 'idle');
+      billboard.fpsScale = moving ? (sneaking ? Math.min(1.2, Math.max(0.6, v / PLAYER.sneak)) : Math.min(PLAYER.runAnim, Math.max(0.6, v / PLAYER.walk))) : 1;
     },
   };
 }

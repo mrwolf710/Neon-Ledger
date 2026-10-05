@@ -14,7 +14,7 @@ Running summary for Claude sessions (keep under 60 lines).
 ## Key functions
 - `createRng(seed)` -> { seed, rand, range, int, pick, weighted, fork(label) }; fork depends only on (seed, label). All randomness goes through it.
 - `input`: update()/endFrame(); moveX/moveY, run, zoom, zoomSteps, orbitDX/DY, lookX, click {x,y}, zoomFactor, lastDevice, padType,
-  held(a), pressed(a), pressAction/releaseAction. Keys: WASD/arrows, Shift run, Space/Enter interact, Backspace back, F echo, Q/E rotate,
+  held(a), pressed(a), pressAction/releaseAction. Keys: WASD/arrows, Shift run, G sneak (hold), Space/Enter interact, Backspace back, F echo, Q/E rotate,
   Z/X zoom, R/V tilt, C reset view, Tab caseFile, B board, N map, H hide controls, M music, Esc pause, ` debug. Pad: PAD_BINDINGS. Touch: stick left half, tap = click, right-half drag orbits, 2-finger swipe/pinch.
 - `createCamera(aspect)` -> { camera, target, yaw, reset, orbit, follow(p, snap), rotate, tilt, zoom(factor), update }; main keeps POST.tilt.center on Juno.
 - Areas (areas.js): street, platform (-150), sable (150), alley (300), hostel (450), car (600): far apart in X, each with group, blocks, bounds, spots, lights, collision, exits.
@@ -22,7 +22,7 @@ Running summary for Claude sessions (keep under 60 lines).
   jump, routeExit, spot(area, name), placeAt }. onEnter in main swaps collision, cast, interactions, echo, rain, minimap. EXITS = doors [{id, area, at, to, spawn[x,z,facing], verb}].
   `createBatch()` collects per material (box, light, steam, sign, spot, block). `groundY(z, x)`, CAST {id, area, at (xz | spot name), facing, pose, ghost} in district.js.
 - `createCollision(blocks, bounds, {road})` -> { grid, bounds, hits, move }. `createPlayer(billboard, collision)` -> { position, facing, walkTo(point, reach, onArrive), update }.
-- `createCast(scene, sheets, areas)` -> { list, byId, update, setArea, setHidden, apply }; billboard.facing/anim/fpsScale/follow/away. `getSheets()` -> sprite sheets (humans 40x64 at 32 px/unit, cat 16x12; shape-built, 4-tone shading, neon rim SPRITES.rim; ?sprites previews).
+- `createCast(scene, sheets, areas)` -> { list, byId, update, setArea, setHidden, apply }; billboard.facing/anim/fpsScale/follow/away. `getSheets()` -> sheets (Juno has extra rows `animRows` for sneak + tablet; player.setPose("tablet") or 7 s idle; humans 40x64 at 32 px/unit, cat 16x12; shape-built, 4-tone shading, neon rim SPRITES.rim; ?sprites previews).
 - `createInteractions(scene)` -> { add({id, position, height, verb, onInteract}), nearest, pick, current, hide, update(...) }: DOM prompt, pixel font.
 - `createHud(collision)` -> { dialogue (box UI), show, setCollision, setLocation, setClock, setObjectiveText, setObjective({x,z}|null), toast, toggleControls, update(dt, view) }.
   `createClock()` 1 s = 1 game min from 22:40; phase picks the time-of-day mood. `frame(el)` = panel frame. Debug panel: select/slider/button + stats. Tunables are constants atop each file.

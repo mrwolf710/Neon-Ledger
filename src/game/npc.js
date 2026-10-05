@@ -132,10 +132,10 @@ export function createBillboard(sheet, opts) {
         const dir = ['down', 'right', 'up', 'left'][Math.floor(rel / (Math.PI / 2))];
         const A = sheet.anims[anim] ?? sheet.anims.idle;
         const fps = SPRITES.fps[anim] ?? SPRITES.fps.idle;
-        const fi = Math.floor(time * fps) % A.frames;
-        setFrame(sheet.rows[dir], A.start + fi);
-        if (anim === 'walk' && fi !== lastStep) { lastStep = fi; if (fi % 2 === 0) api.onStep?.(fi); } // footfall
-        else if (anim !== 'walk') lastStep = -1;
+        const fi = Math.floor(time * fps) % A.frames, stepping = anim === 'walk' || anim === 'sneak';
+        setFrame(sheet.animRows?.[anim]?.[dir] ?? sheet.rows[dir], A.start + fi);
+        if (stepping && fi !== lastStep) { lastStep = fi; if (fi % 2 === 0) api.onStep?.(fi, anim); } // footfall
+        else if (!stepping) lastStep = -1;
       }
 
       // Nearby lights (summed, squared falloff) tint the sprite; the strongest one colours the rim on its side.
