@@ -19,7 +19,7 @@ export const ENTRIES = {
   two_voices: { kind: 'facts', title: 'Two voices in the echo', text: "Mama Teo's echo holds two distinct voices. Only Dex is accounted for.", source: "Echo: Mama Teo's back room, 02.0" },
   echo_seam: { kind: 'facts', title: 'The echo has a seam', text: 'The replay stutters at 03.5. Someone edited this memory.', source: "Echo: Mama Teo's back room, 03.5" },
   someone_had_key: { kind: 'facts', title: 'Someone else had a key', text: 'The back door was opened from outside without a knock, and two voices were in the room. A second person let themselves in with a key.', source: 'Deduction board' },
-  door_unlocked: { kind: 'facts', title: 'The back door was unlocked from outside', text: 'Mama Teo locked the back door behind Dex, then heard it click open again later. No knock.', source: 'Mama Teo' },
+  door_unlocked: { kind: 'facts', title: 'The back door was unlocked from outside', text: "Mama Teo locked Dex in the back room. Later she heard the back door, the only other way in, click open. No knock.", source: 'Mama Teo' },
 };
 
 // Which conversation each talkable thing starts. Missing ids fall back to FALLBACK.
@@ -48,7 +48,7 @@ export const CONVERSATIONS = {
       knows: { speaker: 'mamaTeo', text: "Dex. Everyone on Lowmarket knew Dex. Two years in my corner booth, selling other people's memories, and never once skipped paying for his bowl.", next: 'ask' },
       ask: { speaker: 'mamaTeo', text: "I saw Dex twice tonight. The second time was after close. He wanted the back room, said a client was coming, and he needed the privacy. He kept a hand on his temple the whole time - looked like he was in pain. I didn't ask. His business. I just locked the door behind him, like always.",
         choices: [...TEO_QUESTIONS, { text: "That's all.", end: true }] },
-      door: { speaker: 'mamaTeo', text: "A click, a while later. The back door, opening. No knock. Nobody who knocks lets themselves in.",
+      door: { speaker: 'mamaTeo', text: "A click, a while later. The back door, opening. It's the only other way into that room. No knock. So they let themselves in.",
         effects: [{ addFact: 'door_unlocked' }], next: 'more' },
       follow: { speaker: 'mamaTeo', text: "Never saw one. Nobody came through the front tonight but the cat.", next: 'more' },
       more: { speaker: 'mamaTeo', text: 'Anything else, or are you going to eat?',
