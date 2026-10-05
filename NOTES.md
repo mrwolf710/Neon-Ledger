@@ -3,7 +3,6 @@ Running summary for Claude sessions (keep under 60 lines).
 
 ## Status
 - Current stage: 4B done (#9). Next: Stage 5A (see docs/stages/stage-05-movement-input.md). Seed: 1337 (`SEED` in src/core/rng.js)
-
 ## Files
 - src/core: rng.js mulberry32 PRNG · input.js action layer (keyboard + wheel; mouse/gamepad/touch TODO 5A/5B)
   · settings.js TIERS high/medium/mobile (pixelRatio, bloomScale, maxLights, shadowMap, rainCount), auto-detect, ?quality=
@@ -53,9 +52,8 @@ Running summary for Claude sessions (keep under 60 lines).
   acc:[{type,color}] (implant belt apron sticks bag tie stripe soles poncho trim hood visor), poses?:["slump"] }. Palette names. Dialogue/echo/board formats come in Stages 6-7.
 
 ## Known issues
-- WASD pans the camera until Stage 5 makes Juno the player (remove cam.pan in main). Tilt band fixed at centre.
 - Chunk > 500 kB warning (three.js). Rail deck hits buildings near x=17. No prop collision. Point lights cast no shadows.
 - Shadows on for Mobile too (shrink if iPhone struggles). renderer.info.autoReset off (reset per frame in main).
 
 ## Next
-Stage 5A: player movement + input (Juno becomes the player; replace the WASD camera pan, move the tilt band to her).
+Stage 5A: player movement + input (Juno becomes the player; replace the WASD camera pan, move the tilt band to her; remove cam.pan in main).
