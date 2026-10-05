@@ -30,8 +30,12 @@ run(0.2);                                    // the opening press is ignored, te
 assert.ok(d.active && log.text.length > 0 && log.text.length < 20, 'typewriter in progress');
 run(10);                                     // finishes by itself; no choices on this node
 assert.ok(log.text.startsWith("You're the auditor"));
-run(0.1, 'interact');                        // advance to the question
+run(0.1, 'interact');                        // say "I'm here about Dex"
+run(10);                                     // she shows she knew him
+assert.ok(log.text.startsWith('Dex. Everyone on Lowmarket'));
+run(0.1, 'interact');                        // on to what she saw
 run(10);
+assert.ok(log.text.startsWith('Dex came in twice'));
 assert.deepEqual(log.choices, ['Did you lock the back door?', 'Did anyone follow him in?', "That's all."]);
 run(0.1, 'down'); run(0.1, 'up');            // wrap-around navigation
 run(0.1, 'interact');                        // pick "Did you lock the back door?"
