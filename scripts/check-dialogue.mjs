@@ -15,6 +15,7 @@ const caseFile = {
   get isOpen() { return open; },
   has: (id) => facts.has(id) || people.has(id), hasFlag: (n) => flags.has(n), setFlag: (n) => flags.add(n),
   add: (id) => (id === 'mamaTeo' ? people : facts).add(id),
+  apply(effects = []) { for (const e of effects) { if (e.addFact) this.add(e.addFact); if (e.addPerson) this.add(e.addPerson); if (e.setFlag) flags.add(e.setFlag); } },
   open(o) { presentOpts = o; open = true; },
 };
 const clock = { setTime() {} };

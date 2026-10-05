@@ -1,13 +1,13 @@
 # NOTES
 Running summary for Claude sessions (keep under 60 lines).
 ## Status
-- Current stage: 7A done (#15), untested in browser. Next: 7B (#16) deduction board. Issues #2-#14 closed. Seed 1337 (`SEED`, src/core/rng.js)
+- Current stage: 7B done (#16), untested in browser. Next: Stage 8 (#17) audio. Issues #2-#15 closed. Seed 1337 (`SEED`, src/core/rng.js)
 ## Files
 - src/core: rng.js seeded PRNG · input.js action layer · settings.js TIERS high/medium/mobile, ?quality=
 - src/render: camera.js orbit cam · lights.js · fog.js height fog + cutaway · post.js bloom, tilt-shift, grade
 - src/world: district.js layout, CAST, ZONES · collision.js walk grid · particles.js · timeofday.js moods
 - src/gen: palette.js · textures.js · batch.js merge collector · buildings.js · glyphs.js signs · props.js · sprites.js characters · pixelfont.js
-- src/game: npc.js billboards + createCast · player.js · interact.js prompts · clock.js · story.js (ALL story data) · dialogue.js · casefile.js · echo.js
+- src/game: npc.js billboards + createCast · player.js · interact.js prompts · clock.js · story.js (ALL story data) · dialogue.js · casefile.js · echo.js · board.js
 - src/ui: touch.js · title.js (title.started) · styles.css (panel frame, key caps, rem, safe-area) · hud.js (HUD + dialogue box)
 - src/main.js builds everything + loop · src/debug/panel.js stats + controls (` toggles) · scripts/check-*.mjs (node self-checks), scripts/where.mjs (prints CAST and spot positions)
 ## Key functions
@@ -31,6 +31,9 @@ Running summary for Claude sessions (keep under 60 lines).
   `createEcho({scene, sheets, post, caseFile, hud, cast, spots})` -> { active, hotspots, tryStart(pos), start(id), exit(), update(dt, input, camYaw, lights, scrubAxis, playerPos) }.
   F near a hotspot (cyan diamond) starts it; F/Backspace/Esc exits. Space tags (in a tag window) else play/pause; stick or A/D scrubs, D-pad steps,
   drag the bar. Red seam tick appears once the playhead has crossed it (stutter + pixel tear 0.2 s). `post.setEcho(0..1)`, `setGlitch(0..1)`.
+  `createBoard({caseFile, hud})` -> { isOpen, open/close/toggle, update(input), onLock(conclusion), onWrong(), logic }. B / View / BRD icon. Drag a card onto another
+  (or tap/Space two cards; arrows or D-pad move the cursor). Pure rules in `createBoardLogic(data, hasFact)` -> link(a,b) = {kind same|wrong|partial|solved, line, hint}.
+  `caseFile.apply(effects)` runs story effects; `caseFile.facts()` lists known facts. `createCaseFile(hud, clock)`.
   `createDialogue({hud, caseFile, clock})` -> { active, start(convId), end, update(dt, input), onChar(char, speakerId) } (voice blips hook, Stage 8).
 ## Data formats
 - Character: { name, skin, iris, lips?, lashes?, hair:{style,color,shine?}, top, legs, shoes, outfit?:{type,color,collar}, acc:[{type,color}], poses? }.
@@ -43,6 +46,9 @@ Running summary for Claude sessions (keep under 60 lines).
 - Echo (story.js ECHOES/HOTSPOTS): HOTSPOTS [{id, echo, at: [x,z] | {spot, dx, dz}, radius}]. ECHOES[id] { title, owner, entry (ENTRIES echoes id, added on first play),
   duration (s), tracks: [{sprite: sheetId, show?: [t0,t1], keys: [{t, x, z, facing?, anim?: idle|walk}]}] (linear; two keys ~0.01 s apart = a jump),
   voices: [{t0, t1, speaker, text}] captions, seams: [t], tags: [{t, window, fact, label}] }. Test: stall hotspot (cyan diamond), seam 3.5 s.
+- Board (story.js BOARD): { wrongLines[], partialLine, hintLine ("{fact}" = fact title), conclusions: [{id, needs: [factId x2-3], result: ENTRIES fact id,
+  line (Juno), effects}] }. A pair locks on one link; a trio needs links connecting all three. Every 3rd wrong link touching a conclusion's facts hints a needed
+  fact. Result facts (source 'Deduction board') show as cyan cards. Test: lock_twice + two_voices -> someone_had_key.
 ## Known issues
 - Chunk > 500 kB warning. Rail deck hits buildings near x=17. NPCs don't block Juno. Point lights cast no shadows. Mobile shadows may be heavy.
 ## Next

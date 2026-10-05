@@ -14,6 +14,7 @@ import { createClock } from './game/clock.js';
 import { createCaseFile } from './game/casefile.js';
 import { createDialogue } from './game/dialogue.js';
 import { createEcho } from './game/echo.js';
+import { createBoard } from './game/board.js';
 import { TALK, FALLBACK } from './game/story.js';
 import { zoneAt } from './world/district.js';
 import { createTitle } from './ui/title.js';
@@ -84,12 +85,13 @@ const touchUI = createTouchUI(input);
 const title = createTitle();
 const hud = createHud(collision);
 const clock = createClock();
-const caseFile = createCaseFile(hud);
+const caseFile = createCaseFile(hud, clock);
 const dialogue = createDialogue({ hud, caseFile, clock });
 const echo = createEcho({ scene, sheets: getSheets(), post, caseFile, hud, cast, spots: district.userData.spots });
 for (const h of echo.hotspots) {
   interactions.add({ id: `echo:${h.id}`, position: h.position, height: 1.2, verb: 'Echo', glyph: 'echo', onInteract: () => echo.start(h.id) });
 }
+const board = createBoard({ caseFile, hud });
 let phaseId = '';
 title.started.then(() => hud.show());
 const ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
@@ -144,7 +146,7 @@ renderer.setAnimationLoop((now) => {
   cam.zoom(CAMERA.wheelZoom ** input.zoomSteps * CAMERA.keyZoom ** (input.zoom * dt) * input.zoomFactor);
   touchUI.update();
   const scrubAxis = input.moveX; // echo mode scrubs with the move axis
-  const modal = !title.done || dialogue.active || caseFile.isOpen || echo.active; // title, conversation or case file: the world waits
+  const modal = !title.done || dialogue.active || caseFile.isOpen || echo.active || board.isOpen; // title, conversation or case file: the world waits
   if (modal) { input.click = null; input.moveX = input.moveY = 0; }
   cam.tilt((input.held('tiltDown') ? 1 : 0) - (input.held('tiltUp') ? 1 : 0), dt);
 
@@ -160,13 +162,15 @@ renderer.setAnimationLoop((now) => {
     }
   }
   player.update(dt, input, cam.yaw);
-  const cfWasOpen = caseFile.isOpen;
+  const cfWasOpen = caseFile.isOpen, bdWasOpen = board.isOpen;
+  board.update(input);
+  if (!bdWasOpen && !board.isOpen && title.done && !dialogue.active && !echo.active && !caseFile.isOpen && input.pressed('board')) board.open();
   caseFile.update(input);
-  if (!cfWasOpen && !caseFile.isOpen && !dialogue.active && !echo.active && title.done && input.pressed('caseFile')) caseFile.open();
+  if (!cfWasOpen && !caseFile.isOpen && !dialogue.active && !echo.active && !board.isOpen && title.done && input.pressed('caseFile')) caseFile.open();
   const echoWas = echo.active;
   if (echoWas) echo.update(dt, input, cam.yaw, district.userData.lights, scrubAxis, player.position);
   else if (dialogue.active) { if (!cfWasOpen) dialogue.update(dt, input); }
-  else if (!cfWasOpen && title.done) {
+  else if (!cfWasOpen && !bdWasOpen && !board.isOpen && title.done) {
     if (input.pressed('echo')) echo.tryStart(player.position);
     else if (input.pressed('interact')) interactions.current?.onInteract();
   }

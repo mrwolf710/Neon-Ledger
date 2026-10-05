@@ -18,6 +18,7 @@ export const ENTRIES = {
   teo_back_room: { kind: 'echoes', title: "Mama Teo's echo: the back room", text: "Six seconds from Mama Teo's implant, the night Dex died. Two voices, one of them cut off.", source: "Mama Teo's implant" },
   two_voices: { kind: 'facts', title: 'Two voices in the echo', text: "Mama Teo's echo holds two distinct voices. Only Dex is accounted for.", source: "Echo: Mama Teo's back room, 02.0" },
   echo_seam: { kind: 'facts', title: 'The echo has a seam', text: 'The replay stutters at 03.5. Someone edited this memory.', source: "Echo: Mama Teo's back room, 03.5" },
+  someone_had_key: { kind: 'facts', title: 'Someone else had a key', text: 'Two people were in the back room, and one let themselves in. Dex never owned a key.', source: 'Deduction board' },
   lock_twice: { kind: 'facts', title: 'The back lock turned twice', text: 'After closing, Mama Teo heard the back-room lock turn twice: once to open, once to lock.', source: 'Mama Teo' },
 };
 
@@ -87,4 +88,19 @@ export const ECHOES = {
     seams: [3.5],
     tags: [{ t: 2.0, window: 0.9, fact: 'two_voices', label: 'Two voices' }, { t: 3.5, window: 0.6, fact: 'echo_seam', label: 'The seam' }],
   },
+};
+
+// Deduction board: each conclusion needs a pair (or trio) of fact ids linked together on the board.
+//  { id, needs: [factId, ...], result: ENTRIES fact id shown as the conclusion card, line: Juno's line when it locks in, effects }.
+//  A pair locks on one link; a trio needs links that connect all three. Wrong links snap back with a line from wrongLines;
+//  every 3rd wrong link that touches a conclusion's facts makes Juno hint at one it still needs ({fact} = its title).
+export const BOARD = {
+  wrongLines: ["That doesn't connect.", 'No. Those two have nothing to do with each other.', 'Close, maybe. But no.', "Not like that."],
+  partialLine: 'That fits. There has to be more to it.',
+  hintLine: 'I keep coming back to “{fact}”.',
+  conclusions: [
+    { id: 'someone_had_key', needs: ['lock_twice', 'two_voices'], result: 'someone_had_key',
+      line: 'Two voices, two turns of the lock. Someone walked in as a guest and had their own key.',
+      effects: [{ addFact: 'someone_had_key' }, { setFlag: 'key_deduced' }] },
+  ],
 };

@@ -12,15 +12,7 @@ export function createDialogue({ hud, caseFile, clock }) {
     || ((!c.flag || caseFile.hasFlag(c.flag)) && (!c.notFlag || !caseFile.hasFlag(c.notFlag))
       && (!c.fact || caseFile.has(c.fact)) && (!c.notFact || !caseFile.has(c.notFact)));
 
-  function apply(effects = []) {
-    for (const e of effects) {
-      if (e.addFact) caseFile.add(e.addFact);
-      if (e.addPerson) caseFile.add(e.addPerson);
-      if (e.addEcho) caseFile.add(e.addEcho);
-      if (e.setFlag) caseFile.setFlag(e.setFlag);
-      if (e.setTime) clock.setTime(...e.setTime);
-    }
-  }
+  const apply = (effects) => caseFile.apply(effects);
 
   function run(id) {
     nodeId = id; node = conv.nodes[id];

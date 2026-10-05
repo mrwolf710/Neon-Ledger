@@ -5,7 +5,7 @@ const TABS = [['people', 'People'], ['facts', 'Facts'], ['echoes', 'Echoes']];
 
 // Case file state (people / facts / echoes, plus story flags) and its full-screen UI.
 // Tab / Y / the CASE icon toggles it. In present mode (opened by a dialogue) picking a fact calls onPick(id).
-export function createCaseFile(hud) {
+export function createCaseFile(hud, clock) {
   const known = new Map();           // id -> { ...entry, order }
   const flags = new Set();
   let isOpen = false, tab = 'facts', sel = 0, present = null;
@@ -76,6 +76,15 @@ export function createCaseFile(hud) {
       return true;
     },
     setFlag: (name) => flags.add(name),
+    // Story effects: { addFact | addPerson | addEcho: id } { setFlag: name } { setTime: [h, m] }.
+    apply(effects = []) {
+      for (const e of effects) {
+        for (const k of ['addFact', 'addPerson', 'addEcho']) if (e[k]) api.add(e[k]);
+        if (e.setFlag) flags.add(e.setFlag);
+        if (e.setTime && clock) clock.setTime(...e.setTime);
+      }
+    },
+    facts: () => entries('facts'),
     hasFlag: (name) => flags.has(name),
     // Opens the case file. opts: { present: true, onPick(id), onCancel() } for the Present choice.
     open(opts = {}) {
