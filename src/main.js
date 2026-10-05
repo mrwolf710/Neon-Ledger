@@ -11,6 +11,9 @@ import './ui/styles.css';
 import { createTouchUI } from './ui/touch.js';
 import { createHud } from './ui/hud.js';
 import { createClock } from './game/clock.js';
+import { createCaseFile } from './game/casefile.js';
+import { createDialogue } from './game/dialogue.js';
+import { TALK, FALLBACK } from './game/story.js';
 import { zoneAt } from './world/district.js';
 import { createTitle } from './ui/title.js';
 import { createPlayer } from './game/player.js';
@@ -69,17 +72,19 @@ for (const b of cast.list) {
     id: b.id, position: b.position, height: b.id === 'miso' ? 0.8 : 2, verb: b.id === 'miso' ? 'Pet' : 'Talk',
     onInteract: () => {
       if (b.anim !== 'walk' && b.anim !== 'slump') b.facing = Math.atan2(player.position.x - b.position.x, player.position.z - b.position.z);
-      console.log('interact:', b.id); // Stage 6: dialogue
+      dialogue.start(TALK[b.id] ?? FALLBACK);
     },
   });
 }
 for (const s of district.userData.spots.filter((p) => p.name === 'vending')) {
-  interactions.add({ id: 'vending', position: new THREE.Vector3(s.x, 0, s.z), height: 1.8, verb: 'Use', onInteract: () => console.log('interact: vending') });
+  interactions.add({ id: 'vending', position: new THREE.Vector3(s.x, 0, s.z), height: 1.8, verb: 'Use', onInteract: () => dialogue.start(TALK.vending) });
 }
 const touchUI = createTouchUI(input);
 const title = createTitle();
 const hud = createHud(collision);
 const clock = createClock();
+const caseFile = createCaseFile(hud);
+const dialogue = createDialogue({ hud, caseFile, clock });
 let phaseId = '';
 title.started.then(() => hud.show());
 const ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
@@ -133,7 +138,8 @@ renderer.setAnimationLoop((now) => {
   if (input.pressed('debug')) debug.toggle();
   cam.zoom(CAMERA.wheelZoom ** input.zoomSteps * CAMERA.keyZoom ** (input.zoom * dt) * input.zoomFactor);
   touchUI.update();
-  if (!title.done) { input.click = null; input.moveX = input.moveY = 0; } // title screen: no walking yet
+  const modal = !title.done || dialogue.active || caseFile.isOpen; // title, conversation or case file: the world waits
+  if (modal) { input.click = null; input.moveX = input.moveY = 0; }
   cam.tilt((input.held('tiltDown') ? 1 : 0) - (input.held('tiltUp') ? 1 : 0), dt);
 
   // Click: a person/object walks there then interacts; the ground walks there.
@@ -148,7 +154,11 @@ renderer.setAnimationLoop((now) => {
     }
   }
   player.update(dt, input, cam.yaw);
-  if (input.pressed('interact')) interactions.current?.onInteract();
+  const cfWasOpen = caseFile.isOpen;
+  caseFile.update(input);
+  if (!cfWasOpen && !caseFile.isOpen && !dialogue.active && title.done && input.pressed('caseFile')) caseFile.open();
+  if (dialogue.active) { if (!cfWasOpen) dialogue.update(dt, input); }
+  else if (!cfWasOpen && title.done && input.pressed('interact')) interactions.current?.onInteract();
   cam.follow(player.position);
   cam.update(dt);
 
@@ -170,7 +180,7 @@ renderer.setAnimationLoop((now) => {
   tod.update(dt);
   particles.update(dt, cam.target, cam.camera);
   cast.update(dt, cam.yaw, district.userData.lights);
-  interactions.update(player.position, player.facing, input.lastDevice, input.padType, cam.camera);
+  if (modal) interactions.hide(); else interactions.update(player.position, player.facing, input.lastDevice, input.padType, cam.camera);
   fog.update(cam.camera, cam.target);
   const db = renderer.getDrawingBufferSize(bufSize);
   fog.cutaway(cam.camera, player.position, db.x, db.y);

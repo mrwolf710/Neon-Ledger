@@ -31,6 +31,35 @@ export function frame(node) {
   return node;
 }
 
+// Dialogue box UI: full-width bottom panel with a nameplate + gem, the text, and a choice box on the right.
+function dialogueBox(root) {
+  const box = el('div', 'dialogue', root);
+  const plate = frame(el('div', 'plate', box));
+  const gem = el('span', 'gem', plate), nameEl = el('span', 'nameplate', plate);
+  const choicesEl = frame(el('div', 'choices', box));
+  const textBox = frame(el('div', 'dtext', box));
+  const body = el('div', 'body', textBox), hint = el('div', 'hint', textBox, '▼');
+  let clickFn = () => {};
+  textBox.addEventListener('pointerdown', (e) => { e.preventDefault(); clickFn(); });
+  return {
+    show(name, color) {
+      box.classList.add('on'); nameEl.textContent = name; gem.style.background = color; gem.style.boxShadow = `0 0 0.5rem ${color}`;
+    },
+    hide() { box.classList.remove('on'); },
+    setText(s, done) { body.textContent = s; hint.style.visibility = done ? 'visible' : 'hidden'; },
+    // labels: [] hides the box. onPick(i) for mouse / tap.
+    setChoices(labels, sel, onPick) {
+      choicesEl.classList.toggle('on', labels.length > 0);
+      choicesEl.querySelectorAll('.choice').forEach((n) => n.remove());
+      labels.forEach((t, i) => {
+        const c = el('div', `choice${i === sel ? ' sel' : ''}`, choicesEl, t);
+        c.addEventListener('pointerdown', (e) => { e.preventDefault(); onPick(i); });
+      });
+    },
+    onTextClick(fn) { clickFn = fn; },
+  };
+}
+
 // HUD: banner, clock, minimap, toasts, controls panel. Everything is fed through setters / update().
 // collision: from createCollision (needs .grid for the minimap).
 export function createHud(collision) {
@@ -121,6 +150,7 @@ export function createHud(collision) {
   }
 
   return {
+    dialogue: dialogueBox(root),
     show() { root.classList.add('on'); },
     // Slides the banner in for bannerMs.
     setLocation(name, district) {

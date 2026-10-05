@@ -72,3 +72,42 @@ html { font-size: clamp(12px, 1.7vmin, 22px); }
 #hud .controls.off { display: none; }
 #hud .controls .row { display: flex; align-items: center; margin: 0.2rem 0; font: 500 0.8rem/1.3 var(--body); }
 #hud .controls .row .keycap { min-width: 2.6rem; }
+
+/* Dialogue box (bottom, full width) */
+#hud .dialogue { position: absolute; left: calc(1rem + var(--safe-l)); right: calc(1rem + var(--safe-r)); bottom: calc(1rem + var(--safe-b));
+  display: none; flex-direction: column; align-items: stretch; pointer-events: auto; }
+#hud .dialogue.on { display: flex; }
+#hud.on:has(.dialogue.on) .controls { display: none; }
+#hud .dialogue .plate { align-self: flex-start; margin: 0 0 0.9rem 1rem; padding: 0.3rem 1rem 0.3rem 0.7rem; display: flex; align-items: center; gap: 0.6rem;
+  font-size: 1.15rem; color: #fff; }
+#hud .dialogue .gem { width: 0.7rem; height: 0.7rem; transform: rotate(45deg); }
+#hud .dialogue .dtext { min-height: 6rem; padding: 0.9rem 1.4rem; cursor: pointer; }
+#hud .dialogue .body { font: 400 1.2rem/1.5 var(--body); color: var(--text); max-width: 60rem; }
+#hud .dialogue .hint { position: absolute; right: 1.2rem; bottom: 0.5rem; color: var(--magenta); animation: hint-bob 0.9s infinite alternate; }
+@keyframes hint-bob { to { transform: translateY(0.25rem); } }
+#hud .dialogue .choices { display: none; position: absolute; right: 0; bottom: calc(100% - 0.6rem); min-width: 18rem; max-width: 28rem;
+  padding: 0.5rem; flex-direction: column; gap: 0.25rem; }
+#hud .dialogue .choices.on { display: flex; }
+#hud .dialogue .choice { padding: 0.45rem 0.9rem; font: 500 1.05rem/1.3 var(--body); cursor: pointer; border: 1px solid transparent; }
+#hud .dialogue .choice.sel { border-color: var(--magenta); background: rgba(224, 33, 125, 0.22); color: #fff; }
+body.talking #touch-ui .echo { display: none; }
+
+/* Case file (full screen) */
+#casefile { position: fixed; inset: 0; z-index: 9; display: none; align-items: center; justify-content: center; background: rgba(7, 7, 15, 0.82);
+  font-family: var(--body); color: var(--text); padding: calc(1rem + var(--safe-t)) calc(1rem + var(--safe-r)) calc(1rem + var(--safe-b)) calc(1rem + var(--safe-l)); }
+#casefile.on { display: flex; }
+#casefile .cf-box { width: min(60rem, 100%); max-height: 100%; display: flex; flex-direction: column; padding: 1rem 1.4rem; }
+#casefile .cf-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; }
+#casefile .cf-title { font-size: 1.3rem; color: #fff; }
+#casefile .cf-tabs { display: flex; gap: 0.5rem; }
+#casefile .cf-tab { font: 600 1rem var(--display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--text); background: transparent;
+  border: 1px solid var(--cyan); padding: 0.3rem 0.9rem; cursor: pointer; }
+#casefile .cf-tab.on { border-color: var(--magenta); background: rgba(224, 33, 125, 0.25); color: #fff; }
+#casefile .cf-list { overflow-y: auto; display: flex; flex-direction: column; gap: 0.4rem; min-height: 8rem; }
+#casefile .cf-entry { padding: 0.55rem 0.9rem; border: 1px solid rgba(31, 214, 232, 0.35); cursor: pointer; }
+#casefile .cf-entry.sel { border-color: var(--magenta); background: rgba(224, 33, 125, 0.18); }
+#casefile .cf-entry .t { font: 700 1.1rem var(--display); letter-spacing: 0.05em; color: #fff; }
+#casefile .cf-entry .x { font-size: 0.95rem; margin: 0.15rem 0; }
+#casefile .cf-entry .s { font: italic 0.8rem var(--body); color: var(--pink); }
+#casefile .cf-empty { color: var(--dim); padding: 1rem; }
+#casefile .cf-foot { margin-top: 0.8rem; font-size: 0.8rem; color: var(--dim); }

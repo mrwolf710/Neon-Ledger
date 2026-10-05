@@ -81,6 +81,7 @@ export function createInteractions(scene) {
       }
       return best;
     },
+    hide() { el.style.display = 'none'; current = null; },
     // Shows the prompt over the nearest interactable, with the glyph for the last-used device.
     update(pos, facing, device, padType, camera) {
       current = this.nearest(pos, facing);
