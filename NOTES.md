@@ -1,7 +1,7 @@
 # NOTES
 Running summary for Claude sessions (keep under 60 lines).
 ## Status
-- Current stage: 5B done (#11), needs an iPhone test (#12). Next: Stage 6 (HUD + dialogue). Seed: 1337 (`SEED` in src/core/rng.js)
+- Current stage: 5B done (#11); iPhone test passed (#12). Next: Stage 6 (HUD + dialogue). Seed: 1337 (`SEED` in src/core/rng.js)
 ## Files
 - src/core: rng.js mulberry32 PRNG · input.js action layer (keyboard, mouse, gamepad, touch)
   · settings.js TIERS high/medium/mobile (pixelRatio, bloomScale, maxLights, shadowMap, rainCount), auto-detect, ?quality=
@@ -57,4 +57,4 @@ Running summary for Claude sessions (keep under 60 lines).
 - Chunk > 500 kB warning. renderer.info.autoReset off. Rail deck hits buildings near x=17. NPCs don't block Juno. Point lights cast no shadows.
 - Shadows on for Mobile too (shrink if iPhone struggles)..
 ## Next
-Test on iPhone (#12): npm run dev -- --host, open the Network URL in Safari landscape. Then Stage 6 (HUD + dialogue).
+Stage 6: HUD + dialogue (docs/stages/stage-06-hud-dialogue.md). iPhone: npm run dev -- --host, open the Network URL in Safari landscape.
