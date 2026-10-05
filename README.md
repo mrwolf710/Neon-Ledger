@@ -10,6 +10,8 @@ You play Juno Vale, a memory auditor who solves crimes by replaying the "echoes"
 
 | File | What's in it |
 | --- | --- |
+| [docs/claude-code.md](docs/claude-code.md) | **Start here.** Install Claude Code, work through issues, and save usage on the Pro plan |
+| [CLAUDE.md](CLAUDE.md) | Standing rules Claude Code reads automatically every session |
 | [docs/design-doc.md](docs/design-doc.md) | Full game design: visuals, tech approach, gameplay, story, demo script, UI, audio |
 | [docs/dev-stages.md](docs/dev-stages.md) | The 9-stage build plan and how to run each stage cheaply with Claude |
 | [docs/stages/](docs/stages/) | One file per stage, each with a paste-ready prompt and a done-when checklist |

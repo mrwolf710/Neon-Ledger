@@ -1,6 +1,9 @@
 # Dev stages
 
-The build is split into 9 stages, each sized for one or two short Claude sessions. For each stage, start a new chat and paste only that stage's file plus your NOTES.md file. Never paste the whole design doc.
+The build is split into 9 stages, each sized for one or two short Claude sessions.
+
+- **Using Claude Code (recommended):** follow the GitHub issues in order. Each one has a ready-to-paste Claude Code prompt. See [claude-code.md](claude-code.md).
+- **Using the Claude app instead:** start a new chat per session and paste that stage file's prompt plus your NOTES.md. Never paste the whole design doc.
 
 ## How to run a stage without burning your limit
 
