@@ -9,7 +9,7 @@ Running summary for Claude sessions (keep under 60 lines).
 - src/gen: palette.js · textures.js · batch.js merge collector · buildings.js · glyphs.js signs · props.js · sprites.js characters · pixelfont.js
 - src/game: npc.js billboards + createCast · player.js · interact.js prompts · clock.js · story.js (ALL story data) · dialogue.js · casefile.js
 - src/ui: touch.js · title.js (title.started) · styles.css (panel frame, key caps, rem, safe-area) · hud.js (HUD + dialogue box)
-- src/main.js builds everything + loop · src/debug/panel.js stats + controls (` toggles) · scripts/check-*.mjs (node self-checks)
+- src/main.js builds everything + loop · src/debug/panel.js stats + controls (` toggles) · scripts/check-*.mjs (node self-checks), scripts/where.mjs (prints CAST and spot positions)
 ## Key functions
 - `createRng(seed)` -> { seed, rand, range, int, pick, weighted({k:w}), fork(label) }; fork depends only on (seed, label).
 - `input`: update()/endFrame(); moveX/moveY, run, zoom, zoomSteps, orbitDX/DY, lookX, click {x,y}, zoomFactor, lastDevice, padType,
