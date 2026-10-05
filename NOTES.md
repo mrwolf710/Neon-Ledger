@@ -27,7 +27,7 @@ Running summary for Claude sessions. Paste this file at the start of every stage
   fork depends only on (seed, label), not call order. main uses `rng.fork('district')`.
 - `input.update()` at frame start, `input.endFrame()` at end. Read `input.moveX/moveY` (-1..1, +Y forward),
   `input.zoom` (held Z/X), `input.zoomSteps` (wheel notches), `input.held(a)`, `input.pressed(a)`.
-  Keys: WASD, Shift run, Space interact, F echo, Q/E rotate, Z/X zoom, Tab caseFile, B board, N map, Esc pause, ` debug.
+  Keys: WASD, Shift run, Space interact, F echo, Q/E rotate, Z/X zoom, R/V tilt, Tab caseFile, B board, N map, Esc pause, ` debug.
 - `createCamera(aspect)` -> { camera, target, yaw, rotate(+1/-1), zoom(delta), update(dt) }.
 - `buildDistrict(rng)` -> THREE.Group. Street along X (length 40); Z across (road 6, sidewalks 2, buildings 3 deep).
   Rail at x=17, height 7. Each building uses rng.fork(`building:side:i`); props use fork('props').

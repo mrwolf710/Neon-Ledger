@@ -3,6 +3,9 @@ import * as THREE from 'three';
 export const CAMERA = {
   fov: 20,
   pitchDeg: 35,
+  minPitchDeg: 8,    // R held: look up toward the skyline
+  maxPitchDeg: 80,   // V held: look down toward top-down
+  tiltSpeed: 40,     // degrees per second
   yawDeg: 45,
   distance: 75,
   minDistance: 12,
@@ -22,7 +25,7 @@ const easeInOutCubic = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 /
 export function createCamera(aspect) {
   const camera = new THREE.PerspectiveCamera(CAMERA.fov, aspect, CAMERA.near, CAMERA.far);
   const target = new THREE.Vector3();
-  const pitch = THREE.MathUtils.degToRad(CAMERA.pitchDeg);
+  let pitch = THREE.MathUtils.degToRad(CAMERA.pitchDeg);
   let yaw = THREE.MathUtils.degToRad(CAMERA.yawDeg);
   let fromYaw = yaw, toYaw = yaw, t = 1;
   let distance = CAMERA.distance;
@@ -52,6 +55,11 @@ export function createCamera(aspect) {
       const s = CAMERA.panSpeed * dt;
       target.x += (Math.cos(yaw) * x - Math.sin(yaw) * y) * s;
       target.z += (-Math.sin(yaw) * x - Math.cos(yaw) * y) * s;
+    },
+    // dir -1 looks up (flatter), +1 looks down (steeper).
+    tilt(dir, dt) {
+      const d = THREE.MathUtils.degToRad;
+      pitch = THREE.MathUtils.clamp(pitch + dir * d(CAMERA.tiltSpeed) * dt, d(CAMERA.minPitchDeg), d(CAMERA.maxPitchDeg));
     },
     zoom(delta) {
       distance = THREE.MathUtils.clamp(distance + delta, CAMERA.minDistance, CAMERA.maxDistance);

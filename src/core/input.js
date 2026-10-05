@@ -1,7 +1,7 @@
 // One action layer: game code reads actions, never raw devices.
 // Axes: moveX (-1 left, +1 right), moveY (-1 back, +1 forward), zoom (-1 in, +1 out, held keys),
 // zoomSteps (wheel notches this frame, + = out).
-// Buttons (held/pressed): run, interact, echo, rotateL, rotateR, caseFile, board, map, pause, debug.
+// Buttons (held/pressed): run, interact, echo, rotateL, rotateR, tiltUp, tiltDown, caseFile, board, map, pause, debug.
 // Call update() at frame start and endFrame() after game logic.
 
 export const KEY_BINDINGS = {
@@ -11,6 +11,7 @@ export const KEY_BINDINGS = {
   KeyF: 'echo',
   KeyQ: 'rotateL', KeyE: 'rotateR',
   KeyZ: 'zoomIn', KeyX: 'zoomOut',
+  KeyR: 'tiltUp', KeyV: 'tiltDown',
   Tab: 'caseFile',
   KeyB: 'board',
   KeyN: 'map',
