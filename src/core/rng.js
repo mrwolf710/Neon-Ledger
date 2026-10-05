@@ -25,6 +25,12 @@ export function createRng(seed) {
     range: (a, b) => a + (b - a) * next(),                // [a, b)
     int: (a, b) => a + Math.floor(next() * (b - a + 1)),  // [a, b] inclusive
     pick: (arr) => arr[Math.floor(next() * arr.length)],
+    weighted(table) {                                     // { key: weight } -> key
+      const entries = Object.entries(table);
+      let r = next() * entries.reduce((s, [, w]) => s + w, 0);
+      for (const [k, w] of entries) if ((r -= w) < 0) return k;
+      return entries[0][0];
+    },
     fork: (label) => createRng(hash(label, seed)),
   };
 }

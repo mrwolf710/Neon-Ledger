@@ -12,6 +12,7 @@ export const TEXTURES = {
   tiles: { size: 4, ramp: [P.deepTeal, P.teal, P.seaGlass], grout: [P.grey1, P.grey2], missing: 0.04, rough: 0.35 },
   metalPanel: { w: 16, h: 32, ramp: [P.grey1, P.grey2, P.grey3, P.grey4], rust: [P.rust0, P.rust1, P.rust2], rough: 0.5 },
   wetAsphalt: { ramp: [P.ink, P.night, P.grey0, P.grey1, P.grey2], puddle: [P.ink, P.night, P.indigo], puddleLevel: 0.38, rough: [0.05, 0.9] },
+  awning: { stripe: 4, pairs: [[P.magentaDeep, P.magenta], [P.cyanDeep, P.seaGlass], [P.sodium0, P.amber], [P.indigo, P.violet]], rough: 0.9 },
   sidewalk: { slab: 16, ramp: [P.grey2, P.grey3, P.grey4, P.grey5], seam: [P.grey0, P.grey1], rough: [0.4, 0.75] },
 };
 
@@ -140,6 +141,13 @@ const GENERATORS = {
       // darker asphalt reads as damp: lower roughness
       return [v, lerp(A.rough[0] + 0.3, A.rough[1], v), A.ramp];
     });
+  },
+
+  // Striped cloth; colour pair picked from the seed, so different forks give different awnings.
+  awning(rng, wu, hu) {
+    const A = TEXTURES.awning, w = wu * 16, h = hu * 16;
+    const ramp = rng.pick(A.pairs), grime = fbm(rng, w, h, [8, 2]);
+    return paint(wu, hu, (x, y) => [(Math.floor(x / A.stripe) & 1) * 0.8 + (grime(x, y) - 0.5) * 0.6 + 0.1, A.rough, ramp]);
   },
 
   sidewalk(rng, wu, hu) {
