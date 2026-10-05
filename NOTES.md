@@ -1,33 +1,31 @@
 # NOTES
 Running summary for Claude sessions (keep under 60 lines).
 ## Status
-- Current stage: 8 done (#17), untested in browser. Next: Stage 9 (#18-#21) demo content. Issues #2-#16 closed. Seed 1337 (`SEED`, src/core/rng.js)
+- Current stage: 8 done (#17), untested in browser. Next: Stage 9 (#18-#21) demo content (docs/stages/stage-09-demo-content.md). Issues #2-#16 closed. Seed 1337 (`SEED`, src/core/rng.js)
 ## Files
 - src/core: rng.js seeded PRNG · input.js action layer · settings.js TIERS high/medium/mobile, ?quality=
-- src/render: camera.js orbit cam · lights.js · fog.js height fog + cutaway · post.js bloom, tilt-shift, grade
-- src/world: district.js layout, CAST, ZONES · collision.js walk grid · particles.js · timeofday.js moods
-- src/gen: palette.js · textures.js · batch.js merge collector · buildings.js · glyphs.js signs · props.js · sprites.js characters · pixelfont.js
+- src/render: camera.js · lights.js · fog.js (height fog + cutaway) · post.js · src/world: district.js (layout, CAST, ZONES), collision.js, particles.js, timeofday.js
+- src/gen: palette.js · textures.js · batch.js · buildings.js · glyphs.js · props.js · sprites.js · pixelfont.js
 - src/game: npc.js billboards + createCast · player.js · interact.js prompts · clock.js · story.js (ALL story data) · dialogue.js · casefile.js · echo.js · board.js
 - src/audio: synth.js (AudioContext, buses, reverb, tone/noise helpers) · sfx.js · music.js (all synthesized; TUNING at the top of each)
 - src/ui: touch.js · title.js (title.started) · styles.css (panel frame, key caps, rem, safe-area) · hud.js (HUD + dialogue box)
 - src/main.js builds everything + loop · src/debug/panel.js stats + controls (` toggles) · scripts/check-*.mjs (node self-checks), scripts/where.mjs (prints CAST and spot positions)
 ## Key functions
-- `createRng(seed)` -> { seed, rand, range, int, pick, weighted({k:w}), fork(label) }; fork depends only on (seed, label).
+- `createRng(seed)` -> { seed, rand, range, int, pick, weighted, fork(label) }; fork depends only on (seed, label). All randomness goes through it.
 - `input`: update()/endFrame(); moveX/moveY, run, zoom, zoomSteps, orbitDX/DY, lookX, click {x,y}, zoomFactor, lastDevice, padType,
   held(a), pressed(a), pressAction/releaseAction. Keys: WASD/arrows, Shift run, Space/Enter interact, Backspace back, F echo, Q/E rotate,
-  Z/X zoom, R/V tilt, C reset view, Tab caseFile, B board, N map, H hide controls, Esc pause, ` debug. Pad: PAD_BINDINGS. Touch: stick left
-  half, tap = click, right-half drag orbits, 2-finger swipe/pinch.
+  Z/X zoom, R/V tilt, C reset view, Tab caseFile, B board, N map, H hide controls, M music, Esc pause, ` debug. Pad: PAD_BINDINGS. Touch:
+  stick left half, tap = click, right-half drag orbits, 2-finger swipe/pinch.
 - `createCamera(aspect)` -> { camera, target, yaw, reset, orbit, follow(p, snap), rotate, tilt, zoom(factor), update }; main keeps POST.tilt.center on Juno.
 - `buildDistrict(rng)` -> Group; userData { lights, steam, signs, spots, blocks }. Street along X (40); Z across. `createBatch()` collects per
   material (box, light, steam, sign, spot, block). `groundY(z)`, `zoneAt(x,z)`, CAST {id, at, facing, pose, path, speed} in district.js.
-- `createCollision(blocks)` -> { grid, hits, move(pos,dx,dz,r) }. `createPlayer(billboard, collision)` -> { position, facing, walkTo(point, reach, onArrive), update }.
+- `createCollision(blocks)` -> { grid, hits, move }. `createPlayer(billboard, collision)` -> { position, facing, walkTo(point, reach, onArrive), update }.
 - `createCast(scene, sheets, spots)` -> { list, byId, update }; billboard.facing/anim/fpsScale. `getSheets()` -> sprite sheets (humans 40x64 at
   32 px/unit, cat 16x12; shape-built, 4-tone shading, neon rim SPRITES.rim; ?sprites previews).
 - `createInteractions(scene)` -> { add({id, position, height, verb, onInteract}), nearest, pick, current, hide, update(...) }: DOM prompt, pixel font.
 - `createHud(collision)` -> { dialogue (box UI), show, setLocation, setClock, setObjective({x,z}|null), toast, toggleControls, update(dt, view) }.
-  `createClock()` 1 s = 1 game min from 22:40; phase picks time-of-day mood. `frame(el)` = panel frame.
-- Look: `createLights`, `createPost` (edit POST, applyUniforms), `createHeightFog` (+cutaway), `createParticles`, `createTimeOfDay`
-  (lateEvening/night/deadHour), `getTexture`, `building`. Debug panel: select/slider/button, FPS/calls/tris/heap. Tunables: constants atop each file.
+  `createClock()` 1 s = 1 game min from 22:40; phase picks time-of-day mood. `frame(el)` = panel frame. Look: createLights/Post/HeightFog/
+  Particles/TimeOfDay (lateEvening|night|deadHour). Debug panel: select/slider/button + stats. Tunables are constants atop each file.
 - `createCaseFile(hud)` -> { has(id), add(id), hasFlag, setFlag, open({present, onPick, onCancel}), close, toggle, isOpen, update(input) }. Tabs People/Facts/Echoes.
   `createEcho({scene, sheets, post, caseFile, hud, cast, spots})` -> { active, hotspots, tryStart(pos), start(id), exit(), update(dt, input, camYaw, lights, scrubAxis, playerPos) }.
   F near a hotspot (cyan diamond) starts it; F/Backspace/Esc exits. Space tags (in a tag window) else play/pause; stick or A/D scrubs, D-pad steps,
@@ -58,6 +56,4 @@ Running summary for Claude sessions (keep under 60 lines).
   line (Juno), effects}] }. A pair locks on one link; a trio needs links connecting all three. Every 3rd wrong link touching a conclusion's facts hints a needed
   fact. Result facts (source "Deduction board") show as cyan CONCLUSION cards. Style: holographic grid, cut-corner cards, flowing neon strings (CSS in styles.css). Test: lock_twice + two_voices -> someone_had_key.
 ## Known issues
-- Chunk > 500 kB warning. Rail deck hits buildings near x=17. NPCs don't block Juno. Point lights cast no shadows. Mobile shadows may be heavy.
-## Next
-Stage 7A (#15): echo-scan replays, scrubbing, seams, tagging (docs/stages/stage-07-echo-board.md). iPhone: npm run dev -- --host.
+- Chunk > 500 kB warning. Rail deck hits buildings near x=17. NPCs don't block Juno. Point lights cast no shadows. Mobile shadows may be heavy. iPhone test: npm run dev -- --host (Network URL, Safari landscape).
