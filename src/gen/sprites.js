@@ -263,7 +263,7 @@ function human(def, view, pose, f) {
     const ey = Math.round(hy);
     if (!back) {
       if (side) {
-        g.px(hx - 5.5, ey + 3, 'skin');                                     // nose
+        g.rect(hx - 6.5, ey + 2, hx - 5.5, ey + 3, 'skin'); g.px(hx - 5.5, ey + 4, 'skinDark'); // nose sticks out past the face edge
         g.rect(hx - 4, ey, hx - 3, ey, slump ? 'eyes' : 'eyes'); if (!slump) g.px(hx - 4, ey + 1, 'iris');
         g.rect(hx - 4, ey - 2, hx - 2, ey - 2, 'brow');
         if (def.lips) g.px(hx - 4.5, ey + 5, 'lips');
