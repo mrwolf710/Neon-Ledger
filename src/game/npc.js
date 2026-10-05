@@ -4,31 +4,34 @@ import { CAST, groundY } from '../world/district.js';
 
 export const NPC = {
   brightness: 0.85,   // overall sprite brightness (sprites are unlit)
-  tint: 0.25,         // how much the nearest light colours the whole sprite
-  rim: 0.8,           // how strongly it colours the silhouette edge
-  lightRange: 6,      // units; lights further away give no tint
+  tint: 0.7,          // how much nearby light colours the whole sprite
+  rim: 1.6,           // how strongly it colours the silhouette edge on the side facing the light
+  lightRange: 10,     // units; lights further away give no tint (falloff is (1 - d/range)^2)
+  maxLight: 1.5,      // clamp on the summed light colour
   shadow: { color: 0x000000, opacity: 0.55, size: 1.1, catSize: 0.7, texPx: 16 },
 };
 
 const PX = 16; // texture pixels per world unit
 
 // Sprite shader: one frame of the sheet, alpha-tested, darkened to sit in the night scene, tinted by the
-// nearest light and rim-lit on edge texels (a texel whose left, right or upper neighbour is transparent).
+// summed nearby lights and rim-lit on edge texels on the side the light comes from (lightSide -1 left .. +1 right).
 const VERT = /* glsl */`
   varying vec2 vUv;
   void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
 const FRAG = /* glsl */`
   uniform sampler2D map; uniform vec4 frame; uniform vec2 texel;
-  uniform vec3 lightColor; uniform float brightness, tint, rim;
+  uniform vec3 lightColor; uniform float brightness, tint, rim, lightSide;
   varying vec2 vUv;
   void main() {
     vec2 uv = frame.xy + vUv * frame.zw;
     vec4 c = texture2D(map, uv);
     if (c.a < 0.5) discard;
-    float edge = 1.0 - min(min(texture2D(map, uv - vec2(texel.x, 0.0)).a, texture2D(map, uv + vec2(texel.x, 0.0)).a),
-                           texture2D(map, uv + vec2(0.0, texel.y)).a);
+    float eL = 1.0 - texture2D(map, uv - vec2(texel.x, 0.0)).a;
+    float eR = 1.0 - texture2D(map, uv + vec2(texel.x, 0.0)).a;
+    float eT = 1.0 - texture2D(map, uv + vec2(0.0, texel.y)).a;
+    float edge = max(eT * 0.5, mix(eL, eR, lightSide * 0.5 + 0.5) * (0.4 + 0.6 * abs(lightSide)));
     vec3 col = c.rgb * brightness + c.rgb * lightColor * tint;
-    col = mix(col, lightColor, clamp(edge, 0.0, 1.0) * rim * length(lightColor) * 0.6);
+    col = mix(col, lightColor * 1.5, clamp(edge * rim * length(lightColor), 0.0, 1.0));
     gl_FragColor = vec4(col, 1.0);
   }`;
 
@@ -62,7 +65,7 @@ export function createBillboard(sheet, opts) {
     uniforms: {
       map: { value: sheet.texture }, frame: { value: new THREE.Vector4(0, 0, fw / W, fh / H) },
       texel: { value: new THREE.Vector2(1 / W, 1 / H) }, lightColor: { value: new THREE.Color(0, 0, 0) },
-      brightness: { value: NPC.brightness }, tint: { value: NPC.tint }, rim: { value: NPC.rim },
+      brightness: { value: NPC.brightness }, tint: { value: NPC.tint }, rim: { value: NPC.rim }, lightSide: { value: 0 },
     },
     vertexShader: VERT, fragmentShader: FRAG,
   });
@@ -112,15 +115,21 @@ export function createBillboard(sheet, opts) {
         setFrame(sheet.rows[dir], A.start + (Math.floor(time * fps) % A.frames));
       }
 
-      // Nearest light tints the sprite and its edges.
-      let best = null, bestD = NPC.lightRange;
+      // Nearby lights (summed, squared falloff) tint the sprite; their screen-side picks which edge glows.
+      const lc = mat.uniforms.lightColor.value.setRGB(0, 0, 0);
+      const rx = Math.cos(camYaw), rz = -Math.sin(camYaw); // camera right on the ground
+      let side = 0, wsum = 0;
       for (const l of lights) {
         const d = l.position.distanceTo(pos);
-        if (d < bestD) { bestD = d; best = l; }
+        if (d >= NPC.lightRange || !l.base) continue;
+        const w = (1 - d / NPC.lightRange) ** 2 * (l.intensity / l.base);
+        lc.r += ((l.color >> 16) & 255) / 255 * w; lc.g += ((l.color >> 8) & 255) / 255 * w; lc.b += (l.color & 255) / 255 * w;
+        side += w * ((l.position.x - pos.x) * rx + (l.position.z - pos.z) * rz) / Math.max(d, 0.001);
+        wsum += w;
       }
-      const lc = mat.uniforms.lightColor.value;
-      if (best) lc.setHex(best.color).multiplyScalar((1 - bestD / NPC.lightRange) * (best.intensity / best.base));
-      else lc.setRGB(0, 0, 0);
+      const m = Math.max(lc.r, lc.g, lc.b);
+      if (m > NPC.maxLight) lc.multiplyScalar(NPC.maxLight / m);
+      mat.uniforms.lightSide.value = wsum > 0 ? THREE.MathUtils.clamp(side / wsum, -1, 1) : 0;
     },
   };
 }
