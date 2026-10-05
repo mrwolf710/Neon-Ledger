@@ -80,9 +80,10 @@ export const synth = {
     return this._noise[seconds];
   },
   // A looping noise source (for rain, rumble). Returns the source node; connect it where you like.
-  noiseLoop() {
+  // seconds: loop length; different lengths per layer keep layers from repeating in step.
+  noiseLoop(seconds = 3) {
     const s = this.ctx.createBufferSource();
-    s.buffer = this.noiseBuffer(3); s.loop = true; s.start();
+    s.buffer = this.noiseBuffer(seconds); s.loop = true; s.start(0, R.rand() * seconds);
     return s;
   },
   filter(type, freq, q = 0.7) {

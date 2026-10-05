@@ -2,8 +2,9 @@ import { DISTRICT } from '../world/district.js';
 
 // Sound effects. All numbers live in TUNING so they can be tweaked without touching the code.
 export const TUNING = {
-  rain: { hiss: 0.2, body: 0.15, patter: 0.2, hissFreq: 3800, bodyFreq: 650, patterFreq: 1700, patterRate: 11, awningDuck: 0.55,
-    droplets: { perSecond: 7, awningPerSecond: 13, vol: 0.045, freq: [1800, 5200] }, smooth: 0.35 },
+  rain: { hiss: 0.1, body: 0.075, patter: 0.1, hissFreq: 3400, bodyFreq: 600, patterFreq: 1500, awningDuck: 0.5,
+    drift: [0.31, 0.83],   // Hz of two slow, unrelated wobbles in the patter level (no regular beat)
+    droplets: { perSecond: 4, awningPerSecond: 8, vol: 0.03, freq: [1800, 4800] }, smooth: 0.35 },
   awningZ: 3.85,         // |z| beyond this on the sidewalk counts as under an awning
   steps: {
     asphalt: { vol: 0.16, lp: 900, hp: 180, dur: 0.1, splash: 0.05 },
@@ -38,17 +39,23 @@ export function createSfx(synth) {
 
   // ---------- Rain (built lazily once audio is ready) ----------
   function buildRain() {
-    const mk = (type, freq, q, vol) => {
+    // Each layer: its own noise loop (different lengths) -> filter -> level gain (controlled in update) -> bus.
+    const mk = (type, freq, q, loopSeconds) => {
       const f = synth.filter(type, freq, q), g = synth.ctx.createGain();
       g.gain.value = 0;
-      synth.noiseLoop().connect(f); f.connect(g); g.connect(synth.buses.sfx);
-      return { g, f, vol };
+      synth.noiseLoop(loopSeconds).connect(f); f.connect(g);
+      return { g, f };
     };
     const R = T.rain;
-    const hiss = mk('bandpass', R.hissFreq, 0.6, R.hiss), body = mk('lowpass', R.bodyFreq, 0.5, R.body), patter = mk('bandpass', R.patterFreq, 1.2, R.patter);
-    // Patter drums on awnings: a tremolo on its own gain.
-    const lfo = synth.ctx.createOscillator(), lg = synth.ctx.createGain();
-    lfo.frequency.value = R.patterRate; lg.gain.value = 0.5; lfo.connect(lg); lg.connect(patter.g.gain); lfo.start();
+    const hiss = mk('lowpass', R.hissFreq, 0.4, 5.3), body = mk('lowpass', R.bodyFreq, 0.5, 4.1), patter = mk('bandpass', R.patterFreq, 0.9, 6.7);
+    hiss.g.connect(synth.buses.sfx); body.g.connect(synth.buses.sfx);
+    // Patter: gentle irregular wobble (two slow, unrelated LFOs) applied as a multiplier, never as an additive offset.
+    const wob = synth.ctx.createGain(); wob.gain.value = 0.75;
+    R.drift.forEach((hz, i) => {
+      const lfo = synth.ctx.createOscillator(), amp = synth.ctx.createGain();
+      lfo.frequency.value = hz; amp.gain.value = i ? 0.1 : 0.15; lfo.connect(amp); amp.connect(wob.gain); lfo.start();
+    });
+    patter.g.connect(wob); wob.connect(synth.buses.sfx);
     rain = { hiss, body, patter, awning: 0 };
   }
 

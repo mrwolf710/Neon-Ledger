@@ -6,19 +6,20 @@ export const TUNING = {
   fade: 2.5,                 // default cross-fade seconds
   lookahead: 0.15, tickMs: 25,
   street: {
-    bpm: 72,
-    chords: [[57, 60, 64, 67, 71], [53, 57, 60, 64, 69], [48, 55, 59, 64, 67], [55, 59, 62, 64, 67]], // Am9 Fmaj7 Cmaj7 G6 (2 bars each)
-    roots: [45, 41, 48, 43], bassSteps: [0, 10, 16, 26], arpPattern: [0, 2, 1, 3, 2, 4, 3, 1],
-    pad: { vol: 0.042, cutoff: 1100, detune: 8, attack: 1.6, release: 2.4 },
-    arp: { vol: 0.05, cutoff: 2400, dur: 0.22 }, bass: { vol: 0.17 },
+    bpm: 66,
+    // A minor, dark: Am9  Dm9  Bm7b5  E7b9 (the tense turnaround back to Am), two bars each.
+    chords: [[57, 60, 64, 67, 71], [50, 57, 60, 64, 65], [47, 57, 62, 65, 69], [52, 56, 59, 62, 65]],
+    roots: [45, 38, 47, 40], bassSteps: [0, 10, 16, 26], arpPattern: [0, 2, 1, 3, 2, 4, 3, 1],
+    pad: { vol: 0.045, cutoff: 780, detune: 9, attack: 1.8, release: 2.6 },
+    arp: { vol: 0.042, cutoff: 1500, dur: 0.24 }, bass: { vol: 0.19 },
     kick: { vol: 0.2 }, snare: { vol: 0.05 }, hat: { vol: 0.024 },
   },
   scene: {
-    bpm: 60, chord: [50, 57, 62, 65], pad: { vol: 0.05, cutoff: 800, detune: 6, attack: 2.5, release: 3 },
+    bpm: 60, chord: [50, 57, 60, 65], pad: { vol: 0.05, cutoff: 700, detune: 6, attack: 2.5, release: 3 },
     drone: { freq: 55, vol: 0.1 }, pluck: { vol: 0.06, chance: 0.12, scale: [62, 65, 67, 69, 72, 74] },
   },
   echo: {
-    bpm: 60, chord: [50, 57, 62, 64], pad: { vol: 0.055, detune: 28, swell: 3.6, cutoff: 1400 },
+    bpm: 60, chord: [50, 57, 62, 65], pad: { vol: 0.055, detune: 28, swell: 3.6, cutoff: 1400 },
     heart: { freq: 58, vol: 0.32 },
   },
   board: {
