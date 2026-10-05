@@ -13,6 +13,10 @@ export const TEXTURES = {
   metalPanel: { w: 16, h: 32, ramp: [P.grey1, P.grey2, P.grey3, P.grey4], rust: [P.rust0, P.rust1, P.rust2], rough: 0.5 },
   wetAsphalt: { ramp: [P.ink, P.night, P.grey0, P.grey1, P.grey2], puddle: [P.ink, P.night, P.indigo], puddleLevel: 0.38, rough: [0.05, 0.9] },
   awning: { stripe: 4, pairs: [[P.magentaDeep, P.magenta], [P.cyanDeep, P.seaGlass], [P.sodium0, P.amber], [P.indigo, P.violet]], rough: 0.9 },
+  // Lit shop interior seen through the glass: light strip, shelves of goods, dark counter. Tile 4 x 2 units.
+  shop: { light: 2, shelfEvery: 6, counter: 9, goods: 4, // goods must divide 64 (tile width px)
+    gap: 0.25,
+    warm: [P.rust0, P.rust2, P.sodium0, P.amber, P.amberLight], cool: [P.deepTeal, P.cyanDeep, P.teal, P.cyan, P.cyanLight] },
   sidewalk: { slab: 16, ramp: [P.grey2, P.grey3, P.grey4, P.grey5], seam: [P.grey0, P.grey1], rough: [0.4, 0.75] },
 };
 
@@ -82,7 +86,25 @@ function paint(wu, hu, px) {
   return { map, roughnessMap };
 }
 
+function shopInterior(rng, wu, hu, ramp) {
+  const S = TEXTURES.shop, w = wu * 16, h = hu * 16;
+  const goods = cells(rng, w / S.goods, h), haze = noise(rng, w, h, 16, 8);
+  return paint(wu, hu, (x, y) => {
+    if (y < S.light) return [1, 1, ramp];                                   // ceiling light strip
+    if (y >= h - S.counter) return [y === h - S.counter ? 0.45 : 0.05, 1, ramp]; // counter top edge, dark front
+    const back = 0.35 + haze(x, y) * 0.2 - (y / h) * 0.15;                  // back wall, brighter near the light
+    const row = Math.floor((y - S.light) / S.shelfEvery), py = (y - S.light) % S.shelfEvery;
+    if (py === S.shelfEvery - 1) return [0.1, 1, ramp];                      // shelf plank
+    const g = goods(Math.floor(x / S.goods), row);
+    if (py > 1 && g > S.gap && x % S.goods !== 0) return [0.45 + g * 0.5, 1, ramp]; // boxes and bottles
+    return [back, 1, ramp];
+  });
+}
+
 const GENERATORS = {
+  shopWarm: (rng, wu, hu) => shopInterior(rng, wu, hu, TEXTURES.shop.warm),
+  shopCool: (rng, wu, hu) => shopInterior(rng, wu, hu, TEXTURES.shop.cool),
+
   brick(rng, wu, hu) {
     const B = TEXTURES.brick, w = wu * 16, h = hu * 16;
     const shade = cells(rng, w / B.w, h / B.h), grit = fbm(rng, w, h, [8, 2]);

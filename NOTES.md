@@ -16,7 +16,7 @@ Running summary for Claude sessions. Paste this file at the start of every stage
 - src/render/camera.js: orbit camera, fov 20, pitch 35, yaw 45, Q/E rotate in rotateStepDeg (30) steps, zoom
 - src/world/district.js: street layout: road, sidewalks, 10 buildings, rail, curb lamps, scattered props
 - src/gen/palette.js: 32-colour PALETTE (named 0xRRGGBB) + `snap(color)` nearest entry
-- src/gen/textures.js: canvas generators brick, concrete, tiles, metalPanel, wetAsphalt, sidewalk, awning
+- src/gen/textures.js: canvas generators brick, concrete, tiles, metalPanel, wetAsphalt, sidewalk, awning, shopWarm/shopCool (lit interiors)
 - src/gen/batch.js: geometry collector, merged per material; boxGeo with world-unit UVs
 - src/gen/buildings.js: BUILDINGS rules, getMaterials (shared street materials), building()
 - src/gen/glyphs.js: pseudo-kanji sign textures from strokes; src/gen/props.js: stall, crates, vending, bags, lamp

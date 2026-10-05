@@ -56,6 +56,8 @@ export function getMaterials(rng) {
     cable: std({ color: C.cable, roughness: 0.9 }),
     litWarm: glow(C.litWarm),
     litCool: glow(C.litCool),
+    shopWarm: new THREE.MeshBasicMaterial({ map: getTexture('shopWarm', rng, 4, 2).map, color: new THREE.Color().setScalar(BUILDINGS.windowGlow) }),
+    shopCool: new THREE.MeshBasicMaterial({ map: getTexture('shopCool', rng, 4, 2).map, color: new THREE.Color().setScalar(BUILDINGS.windowGlow) }),
   };
   M.road.roughness = BUILDINGS.wet.road;
   M.sidewalk.roughness = BUILDINGS.wet.sidewalk;
@@ -150,7 +152,7 @@ export function building(rng, M, batch, w, d) {
 
   // Shopfront: glass (lit or dark) or rolled shutter, then a striped awning.
   const sw = w - 0.8, shopOpen = rng.rand() >= B.shopClosedChance;
-  if (shopOpen) framedOpening(batch, M, rng.rand() < B.coolChance ? M.litCool : M.litWarm, 0, 1.1, sw, 2.0, fz);
+  if (shopOpen) framedOpening(batch, M, rng.rand() < B.coolChance ? M.shopCool : M.shopWarm, 0, 1.1, sw, 2.0, fz);
   else batch.box(M.metal, sw, 2.0, 0.06, 0, 1.1, fz + 0.03);
   const Aw = B.awning;
   batch.box(rng.pick(M.awnings), sw + 0.2, 0.06, Aw.depth, 0, Aw.y, fz + (Aw.depth / 2) * Math.cos(Aw.slope), Aw.slope);
