@@ -9,13 +9,15 @@ assert.ok(Math.abs(midiToFreq(69) - 440) < 1e-9 && Math.abs(midiToFreq(57) - 220
 assert.equal(surfaceAt(0, 0), 'asphalt'); assert.equal(surfaceAt(-10, 4), 'tile'); assert.equal(surfaceAt(17, 4), 'metal');
 
 const calls = { tone: 0, noise: 0 };
-const param = () => ({ value: 0, setTargetAtTime() {}, setValueAtTime() {}, linearRampToValueAtTime() {}, exponentialRampToValueAtTime() {} });
+const param = () => ({ value: 0, cancelScheduledValues() {}, setTargetAtTime() {}, setValueAtTime() {}, linearRampToValueAtTime() {}, exponentialRampToValueAtTime() {} });
 const node = () => ({ gain: param(), connect() {}, disconnect() {} });
+const osc = () => ({ type: '', frequency: param(), connect() {}, start() {}, stop() {} });
 const t0 = performance.now();
 const synth = {
   ready: true, musicOn: true, buses: { sfx: node(), music: node() },
   get now() { return ((performance.now() - t0) / 1000) * 25; }, // time runs 25x so the sequencer schedules many steps
-  ctx: { createGain: node },
+  ctx: { createGain: node, createOscillator: osc },
+  filter() { return { ...node(), frequency: param() }; },
   rand: Math.random,
   tone() { calls.tone++; }, noise() { calls.noise++; },
   panner() { return { disconnect() {} }; },
@@ -42,6 +44,7 @@ for (const k of ['move', 'confirm', 'back', 'case', 'linkOk', 'linkWrong', 'echo
 for (const ch of 'Hello there') sfx.voice(ch, 'mamaTeo');
 sfx.voice('x', 'nobody-known');
 sfx.crackle({ x: 1, y: 4, z: 1 });
+sfx.trainArrive(6); sfx.trainStop();             // the motor swell and its idle
 assert.ok(calls.tone + calls.noise > before + 15, 'sfx functions produce sounds');
 assert.ok(Object.keys(ST.voices).length >= 7 && MT.street.chords.length === MT.street.roots.length, 'tuning tables line up');
 console.log('audio ok');

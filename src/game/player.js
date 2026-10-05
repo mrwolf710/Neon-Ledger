@@ -17,6 +17,7 @@ export function createPlayer(billboard, initialCollision) {
 
   return {
     position: pos,
+    cancel() { goal = null; },
     setCollision(c) { collision = c; goal = null; vel.set(0, 0); },
     get facing() { return billboard.facing; },
     // Walk to point (Vector3, may be a live reference), stop within reach, then call onArrive.

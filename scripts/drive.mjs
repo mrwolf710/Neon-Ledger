@@ -52,10 +52,15 @@ const shot = async (name) => {
 
 await send('Runtime.enable'); await send('Log.enable'); await send('Page.enable');
 await send('Page.navigate', { url: `http://127.0.0.1:${PORT}/${process.env.QS ?? ''}` });
-await sleep(+(process.env.LOAD_MS ?? 9000));                                         // swiftshader is slow: generation + first frames
-await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: 640, y: 400, button: 'left', clickCount: 1 });
-await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: 640, y: 400, button: 'left', clickCount: 1 });
-await sleep(2500);
+// Wait until the game has built the world and shown the title (three canvases: the game plus the two title words), then click it.
+for (let i = 0; i < 300; i++) {
+  await sleep(500);
+  const n = (await send('Runtime.evaluate', { expression: 'document.querySelectorAll("canvas").length', returnByValue: true })).result?.result?.value ?? 0;
+  if (n >= 3) break;
+}
+await sleep(800);
+await keyEv('keyDown', 'Space'); await sleep(80); await keyEv('keyUp', 'Space'); // dismisses the title
+await sleep(2000);
 
 for (const step of process.argv.slice(2)) {
   const [cmd, a, b] = step.split(':');

@@ -100,6 +100,8 @@ tod.setTimeOfDay(phaseId);
 function onAreaEnter(area, spawn) {
   player.setCollision(area.collision);
   hud.setCollision(area.collision);
+  if (area.id !== 'platform') sfx.trainStop(); // the train's idle hum ends when Juno leaves the station
+  cast.byId.juno.area = area.id; // the player always belongs to the current area (else she vanishes when you change area)
   cast.setArea(area.id); interactions.setArea(area.id); echo.setArea(area.id);
   particles.active = area.meta.outdoor;
   tod.setIndoor(!area.meta.outdoor);
@@ -125,7 +127,18 @@ cast.byId.juno.onStep = () => sfx.step(world.current.meta.surface ?? surfaceAt(p
 tod.onFlicker = (i) => sfx.crackle(street.signs[i].light.position);
 
 // ?hooks exposes the game objects for the headless test driver (scripts/drive.mjs eval: steps).
-if (new URLSearchParams(location.search).has('hooks')) window.__nl = { cam, world, player, beats, caseFile, dialogue, cast, echo, hud, clock, board, THREE };
+if (new URLSearchParams(location.search).has('hooks')) {
+  const nl = window.__nl = { cam, world, player, beats, caseFile, dialogue, cast, echo, hud, clock, board, THREE };
+  // Visual tour helpers: stand the player d units from a point (camera side) in any area, as in play, so the cutaway applies.
+  nl.look = (areaId, x, z, d = 1.8) => {
+    const b = world.areas[areaId].bounds, dx = (b.x0 + b.x1) / 2 - x, dz = (b.z0 + b.z1) / 2 - z, len = Math.hypot(dx, dz) || 1;
+    world.jump(areaId, [x + (dx / len) * d, z + (dz / len) * d, Math.atan2(-dx, -dz)]);
+    cam.follow(player.position, true);
+    return `${areaId} ${x.toFixed(1)},${z.toFixed(1)}`;
+  };
+  nl.lookSpot = (areaId, name, d) => { const q = world.spot(areaId, name); return nl.look(areaId, q.x, q.z, d); };
+  nl.lookCast = (id, d) => { const b = cast.byId[id]; return nl.look(b.area, b.position.x, b.position.z, d); };
+}
 const debug = createDebugPanel(renderer, rng.seed);
 if (new URLSearchParams(location.search).has('sprites')) showSprites(getSheets());
 const labels = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, v.name ?? v.label]));

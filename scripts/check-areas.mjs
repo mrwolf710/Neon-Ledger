@@ -46,6 +46,12 @@ for (const [id, a] of Object.entries(areas)) {
   for (const s of a.spots.filter((q) => q.name !== 'trainstop')) assert.ok(can(s.x, s.z, 1.5), `${id}: spot ${s.name} within reach (${s.x.toFixed(1)}, ${s.z.toFixed(1)})`);
   for (const e of EXITS.filter((x) => x.to === id)) assert.ok(can(e.spawn[0], e.spawn[1], 0.4), `${id}: spawn from ${e.id} connects to the rest`);
 }
+// The cold open: Juno appears at the train door and walks 1.6 units out; none of that may be blocked.
+{
+  const pf = areas.platform, start = pf.spots.find((q) => q.name === 'start');
+  assert.ok(free('platform', pf.trainStop[0], start.z), 'the train door opening is clear');
+  for (let d = 0; d <= 1.6; d += 0.2) assert.ok(free('platform', pf.trainStop[0], start.z + d), `the walk off the train is clear at +${d.toFixed(1)}`);
+}
 // Lights and groups exist.
 assert.ok(areas.sable.lights.length >= 3 && areas.alley.lights.length >= 2, 'interior lights registered');
 assert.ok(Object.keys(AREAS).every((id) => areas[id].group), 'every area has a group');

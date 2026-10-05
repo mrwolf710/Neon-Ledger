@@ -11,11 +11,11 @@ import { streetBounds } from './collision.js';
 // outdoor: rain falls. surface: footstep sound (null = decided by position, as on the street). mood: music.
 export const AREAS = {
   street:   { origin: [0, 0],    name: 'Lowmarket Street',       district: 'Lowmarket', outdoor: true,  mood: 'street', surface: null },
-  platform: { origin: [-150, 0], name: 'Line 9 Platform',        district: 'Lowmarket', outdoor: false, mood: 'station', surface: 'metal' },
+  platform: { origin: [-150, 0], name: 'Line 9 Platform',        district: 'Lowmarket', outdoor: false, mood: 'station', surface: 'tile' },
   sable:    { origin: [150, 0],  name: 'Sable Noodle House',     district: 'Lowmarket', outdoor: false, mood: 'street', surface: 'tile',
     zones: [{ name: 'The Back Room', box: [2.3, -3, 8, 3], mood: 'scene' }] },
   alley:    { origin: [300, 0],  name: 'Alley behind the Sable', district: 'Lowmarket', outdoor: true,  mood: 'scene',  surface: 'asphalt' },
-  hostel:   { origin: [450, 0],  name: "Kit's Capsule Hostel",   district: 'Lowmarket', outdoor: false, mood: 'street', surface: 'metal' },
+  hostel:   { origin: [450, 0],  name: "Kit's Capsule Hostel",   district: 'Lowmarket', outdoor: false, mood: 'street', surface: 'tile' },
   car:      { origin: [600, 0],  name: "Juno's Car",             district: 'Lowmarket', outdoor: false, mood: 'scene',  surface: 'tile' },
 };
 const at = (id, x, z) => [AREAS[id].origin[0] + x, AREAS[id].origin[1] + z];
@@ -37,7 +37,7 @@ const EXIT_DEFS = [
 export const EXITS = EXIT_DEFS;
 
 // ---------- small building helpers (all coordinates are local to the area origin) ----------
-const T = 0.3, WALL_H = 1.5;
+const T = 0.3, WALL_H = 1.0;   // low "dollhouse" walls so the near ones never hide people standing behind them
 
 function wallPiece(b, M, cx, cz, w, d, h = WALL_H, mat = M.walls[0]) {
   b.box(mat, w, h, d, cx, h / 2, cz);
@@ -118,12 +118,12 @@ function platform(M) {
   for (const z of [-5.4, -3.8]) b.box(M.metal, 26, 0.12, 0.1, 0, -0.24, z);
   for (let x = -12.5; x <= 12.5; x += 0.9) b.box(M.pipe, 0.25, 0.08, 2.2, x, -0.26, -4.6);
   // Back wall with a sign and two benches.
-  wallX(b, M, 3 + T / 2, -10 - T, 10 + T, [], { h: 2.2, mat: M.walls[1] });
-  b.box(signMat('LINE 9 LOWMARKET', P.cyan), 7.2, 1.0, 0.12, -2, 1.5, 3.1, 0, 0, false);
-  b.light(P.cyan, 9, -2, 1.6, 2.6);
+  wallX(b, M, 3 + T / 2, -10 - T, 10 + T, [], { h: 1.2, mat: M.walls[1] });
+  b.box(signMat('LINE 9 LOWMARKET', P.cyan), 7.2, 1.0, 0.12, -2, 1.9, 3.15, 0, 0, false);   // above the low wall; readable from both sides
+  b.light(P.cyan, 9, -2, 2.0, 2.6);
   for (const x of [-6, 3]) { b.box(PM.wood, 2.0, 0.08, 0.5, x, 0.5, 2.2); b.box(PM.pole, 0.08, 0.5, 0.4, x - 0.85, 0.25, 2.2); b.box(PM.pole, 0.08, 0.5, 0.4, x + 0.85, 0.25, 2.2); b.block(x, 2.2, 2.0, 0.5); }
   // Canopy posts with lamps.
-  for (const x of [-7, 0, 7]) { b.box(M.metal, 0.25, 3.6, 0.25, x, 1.8, -2.2); b.block(x, -2.2, 0.3, 0.3); b.box(PM.lamp, 0.5, 0.1, 0.3, x, 3.55, -2.2); b.light(P.amberLight, 11, x, 3.2, -1.6); }
+  for (const x of [-8, -4, 4, 8]) { b.box(M.metal, 0.25, 3.6, 0.25, x, 1.8, -2.2); b.block(x, -2.2, 0.3, 0.3); b.box(PM.lamp, 0.5, 0.1, 0.3, x, 3.55, -2.2); b.light(P.amberLight, 11, x, 3.2, -1.6); }
   for (const x of [-9, -4.5, 0, 4.5, 9]) b.light(P.amberLight, 9, x, 2.3, -3.1);   // light for the train side and the platform edge
   b.light(P.cyan, 7, 0, 1.4, -3.3);
   // Stairs down at the east end.
@@ -151,7 +151,7 @@ function platform(M) {
 function sable(M) {
   const b = begin('sable'), PM = propMats(M);
   floor(b, M.walls[2], -6, -3, 2, 3);
-  floor(b, M.walls[1], 2, -3, 8, 3);
+  floor(b, M.sidewalk, 2, -3, 8, 3);                       // lighter slabs so the scene reads
   wallX(b, M, -3 - T / 2, -6 - T, 8 + T);
   wallX(b, M, 3 + T / 2, -6 - T, 8 + T);
   wallZ(b, M, -6 - T / 2, -3, 3, [[-0.9, 0.9]]);                       // front door to the street
@@ -163,18 +163,19 @@ function sable(M) {
   for (const x of [-4.6, -3.4, -2.2]) b.box(PM.lantern, 0.3, 0.2, 0.3, x, 1.16, -2.45);
   table(b, PM, -3.7, 1.5); stool(b, PM, -4.4, 2.3); stool(b, PM, -3.0, 2.3);
   table(b, PM, -0.4, 1.4); stool(b, PM, -1.0, 2.2); stool(b, PM, 0.2, 2.2);
-  b.box(signMat('NOODLES', P.magenta), 3.0, 0.8, 0.1, -3.2, 1.45, -2.9, 0, 0, false);
+  b.box(signMat('NOODLES', P.magenta), 3.0, 0.8, 0.1, -3.2, 2.9, -2.6, 0, 0, false);   // hangs above Teo's head (she is 2 units tall)
   b.light(P.amberLight, 13, -2.5, 2.4, 0.5); b.light(P.amber, 9, -4.6, 2.2, 1.6); b.light(P.amberLight, 8, -3.2, 1.8, -1.2);
   // Back room: the table, two cups, shelves, the terminal, a smashed lamp.
   table(b, PM, 4.6, 0.2, 1.8, 1.0); stool(b, PM, 4.6, 1.15);
   b.box(PM.crates[0], 0.14, 0.12, 0.14, 4.1, 0.85, 0.05); b.box(PM.crates[1], 0.14, 0.12, 0.14, 5.0, 0.85, 0.35);
   crates(b, PM, 6.9, -2.5, 2); crates(b, PM, 7.6, -2.5, 3); b.box(PM.crates[2], 1.6, 1.2, 0.5, 3.1, 0.6, -2.7); b.block(3.1, -2.7, 1.6, 0.5);
-  b.box(M.frame, 0.4, 1.0, 0.5, 7.75, 0.5, -1.9); b.block(7.75, -1.9, 0.5, 0.5); b.box(M.litCool, 0.02, 0.35, 0.35, 7.49, 0.85, -1.9);
-  b.box(PM.pole, 0.06, 0.9, 0.06, 3.1, 0.06, 2.3); b.box(PM.pole, 0.7, 0.05, 0.05, 3.3, 0.07, 2.35); // the broken lamp lying down
-  for (let i = 0; i < 6; i++) b.box(M.litCool, 0.08, 0.02, 0.06, 2.7 + (i % 3) * 0.2, 0.02, 2.0 + (i >> 1) * 0.15);
-  b.light(P.cyanLight, 10, 4.5, 2.4, 0.2); b.light(P.magenta, 6, 6.8, 2.0, -1.4); b.light(P.cyan, 6, 3.2, 1.6, 1.8);
+  b.box(M.frame, 0.6, 1.0, 0.4, 5.6, 0.5, -2.75); b.block(5.6, -2.75, 0.6, 0.4); b.box(M.litCool, 0.4, 0.35, 0.02, 5.6, 0.85, -2.54);
+  b.box(PM.pole, 0.9, 0.07, 0.07, 3.0, 0.08, -1.2); b.box(PM.lamp, 0.35, 0.18, 0.35, 3.55, 0.12, -1.15);   // the broken lamp lying down, its head still glowing
+  for (let i = 0; i < 9; i++) b.box(M.litCool, 0.1, 0.03, 0.07, 2.4 + (i % 3) * 0.28, 0.03, -0.9 + (i >> 1) * 0.12);  // glass
+  b.light(P.white, 18, 4.6, 2.5, 0.6);                      // the forensic lamp over the table: Dex, the cups and the floor around them
+  b.light(P.cyanLight, 12, 3.2, 2.2, -1.6); b.light(P.magenta, 7, 6.8, 2.0, -1.4); b.light(P.cyan, 9, 3.2, 1.6, 2.0); b.light(P.cyan, 7, 6.8, 1.8, 1.6);
   b.spot('teo', -3.2, -2.9); b.spot('dex', 4.6, 0.95); b.spot('body', 5.5, 1.5); b.spot('port', 3.7, 1.0);
-  b.spot('cups', 4.55, -0.9); b.spot('terminal', 7.1, -1.9); b.spot('lamp', 3.0, 2.0); b.spot('echo', 6.0, 1.9);
+  b.spot('cups', 4.55, -0.9); b.spot('terminal', 5.6, -2.0); b.spot('lamp', 3.0, -0.7); b.spot('echo', 6.0, 1.9);
   b.spot('backroom', 3.0, 0); b.spot('frontdoor', -5.4, 0); b.spot('backdoor', 7.4, 0);
   return finish('sable', b, [-6, -3, 8, 3]);
 }
@@ -183,17 +184,20 @@ function sable(M) {
 function alley(M) {
   const b = begin('alley'), PM = propMats(M);
   floor(b, M.road, -1.6, -8, 1.6, 8);
-  for (const sx of [-1, 1]) { b.box(M.walls[0], 1.0, 2.6, 17, sx * 2.1, 1.3, 0); b.box(M.roof, 1.1, 0.1, 17.1, sx * 2.1, 2.65, 0); }
+  for (const sx of [-1, 1]) { const h = sx < 0 ? 2.6 : 1.3; b.box(M.walls[0], 1.0, h, 17, sx * 2.1, h / 2, 0); b.box(M.roof, 1.1, 0.1, 17.1, sx * 2.1, h + 0.05, 0); }
   b.box(M.walls[1], 5.2, 2.6, 1.0, 0, 1.3, -8.5);
   b.box(M.litWarm, 1.2, 1.9, 0.06, 0, 0.95, -7.96);                     // the Sable's back door, lit
-  b.box(M.walls[0], 5.2, 2.6, 1.0, 0, 1.3, 8.5);
+  b.box(M.walls[0], 5.2, 1.3, 1.0, 0, 0.65, 8.5);
   b.box(M.litCool, 0.8, 0.03, 1.2, 0, 0.02, -7.2);
   b.box(PM.crates[0], 1.2, 1.0, 0.8, -0.9, 0.5, -3.6); b.block(-0.9, -3.6, 1.2, 0.8);
   crates(b, PM, 1.0, 5.8, 2); crates(b, PM, -1.1, 6.3, 1); b.box(PM.bag, 0.5, 0.4, 0.5, 1.1, 0.2, -1.2);
   b.box(M.pipe, 0.18, 2.5, 0.18, -1.45, 1.25, 1.0); b.box(M.pipe, 0.18, 2.5, 0.18, 1.45, 1.25, -2.4);
   // The discarded glove: a flat palm and four fingers.
-  b.box(M.rail, 0.22, 0.04, 0.26, 0.7, 0.03, 3.4);
-  for (let i = 0; i < 4; i++) b.box(M.rail, 0.04, 0.03, 0.18, 0.62 + i * 0.056, 0.03, 3.18);
+  const gloveMat = new THREE.MeshStandardMaterial({ color: P.grey6, roughness: 0.7 });
+  b.box(gloveMat, 0.4, 0.07, 0.46, 0.7, 0.04, 3.4);
+  for (let i = 0; i < 4; i++) b.box(gloveMat, 0.07, 0.06, 0.3, 0.55 + i * 0.1, 0.04, 3.05);
+  b.box(gloveMat, 0.1, 0.06, 0.24, 0.98, 0.04, 3.28);                  // thumb
+  b.light(P.white, 7, 0.7, 1.3, 3.2);                                   // a clue deserves a light
   b.light(P.amber, 11, 0, 2.5, -2.5); b.light(P.cyan, 9, 0, 2.4, 5.5); b.light(P.magenta, 6, 0, 2.0, 1.0);
   b.spot('glove', 0.7, 3.3); b.spot('echo', 0, 0.5);
   return finish('alley', b, [-1.6, -8, 1.6, 8]);
@@ -213,7 +217,7 @@ function hostel(M) {
   b.box(PM.wood, 2.6, 1.0, 0.8, 3.4, 0.5, 2.5); b.box(M.metal, 2.7, 0.06, 0.9, 3.4, 1.03, 2.5); b.block(3.4, 2.5, 2.6, 0.8); // reception desk
   b.box(PM.vendBody, 0.9, 1.8, 0.7, -4.2, 0.9, 1.0); b.box(PM.vendGlow, 0.6, 1.0, 0.02, -4.2, 1.15, 0.64); b.block(-4.2, 1.0, 0.9, 0.7);
   table(b, PM, -2.2, 1.2, 1.4, 0.8); stool(b, PM, -2.9, 1.9); stool(b, PM, -1.5, 1.9);
-  b.box(signMat('CAPSULES', P.pink), 3.2, 0.8, 0.1, 0.5, 1.4, -3.6, 0, 0, false);
+  b.box(signMat('CAPSULES', P.pink), 3.2, 0.8, 0.1, 0.5, 2.8, -2.0, 0, 0, false);       // hangs above the bunks, clear of every wall
   b.light(P.magenta, 12, 0, 2.5, -0.5); b.light(P.cyan, 9, 3.0, 2.2, 2.0); b.light(P.amberLight, 8, -3.5, 2.2, 1.0);
   b.spot('kit', 1.2, 0.6); b.spot('door', 0, 2.9);
   return finish('hostel', b, [-5, -3.5, 5, 3.5]);
@@ -229,7 +233,7 @@ function car(M) {
   b.box(PM.vendBody, 0.9, 0.5, 2.6, 1.6, 0.25, 0); b.block(1.6, 0, 0.9, 2.6);                                                                        // back bench
   b.box(M.frame, 0.6, 0.7, 3.0, -2.5, 0.35, 0); b.box(M.litCool, 0.04, 0.35, 1.4, -2.18, 0.65, 0); b.block(-2.5, 0, 0.6, 3.0);                          // dashboard + glowing screen
   b.box(M.litCool, 0.03, 0.03, 2.8, -2.17, 0.9, 0);
-  b.light(P.cyan, 10, -2.0, 1.2, 0); b.light(P.amber, 7, 1.5, 2.0, 0);
+  b.light(P.cyan, 16, -2.0, 1.4, 0); b.light(P.amber, 12, 1.5, 2.0, 0); b.light(P.white, 10, 0.2, 2.2, 0);
   doorMat(b, M, 0.5, 1.35, 1.0, 0.4);
   b.spot('seat', 0.4, 0); b.spot('door', 0.5, 1.3);
   return finish('car', b, [-3, -1.6, 3, 1.6]);

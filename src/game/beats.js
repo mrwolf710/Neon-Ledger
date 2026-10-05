@@ -19,7 +19,11 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
   // ---- tiny async helpers driven by update(dt) (so cutscenes pause with the game, not wall-clock) ----
   const wait = (s) => new Promise((res) => timers.push({ left: s, res }));
   const tween = (s, fn) => new Promise((res) => tweens.push({ t: 0, s, fn, res }));
-  const walkTo = (x, z, reach = 0.2) => new Promise((res) => player.walkTo(new THREE.Vector3(x, 0, z), reach, res));
+  // Walk Juno somewhere; gives up after maxSeconds so a blocked path can never freeze a cutscene.
+  const walkTo = async (x, z, reach = 0.2, maxSeconds = 4) => {
+    await Promise.race([new Promise((res) => player.walkTo(new THREE.Vector3(x, 0, z), reach, res)), wait(maxSeconds)]);
+    player.cancel();
+  };
 
   // ---- Beat 1: the cold open ----
   async function coldOpen() {

@@ -10,7 +10,7 @@ Running summary for Claude sessions (keep under 60 lines).
 - src/audio: synth.js (AudioContext, buses, reverb, tone/noise helpers) · sfx.js · music.js (all synthesized; TUNING at the top of each)
 - src/ui: touch.js · title.js (title.started) · styles.css (panel frame, key caps, rem, safe-area) · hud.js (HUD + dialogue box) · fade.js (black fade, title card)
 - src/main.js builds everything + loop · src/debug/panel.js (` toggles; "go to" area select) · scripts/: check-*.mjs (node self-checks), where*.mjs (positions),
-  drive.mjs = headless Edge on the BUILT game: `QS="?start=sable&hooks" LOAD_MS=20000 node scripts/drive.mjs "eval:__nl.cam.zoom(0.5)" wait:5000 shot:name` (?start=<area> skips the cold open, ?hooks exposes window.__nl)
+  drive.mjs = headless Edge on the BUILT game: `QS="?start=sable&hooks" LOAD_MS=20000 node scripts/drive.mjs "eval:__nl.cam.zoom(0.5)" wait:5000 shot:name` (?start=<area> skips the cold open, ?hooks exposes window.__nl: look(area,x,z) / lookSpot(area,name) / lookCast(id) stand Juno beside anything for a screenshot tour; CHECK EVERY NEW THING THIS WAY before calling it done)
 ## Key functions
 - `createRng(seed)` -> { seed, rand, range, int, pick, weighted, fork(label) }; fork depends only on (seed, label). All randomness goes through it.
 - `input`: update()/endFrame(); moveX/moveY, run, zoom, zoomSteps, orbitDX/DY, lookX, click {x,y}, zoomFactor, lastDevice, padType,

@@ -21,7 +21,7 @@ export const TIME_OF_DAY = {
     signs: 0.75, flicker: 0.3, dead: 0.25, rain: 1,
   },
 };
-export const INDOOR = { sky: 0.18, fill: 3.0 }; // multipliers on sky colour and hemisphere light inside rooms
+export const INDOOR = { sky: 0.18, fill: 4.5 }; // multipliers on sky colour and hemisphere light inside rooms
 export const FLICKER = { rate: [3, 12], offLevel: 0.06 }; // steps per second per sign, brightness when off
 
 const COLORS = ['sky', 'fog', 'moonColor'];
