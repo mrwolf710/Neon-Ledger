@@ -7,7 +7,11 @@ import { createDebugPanel, showSprites } from './debug/panel.js';
 import { getSheets } from './gen/sprites.js';
 import { createCast } from './game/npc.js';
 import { createCollision } from './world/collision.js';
+import './ui/styles.css';
 import { createTouchUI } from './ui/touch.js';
+import { createHud } from './ui/hud.js';
+import { createClock } from './game/clock.js';
+import { zoneAt } from './world/district.js';
 import { createTitle } from './ui/title.js';
 import { createPlayer } from './game/player.js';
 import { createInteractions, INTERACT } from './game/interact.js';
@@ -22,7 +26,7 @@ const MAIN = {
   maxDt: 0.1, // seconds; clamps big frame gaps (tab switch)
   background: 0x0b0b14,
   toneMapping: THREE.NeutralToneMapping, exposure: 1.0,
-  timeOfDay: 'night', todBlendSeconds: 3, // start state; debug dropdown blends over this long
+  todBlendSeconds: 3, // debug dropdown blends over this long
 };
 
 const Q = settings.quality;
@@ -74,16 +78,21 @@ for (const s of district.userData.spots.filter((p) => p.name === 'vending')) {
 }
 const touchUI = createTouchUI(input);
 const title = createTitle();
+const hud = createHud(collision);
+const clock = createClock();
+let phaseId = '';
+title.started.then(() => hud.show());
 const ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 const headPos = new THREE.Vector3(), bufSize = new THREE.Vector2();
 cam.follow(player.position, true);
 const tod = createTimeOfDay({ scene, lights, post, particles, signs: district.userData.signs, rng: rng.fork('flicker') });
-tod.setTimeOfDay(MAIN.timeOfDay);
+phaseId = clock.phase.id;
+tod.setTimeOfDay(phaseId);
 
 const debug = createDebugPanel(renderer, rng.seed);
 if (new URLSearchParams(location.search).has('sprites')) showSprites(getSheets());
 const labels = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, v.name ?? v.label]));
-debug.select('time', labels(TIME_OF_DAY), MAIN.timeOfDay, (v) => tod.setTimeOfDay(v, MAIN.todBlendSeconds));
+debug.select('time', labels(TIME_OF_DAY), phaseId, (v) => tod.setTimeOfDay(v, MAIN.todBlendSeconds));
 debug.select('tier', labels(TIERS), settings.tier, (v) => { location.search = `?quality=${v}`; });
 const pu = () => post.applyUniforms();
 debug.slider('bloom', POST.bloom, 'strength', 0, 2, 0.05, pu);
@@ -98,6 +107,9 @@ debug.slider('saturation', POST.grade, 'saturation', 0, 2, 0.05, pu);
 debug.slider('fog falloff', fog.uniforms.fogFalloff, 'value', 0, 1, 0.01);
 debug.slider('fog high', fog.uniforms.fogHigh, 'value', 0, 1, 0.01);
 debug.slider('fog ground', fog.uniforms.fogGround, 'value', 0, 1, 0.01);
+debug.button('toast', () => hud.toast('Case file updated'));
+debug.button('clock +30 min', () => clock.add(30));
+debug.button('pause clock', () => { clock.paused = !clock.paused; });
 debug.button('log values', () => console.log(JSON.stringify({ POST, fogFalloff: fog.uniforms.fogFalloff.value, fogHigh: fog.uniforms.fogHigh.value, fogGround: fog.uniforms.fogGround.value })));
 
 function resize() {
@@ -145,6 +157,16 @@ renderer.setAnimationLoop((now) => {
   POST.tilt.center = (headPos.y + 1) / 2;
   post.applyUniforms();
 
+  // Clock: runs once the title is dismissed; the phase picks the time-of-day mood.
+  if (title.done) clock.update(dt);
+  if (clock.phase.id !== phaseId) { phaseId = clock.phase.id; tod.setTimeOfDay(phaseId, 8); }
+  hud.setClock(clock.text, clock.phase.label, clock.progress);
+  if (input.pressed('hideControls')) hud.toggleControls();
+  { const z = zoneAt(player.position.x, player.position.z); if (title.done) hud.setLocation(z.name, z.district); }
+  hud.update(dt, {
+    player: { x: player.position.x, z: player.position.z, facing: player.facing }, yaw: cam.yaw,
+    people: cast.list.filter((b) => b.id !== 'juno').map((b) => ({ x: b.position.x, z: b.position.z })),
+  });
   tod.update(dt);
   particles.update(dt, cam.target, cam.camera);
   cast.update(dt, cam.yaw, district.userData.lights);

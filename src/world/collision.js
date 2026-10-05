@@ -35,6 +35,7 @@ export function createCollision(blocks) {
   }
 
   return {
+    grid: { nx, nz, solid, cell: c, halfX, halfZ }, // for the minimap
     hits,
     // Moves pos (Vector3) by (dx, dz), one axis at a time so blocked motion slides along walls. Returns true if moved.
     // Long moves are split into small steps so fast motion can't tunnel through a cell.

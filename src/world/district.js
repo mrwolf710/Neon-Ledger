@@ -27,6 +27,13 @@ export const CAST = [
   { id: 'miso', at: [0.5, 3.6], facing: -0.8 },
 ];
 
+// Named areas for the location banner; the last matching zone wins. box: [x0, z0, x1, z1].
+export const ZONES = [
+  { name: 'Lowmarket Street', district: 'Lowmarket', box: [-30, -30, 30, 30] },
+  { name: 'Line 9 Underpass', district: 'Lowmarket', box: [DISTRICT.rail.x - 3, -30, DISTRICT.rail.x + 3, 30] },
+];
+export const zoneAt = (x, z) => [...ZONES].reverse().find((q) => x >= q.box[0] && x <= q.box[2] && z >= q.box[1] && z <= q.box[3]) ?? ZONES[0];
+
 // Ground height at z: sidewalks are raised by the curb.
 export function groundY(z) {
   const D = DISTRICT, a = Math.abs(z);

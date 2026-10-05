@@ -31,7 +31,7 @@ export const KEY_BINDINGS = {
   KeyR: 'tiltUp', KeyV: 'tiltDown', KeyC: 'resetView',
   Tab: 'caseFile',
   KeyB: 'board',
-  KeyN: 'map',
+  KeyN: 'map', KeyH: 'hideControls',
   Escape: 'pause',
   Backquote: 'debug',
 };
