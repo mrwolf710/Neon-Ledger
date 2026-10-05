@@ -50,7 +50,7 @@ export const CONVERSATIONS = {
         choices: [...TEO_QUESTIONS, { text: "That's all.", end: true }] },
       door: { speaker: 'mamaTeo', text: "A click, a while later. The back door, opening. It's the only other way into that room. No knock. So they let themselves in.",
         effects: [{ addFact: 'door_unlocked' }], next: 'more' },
-      follow: { speaker: 'mamaTeo', text: "Never saw one. Nobody came through the front tonight but the cat.", next: 'more' },
+      follow: { speaker: 'mamaTeo', text: "Someone came in but I didn't see them. And nobody else came through the front tonight but the cat.", next: 'more' },
       more: { speaker: 'mamaTeo', text: 'Anything else, or are you going to eat?',
         choices: [...TEO_QUESTIONS, { text: "That's all.", end: true }] },
       again: { speaker: 'mamaTeo', text: 'Back again? What is it this time?',
