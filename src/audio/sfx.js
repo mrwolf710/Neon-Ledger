@@ -7,9 +7,9 @@ export const TUNING = {
     droplets: { perSecond: 4, awningPerSecond: 8, vol: 0.03, freq: [1800, 4800] }, smooth: 0.35 },
   awningZ: 3.85,         // |z| beyond this on the sidewalk counts as under an awning
   steps: {
-    asphalt: { vol: 0.16, lp: 900, hp: 180, dur: 0.1, splash: 0.05 },
-    tile: { vol: 0.13, bp: 2400, q: 1.8, dur: 0.05, thump: 120 },
-    metal: { vol: 0.14, ring: [430, 640], dur: 0.2, click: 0.07 },
+    asphalt: { vol: 0.26, lp: 950, hp: 180, dur: 0.1, splash: 0.08 },
+    tile: { vol: 0.21, bp: 2400, q: 1.8, dur: 0.05, thump: 120, thumpVol: 0.15 },
+    metal: { vol: 0.22, ring: [430, 640], dur: 0.2, click: 0.11, ringVol: 0.08 },
     runBoost: 1.35, otherRange: 14, jitter: 0.06,
   },
   hum: { voices: 3, vol: 0.055, base: 50, lowpass: 520, ref: 4, update: 0.5, buzz: 0.18 },
@@ -181,10 +181,10 @@ export function createSfx(synth) {
       } else if (surface === 'tile') {
         const c = S.tile;
         synth.noise({ dur: c.dur, vol: c.vol * v, filter: { type: 'bandpass', freq: c.bp * (0.9 + synth.rand() * 0.2), q: c.q }, to: out });
-        synth.tone({ freq: c.thump, type: 'sine', dur: 0.05, vol: 0.09 * v, slide: 60, to: out });
+        synth.tone({ freq: c.thump, type: 'sine', dur: 0.05, vol: c.thumpVol * v, slide: 60, to: out });
       } else {
         const c = S.metal;
-        c.ring.forEach((f, i) => synth.tone({ freq: f * (0.97 + synth.rand() * 0.06), type: 'triangle', dur: c.dur, release: 0.12, vol: 0.05 * v / (i + 1), to: out }));
+        c.ring.forEach((f, i) => synth.tone({ freq: f * (0.97 + synth.rand() * 0.06), type: 'triangle', dur: c.dur, release: 0.12, vol: c.ringVol * v / (i + 1), to: out }));
         synth.noise({ dur: 0.03, vol: c.click * v, filter: { type: 'highpass', freq: 2500 }, to: out });
       }
     },

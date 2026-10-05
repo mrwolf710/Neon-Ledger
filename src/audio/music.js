@@ -6,13 +6,16 @@ export const TUNING = {
   fade: 2.5,                 // default cross-fade seconds
   lookahead: 0.15, tickMs: 25,
   street: {
-    bpm: 66,
+    bpm: 108,
     // A minor, dark: Am9  Dm9  Bm7b5  E7b9 (the tense turnaround back to Am), two bars each.
     chords: [[57, 60, 64, 67, 71], [50, 57, 60, 64, 65], [47, 57, 62, 65, 69], [52, 56, 59, 62, 65]],
-    roots: [45, 38, 47, 40], bassSteps: [0, 10, 16, 26], arpPattern: [0, 2, 1, 3, 2, 4, 3, 1],
-    pad: { vol: 0.045, cutoff: 780, detune: 9, attack: 1.8, release: 2.6 },
-    arp: { vol: 0.042, cutoff: 1500, dur: 0.24 }, bass: { vol: 0.19 },
-    kick: { vol: 0.2 }, snare: { vol: 0.05 }, hat: { vol: 0.024 },
+    roots: [45, 38, 47, 40],
+    bassPattern: [0, 0, 12, 0, 0, 7, 0, 12],  // semitones above the root, one per eighth note (rolling bass)
+    arpPattern: [0, 2, 1, 3, 2, 4, 3, 2],     // chord tones, one per sixteenth
+    pad: { vol: 0.032, cutoff: 700, detune: 9, attack: 1.2, release: 1.8 },
+    arp: { vol: 0.03, cutoff: 1900, dur: 0.1, accent: 1.7 },
+    bass: { vol: 0.17, cutoff: 520, sub: 0.2 },
+    kick: { vol: 0.34, start: 150, end: 38 }, snare: { vol: 0.12, body: 0.09 }, hat: { vol: 0.05, ghost: 0.02, open: 0.045 },
   },
   scene: {
     bpm: 60, chord: [50, 57, 60, 65], pad: { vol: 0.05, cutoff: 700, detune: 6, attack: 2.5, release: 3 },
@@ -46,21 +49,28 @@ export function createMusic(synth) {
     street: {
       bpm: T.street.bpm,
       step(m, i, t) {
-        const S = T.street, sd = stepDur(S.bpm), ci = Math.floor(i / 32) % S.chords.length, chord = S.chords[ci];
+        const S = T.street, sd = stepDur(S.bpm), ci = Math.floor(i / 32) % S.chords.length, chord = S.chords[ci], root = S.roots[ci];
         if (i % 32 === 0) pad(m.out, chord, t, sd * 32, S.pad);
-        if (S.bassSteps.includes(i % 32)) {
-          const f = midiToFreq(S.roots[ci]);
-          synth.tone({ freq: f, type: 'sine', t, dur: sd * 3, vol: S.bass.vol, release: 0.25, to: m.out });
-          synth.tone({ freq: f * 2, type: 'triangle', t, dur: sd * 2, vol: S.bass.vol * 0.25, release: 0.15, to: m.out });
+        // Kick on every beat (four on the floor), clap-snare on 2 and 4.
+        if (i % 4 === 0) synth.tone({ freq: S.kick.start, type: 'sine', t, dur: 0.2, vol: S.kick.vol, slide: S.kick.end, attack: 0.002, release: 0.06, to: m.out });
+        if (i % 8 === 4) {
+          synth.noise({ t, dur: 0.12, vol: S.snare.vol, filter: { type: 'bandpass', freq: 1900, q: 0.8 }, to: m.out });
+          synth.tone({ freq: 190, type: 'triangle', t, dur: 0.09, vol: S.snare.body, slide: 120, to: m.out });
         }
+        // Hats: offbeat eighths, quiet sixteenth ghosts, an open hat before the bar turns.
+        if (i % 4 === 2) synth.noise({ t, dur: 0.04, vol: S.hat.vol, filter: { type: 'highpass', freq: 7500 }, to: m.out });
+        else if (i % 2 === 1) synth.noise({ t, dur: 0.02, vol: S.hat.ghost, filter: { type: 'highpass', freq: 8500 }, to: m.out });
+        if (i % 16 === 14) synth.noise({ t, dur: 0.09, vol: S.hat.open, filter: { type: 'highpass', freq: 6500 }, to: m.out });
+        // Rolling bass: eighth notes through a lowpassed saw, a sub sine under the beats.
         if (i % 2 === 0) {
-          const k = S.arpPattern[(i / 2) % S.arpPattern.length], n = chord[k % chord.length] + 12, accent = i % 8 === 0 ? 1.4 : 1;
-          synth.tone({ freq: midiToFreq(n), type: 'triangle', t, dur: S.arp.dur, vol: S.arp.vol * accent, release: 0.18,
-            filter: { type: 'lowpass', freq: S.arp.cutoff, q: 0.6 }, to: m.out });
+          const semis = S.bassPattern[(i / 2) % S.bassPattern.length], f = midiToFreq(root + semis);
+          synth.tone({ freq: f, type: 'sawtooth', t, dur: sd * 1.4, vol: S.bass.vol, attack: 0.003, release: 0.05, filter: { type: 'lowpass', freq: S.bass.cutoff, q: 1.2 }, to: m.out });
+          if (i % 4 === 0) synth.tone({ freq: midiToFreq(root), type: 'sine', t, dur: sd * 3, vol: S.bass.sub, release: 0.1, to: m.out });
         }
-        if (i % 16 === 0) kick(m.out, t, S.kick.vol);
-        if (i % 16 === 8) synth.noise({ t, dur: 0.1, vol: S.snare.vol, filter: { type: 'bandpass', freq: 1800, q: 0.9 }, to: m.out });
-        if (i % 4 === 2) synth.noise({ t, dur: 0.03, vol: S.hat.vol, filter: { type: 'highpass', freq: 7000 }, to: m.out });
+        // Sixteenth-note arpeggio, accented on the offbeats so it pushes forward.
+        const k = S.arpPattern[i % S.arpPattern.length], n = chord[k % chord.length] + 12;
+        synth.tone({ freq: midiToFreq(n), type: 'sawtooth', t, dur: S.arp.dur, vol: S.arp.vol * (i % 4 === 2 ? S.arp.accent : 1), attack: 0.002, release: 0.05,
+          filter: { type: 'lowpass', freq: S.arp.cutoff, q: 1 }, to: m.out });
       },
     },
     scene: {
