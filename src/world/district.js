@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { getTexture } from '../gen/textures.js';
 
 // Grey-box Lowmarket street. Street runs along X; Z is across it.
 export const DISTRICT = {
@@ -11,19 +12,23 @@ export const DISTRICT = {
   buildingGap: [0.4, 1.6],
   buildingHeight: [4, 14],
   rail: { x: 17, height: 7, deckWidth: 2.5, deckThickness: 0.6, deckLength: 24, pillarSize: 0.8 },
-  colors: {
-    road: 0x2a2a2e,
-    sidewalk: 0x55555a,
-    buildings: [0x5c5c62, 0x6a6a70, 0x7a7a80],
-    rail: 0x45454a,
+  // [texture name, tile width, tile height] in world units
+  surfaces: {
+    road: ['wetAsphalt', 8, 6],
+    sidewalk: ['sidewalk', 4, 2],
+    walls: [['brick', 4, 4], ['concrete', 4, 4], ['tiles', 4, 4]],
+    rail: ['metalPanel', 4, 4],
   },
 };
 
-const box = new THREE.BoxGeometry(1, 1, 1);
+// UV scale per face (+x -x +y -y +z -z): UVs in world units keep 16 px per unit at any box size.
+const FACE_UV = (sx, sy, sz) => [[sz, sy], [sz, sy], [sx, sz], [sx, sz], [sx, sy], [sx, sy]];
 
 function addBox(group, mat, sx, sy, sz, x, y, z) {
-  const m = new THREE.Mesh(box, mat);
-  m.scale.set(sx, sy, sz);
+  const geo = new THREE.BoxGeometry(sx, sy, sz);
+  const uv = geo.attributes.uv, dims = FACE_UV(sx, sy, sz);
+  for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * dims[i >> 2][0], uv.getY(i) * dims[i >> 2][1]);
+  const m = new THREE.Mesh(geo, mat);
   m.position.set(x, y, z);
   group.add(m);
   return m;
@@ -31,11 +36,12 @@ function addBox(group, mat, sx, sy, sz, x, y, z) {
 
 export function buildDistrict(rng) {
   const D = DISTRICT;
-  const C = D.colors;
+  const S = D.surfaces;
   const group = new THREE.Group();
-  const mat = (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.9 });
-  const roadMat = mat(C.road), walkMat = mat(C.sidewalk), railMat = mat(C.rail);
-  const buildingMats = C.buildings.map(mat);
+  const texRng = rng.fork('textures');
+  const mat = ([name, w, h]) => new THREE.MeshStandardMaterial({ ...getTexture(name, texRng, w, h), roughness: 1 });
+  const roadMat = mat(S.road), walkMat = mat(S.sidewalk), railMat = mat(S.rail);
+  const buildingMats = S.walls.map(mat);
 
   // Road and raised sidewalks.
   addBox(group, roadMat, D.length, 0.1, D.roadWidth, 0, -0.05, 0);
