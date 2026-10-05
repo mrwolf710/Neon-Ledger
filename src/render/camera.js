@@ -8,6 +8,7 @@ export const CAMERA = {
   minDistance: 12,
   maxDistance: 140,
   rotateMs: 300,
+  rotateStepDeg: 30, // Q/E swing per press
   zoomSpeed: 60,  // units per second while Z/X held
   wheelStep: 6,   // units per wheel notch
   panSpeed: 12,   // units per second (WASD free-look until there is a player); x2 with Shift
@@ -17,7 +18,7 @@ export const CAMERA = {
 
 const easeInOutCubic = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
 
-// Orbit camera: fixed pitch, yaw snaps in 90 degree steps around `target`.
+// Orbit camera: fixed pitch, yaw snaps in rotateStepDeg steps around `target`.
 export function createCamera(aspect) {
   const camera = new THREE.PerspectiveCamera(CAMERA.fov, aspect, CAMERA.near, CAMERA.far);
   const target = new THREE.Vector3();
@@ -43,7 +44,7 @@ export function createCamera(aspect) {
     get yaw() { return yaw; },
     rotate(dir) {
       fromYaw = yaw;
-      toYaw += dir * Math.PI / 2;
+      toYaw += dir * THREE.MathUtils.degToRad(CAMERA.rotateStepDeg);
       t = 0;
     },
     // Moves the target on the ground, relative to the view: x right, y forward (into the screen).
