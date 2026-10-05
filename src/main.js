@@ -15,6 +15,9 @@ import { createCaseFile } from './game/casefile.js';
 import { createDialogue } from './game/dialogue.js';
 import { createEcho } from './game/echo.js';
 import { createBoard } from './game/board.js';
+import { synth } from './audio/synth.js';
+import { createSfx, surfaceAt } from './audio/sfx.js';
+import { createMusic } from './audio/music.js';
 import { TALK, FALLBACK } from './game/story.js';
 import { zoneAt } from './world/district.js';
 import { createTitle } from './ui/title.js';
@@ -82,7 +85,8 @@ for (const s of district.userData.spots.filter((p) => p.name === 'vending')) {
   interactions.add({ id: 'vending', position: new THREE.Vector3(s.x, 0, s.z), height: 1.8, verb: 'Use', onInteract: () => dialogue.start(TALK.vending) });
 }
 const touchUI = createTouchUI(input);
-const title = createTitle();
+const title = createTitle(() => synth.start());
+const sfx = createSfx(synth), music = createMusic(synth);
 const hud = createHud(collision);
 const clock = createClock();
 const caseFile = createCaseFile(hud, clock);
@@ -100,6 +104,16 @@ cam.follow(player.position, true);
 const tod = createTimeOfDay({ scene, lights, post, particles, signs: district.userData.signs, rng: rng.fork('flicker') });
 phaseId = clock.phase.id;
 tod.setTimeOfDay(phaseId);
+
+// Audio events: dialogue voice blips, UI sounds, board links, footsteps, sign crackle.
+dialogue.onChar = (ch, speaker) => sfx.voice(ch, speaker);
+dialogue.onUi = caseFile.onUi = echo.onUi = board.onUi = (kind) => sfx.ui(kind);
+caseFile.onAdd = () => sfx.ui('case');
+board.onLock = () => { sfx.ui('linkOk'); music.addLink(); };
+board.onWrong = () => sfx.ui('linkWrong');
+cast.byId.juno.onStep = () => sfx.step(surfaceAt(player.position.x, player.position.z), player.position, input.run);
+cast.byId.kit.onStep = () => sfx.step(surfaceAt(cast.byId.kit.position.x, cast.byId.kit.position.z), cast.byId.kit.position, false);
+tod.onFlicker = (i) => sfx.crackle(district.userData.signs[i].light.position);
 
 const debug = createDebugPanel(renderer, rng.seed);
 if (new URLSearchParams(location.search).has('sprites')) showSprites(getSheets());
@@ -119,6 +133,8 @@ debug.slider('saturation', POST.grade, 'saturation', 0, 2, 0.05, pu);
 debug.slider('fog falloff', fog.uniforms.fogFalloff, 'value', 0, 1, 0.01);
 debug.slider('fog high', fog.uniforms.fogHigh, 'value', 0, 1, 0.01);
 debug.slider('fog ground', fog.uniforms.fogGround, 'value', 0, 1, 0.01);
+debug.slider('music volume', synth.volumes, 'music', 0, 1, 0.05, () => synth.setVolume('music', synth.volumes.music));
+debug.slider('sfx volume', synth.volumes, 'sfx', 0, 1, 0.05, () => synth.setVolume('sfx', synth.volumes.sfx));
 debug.button('toast', () => hud.toast('Case file updated'));
 debug.button('clock +30 min', () => clock.add(30));
 debug.button('pause clock', () => { clock.paused = !clock.paused; });
@@ -193,6 +209,9 @@ renderer.setAnimationLoop((now) => {
     player: { x: player.position.x, z: player.position.z, facing: player.facing }, yaw: cam.yaw,
     people: cast.list.filter((b) => b.id !== 'juno').map((b) => ({ x: b.position.x, z: b.position.z })),
   });
+  if (input.pressed('music')) { synth.setMusicOn(!synth.musicOn); hud.toast(synth.musicOn ? 'Music on' : 'Music off'); }
+  music.setMood(echo.active ? 'echo' : board.isOpen ? 'board' : 'street');
+  sfx.update(dt, { player: player.position, yaw: cam.yaw, rainScale: particles.rainScale, signs: district.userData.signs });
   tod.update(dt);
   particles.update(dt, cam.target, cam.camera);
   cast.update(dt, cam.yaw, district.userData.lights);

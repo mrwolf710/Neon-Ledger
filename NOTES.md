@@ -1,13 +1,14 @@
 # NOTES
 Running summary for Claude sessions (keep under 60 lines).
 ## Status
-- Current stage: 7B done (#16), untested in browser. Next: Stage 8 (#17) audio. Issues #2-#15 closed. Seed 1337 (`SEED`, src/core/rng.js)
+- Current stage: 8 done (#17), untested in browser. Next: Stage 9 (#18-#21) demo content. Issues #2-#16 closed. Seed 1337 (`SEED`, src/core/rng.js)
 ## Files
 - src/core: rng.js seeded PRNG · input.js action layer · settings.js TIERS high/medium/mobile, ?quality=
 - src/render: camera.js orbit cam · lights.js · fog.js height fog + cutaway · post.js bloom, tilt-shift, grade
 - src/world: district.js layout, CAST, ZONES · collision.js walk grid · particles.js · timeofday.js moods
 - src/gen: palette.js · textures.js · batch.js merge collector · buildings.js · glyphs.js signs · props.js · sprites.js characters · pixelfont.js
 - src/game: npc.js billboards + createCast · player.js · interact.js prompts · clock.js · story.js (ALL story data) · dialogue.js · casefile.js · echo.js · board.js
+- src/audio: synth.js (AudioContext, buses, reverb, tone/noise helpers) · sfx.js · music.js (all synthesized; TUNING at the top of each)
 - src/ui: touch.js · title.js (title.started) · styles.css (panel frame, key caps, rem, safe-area) · hud.js (HUD + dialogue box)
 - src/main.js builds everything + loop · src/debug/panel.js stats + controls (` toggles) · scripts/check-*.mjs (node self-checks), scripts/where.mjs (prints CAST and spot positions)
 ## Key functions
@@ -35,6 +36,12 @@ Running summary for Claude sessions (keep under 60 lines).
   (or tap/Space two cards; arrows or D-pad move the cursor). Pure rules in `createBoardLogic(data, hasFact)` -> link(a,b) = {kind same|wrong|partial|solved, line, hint}.
   `caseFile.apply(effects)` runs story effects; `caseFile.facts()` lists known facts. `createCaseFile(hud, clock)`.
   `createDialogue({hud, caseFile, clock})` -> { active, start(convId), end, update(dt, input), onChar(char, speakerId) } (voice blips hook, Stage 8).
+- Audio: `synth.start()` runs inside the title tap (createTitle(onStart)); before that every call is a no-op. Volumes music/sfx saved in localStorage
+  (debug sliders; a real settings menu comes with the pause menu, 9C); M toggles music. `createSfx(synth)` -> { update(dt, {player, yaw, rainScale, signs}),
+  step(surface, pos, run), crackle(pos), ui(kind: move|confirm|back|case|linkOk|linkWrong|echoOn|echoOff|glitch), voice(ch, speakerId) }; rain (louder
+  patter under awnings), neon hum on the 3 nearest signs, train + doppler every 40-75 s (sound only). `createMusic(synth)` -> { setMood(street|scene|echo|
+  board|silent, fade), addLink(), mood }; main picks echo/board/street. Hooks: dialogue.onChar/onUi, caseFile.onAdd/onUi, board.onLock/onWrong/onUi,
+  echo.onUi, tod.onFlicker(i), billboard.onStep(frame). Voices per speaker in sfx TUNING.voices.
 ## Data formats
 - Character: { name, skin, iris, lips?, lashes?, hair:{style,color,shine?}, top, legs, shoes, outfit?:{type,color,collar}, acc:[{type,color}], poses? }.
 - Story data (src/game/story.js): SPEAKERS {id: {name, color}}; ENTRIES {id: {kind people|facts|echoes, title, text, source}};

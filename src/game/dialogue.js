@@ -43,6 +43,7 @@ export function createDialogue({ hud, caseFile, clock }) {
       });
       return;
     }
+    api.onUi?.('confirm');
     apply(o.effects);
     if (o.next) run(o.next); else api.end();
   }
@@ -78,8 +79,8 @@ export function createDialogue({ hud, caseFile, clock }) {
         return;
       }
       if (options.length) {
-        if (input.pressed('up') || input.pressed('menuUp')) sel = (sel + options.length - 1) % options.length;
-        if (input.pressed('down') || input.pressed('menuDown')) sel = (sel + 1) % options.length;
+        if (input.pressed('up') || input.pressed('menuUp')) { sel = (sel + options.length - 1) % options.length; api.onUi?.('move'); }
+        if (input.pressed('down') || input.pressed('menuDown')) { sel = (sel + 1) % options.length; api.onUi?.('move'); }
         ui.setChoices(options.map((o) => o.text), sel, (i) => { sel = i; choose(); });
         if (press) choose();
         return;

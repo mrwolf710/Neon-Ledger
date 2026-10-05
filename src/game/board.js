@@ -77,6 +77,7 @@ export function createBoard({ caseFile, hud }) {
     get isOpen() { return isOpen; },
     onLock: null,   // (conclusion) when a link locks in; Stage 8 plays the ticking / chime
     onWrong: null,  // () when a link snaps back
+    onUi: null,     // (kind) open / close sounds
     logic,
   };
 
@@ -204,8 +205,8 @@ export function createBoard({ caseFile, hud }) {
   window.addEventListener('resize', () => { if (isOpen) drawStrings(); });
 
   Object.assign(api, {
-    open() { isOpen = true; first = null; newId = null; root.classList.add('on'); render(); },
-    close() { isOpen = false; drag = temp = null; root.classList.remove('on'); },
+    open() { isOpen = true; first = null; newId = null; root.classList.add('on'); render(); api.onUi?.('confirm'); },
+    close() { isOpen = false; drag = temp = null; root.classList.remove('on'); api.onUi?.('back'); },
     toggle() { if (isOpen) api.close(); else api.open(); },
     // Every frame while open.
     update(input) {

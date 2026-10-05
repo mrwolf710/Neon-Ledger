@@ -90,7 +90,7 @@ export function createEcho({ scene, sheets, post, caseFile, hud, cast, spots }) 
     const lo = Math.min(a, b), hi = Math.max(a, b);
     for (const s of active.def.seams ?? []) {
       if (s >= lo && s <= hi) {
-        active.glitch = ECHO.glitchSeconds; active.seen.add(s);
+        active.glitch = ECHO.glitchSeconds; active.seen.add(s); api.onUi?.('glitch');
         if (!scrubbed && active.playing) active.freeze = ECHO.glitchSeconds; // the replay stutters
       }
     }
@@ -138,6 +138,7 @@ export function createEcho({ scene, sheets, post, caseFile, hud, cast, spots }) 
       total.textContent = fmt(def.duration);
       buildBar();
       if (def.entry) caseFile.add(def.entry);
+      api.onUi?.('echoOn');
     },
     exit() {
       if (!active) return;
@@ -150,6 +151,7 @@ export function createEcho({ scene, sheets, post, caseFile, hud, cast, spots }) 
       document.body.classList.remove('echo');
       root.classList.remove('on');
       post.setGlitch(0);
+      api.onUi?.('echoOff');
     },
     // Every frame. axis = scrub input (-1..1, stick / A-D); lights for ghost tinting.
     update(dt, input, camYaw, lights, axis, playerPos) {

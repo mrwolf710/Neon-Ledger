@@ -91,7 +91,7 @@ export function createBillboard(sheet, opts) {
   root.add(sprite, shadow);
 
   const pos = new THREE.Vector3(opts.x ?? 0, 0, opts.z ?? 0);
-  let time = 0, leg = 0;
+  let time = 0, leg = 0, lastStep = -1;
   const path = opts.path, speed = opts.speed ?? 2;
   if (path) pos.set(path[0][0], 0, path[0][1]);
 
@@ -124,7 +124,10 @@ export function createBillboard(sheet, opts) {
         const dir = ['down', 'right', 'up', 'left'][Math.floor(rel / (Math.PI / 2))];
         const A = sheet.anims[anim] ?? sheet.anims.idle;
         const fps = SPRITES.fps[anim] ?? SPRITES.fps.idle;
-        setFrame(sheet.rows[dir], A.start + (Math.floor(time * fps) % A.frames));
+        const fi = Math.floor(time * fps) % A.frames;
+        setFrame(sheet.rows[dir], A.start + fi);
+        if (anim === 'walk' && fi !== lastStep) { lastStep = fi; if (fi % 2 === 0) api.onStep?.(fi); } // footfall
+        else if (anim !== 'walk') lastStep = -1;
       }
 
       // Nearby lights (summed, squared falloff) tint the sprite; the strongest one colours the rim on its side.

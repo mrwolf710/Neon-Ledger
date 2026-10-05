@@ -51,7 +51,7 @@ export function createCaseFile(hud, clock) {
 
   function close() {
     if (!isOpen) return;
-    isOpen = false; root.classList.remove('on');
+    isOpen = false; root.classList.remove('on'); api.onUi?.('back');
     const cancel = present?.onCancel; present = null;
     cancel?.();
   }
@@ -72,6 +72,7 @@ export function createCaseFile(hud, clock) {
       if (!e) { console.warn('case file: unknown entry', id); return false; }
       known.set(id, { ...e, id, order: known.size });
       hud.toast('Case file updated');
+      api.onAdd?.(id);
       if (isOpen) render();
       return true;
     },
@@ -90,7 +91,7 @@ export function createCaseFile(hud, clock) {
     open(opts = {}) {
       present = opts.present ? opts : null;
       tab = present ? 'facts' : tab; sel = 0;
-      isOpen = true; root.classList.add('on'); render();
+      isOpen = true; root.classList.add('on'); render(); api.onUi?.('confirm');
     },
     close,
     toggle() { if (isOpen) close(); else api.open(); },

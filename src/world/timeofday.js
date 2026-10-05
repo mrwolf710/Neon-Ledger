@@ -84,6 +84,9 @@ export function createTimeOfDay({ scene, lights, post, particles, signs, rng }) 
       let k = cur.signs;
       if (p.weak < cur.dead) k = 0;
       else if (hash(i, Math.floor(time * p.rate)) < cur.flicker * (0.5 + p.weak)) k *= FLICKER.offLevel;
+      const off = k < cur.signs * 0.5;
+      if (off && !p.off && p.weak >= cur.dead) api.onFlicker?.(i); // a sign just blinked off
+      p.off = off;
       sg.mat.color.setScalar(BUILDINGS.signGlow * k);
       sg.light.intensity = sg.light.base * k;
     });

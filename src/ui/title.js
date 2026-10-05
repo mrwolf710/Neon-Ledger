@@ -8,7 +8,8 @@ export const TITLE = {
   blinkMs: 600,
 };
 
-export function createTitle() {
+// onStart runs synchronously inside the first tap / key press: browsers only let audio start from there.
+export function createTitle(onStart) {
   const T = TITLE;
   const el = document.createElement('div');
   el.style.cssText = `position:fixed;inset:0;z-index:15;display:flex;flex-direction:column;align-items:center;
@@ -31,6 +32,7 @@ export function createTitle() {
       e.preventDefault(); e.stopPropagation();
       if (state.done) return;
       state.done = true;
+      onStart?.();
       clearInterval(blink);
       el.remove();
       window.removeEventListener('keydown', go, true);
