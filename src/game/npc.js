@@ -4,10 +4,11 @@ import { CAST, groundY } from '../world/district.js';
 
 export const NPC = {
   brightness: 0.85,   // overall sprite brightness (sprites are unlit)
-  tint: 0.7,          // how much nearby light colours the whole sprite
-  rim: 1.6,           // how strongly it colours the silhouette edge on the side facing the light
+  tint: 0.35,         // how much nearby light colours the whole sprite
+  rim: 0.6,           // how strongly it colours the silhouette edge on the side facing the light
   lightRange: 10,     // units; lights further away give no tint (falloff is (1 - d/range)^2)
-  maxLight: 1.5,      // clamp on the summed light colour
+  maxLight: 1.0,      // clamp on the summed light colour
+  rimMax: 0.55,       // most an edge texel can shift toward the light colour (keeps edges under the bloom threshold)
   shadow: { color: 0x000000, opacity: 0.55, size: 1.1, catSize: 0.7, texPx: 16 },
 };
 
@@ -20,7 +21,7 @@ const VERT = /* glsl */`
   void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
 const FRAG = /* glsl */`
   uniform sampler2D map; uniform vec4 frame; uniform vec2 texel;
-  uniform vec3 lightColor; uniform float brightness, tint, rim, lightSide;
+  uniform vec3 lightColor; uniform float brightness, tint, rim, rimMax, lightSide;
   varying vec2 vUv;
   void main() {
     vec2 uv = frame.xy + vUv * frame.zw;
@@ -31,7 +32,7 @@ const FRAG = /* glsl */`
     float eT = 1.0 - texture2D(map, uv + vec2(0.0, texel.y)).a;
     float edge = max(eT * 0.5, mix(eL, eR, lightSide * 0.5 + 0.5) * (0.4 + 0.6 * abs(lightSide)));
     vec3 col = c.rgb * brightness + c.rgb * lightColor * tint;
-    col = mix(col, lightColor * 1.5, clamp(edge * rim * length(lightColor), 0.0, 1.0));
+    col = mix(col, lightColor, clamp(edge * rim * length(lightColor), 0.0, rimMax));
     gl_FragColor = vec4(col, 1.0);
   }`;
 
@@ -65,7 +66,7 @@ export function createBillboard(sheet, opts) {
     uniforms: {
       map: { value: sheet.texture }, frame: { value: new THREE.Vector4(0, 0, fw / W, fh / H) },
       texel: { value: new THREE.Vector2(1 / W, 1 / H) }, lightColor: { value: new THREE.Color(0, 0, 0) },
-      brightness: { value: NPC.brightness }, tint: { value: NPC.tint }, rim: { value: NPC.rim }, lightSide: { value: 0 },
+      brightness: { value: NPC.brightness }, tint: { value: NPC.tint }, rim: { value: NPC.rim }, rimMax: { value: NPC.rimMax }, lightSide: { value: 0 },
     },
     vertexShader: VERT, fragmentShader: FRAG,
   });
