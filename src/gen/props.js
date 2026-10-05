@@ -37,6 +37,7 @@ export const PROP_BUILDERS = {
     const PM = mats(M);
     batch.box(PM.wood, 2.0, 1.0, 0.8, 0, 0.5, -0.2);                     // counter
     batch.box(M.metal, 2.0, 0.08, 0.9, 0, 1.02, -0.15);                    // worktop
+    batch.steam(-0.4, 1.1, -0.15);                                          // noodle pot
     for (const x of [-0.95, 0.95]) batch.box(PM.wood, 0.08, 2.1, 0.08, x, 1.05, -0.55); // posts
     batch.box(rng.pick(M.awnings), 2.3, 0.06, 1.3, 0, 2.15, 0.0, 0.25);   // canopy
     for (const x of [-0.6, 0.1, 0.7]) batch.box(PM.lantern, 0.22, 0.3, 0.22, x, 1.75, 0.45);

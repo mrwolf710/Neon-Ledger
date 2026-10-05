@@ -20,7 +20,7 @@ export function createBatch() {
   const m = new THREE.Matrix4();
   const tmp = new THREE.Matrix4();
   const euler = new THREE.Euler();
-  const lights = [];
+  const data = { lights: [], steam: [], signs: [] }; // handed to group.userData by build()
 
   return {
     setTransform(x = 0, z = 0, rotY = 0) {
@@ -39,13 +39,19 @@ export function createBatch() {
       if (rx || ry) geo.applyMatrix4(tmp.makeRotationFromEuler(euler.set(rx, ry, 0)));
       this.add(mat, geo.translate(x, y, z));
     },
-    // Registers a point light at local (x, y, z) for the light manager; returned in group.userData.lights.
+    // Registers a point light at local (x, y, z) for the light manager (userData.lights). Returns it.
     light(color, intensity, x, y, z) {
-      lights.push({ color, intensity, position: new THREE.Vector3(x, y, z).applyMatrix4(m) });
+      const l = { color, intensity, base: intensity, position: new THREE.Vector3(x, y, z).applyMatrix4(m) };
+      data.lights.push(l);
+      return l;
     },
+    // Steam vent at local (x, y, z) for particles.js (userData.steam).
+    steam(x, y, z) { data.steam.push(new THREE.Vector3(x, y, z).applyMatrix4(m)); },
+    // Sign material + its light, for brightness and flicker (userData.signs).
+    sign(mat, light) { data.signs.push({ mat, light }); },
     build() {
       const group = new THREE.Group();
-      group.userData.lights = lights.splice(0);
+      for (const k in data) group.userData[k] = data[k].splice(0);
       for (const [mat, geos] of byMat) {
         group.add(new THREE.Mesh(mergeGeometries(geos), mat));
         geos.forEach((g) => g.dispose());

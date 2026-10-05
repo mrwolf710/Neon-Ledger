@@ -92,7 +92,9 @@ function facadeModule(rng, batch, M, kind, x, y0, fz) {
   }
   framedOpening(batch, M, litMat(rng, M), x, wy, W.w, W.h, fz);
   if (kind === 'windowAC') {
-    batch.box(M.ac, A.w, A.h, A.d, x + rng.range(-0.15, 0.15), y0 + A.h / 2, fz + A.d / 2);
+    const ax = x + rng.range(-0.15, 0.15);
+    batch.box(M.ac, A.w, A.h, A.d, ax, y0 + A.h / 2, fz + A.d / 2);
+    batch.steam(ax, y0 + A.h, fz + A.d / 2);
   }
 }
 
@@ -108,7 +110,7 @@ function balcony(batch, M, x, y0, w, fz) {
 function addReflection(batch, tex, x, w, fz) {
   const R = BUILDINGS.reflection;
   const mat = new THREE.MeshBasicMaterial({
-    map: tex, transparent: true, opacity: R.opacity, blending: THREE.AdditiveBlending, depthWrite: false, vertexColors: true,
+    map: tex, transparent: true, opacity: R.opacity, blending: THREE.AdditiveBlending, depthWrite: false, vertexColors: true, fog: false,
   });
   for (const [t0, t1, y] of [[0, R.sidewalk, R.curb + 0.01], [R.sidewalk, R.length, 0.01]]) {
     const g = new THREE.PlaneGeometry(w * R.width, t1 - t0).rotateX(-Math.PI / 2).translate(x, y, fz + (t0 + t1) / 2);
@@ -127,7 +129,7 @@ function addSign(rng, batch, M, vertical, n, x, y, z, fz) {
   const B = BUILDINGS, color = rng.pick(B.signColors);
   const tex = signTexture(rng, n, vertical, color);
   const mat = new THREE.MeshBasicMaterial({ map: tex, color: new THREE.Color(B.signGlow, B.signGlow, B.signGlow) });
-  batch.light(color, B.signLight, x, y, z + (vertical ? 0 : 0.6));
+  batch.sign(mat, batch.light(color, B.signLight, x, y, z + (vertical ? 0 : 0.6)));
   addReflection(batch, tex, x, vertical ? 0.5 : n, fz);
   if (vertical) {
     batch.box(mat, 0.12, n, 1, x, y, z, 0, 0, false); // blade sign 0.1 off the wall, glyphs on both sides

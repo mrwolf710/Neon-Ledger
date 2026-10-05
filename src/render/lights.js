@@ -34,17 +34,19 @@ export function createLights(scene, maxLights, shadowMapSize) {
   return {
     moon, hemi,
     register(list) { registered.push(...list); timer = 0; },
+    // Re-sorts every reassignEvery; copies intensity every frame so flicker shows.
     update(dt, focus) {
-      if ((timer -= dt) > 0) return;
-      timer = L.reassignEvery;
-      for (const r of registered) r.d = r.position.distanceToSquared(focus);
-      // ponytail: full sort each re-sort, fine for a few hundred lights; use a grid if a district gets thousands
-      const near = registered.slice().sort((a, b) => a.d - b.d);
-      pool.forEach((p, i) => {
-        const r = near[i];
-        p.intensity = r ? r.intensity : 0;
-        if (r) { p.position.copy(r.position); p.color.setHex(r.color); }
-      });
+      if ((timer -= dt) <= 0) {
+        timer = L.reassignEvery;
+        for (const r of registered) r.d = r.position.distanceToSquared(focus);
+        // ponytail: full sort each re-sort, fine for a few hundred lights; use a grid if a district gets thousands
+        const near = registered.slice().sort((a, b) => a.d - b.d);
+        pool.forEach((p, i) => {
+          p.userData.src = near[i];
+          if (near[i]) { p.position.copy(near[i].position); p.color.setHex(near[i].color); }
+        });
+      }
+      for (const p of pool) p.intensity = p.userData.src ? p.userData.src.intensity : 0;
     },
   };
 }

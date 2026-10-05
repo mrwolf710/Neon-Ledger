@@ -1,60 +1,57 @@
 # NOTES
-Running summary for Claude sessions. Paste this file at the start of every stage chat. Keep it under 60 lines.
+Running summary for Claude sessions. Keep it under 60 lines.
 
 ## Status
-- Current stage: 3A done (#5). Next: Stage 3B (#6).
-- Seed: 1337 (`SEED` in src/core/rng.js)
+- Current stage: 3B done (#6). Next: Stage 4A (#8). Seed: 1337 (`SEED` in src/core/rng.js)
 
 ## Files
-- index.html: full-window canvas#game, loads src/main.js
-- src/main.js: renderer (shadows, Neutral tone map), scene, lights, district (shadows on), post, game loop
-- src/core/settings.js: TIERS high/medium/mobile (pixelRatio, bloomScale, maxLights, shadowMap, rainCount, ssr), auto-detect, ?quality=
-- src/render/lights.js: moon (shadow), hemi fill, fixed pool of N point lights moved to nearest registered lights
-- src/render/post.js: Render -> UnrealBloom -> tilt-shift H/V -> OutputPass -> grade (lift/gamma/gain, sat, grain, fringe)
-- src/core/rng.js: mulberry32 seeded PRNG
-- src/core/input.js: action layer; keyboard + wheel live, mouse/gamepad/touch stubs (TODO 5A/5B)
-- src/render/camera.js: orbit camera, fov 20, pitch 35, yaw 45, Q/E rotate in rotateStepDeg (30) steps, zoom
-- src/world/district.js: street layout: road, sidewalks, 10 buildings, rail, curb lamps, scattered props
-- src/gen/palette.js: 32-colour PALETTE (named 0xRRGGBB) + `snap(color)` nearest entry
-- src/gen/textures.js: canvas generators brick, concrete, tiles, metalPanel, wetAsphalt, sidewalk, awning, shopWarm/shopCool (lit interiors)
-- src/gen/batch.js: geometry collector, merged per material; boxGeo with world-unit UVs
-- src/gen/buildings.js: BUILDINGS rules, getMaterials (shared street materials), building()
-- src/gen/glyphs.js: pseudo-kanji sign textures from strokes; src/gen/props.js: stall, crates, vending, bags, lamp
-- src/debug/panel.js: FPS, draw calls, triangles, seed overlay
+- src/main.js: renderer (shadows, Neutral tone map), builds everything, debug controls, game loop
+- src/core: rng.js mulberry32 PRNG · input.js action layer (keyboard + wheel; mouse/gamepad/touch TODO 5A/5B)
+  · settings.js TIERS high/medium/mobile (pixelRatio, bloomScale, maxLights, shadowMap, rainCount), auto-detect, ?quality=
+- src/render: camera.js orbit cam · lights.js moon (shadow) + hemi + nearest-N point light pool · fog.js height fog
+  · post.js Render -> UnrealBloom -> tilt-shift H/V -> OutputPass -> grade (lift/gamma/gain, sat, grain, fringe)
+- src/world: district.js street layout · particles.js rain, splashes, steam, motes · timeofday.js moods + sign flicker
+- src/gen: palette.js 32 colours + snap() · textures.js canvas generators (brick, concrete, tiles, metalPanel,
+  wetAsphalt, sidewalk, awning, shopWarm/shopCool) · batch.js merge-per-material collector · buildings.js · glyphs.js signs
+  · props.js stall, crates, vending, bags, lamp
+- src/debug/panel.js: stats overlay + select/slider/button controls (` toggles)
 
 ## Key functions
-- `rng` (root) / `createRng(seed)` -> { seed, rand, range(a,b), int(a,b) inclusive, pick(arr), weighted({k:w}), fork(label) }.
-  fork depends only on (seed, label), not call order. main uses `rng.fork('district')`.
-- `input.update()` at frame start, `input.endFrame()` at end. Read `input.moveX/moveY` (-1..1, +Y forward),
-  `input.zoom` (held Z/X), `input.zoomSteps` (wheel notches), `input.held(a)`, `input.pressed(a)`.
+- `rng` / `createRng(seed)` -> { seed, rand, range, int (inclusive), pick, weighted({k:w}), fork(label) }; fork depends only on (seed, label).
+- `input.update()` / `input.endFrame()`; `moveX/moveY`, `zoom`, `zoomSteps`, `held(a)`, `pressed(a)`.
   Keys: WASD, Shift run, Space interact, F echo, Q/E rotate, Z/X zoom, R/V tilt, Tab caseFile, B board, N map, Esc pause, ` debug.
-- `createCamera(aspect)` -> { camera, target, yaw, rotate(+1/-1), zoom(delta), update(dt) }.
-- `buildDistrict(rng)` -> THREE.Group. Street along X (length 40); Z across (road 6, sidewalks 2, buildings 3 deep).
-  Rail at x=17, height 7. Each building uses rng.fork(`building:side:i`); props use fork('props').
-- `createBatch()` -> { setTransform(x,z,rotY), add(mat, geo), box(mat, sx,sy,sz, x,y,z, rx, ry, worldUV), build() -> Group }.
-  Local +z = facing. Whole street = 1 draw per material + 1 per sign (44 calls, ~7.8k tris at seed 1337).
-- `building(rng, M, batch, w, d)`: ground shop (glass/shutter, awning, sign) + 1-5 floors of window/shutter/AC/blank
-  modules, balconies, cables, pipe, roof tank, 1-2 signs (horizontal shop sign, vertical blade sign).
-- `signTexture(rng, glyphCount, vertical, color)` -> CanvasTexture, 16 px per glyph. Signs/lit windows are MeshBasic.
-- `getTexture(name, rng, wUnits, hUnits)` -> { map, roughnessMap }, seamless tile, Nearest, no mipmaps,
-  repeat = 1/size (expects world-unit UVs). Cached by name:seed:size; uses rng.fork(key). Each pixel picks
-  from a palette ramp via 4x4 Bayer dither. Roughness: puddles/seams low (wet), dry high.
-- `settings.quality` = active tier. `createLights(scene, maxLights, shadowMapSize)` -> { moon, hemi, register(list), update(dt, focus) }.
-  `createPost(renderer, scene, camera, quality)` -> { composer, applyUniforms(), setSize(w,h), render(dt) }; tweak POST then applyUniforms().
-- `batch.light(color, intensity, x, y, z)` registers a light (local coords); build() puts them in group.userData.lights.
-  Signs (BUILDINGS.signLight) and lamps (PROPS.lamp.light) register lights. Each sign adds an additive fading ground
-  reflection quad (BUILDINGS.reflection), +1 draw per sign. Emissives get colour multipliers (signGlow, windowGlow, lamp.glow) for bloom.
-- `createDebugPanel(renderer, seed)` -> { toggle(), update(dt) } (call after render).
-- Tunables: CAMERA, DISTRICT, TEXTURES, BUILDINGS, GLYPHS, PROPS, PANEL, MAIN, TIERS, LIGHTS, POST constants at the top of each file.
+- `createCamera(aspect)` -> { camera, target, yaw, rotate(±1) (30 deg steps), pan(x,y,dt), tilt(dir,dt), zoom(d), update(dt) }.
+- `buildDistrict(rng)` -> Group. Street along X (length 40); Z across (road 6, sidewalks 2, buildings 3 deep). Rail x=17.
+  group.userData = { lights: [{color,intensity,base,position}], steam: [Vector3], signs: [{mat, light}] }.
+- `createBatch()` -> { setTransform(x,z,rotY), add(mat,geo), box(...), light(color,int,x,y,z) -> light, steam(x,y,z),
+  sign(mat, light), build() -> Group }. Local +z = facing. ~1 draw per material + 2 per sign (sign + reflection).
+- `building(rng, M, batch, w, d)`: shop (interior texture or shutter, awning, sign) + 1-5 floors of modules; AC units are steam vents.
+  Each sign: point light (signLight), additive streak reflection (BUILDINGS.reflection). Glow multipliers signGlow/windowGlow/lamp.glow.
+- `getTexture(name, rng, wU, hU)` -> { map, roughnessMap }, Nearest, world-unit UVs (repeat 1/size), cached, Bayer-dithered ramps.
+- `createLights(scene, max, shadowSize)` -> { moon, hemi, register(list), update(dt, focus) }: re-sorts every 0.25 s,
+  copies each source's .intensity every frame (flicker).
+- `createPost(renderer, scene, camera, quality)` -> { applyUniforms(), setSize, render(dt) }; edit POST then applyUniforms().
+- `createHeightFog(scene)` -> { uniforms, update(camera, focus), patch(root) }: scene.fog FogExp2 + onBeforeCompile on every
+  fogged material under root. Distance fog starts near the focus (FOG.startOffset) + ground mist; thins with height.
+- `createParticles(scene, rng, rainCount, steamVents)` -> { rainScale, update(dt, focus) }: 4 InstancedMeshes, additive,
+  fades via instance colour. Rain box wraps around the focus.
+- `createTimeOfDay({scene, lights, post, particles, signs, rng})` -> { name, setTimeOfDay(name, seconds), update(dt) }.
+  States lateEvening / night / deadHour (TIME_OF_DAY): sky, fog, moon, hemi, grade, signs, flicker, dead, rain.
+  Grade is written only while blending, so debug sliders stick until the next change.
+- `createDebugPanel(renderer, seed)` -> { toggle, update(dt), select(label, {v:text}, v, fn), slider(label, obj, key, min, max, step, fn, index), button }.
+  Panel has time, tier (reloads), bloom, tilt, grade RGB, saturation, fog sliders, "log values" (prints JSON to console).
+- Tunables: constants at the top of each file (CAMERA, DISTRICT, TEXTURES, BUILDINGS, PROPS, TIERS, LIGHTS, POST, FOG,
+  PARTICLES, TIME_OF_DAY, FLICKER, PANEL, MAIN).
 
 ## Data formats
+- (dialogue, echo and board formats come in Stages 6-7)
 
 ## Known issues
 - Build warns chunk > 500 kB (three.js). Harmless for now.
-- WASD pans the camera target (temporary free-look until the Stage 4 player; remove the cam.pan line in main).
-- Rail deck runs into the buildings near x=17 (since Stage 1). No collision on props yet.
-- Tilt-shift band is fixed at screen centre (POST.tilt.center) until there is a player. renderer.info.autoReset is off (reset per frame in main).
-- Point lights don't cast shadows; reflections stop at the road centre-ish (reflection.length).
+- WASD pans the camera (temporary until the Stage 4 player; remove cam.pan in main). Tilt band fixed at screen centre.
+- Rail deck runs into buildings near x=17. No prop collision yet. Point lights don't cast shadows.
+- renderer.info.autoReset is off (reset per frame in main) so stats count all post passes.
+- Shadows are on for Mobile too; turn off or shrink if the iPhone struggles.
 
 ## Next
-Stage 3B: particles/rain (rainCount from tier), height fog, time-of-day states, debug sliders for POST.
+Stage 4A (#8): layered pixel sprite generator and character data.
