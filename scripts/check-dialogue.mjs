@@ -36,15 +36,15 @@ assert.ok(log.text.startsWith('Dex. Everyone on Lowmarket'));
 run(0.1, 'interact');                        // on to what she saw
 run(10);
 assert.ok(log.text.startsWith('Dex came in twice'));
-assert.deepEqual(log.choices, ['Did you lock the back door?', 'Did anyone follow him in?', "That's all."]);
+assert.deepEqual(log.choices, ['Did you hear anything after that?', 'Did you see his client arrive?', "That's all."]);
 run(0.1, 'down'); run(0.1, 'up');            // wrap-around navigation
-run(0.1, 'interact');                        // pick "Did you lock the back door?"
+run(0.1, 'interact');                        // pick "Did you hear anything after that?"
 run(10);
 assert.ok(facts.has('door_unlocked') && people.has('mamaTeo'), 'fact and person added');
 run(0.1, 'interact');                        // on to "anything else?"
 run(10);
-assert.deepEqual(log.choices, ['Did anyone follow him in?', "That's all."], 'the other question is still offered');
-run(0.1, 'interact');                        // pick "Did anyone follow him in?"
+assert.deepEqual(log.choices, ['Did you see his client arrive?', "That's all."], 'the other question is still offered');
+run(0.1, 'interact');                        // pick "Did you see his client arrive?"
 run(10); run(0.1, 'interact'); run(10);
 assert.deepEqual(log.choices, ["That's all."], 'both asked, only the exit is left');
 run(0.1, 'interact');
