@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { DISTRICT } from './district.js';
 
 export const PARTICLES = {
-  rain: { color: 0x8fa8d8, size: [0.02, 0.5], speed: 22, wind: [2, 0.6], area: [34, 18, 34], intensity: 0.35 },
+  rain: { color: 0x8fa8d8, size: [0.02, 0.5], speed: 22, wind: [2, 0.6], area: [52, 18, 28], intensity: 0.35 }, // area: x/y/z box centred on the district
   splash: { color: 0x9fb8e8, max: 300, perDrop: 0.08, life: 0.35, size: 0.18, inner: 0.8 }, // inner: ring hole (0..1) // perDrop: chance a landing drop splashes
   steam: { color: 0x8a8aa0, max: 60, rate: 6, life: 2.5, rise: 0.8, size: [0.25, 1.0], range: 16, opacity: 0.45 },
   motes: { color: 0xffc070, count: 50, area: [20, 6, 14], drift: 0.25, size: 0.05 },
@@ -52,13 +52,13 @@ export function createParticles(scene, rng, rainCount, steamVents) {
 
   api.update = (dt, focus) => {
     time += dt;
-    // Rain: drops live in a box that wraps around the focus, so the camera never leaves the shower.
+    // Rain: drops live in a fixed box over the district and wrap at its edges, so the shower stays put when the camera moves.
     const shown = Math.floor(rainCount * api.rainScale);
     for (let i = 0; i < rainCount; i++) {
       const d = drops[i];
       d.x += fall.x * dt; d.y += fall.y * dt; d.z += fall.z * dt;
-      let wx = focus.x + THREE.MathUtils.euclideanModulo(d.x - focus.x + ax / 2, ax) - ax / 2;
-      let wz = focus.z + THREE.MathUtils.euclideanModulo(d.z - focus.z + az / 2, az) - az / 2;
+      const wx = THREE.MathUtils.euclideanModulo(d.x + ax / 2, ax) - ax / 2;
+      const wz = THREE.MathUtils.euclideanModulo(d.z + az / 2, az) - az / 2;
       d.x = wx; d.z = wz;
       const gy = groundY(wz);
       if (d.y < gy) {

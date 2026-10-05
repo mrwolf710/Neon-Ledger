@@ -34,7 +34,7 @@ Running summary for Claude sessions. Keep it under 60 lines.
 - `createHeightFog(scene)` -> { uniforms, update(camera, focus), patch(root) }: scene.fog FogExp2 + onBeforeCompile on every
   fogged material under root. Distance fog starts near the focus (FOG.startOffset) + ground mist; thins with height.
 - `createParticles(scene, rng, rainCount, steamVents)` -> { rainScale, update(dt, focus) }: 4 InstancedMeshes, additive,
-  fades via instance colour. Rain box wraps around the focus.
+  fades via instance colour. Rain box is fixed over the district (PARTICLES.rain.area).
 - `createTimeOfDay({scene, lights, post, particles, signs, rng})` -> { name, setTimeOfDay(name, seconds), update(dt) }.
   States lateEvening / night / deadHour (TIME_OF_DAY): sky, fog, moon, hemi, grade, signs, flicker, dead, rain.
   Grade is written only while blending, so debug sliders stick until the next change.
