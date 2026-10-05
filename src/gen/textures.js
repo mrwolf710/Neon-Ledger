@@ -14,8 +14,9 @@ export const TEXTURES = {
   wetAsphalt: { ramp: [P.ink, P.night, P.grey0, P.grey1, P.grey2], puddle: [P.ink, P.night, P.indigo], puddleLevel: 0.38, rough: [0.05, 0.9] },
   awning: { stripe: 4, pairs: [[P.magentaDeep, P.magenta], [P.cyanDeep, P.seaGlass], [P.sodium0, P.amber], [P.indigo, P.violet]], rough: 0.9 },
   // Lit shop interior seen through the glass: light strip, shelves of goods, dark counter. Tile 4 x 2 units.
-  shop: { light: 2, shelfEvery: 6, counter: 9, goods: 4, // goods must divide 64 (tile width px)
-    gap: 0.25,
+  shop: { light: 2, lamps: [2, 4], poolW: 22, poolH: 20, pool: 0.3, back: 0.1, counter: [7, 10],
+    sectionW: [12, 32], sections: { shelves: 6, fridge: 2, door: 1, menu: 1, empty: 1 },
+    shelfGap: [4, 7], itemW: [2, 6], emptyChance: 0.3, fridgeDoor: 8, keeperChance: 0.5,
     warm: [P.rust0, P.rust2, P.sodium0, P.amber, P.amberLight], cool: [P.deepTeal, P.cyanDeep, P.teal, P.cyan, P.cyanLight] },
   sidewalk: { slab: 16, ramp: [P.grey2, P.grey3, P.grey4, P.grey5], seam: [P.grey0, P.grey1], rough: [0.4, 0.75] },
 };
@@ -86,24 +87,67 @@ function paint(wu, hu, px) {
   return { map, roughnessMap };
 }
 
-function shopInterior(rng, wu, hu, ramp) {
+// Lit shop interior seen through the glass. Built as a pixel buffer: dark back wall, ceiling lamps with light pools,
+// then random sections across the width (shelves of mixed goods, a fridge in the other ramp, a doorway, a menu board,
+// empty wall), a counter along the bottom and maybe a shopkeeper silhouette. alt = the contrasting ramp.
+function shopInterior(rng, wu, hu, ramp, alt) {
   const S = TEXTURES.shop, w = wu * 16, h = hu * 16;
-  const goods = cells(rng, w / S.goods, h), haze = noise(rng, w, h, 16, 8);
-  return paint(wu, hu, (x, y) => {
-    if (y < S.light) return [1, 1, ramp];                                   // ceiling light strip
-    if (y >= h - S.counter) return [y === h - S.counter ? 0.45 : 0.05, 1, ramp]; // counter top edge, dark front
-    const back = 0.35 + haze(x, y) * 0.2 - (y / h) * 0.15;                  // back wall, brighter near the light
-    const row = Math.floor((y - S.light) / S.shelfEvery), py = (y - S.light) % S.shelfEvery;
-    if (py === S.shelfEvery - 1) return [0.1, 1, ramp];                      // shelf plank
-    const g = goods(Math.floor(x / S.goods), row);
-    if (py > 1 && g > S.gap && x % S.goods !== 0) return [0.45 + g * 0.5, 1, ramp]; // boxes and bottles
-    return [back, 1, ramp];
-  });
+  const val = new Float32Array(w * h), useAlt = new Uint8Array(w * h);
+  const rect = (x0, y0, x1, y1, v, other = 0) => {
+    for (let y = Math.max(0, y0); y < Math.min(h, y1); y++) {
+      for (let x = Math.max(0, x0); x < Math.min(w, x1); x++) { val[y * w + x] = v; useAlt[y * w + x] = other; }
+    }
+  };
+  const haze = noise(rng, w, h, 16, 8);
+  const lamps = Array.from({ length: rng.int(...S.lamps) }, () => rng.int(4, w - 4));
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const pool = lamps.reduce((m, lx) => Math.max(m, 1 - Math.hypot((x - lx) / S.poolW, y / S.poolH)), 0);
+      val[y * w + x] = S.back + haze(x, y) * 0.08 + Math.max(0, pool) * S.pool;
+    }
+  }
+  const counterY = h - rng.int(...S.counter);
+  for (let x = 0; x < w;) {
+    const sw = Math.min(w - x, rng.int(...S.sectionW)), kind = rng.weighted(S.sections);
+    if (kind === 'shelves') {
+      for (let y = S.light + 1; y < counterY - 2;) {
+        const gap = rng.int(...S.shelfGap);
+        rect(x, y + gap, x + sw, y + gap + 1, 0.08);                       // plank
+        for (let gx = x + 1; gx < x + sw - 1;) {
+          const iw = rng.int(...S.itemW), ih = rng.int(1, gap - 1);
+          if (rng.rand() > S.emptyChance) rect(gx, y + gap - ih, Math.min(gx + iw, x + sw - 1), y + gap, rng.range(0.45, 0.95));
+          gx += iw + rng.int(0, 1);
+        }
+        y += gap + 1;
+      }
+    } else if (kind === 'fridge') {
+      rect(x + 1, S.light + 2, x + sw - 1, counterY, 0.85, 1);
+      for (let fx = x + 1 + S.fridgeDoor; fx < x + sw - 1; fx += S.fridgeDoor) rect(fx, S.light + 2, fx + 1, counterY, 0.3, 1);
+      for (let fy = S.light + 6; fy < counterY; fy += 5) rect(x + 1, fy, x + sw - 1, fy + 1, 0.55, 1);
+    } else if (kind === 'door') {
+      rect(x + 2, S.light + 4, x + Math.min(sw, 12) - 2, h, 0.02);
+    } else if (kind === 'menu') {
+      rect(x + 2, S.light + 2, x + sw - 2, S.light + 9, 0.95);
+      for (let my = S.light + 4; my < S.light + 8; my += 2) {
+        for (let mx = x + 4; mx < x + sw - 4; mx += rng.int(3, 6)) rect(mx, my, mx + rng.int(1, 3), my + 1, 0.2);
+      }
+    }
+    x += sw;
+  }
+  rect(0, counterY, w, counterY + 1, 0.5);                                 // counter top edge
+  rect(0, counterY + 1, w, h, 0.05);                                       // counter front
+  if (rng.rand() < S.keeperChance) {                                       // shopkeeper behind the counter
+    const kx = rng.int(8, w - 12);
+    rect(kx, counterY - 5, kx + 8, counterY, 0.03);
+    rect(kx + 2, counterY - 9, kx + 6, counterY - 5, 0.03);
+  }
+  for (const lx of lamps) rect(lx - 3, 0, lx + 3, S.light, 1);             // lamp fixtures
+  return paint(wu, hu, (x, y) => [val[y * w + x], 1, useAlt[y * w + x] ? alt : ramp]);
 }
 
 const GENERATORS = {
-  shopWarm: (rng, wu, hu) => shopInterior(rng, wu, hu, TEXTURES.shop.warm),
-  shopCool: (rng, wu, hu) => shopInterior(rng, wu, hu, TEXTURES.shop.cool),
+  shopWarm: (rng, wu, hu) => shopInterior(rng, wu, hu, TEXTURES.shop.warm, TEXTURES.shop.cool),
+  shopCool: (rng, wu, hu) => shopInterior(rng, wu, hu, TEXTURES.shop.cool, TEXTURES.shop.warm),
 
   brick(rng, wu, hu) {
     const B = TEXTURES.brick, w = wu * 16, h = hu * 16;

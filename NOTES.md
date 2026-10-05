@@ -24,7 +24,7 @@ Running summary for Claude sessions. Keep it under 60 lines.
 - `buildDistrict(rng)` -> Group. Street along X (length 40); Z across (road 6, sidewalks 2, buildings 3 deep). Rail x=17.
   group.userData = { lights: [{color,intensity,base,position}], steam: [Vector3], signs: [{mat, light}] }.
 - `createBatch()` -> { setTransform(x,z,rotY), add(mat,geo), box(...), light(color,int,x,y,z) -> light, steam(x,y,z),
-  sign(mat, light), build() -> Group }. Local +z = facing. ~1 draw per material + 2 per sign (sign + reflection).
+  sign(mat, light), build() -> Group }. Local +z = facing. ~1 draw per material + 2 per sign (sign + reflection) + 1 per open shop (own interior texture).
 - `building(rng, M, batch, w, d)`: shop (interior texture or shutter, awning, sign) + 1-5 floors of modules; AC units are steam vents.
   Each sign: point light (signLight), additive streak reflection (BUILDINGS.reflection). Glow multipliers signGlow/windowGlow/lamp.glow.
 - `getTexture(name, rng, wU, hU)` -> { map, roughnessMap }, Nearest, world-unit UVs (repeat 1/size), cached, Bayer-dithered ramps.

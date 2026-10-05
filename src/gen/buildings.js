@@ -16,6 +16,7 @@ export const BUILDINGS = {
   ac: { w: 0.7, h: 0.5, d: 0.45 },
   litChance: 0.55, coolChance: 0.3,
   shopClosedChance: 0.3,
+  shopTex: 8,               // shop interior texture width in units (wider than any shopfront, so no visible repeat)
   balconyChance: 0.25, pipeChance: 0.7, cableChance: 0.35, roofClutterChance: 0.6,
   awning: { depth: 1.1, slope: 0.35, y: 2.35 },
   signs: [1, 2], signGlyphs: [3, 5],
@@ -56,8 +57,6 @@ export function getMaterials(rng) {
     cable: std({ color: C.cable, roughness: 0.9 }),
     litWarm: glow(C.litWarm),
     litCool: glow(C.litCool),
-    shopWarm: new THREE.MeshBasicMaterial({ map: getTexture('shopWarm', rng, 4, 2).map, color: new THREE.Color().setScalar(BUILDINGS.windowGlow) }),
-    shopCool: new THREE.MeshBasicMaterial({ map: getTexture('shopCool', rng, 4, 2).map, color: new THREE.Color().setScalar(BUILDINGS.windowGlow) }),
   };
   M.road.roughness = BUILDINGS.wet.road;
   M.sidewalk.roughness = BUILDINGS.wet.sidewalk;
@@ -154,7 +153,12 @@ export function building(rng, M, batch, w, d) {
 
   // Shopfront: glass (lit or dark) or rolled shutter, then a striped awning.
   const sw = w - 0.8, shopOpen = rng.rand() >= B.shopClosedChance;
-  if (shopOpen) framedOpening(batch, M, rng.rand() < B.coolChance ? M.shopCool : M.shopWarm, 0, 1.1, sw, 2.0, fz);
+  if (shopOpen) {
+    // Own interior per building (+1 draw per open shop); the fork leaves this building's rng sequence untouched.
+    const kind = rng.rand() < B.coolChance ? 'shopCool' : 'shopWarm';
+    const map = getTexture(kind, rng.fork('shop'), B.shopTex, 2).map;
+    framedOpening(batch, M, new THREE.MeshBasicMaterial({ map, color: new THREE.Color().setScalar(B.windowGlow) }), 0, 1.1, sw, 2.0, fz);
+  }
   else batch.box(M.metal, sw, 2.0, 0.06, 0, 1.1, fz + 0.03);
   const Aw = B.awning;
   batch.box(rng.pick(M.awnings), sw + 0.2, 0.06, Aw.depth, 0, Aw.y, fz + (Aw.depth / 2) * Math.cos(Aw.slope), Aw.slope);
