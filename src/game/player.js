@@ -5,6 +5,7 @@ export const PLAYER = {
   accel: 12,             // higher = snappier starts and stops
   radius: 0.3,           // collision circle
   moving: 0.3,           // speed above which the walk animation plays
+  runAnim: 1.5,          // most the walk cycle speeds up when running (also sets the footstep rate)
   stuckTime: 0.4,        // seconds without progress before click-to-move gives up
 };
 
@@ -41,7 +42,7 @@ export function createPlayer(billboard, collision) {
       const v = vel.length();
       if (v > PLAYER.moving) billboard.facing = Math.atan2(vel.x, vel.y);
       billboard.anim = v > PLAYER.moving ? 'walk' : 'idle';
-      billboard.fpsScale = v > PLAYER.moving ? Math.max(0.6, v / PLAYER.walk) : 1;
+      billboard.fpsScale = v > PLAYER.moving ? Math.min(PLAYER.runAnim, Math.max(0.6, v / PLAYER.walk)) : 1;
     },
   };
 }

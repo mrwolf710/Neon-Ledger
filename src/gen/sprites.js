@@ -10,7 +10,7 @@ export const SPRITES = {
   w: 40, h: 64, pxPerUnit: 32,
   cat: { w: 16, h: 12, pxPerUnit: 16 },
   rim: { left: 'magentaDeep', right: 'cyanDeep' }, // neon edge light on the silhouette (palette names, null = off)
-  fps: { idle: 2, walk: 8 },
+  fps: { idle: 2, walk: 5.5 },
 };
 export const DIRS = ['down', 'up', 'left', 'right'];
 export const ANIMS = { idle: { start: 0, frames: 2 }, walk: { start: 2, frames: 4 } };
