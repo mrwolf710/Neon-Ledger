@@ -9,10 +9,20 @@ export const FOG = {
   high: 0.25,     // distance fog kept far above the ground (0..1)
 };
 
+// See-through cutaway: geometry in front of the player, inside a circle around them on screen and above
+// street level, is discarded (dithered edge) so near buildings never hide Juno. Shares the fog patch.
+export const CUTAWAY = {
+  radius: 4,      // world units around the player
+  minY: 0.3,      // never cut below this height (street, sidewalks, curbs)
+  margin: 1.5,    // only cut things at least this much closer to the camera than the player
+  edge: 0.3,      // dithered fraction of the radius
+};
+
 // Height fog: scene.fog (FogExp2) supplies colour/density and the USE_FOG define; patched materials
 // scale it by world height so it pools near the ground. Unpatched materials get plain (faint) exp2 fog.
 const uniforms = {
   fogFalloff: { value: FOG.falloff }, fogHigh: { value: FOG.high }, fogGround: { value: FOG.ground }, fogStart: { value: 0 },
+  cutCenter: { value: new THREE.Vector2(-1e4, -1e4) }, cutRadius: { value: 0 }, cutDepth: { value: 0 },
 };
 
 const VERT = /* glsl */`
@@ -27,6 +37,15 @@ const VERT = /* glsl */`
 
 const FRAG = /* glsl */`
 #ifdef USE_FOG
+  {
+    float cutD = length(gl_FragCoord.xy - cutCenter) / cutRadius;
+    if (cutD < 1.0 && vFogDepth < cutDepth && vFogWorldY > ${CUTAWAY.minY.toFixed(2)}) {
+      const float bayer[16] = float[16](0., 8., 2., 10., 12., 4., 14., 6., 3., 11., 1., 9., 15., 7., 13., 5.);
+      ivec2 bp = ivec2(mod(gl_FragCoord.xy, 4.0));
+      float edgeT = (cutD - (1.0 - ${CUTAWAY.edge.toFixed(2)})) / ${CUTAWAY.edge.toFixed(2)};
+      if (edgeT < (bayer[bp.y * 4 + bp.x] + 0.5) / 16.0) discard;
+    }
+  }
   float fogH = exp(-max(vFogWorldY, 0.0) * fogFalloff);
   float fogFactor = (1.0 - exp(-fogDensity * max(vFogDepth - fogStart, 0.0))) * mix(fogHigh, 1.0, fogH) + fogGround * fogH;
   gl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, clamp(fogFactor, 0.0, 1.0));
@@ -38,9 +57,11 @@ function onBeforeCompile(shader) {
     .replace('#include <fog_pars_vertex>', '#include <fog_pars_vertex>\nvarying float vFogWorldY;')
     .replace('#include <fog_vertex>', VERT);
   shader.fragmentShader = shader.fragmentShader
-    .replace('#include <fog_pars_fragment>', '#include <fog_pars_fragment>\nvarying float vFogWorldY;\nuniform float fogFalloff, fogHigh, fogGround, fogStart;')
+    .replace('#include <fog_pars_fragment>', '#include <fog_pars_fragment>\nvarying float vFogWorldY;\nuniform float fogFalloff, fogHigh, fogGround, fogStart, cutRadius, cutDepth;\nuniform vec2 cutCenter;')
     .replace('#include <fog_fragment>', FRAG);
 }
+
+const v = new THREE.Vector3();
 
 export function createHeightFog(scene) {
   scene.fog = new THREE.FogExp2(FOG.color, FOG.density);
@@ -49,6 +70,15 @@ export function createHeightFog(scene) {
     uniforms,
     // Distance fog starts just in front of what the camera looks at, so zoom does not change the haze much.
     update(camera, focus) { uniforms.fogStart.value = camera.position.distanceTo(focus) - FOG.startOffset; },
+    // Centres the cutaway on the player. bufferW/H: drawing-buffer pixels (gl_FragCoord space).
+    cutaway(camera, playerPos, bufferW, bufferH) {
+      v.copy(playerPos).setY(playerPos.y + 1).applyMatrix4(camera.matrixWorldInverse);
+      const depth = -v.z;
+      uniforms.cutDepth.value = depth - CUTAWAY.margin;
+      uniforms.cutRadius.value = (CUTAWAY.radius / (2 * depth * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2))) * bufferH;
+      v.copy(playerPos).setY(playerPos.y + 1).project(camera);
+      uniforms.cutCenter.value.set((v.x + 1) / 2 * bufferW, (v.y + 1) / 2 * bufferH);
+    },
     // Patches every fogged material under root (call once per built group).
     patch(root) {
       root.traverse((o) => {

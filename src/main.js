@@ -71,7 +71,7 @@ for (const s of district.userData.spots.filter((p) => p.name === 'vending')) {
   interactions.add({ id: 'vending', position: new THREE.Vector3(s.x, 0, s.z), height: 1.8, verb: 'Use', onInteract: () => console.log('interact: vending') });
 }
 const ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
-const headPos = new THREE.Vector3();
+const headPos = new THREE.Vector3(), bufSize = new THREE.Vector2();
 cam.follow(player.position, true);
 const tod = createTimeOfDay({ scene, lights, post, particles, signs: district.userData.signs, rng: rng.fork('flicker') });
 tod.setTimeOfDay(MAIN.timeOfDay);
@@ -144,6 +144,8 @@ renderer.setAnimationLoop((now) => {
   cast.update(dt, cam.yaw, district.userData.lights);
   interactions.update(player.position, player.facing, input.lastDevice, input.padType);
   fog.update(cam.camera, cam.target);
+  const db = renderer.getDrawingBufferSize(bufSize);
+  fog.cutaway(cam.camera, player.position, db.x, db.y);
   lights.update(dt, cam.target);
   renderer.info.reset();
   post.render(dt);

@@ -38,6 +38,7 @@ Running summary for Claude sessions (keep under 60 lines).
 - `createLights(scene, max, shadowSize)` -> { moon, hemi, register, update(dt, focus) }: nearest-N re-sort 0.25 s; intensity per frame.
 - `createPost(renderer, scene, camera, quality)` -> { applyUniforms(), setSize, render(dt) }; edit POST then applyUniforms().
 - `createHeightFog(scene)` -> { uniforms, update(camera, focus), patch(root) }: FogExp2 + onBeforeCompile; starts near focus, pools low.
+  Same patch does the CUTAWAY: cutaway(camera, playerPos, bufW, bufH) dither-cuts geometry in front of Juno.
 - `createParticles(scene, rng, rainCount, steamVents)` -> { rainScale, update(dt, focus, camera) }: 4 additive InstancedMeshes; rain fixed over district.
 - `createTimeOfDay({scene, lights, post, particles, signs, rng})` -> { name, setTimeOfDay(name, seconds), update(dt) }.
   States lateEvening / night / deadHour (TIME_OF_DAY): sky, fog, moon, hemi, grade, signs, flicker, dead, rain.
