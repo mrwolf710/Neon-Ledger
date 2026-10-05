@@ -12,7 +12,7 @@ export const TIME_OF_DAY = {
   },
   night: {
     label: 'Night', sky: 0x0b0b14, fog: 0x1a1430, fogDensity: 0.03, moon: 0.9, moonColor: 0x8aa0ff, hemi: 0.35,
-    lift: [0, 0.01, 0.05], gamma: [1, 1, 1], gain: [0.95, 1, 1.12], saturation: 1.15,
+    lift: [0, 0.01, 0.05], gamma: [1, 1, 1], gain: [0.95, 1, 1.05], saturation: 1.15,
     signs: 1, flicker: 0.04, dead: 0, rain: 1,
   },
   deadHour: {

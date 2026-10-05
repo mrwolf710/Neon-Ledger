@@ -2,9 +2,9 @@ import * as THREE from 'three';
 import { DISTRICT } from './district.js';
 
 export const PARTICLES = {
-  rain: { color: 0x8fa8d8, size: [0.02, 0.7], speed: 22, wind: [2, 0.6], area: [34, 18, 34], intensity: 1 },
-  splash: { color: 0x9fb8e8, max: 300, perDrop: 0.15, life: 0.35, size: 0.35 }, // perDrop: chance a landing drop splashes
-  steam: { color: 0x8a8aa0, max: 60, rate: 6, life: 2.5, rise: 0.8, size: [0.15, 0.7], range: 16, opacity: 0.25 },
+  rain: { color: 0x8fa8d8, size: [0.02, 0.5], speed: 22, wind: [2, 0.6], area: [34, 18, 34], intensity: 0.35 },
+  splash: { color: 0x9fb8e8, max: 300, perDrop: 0.08, life: 0.35, size: 0.18, inner: 0.8 }, // inner: ring hole (0..1) // perDrop: chance a landing drop splashes
+  steam: { color: 0x8a8aa0, max: 60, rate: 6, life: 2.5, rise: 0.8, size: [0.25, 1.0], range: 16, opacity: 0.45 },
   motes: { color: 0xffc070, count: 50, area: [20, 6, 14], drift: 0.25, size: 0.05 },
 };
 
@@ -31,7 +31,7 @@ export function createParticles(scene, rng, rainCount, steamVents) {
   const m = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), s = new THREE.Vector3(), c = new THREE.Color();
 
   const rain = instanced(new THREE.BoxGeometry(R.size[0], R.size[1], R.size[0]), additive(R.color, R.intensity), rainCount);
-  const splash = instanced(new THREE.RingGeometry(0.6, 1, 10).rotateX(-Math.PI / 2), additive(S.color), S.max, true);
+  const splash = instanced(new THREE.RingGeometry(S.inner, 1, 10).rotateX(-Math.PI / 2), additive(S.color), S.max, true);
   const steam = instanced(new THREE.BoxGeometry(1, 1, 1), additive(St.color, St.opacity), St.max, true);
   const motes = instanced(new THREE.BoxGeometry(Mo.size, Mo.size, Mo.size), additive(Mo.color), Mo.count);
   scene.add(rain, splash, steam, motes);
