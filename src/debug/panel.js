@@ -5,6 +5,9 @@ export const PANEL = {
   style: 'position:fixed;top:8px;left:8px;padding:6px 8px;font:12px/1.4 monospace;color:#7fffb0;' +
     'background:rgba(0,0,0,.7);z-index:10;display:none;max-height:calc(100vh - 16px);overflow:auto',
   rowStyle: 'display:flex;gap:6px;align-items:center;justify-content:space-between',
+  spriteScale: 3,
+  spriteStyle: 'position:fixed;top:8px;right:8px;max-height:calc(100vh - 16px);overflow:auto;padding:8px;' +
+    'background:#2a2a3a;font:12px monospace;color:#ddd;z-index:11',
 };
 
 export function createDebugPanel(renderer, seed) {
@@ -65,4 +68,18 @@ export function createDebugPanel(renderer, seed) {
       elapsed = 0;
     },
   };
+}
+
+// ?sprites in the URL: shows every sprite sheet, scaled up, over the game (Stage 4 check).
+export function showSprites(sheets, scale = PANEL.spriteScale) {
+  const box = document.createElement('div');
+  box.style.cssText = PANEL.spriteStyle;
+  for (const [id, s] of Object.entries(sheets)) {
+    const c = s.canvas;
+    c.style.cssText = `width:${c.width * scale}px;height:${c.height * scale}px;image-rendering:pixelated;display:block`;
+    const label = document.createElement('div');
+    label.textContent = id;
+    box.append(label, c);
+  }
+  document.body.appendChild(box);
 }

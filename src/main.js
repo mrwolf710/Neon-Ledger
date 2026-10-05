@@ -3,7 +3,8 @@ import { rng } from './core/rng.js';
 import { input } from './core/input.js';
 import { createCamera, CAMERA } from './render/camera.js';
 import { buildDistrict } from './world/district.js';
-import { createDebugPanel } from './debug/panel.js';
+import { createDebugPanel, showSprites } from './debug/panel.js';
+import { getSheets } from './gen/sprites.js';
 import { settings, TIERS } from './core/settings.js';
 import { createLights } from './render/lights.js';
 import { createPost, POST } from './render/post.js';
@@ -52,6 +53,7 @@ const tod = createTimeOfDay({ scene, lights, post, particles, signs: district.us
 tod.setTimeOfDay(MAIN.timeOfDay);
 
 const debug = createDebugPanel(renderer, rng.seed);
+if (new URLSearchParams(location.search).has('sprites')) showSprites(getSheets());
 const labels = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, v.name ?? v.label]));
 debug.select('time', labels(TIME_OF_DAY), MAIN.timeOfDay, (v) => tod.setTimeOfDay(v, MAIN.todBlendSeconds));
 debug.select('tier', labels(TIERS), settings.tier, (v) => { location.search = `?quality=${v}`; });

@@ -1,8 +1,8 @@
 # NOTES
-Running summary for Claude sessions. Keep it under 60 lines.
+Running summary for Claude sessions (keep under 60 lines).
 
 ## Status
-- Current stage: 3B done (#6). Next: Stage 4A (#8). Seed: 1337 (`SEED` in src/core/rng.js)
+- Current stage: 4A done (#8). Next: Stage 4B (#9). Seed: 1337 (`SEED` in src/core/rng.js)
 
 ## Files
 - src/main.js: renderer (shadows, Neutral tone map), builds everything, debug controls, game loop
@@ -13,9 +13,8 @@ Running summary for Claude sessions. Keep it under 60 lines.
 - src/world: district.js street layout · particles.js rain, splashes, steam, motes · timeofday.js moods + sign flicker
 - src/gen: palette.js 32 colours + snap() · textures.js canvas generators (brick, concrete, tiles, metalPanel,
   wetAsphalt, sidewalk, awning, shopWarm/shopCool) · batch.js merge-per-material collector · buildings.js · glyphs.js signs
-  · props.js stall, crates, vending, bags, lamp
+  · props.js stall, crates, vending, bags, lamp · sprites.js layered pixel characters + cat (data in CHARACTERS/CATS)
 - src/debug/panel.js: stats overlay + select/slider/button controls (` toggles)
-
 ## Key functions
 - `rng` / `createRng(seed)` -> { seed, rand, range, int (inclusive), pick, weighted({k:w}), fork(label) }; fork depends only on (seed, label).
 - `input.update()` / `input.endFrame()`; `moveX/moveY`, `zoom`, `zoomSteps`, `held(a)`, `pressed(a)`.
@@ -40,18 +39,21 @@ Running summary for Claude sessions. Keep it under 60 lines.
   Grade is written only while blending, so debug sliders stick until the next change.
 - `createDebugPanel(renderer, seed)` -> { toggle, update(dt), select(label, {v:text}, v, fn), slider(label, obj, key, min, max, step, fn, index), button }.
   Panel has time, tier (reloads), bloom, tilt, grade RGB, saturation, fog sliders, "log values" (prints JSON to console).
+- `getSheets()` -> { juno, mamaTeo, kit, dex, vendor, miso }: `spriteSheet(def, isCat)` -> { texture, canvas, frameW, frameH,
+  rows {down,up,left,right[,slump]}, anims {idle:{start:0,frames:2}, walk:{start:2,frames:4}} }. 24x32 (cat 16x12),
+  auto shading (lit top-left / dark bottom-right edges, tones from CHAINS) + ink outline; right = mirrored left. ?sprites previews.
 - Tunables: constants at the top of each file (CAMERA, DISTRICT, TEXTURES, BUILDINGS, PROPS, TIERS, LIGHTS, POST, FOG,
-  PARTICLES, TIME_OF_DAY, FLICKER, PANEL, MAIN).
+  PARTICLES, TIME_OF_DAY, FLICKER, PANEL, MAIN, SPRITES).
 
 ## Data formats
-- (dialogue, echo and board formats come in Stages 6-7)
+- Character: { name, skin, eyes, hair:{style,color}, top, legs, shoes, coat?:{color,length,collar}, rolledSleeves?, stoop?,
+  acc:[{type,color}], poses?:['slump'] }. Colours are palette names. Dialogue/echo/board formats come in Stages 6-7.
 
 ## Known issues
 - Build warns chunk > 500 kB (three.js). Harmless for now.
 - WASD pans the camera (temporary until the Stage 4 player; remove cam.pan in main). Tilt band fixed at screen centre.
 - Rail deck runs into buildings near x=17. No prop collision yet. Point lights don't cast shadows.
-- renderer.info.autoReset is off (reset per frame in main) so stats count all post passes.
-- Shadows are on for Mobile too; turn off or shrink if the iPhone struggles.
+- Shadows on for Mobile too (shrink if iPhone struggles). renderer.info.autoReset off (reset per frame in main).
 
 ## Next
-Stage 4A (#8): layered pixel sprite generator and character data.
+Stage 4B (#9): npc.js Y-axis billboards (direction row from camera angle), contact shadow, rim tint shader, place characters.
