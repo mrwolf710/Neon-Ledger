@@ -4,13 +4,34 @@ import { DISTRICT } from './district.js';
 export const PARTICLES = {
   rain: { color: 0x8fa8d8, size: [0.02, 0.5], speed: 22, wind: [2, 0.6], area: [52, 18, 28], intensity: 0.35 }, // area: x/y/z box centred on the district
   splash: { color: 0x9fb8e8, max: 300, perDrop: 0.08, life: 0.35, size: 0.18, inner: 0.8 }, // inner: ring hole (0..1) // perDrop: chance a landing drop splashes
-  steam: { color: 0x8a8aa0, max: 60, rate: 6, life: 2.5, rise: 0.8, size: [0.25, 1.0], range: 16, opacity: 0.45 },
+  steam: { color: 0x8a8aa0, max: 60, rate: 6, life: 2.5, rise: 0.8, size: [0.25, 1.0], range: 16, opacity: 0.45, texPx: 16 }, // texPx: puff texture size (pixel-art round blob)
   motes: { color: 0xffc070, count: 50, area: [20, 6, 14], drift: 0.25, size: 0.05 },
 };
 
 const D = DISTRICT;
 const groundY = (z) => (Math.abs(z) > D.roadWidth / 2 && Math.abs(z) < D.roadWidth / 2 + D.sidewalkWidth ? D.curbHeight : 0);
 const onStreet = (x, z) => Math.abs(x) < D.length / 2 && Math.abs(z) < D.roadWidth / 2 + D.sidewalkWidth;
+
+// Round puff: brightness falls off from the centre, Bayer-dithered to stay pixel-art (additive, so black = clear).
+function puffTexture(n) {
+  const cv = Object.assign(document.createElement('canvas'), { width: n, height: n });
+  const ctx = cv.getContext('2d'), img = ctx.createImageData(n, n);
+  const bayer = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      const d = Math.hypot(x + 0.5 - n / 2, y + 0.5 - n / 2) / (n / 2);
+      const v = Math.max(0, 1 - d) * 4;                       // 0..4 levels
+      const lvl = Math.min(4, Math.floor(v + bayer[(y & 3) * 4 + (x & 3)] / 16)) / 4;
+      const o = (y * n + x) * 4;
+      img.data[o] = img.data[o + 1] = img.data[o + 2] = lvl * 255; img.data[o + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  const t = new THREE.CanvasTexture(cv);
+  t.magFilter = t.minFilter = THREE.NearestFilter;
+  t.generateMipmaps = false;
+  return t;
+}
 
 const additive = (color, opacity = 1) => new THREE.MeshBasicMaterial({
   color, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false, fog: false,
@@ -32,7 +53,9 @@ export function createParticles(scene, rng, rainCount, steamVents) {
 
   const rain = instanced(new THREE.BoxGeometry(R.size[0], R.size[1], R.size[0]), additive(R.color, R.intensity), rainCount);
   const splash = instanced(new THREE.RingGeometry(S.inner, 1, 10).rotateX(-Math.PI / 2), additive(S.color), S.max, true);
-  const steam = instanced(new THREE.BoxGeometry(1, 1, 1), additive(St.color, St.opacity), St.max, true);
+  const steamMat = additive(St.color, St.opacity);
+  steamMat.map = puffTexture(St.texPx);
+  const steam = instanced(new THREE.PlaneGeometry(1, 1), steamMat, St.max, true); // camera-facing quads
   const motes = instanced(new THREE.BoxGeometry(Mo.size, Mo.size, Mo.size), additive(Mo.color), Mo.count);
   scene.add(rain, splash, steam, motes);
 
@@ -50,7 +73,7 @@ export function createParticles(scene, rng, rainCount, steamVents) {
   let nextSplash = 0, nextPuff = 0, steamAcc = 0, time = 0;
   const api = { rainScale: 1 }; // 0..1 fraction of drops shown (time of day can lighten the rain)
 
-  api.update = (dt, focus) => {
+  api.update = (dt, focus, camera) => {
     time += dt;
     // Rain: drops live in a fixed box over the district and wrap at its edges, so the shower stays put when the camera moves.
     const shown = Math.floor(rainCount * api.rainScale);
@@ -94,7 +117,7 @@ export function createParticles(scene, rng, rainCount, steamVents) {
       p.t = Math.min(1, p.t + dt / St.life);
       p.y += St.rise * dt; p.x += p.dx * dt;
       const k = p.t >= 1 ? 0 : THREE.MathUtils.lerp(St.size[0], St.size[1], p.t);
-      m.compose(v.set(p.x, p.y, p.z), q.identity(), s.setScalar(k));
+      m.compose(v.set(p.x, p.y, p.z), camera.quaternion, s.setScalar(k));
       steam.setMatrixAt(i, m);
       steam.setColorAt(i, c.setScalar(Math.sin(p.t * Math.PI)));
     });

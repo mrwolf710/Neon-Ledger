@@ -32,7 +32,7 @@ Running summary for Claude sessions (keep under 60 lines).
 - `createPost(renderer, scene, camera, quality)` -> { applyUniforms(), setSize, render(dt) }; edit POST then applyUniforms().
 - `createHeightFog(scene)` -> { uniforms, update(camera, focus), patch(root) }: scene.fog FogExp2 + onBeforeCompile on every
   fogged material under root. Distance fog starts near the focus (FOG.startOffset) + ground mist; thins with height.
-- `createParticles(scene, rng, rainCount, steamVents)` -> { rainScale, update(dt, focus) }: 4 InstancedMeshes, additive,
+- `createParticles(scene, rng, rainCount, steamVents)` -> { rainScale, update(dt, focus, camera) }: 4 InstancedMeshes, additive,
   fades via instance colour. Rain box is fixed over the district (PARTICLES.rain.area).
 - `createTimeOfDay({scene, lights, post, particles, signs, rng})` -> { name, setTimeOfDay(name, seconds), update(dt) }.
   States lateEvening / night / deadHour (TIME_OF_DAY): sky, fog, moon, hemi, grade, signs, flicker, dead, rain.

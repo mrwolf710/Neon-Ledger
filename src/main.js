@@ -96,7 +96,7 @@ renderer.setAnimationLoop((now) => {
   cam.update(dt);
 
   tod.update(dt);
-  particles.update(dt, cam.target);
+  particles.update(dt, cam.target, cam.camera);
   fog.update(cam.camera, cam.target);
   lights.update(dt, cam.target);
   renderer.info.reset();
