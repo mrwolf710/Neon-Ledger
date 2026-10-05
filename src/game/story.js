@@ -46,7 +46,7 @@ export const CONVERSATIONS = {
         effects: [{ addPerson: 'mamaTeo' }, { setFlag: 'teo_met' }],
         choices: [{ text: "I'm here about Dex Morrow.", next: 'knows' }] },
       knows: { speaker: 'mamaTeo', text: "Dex. Everyone on Lowmarket knew Dex. Two years in my corner booth, selling other people's memories, and never once skipped paying for his bowl.", next: 'ask' },
-      ask: { speaker: 'mamaTeo', text: "Dex came in twice tonight. The second time was after close. He wanted the back room, said a client was coming, and kept a hand on his temple the whole time. I locked the door behind him, like always.",
+      ask: { speaker: 'mamaTeo', text: "I saw Dex twice tonight. The second time was after close. He wanted the back room, said a client was coming, and he needed the privacy. He kept a hand on his temple the whole time - looked like he was in pain. I didn't ask. His business. I just locked the door behind him, like always.",
         choices: [...TEO_QUESTIONS, { text: "That's all.", end: true }] },
       door: { speaker: 'mamaTeo', text: "A click, a while later. The back door, opening. No knock. Nobody who knocks lets themselves in.",
         effects: [{ addFact: 'door_unlocked' }], next: 'more' },

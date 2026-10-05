@@ -35,7 +35,7 @@ run(10);                                     // she shows she knew him
 assert.ok(log.text.startsWith('Dex. Everyone on Lowmarket'));
 run(0.1, 'interact');                        // on to what she saw
 run(10);
-assert.ok(log.text.startsWith('Dex came in twice'));
+assert.ok(log.text.startsWith('I saw Dex twice'));
 assert.deepEqual(log.choices, ['Did you hear anything after that?', 'Did you see his client arrive?', "That's all."]);
 run(0.1, 'down'); run(0.1, 'up');            // wrap-around navigation
 run(0.1, 'interact');                        // pick "Did you hear anything after that?"
