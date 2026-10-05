@@ -1,10 +1,7 @@
 import { BOARD } from './story.js';
 import { frame } from '../ui/hud.js';
-import { rng } from '../core/rng.js';
-import { PALETTE as P } from '../gen/palette.js';
 
 export const BOARDUI = {
-  corkPx: 96, corkScale: 2,       // cork texture size (generated in code) and its on-screen scale
   lineSeconds: 4.5,               // how long Juno's line stays up
   snapMs: 450,                    // wrong-link string flash
   dragStart: 6,
@@ -48,25 +45,6 @@ export function createBoardLogic(data, hasFact) {
   };
 }
 
-// Cork texture drawn at runtime from palette browns (seeded, so it is the same every run).
-function corkURL() {
-  const r = rng.fork('cork'), n = BOARDUI.corkPx;
-  const cv = Object.assign(document.createElement('canvas'), { width: n, height: n });
-  const ctx = cv.getContext('2d');
-  const tones = [P.rust0, P.rust1, P.rust1, P.rust2, P.sodium0];
-  for (let y = 0; y < n; y++) {
-    for (let x = 0; x < n; x++) {
-      ctx.fillStyle = `#${r.pick(tones).toString(16).padStart(6, '0')}`;
-      ctx.fillRect(x, y, 1, 1);
-    }
-  }
-  for (let i = 0; i < n * 3; i++) { // flecks of lighter cork and dark pits
-    ctx.fillStyle = `#${(r.rand() < 0.5 ? P.rust3 : P.ink).toString(16).padStart(6, '0')}`;
-    ctx.fillRect(r.int(0, n - 1), r.int(0, n - 1), r.int(1, 2), 1);
-  }
-  return cv.toDataURL();
-}
-
 const el = (tag, cls, parent, text) => {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
@@ -75,22 +53,24 @@ const el = (tag, cls, parent, text) => {
   return e;
 };
 
-// Deduction board: fact cards on cork; drag a card onto another (or select two) to propose a link.
+// Deduction board: fact data cards on a holographic grid; drag a card onto another (or select two) to propose a link.
 export function createBoard({ caseFile, hud }) {
   const logic = createBoardLogic(BOARD, (id) => caseFile.has(id));
   const root = el('div', '', document.body); root.id = 'board';
   const box = frame(el('div', 'bd-box', root));
-  box.style.backgroundImage = `url(${corkURL()})`;
-  box.style.backgroundSize = `${BOARDUI.corkPx * BOARDUI.corkScale}px`;
   const head = el('div', 'bd-head', box);
-  el('div', 'bd-title nameplate', head, 'Deduction board');
+  const titleBox = el('div', 'bd-titlebox', head);
+  el('div', 'bd-title nameplate', titleBox, 'Deduction matrix');
+  const status = el('div', 'bd-status', titleBox);
   const closeBtn = el('button', 'bd-close', head, '✕');
   const cardsEl = el('div', 'bd-cards', box);
   const svgNS = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(svgNS, 'svg'); svg.setAttribute('class', 'bd-strings'); box.appendChild(svg);
   const lineEl = frame(el('div', 'bd-line', box));
+  el('span', 'who nameplate', lineEl, 'Juno');
   const lineTxt = el('span', '', lineEl);
-  const foot = el('div', 'bd-foot', box, 'Drag a card onto another · or arrows + Space to pick two · Esc closes');
+  const foot = el('div', 'bd-foot', box);
+  foot.innerHTML = '<span class="keycap">Drag</span>card onto card <span class="keycap">Arrows</span><span class="keycap">Space</span>pick two <span class="keycap">Esc</span>close';
 
   let isOpen = false, cursor = 0, first = null, drag = null, temp = null, flash = null, lineTimer = 0, cards = [], newId = null;
   const api = {
@@ -115,6 +95,11 @@ export function createBoard({ caseFile, hud }) {
       const l = document.createElementNS(svgNS, 'line');
       for (const [k, v] of Object.entries({ x1, y1, x2, y2, class: cls })) l.setAttribute(k, v);
       svg.appendChild(l);
+      for (const [cx, cy] of [[x1, y1], [x2, y2]]) { // node dots where the string meets the card
+        const dot = document.createElementNS(svgNS, 'circle');
+        for (const [k, v] of Object.entries({ cx, cy, r: 5, class: `dot ${cls}` })) dot.setAttribute(k, v);
+        svg.appendChild(dot);
+      }
     };
     for (const [id, list] of logic.edges) for (const [a, b] of list) add(a, b, logic.solved.has(id) ? 'locked' : 'partial');
     if (flash) add(flash[0], flash[1], 'wrong');
@@ -166,8 +151,9 @@ export function createBoard({ caseFile, hud }) {
       if (f.id === first) d.classList.add('sel');
       if (f.source === 'Deduction board') d.classList.add('result');
       if (f.id === newId) d.classList.add('new');
-      el('div', 'pin', d);
+      el('div', 'tag', d, f.source === 'Deduction board' ? 'CONCLUSION' : `FACT-${String(i + 1).padStart(2, '0')}`);
       el('div', 't', d, f.title); el('div', 'x', d, f.text);
+      el('div', 'src', d, f.source);
       d.addEventListener('pointerdown', (e) => {
         e.preventDefault(); d.setPointerCapture(e.pointerId);
         drag = { from: f.id, x0: e.clientX, y0: e.clientY, moved: false };
@@ -188,7 +174,8 @@ export function createBoard({ caseFile, hud }) {
       });
       return d;
     }));
-    if (!facts.length) cardsEl.innerHTML = '<div class="bd-empty">No facts yet. Talk to people and scan echoes.</div>';
+    if (!facts.length) cardsEl.innerHTML = '<div class="bd-empty">&gt; NO DATA. TALK TO PEOPLE. SCAN ECHOES.</div>';
+    status.textContent = `FACTS ${facts.length} · LINKS ${logic.solved.size}/${BOARD.conclusions.length}`;
     cards = facts.map((f) => f.id);
     requestAnimationFrame(drawStrings);
   }
