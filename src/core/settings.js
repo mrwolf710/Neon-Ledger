@@ -3,7 +3,7 @@
 export const TIERS = {
   high:   { name: 'High',   pixelRatio: 2,   bloomScale: 0.5,  maxLights: 24, shadowMap: 2048, rainCount: 4000, ssr: false },
   medium: { name: 'Medium', pixelRatio: 1.5, bloomScale: 0.5,  maxLights: 16, shadowMap: 1024, rainCount: 2500, ssr: false },
-  mobile: { name: 'Mobile', pixelRatio: 2,   bloomScale: 0.25, maxLights: 12, shadowMap: 1024, rainCount: 1200, ssr: false },
+  mobile: { name: 'Mobile', pixelRatio: 1.5,   bloomScale: 0.25, maxLights: 12, shadowMap: 1024, rainCount: 1200, ssr: false },
 };
 
 function detectTier() {
