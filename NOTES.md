@@ -51,6 +51,7 @@ Running summary for Claude sessions. Paste this file at the start of every stage
 
 ## Known issues
 - Build warns chunk > 500 kB (three.js). Harmless for now.
+- WASD pans the camera target (temporary free-look until the Stage 4 player; remove the cam.pan line in main).
 - Rail deck runs into the buildings near x=17 (since Stage 1). No collision on props yet.
 - Tilt-shift band is fixed at screen centre (POST.tilt.center) until there is a player. renderer.info.autoReset is off (reset per frame in main).
 - Point lights don't cast shadows; reflections stop at the road centre-ish (reflection.length).

@@ -5,11 +5,12 @@ export const CAMERA = {
   pitchDeg: 35,
   yawDeg: 45,
   distance: 75,
-  minDistance: 30,
+  minDistance: 12,
   maxDistance: 140,
   rotateMs: 300,
   zoomSpeed: 60,  // units per second while Z/X held
   wheelStep: 6,   // units per wheel notch
+  panSpeed: 12,   // units per second (WASD free-look until there is a player); x2 with Shift
   near: 1,
   far: 500,
 };
@@ -44,6 +45,12 @@ export function createCamera(aspect) {
       fromYaw = yaw;
       toYaw += dir * Math.PI / 2;
       t = 0;
+    },
+    // Moves the target on the ground, relative to the view: x right, y forward (into the screen).
+    pan(x, y, dt) {
+      const s = CAMERA.panSpeed * dt;
+      target.x += (Math.cos(yaw) * x - Math.sin(yaw) * y) * s;
+      target.z += (-Math.sin(yaw) * x - Math.cos(yaw) * y) * s;
     },
     zoom(delta) {
       distance = THREE.MathUtils.clamp(distance + delta, CAMERA.minDistance, CAMERA.maxDistance);

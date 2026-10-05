@@ -62,6 +62,7 @@ renderer.setAnimationLoop((now) => {
   if (input.pressed('rotateR')) cam.rotate(1);
   if (input.pressed('debug')) debug.toggle();
   cam.zoom(input.zoom * CAMERA.zoomSpeed * dt + input.zoomSteps * CAMERA.wheelStep);
+  cam.pan(input.moveX, input.moveY, dt * (input.held('run') ? 2 : 1)); // ponytail: free-look until Stage 4 player
   cam.update(dt);
 
   lights.update(dt, cam.target);
