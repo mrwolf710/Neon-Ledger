@@ -13,7 +13,6 @@ export const NPC = {
   shadow: { color: 0x000000, opacity: 0.55, size: 1.1, catSize: 0.7, texPx: 16 },
 };
 
-const PX = 16; // texture pixels per world unit
 
 // Sprite shader: one frame of the sheet, alpha-tested, darkened to sit in the night scene, tinted by the
 // summed nearby lights (lightColor) and rim-lit by the strongest one (rimColor) on the side it comes from
@@ -75,6 +74,7 @@ export function createBillboard(sheet, opts) {
     },
     vertexShader: VERT, fragmentShader: FRAG,
   });
+  const PX = sheet.pxPerUnit; // texture pixels per world unit (characters are double density)
   const sprite = new THREE.Mesh(new THREE.PlaneGeometry(fw / PX, fh / PX).translate(0, fh / PX / 2, 0), mat);
   const s = (isCat ? NPC.shadow.catSize : NPC.shadow.size);
   const shadow = new THREE.Mesh(new THREE.PlaneGeometry(s, s * 0.5).rotateX(-Math.PI / 2), shadowMaterial());

@@ -13,8 +13,7 @@ Running summary for Claude sessions (keep under 60 lines).
   · props.js stall, crates, vending, bags, lamp · sprites.js layered pixel characters + cat (data in CHARACTERS/CATS)
 - src/main.js builds everything + loop · src/game/npc.js: Y-axis billboard sprites (rim-tint shader, contact shadow), createCast places CAST
   · player.js Juno movement/click-to-move · interact.js interactables + prompt bubble · scripts/check-collision.mjs (node)
-- src/ui: touch.js stick/buttons/rotate message · title.js "tap to start" (title.started promise, for iOS audio)
-  · src/gen/pixelfont.js 3x5 bitmap font (drawText, measure) for crisp UI text
+- src/ui: touch.js (stick, buttons, rotate msg) · title.js (tap to start; title.started) · gen/pixelfont.js 3x5 font (drawText)
 - src/debug/panel.js: stats overlay + select/slider/button controls (` toggles)
 ## Key functions
 - `rng` / `createRng(seed)` -> { seed, rand, range, int (inclusive), pick, weighted({k:w}), fork(label) }; fork depends only on (seed, label).
@@ -46,12 +45,13 @@ Running summary for Claude sessions (keep under 60 lines).
   States lateEvening / night / deadHour (TIME_OF_DAY): sky, fog, moon, hemi, grade, signs, flicker, dead, rain.
   Grade is written only while blending, so debug sliders stick until the next change.
 - `createDebugPanel(renderer, seed)` -> { toggle, update, select, slider(label, obj, key, min, max, step, fn, index), button }; FPS/calls/tris/heap.
-- `getSheets()` -> { juno, mamaTeo, kit, dex, vendor, miso }: `spriteSheet(def, isCat)` -> { texture, canvas, frameW, frameH,
-  rows {down,up,left,right[,slump]}, anims {idle:{start:0,frames:2}, walk:{start:2,frames:4}} }. 24x32 (cat 16x12),
-  row-run shading (lit left), neon rim (SPRITES.rim) on outermost pixels, ink outline; right = mirrored. ?sprites previews.
+- `getSheets()` -> { juno, mamaTeo, kit, dex, vendor, miso }: `spriteSheet(def, isCat)` -> { texture, canvas, frameW, frameH, pxPerUnit,
+  rows {down,up,left,right[,slump]}, anims {idle:{start:0,frames:2}, walk:{start:2,frames:4}} }. Humans 40x64 at 32 px/unit (double
+  density, ~6 heads tall; street stays 16), cat 16x12. Shape-built (ellipse/capsule/poly + 2-bone legs), 4-tone row-run shading,
+  neon rim (SPRITES.rim), outline tinted per material. ?sprites previews.
 - Tunables: constants at the top of each file (CAMERA, INPUT, PLAYER, INTERACT, NPC, POST, FOG, PARTICLES, TIME_OF_DAY, ...).
 ## Data formats
-- Character: { name, skin, eyes, lips?, lashes?, hair:{style,color}, top, legs, shoes, coat?:{color,length,collar}, rolledSleeves?, stoop?,
+- Character: { name, skin, iris, lips?, lashes?, hair:{style,color,shine?}, top, legs, shoes, outfit?:{type trench|jacket|suit,color,collar}, rolledSleeves?, stoop?,
   acc:[{type,color}] (implant belt apron sticks bag tie stripe soles poncho trim hood visor), poses?:["slump"] }. Palette names.
 ## Known issues
 - Chunk > 500 kB warning. renderer.info.autoReset off. Rail deck hits buildings near x=17. NPCs don't block Juno. Point lights cast no shadows.
