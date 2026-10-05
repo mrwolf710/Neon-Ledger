@@ -5,6 +5,7 @@ import { createCamera, CAMERA } from './render/camera.js';
 import { buildDistrict } from './world/district.js';
 import { createDebugPanel, showSprites } from './debug/panel.js';
 import { getSheets } from './gen/sprites.js';
+import { createCast } from './game/npc.js';
 import { settings, TIERS } from './core/settings.js';
 import { createLights } from './render/lights.js';
 import { createPost, POST } from './render/post.js';
@@ -49,6 +50,7 @@ const particles = createParticles(scene, rng.fork('particles'), Q.rainCount, dis
 
 const cam = createCamera(window.innerWidth / window.innerHeight);
 const post = createPost(renderer, scene, cam.camera, Q);
+const cast = createCast(scene, getSheets(), district.userData.spots);
 const tod = createTimeOfDay({ scene, lights, post, particles, signs: district.userData.signs, rng: rng.fork('flicker') });
 tod.setTimeOfDay(MAIN.timeOfDay);
 
@@ -97,6 +99,7 @@ renderer.setAnimationLoop((now) => {
 
   tod.update(dt);
   particles.update(dt, cam.target, cam.camera);
+  cast.update(dt, cam.yaw, district.userData.lights);
   fog.update(cam.camera, cam.target);
   lights.update(dt, cam.target);
   renderer.info.reset();

@@ -2,10 +2,9 @@
 Running summary for Claude sessions (keep under 60 lines).
 
 ## Status
-- Current stage: 4A done (#8). Next: Stage 4B (#9). Seed: 1337 (`SEED` in src/core/rng.js)
+- Current stage: 4B done (#9). Next: Stage 5A (see docs/stages/stage-05-movement-input.md). Seed: 1337 (`SEED` in src/core/rng.js)
 
 ## Files
-- src/main.js: renderer (shadows, Neutral tone map), builds everything, debug controls, game loop
 - src/core: rng.js mulberry32 PRNG · input.js action layer (keyboard + wheel; mouse/gamepad/touch TODO 5A/5B)
   · settings.js TIERS high/medium/mobile (pixelRatio, bloomScale, maxLights, shadowMap, rainCount), auto-detect, ?quality=
 - src/render: camera.js orbit cam · lights.js moon (shadow) + hemi + nearest-N point light pool · fog.js height fog
@@ -14,11 +13,15 @@ Running summary for Claude sessions (keep under 60 lines).
 - src/gen: palette.js 32 colours + snap() · textures.js canvas generators (brick, concrete, tiles, metalPanel,
   wetAsphalt, sidewalk, awning, shopWarm/shopCool) · batch.js merge-per-material collector · buildings.js · glyphs.js signs
   · props.js stall, crates, vending, bags, lamp · sprites.js layered pixel characters + cat (data in CHARACTERS/CATS)
+- src/main.js builds everything + loop · src/game/npc.js: Y-axis billboard sprites (rim-tint shader, contact shadow), createCast places CAST
 - src/debug/panel.js: stats overlay + select/slider/button controls (` toggles)
 ## Key functions
 - `rng` / `createRng(seed)` -> { seed, rand, range, int (inclusive), pick, weighted({k:w}), fork(label) }; fork depends only on (seed, label).
 - `input.update()` / `input.endFrame()`; `moveX/moveY`, `zoom`, `zoomSteps`, `held(a)`, `pressed(a)`.
   Keys: WASD, Shift run, Space interact, F echo, Q/E rotate, Z/X zoom, R/V tilt, Tab caseFile, B board, N map, Esc pause, ` debug.
+- `createCast(scene, sheets, spots)` -> { list, update(dt, camYaw, lights) }. CAST (district.js): { id, at:[x,z]|spot name,
+  facing (0 = +z), pose idle|walk|slump, path:[[x,z]...], speed }. Row = facing - camYaw (down/right/up/left). NPC tunables.
+  `groundY(z)` (district.js) = curb height on sidewalks. `batch.spot(name, x, z)` -> userData.spots (stall cook spot).
 - `createCamera(aspect)` -> { camera, target, yaw, rotate(±1) (30 deg steps), pan(x,y,dt), tilt(dir,dt), zoom(d), update(dt) }.
 - `buildDistrict(rng)` -> Group. Street along X (length 40); Z across (road 6, sidewalks 2, buildings 3 deep). Rail x=17.
   group.userData = { lights: [{color,intensity,base,position}], steam: [Vector3], signs: [{mat, light}] }.
@@ -50,10 +53,7 @@ Running summary for Claude sessions (keep under 60 lines).
   acc:[{type,color}] (implant belt apron sticks bag tie stripe soles poncho trim hood visor), poses?:["slump"] }. Palette names. Dialogue/echo/board formats come in Stages 6-7.
 
 ## Known issues
-- Build warns chunk > 500 kB (three.js). Harmless for now.
-- WASD pans the camera (temporary until the Stage 4 player; remove cam.pan in main). Tilt band fixed at screen centre.
-- Rail deck runs into buildings near x=17. No prop collision yet. Point lights don't cast shadows.
+- WASD pans the camera until Stage 5 makes Juno the player (remove cam.pan in main). Tilt band fixed at centre.
+- Chunk > 500 kB warning (three.js). Rail deck hits buildings near x=17. No prop collision. Point lights cast no shadows.
 - Shadows on for Mobile too (shrink if iPhone struggles). renderer.info.autoReset off (reset per frame in main).
-
-## Next
-Stage 4B (#9): npc.js Y-axis billboards (direction row from camera angle), contact shadow, rim tint shader, place characters.
+## Next Stage 5A: player movement + input (Juno becomes the player; replace the WASD camera pan, move the tilt band to her).

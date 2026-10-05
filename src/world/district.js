@@ -16,6 +16,23 @@ export const DISTRICT = {
   props: { inset: 0.7, gap: [1.5, 4], pillarClear: 1.4 }, // inset from the building line
 };
 
+// Who stands where. at: [x, z] or a spot name from the batch (first match), facing: radians (0 = +z).
+// pose: idle | walk | slump. path: loop of [x, z] points for walkers.
+export const CAST = [
+  { id: 'juno', at: [-2, 0.8], facing: 0.6 },
+  { id: 'mamaTeo', at: 'stall', fallback: [6, -4.4] },
+  { id: 'dex', at: [-9, -4.5], facing: 0, pose: 'slump' },
+  { id: 'vendor', at: [7, 4.4], facing: Math.PI },
+  { id: 'kit', pose: 'walk', speed: 2.2, path: [[-15, 1.6], [15, 1.6], [15, -1.6], [-15, -1.6]] },
+  { id: 'miso', at: [0.5, 3.6], facing: -0.8 },
+];
+
+// Ground height at z: sidewalks are raised by the curb.
+export function groundY(z) {
+  const D = DISTRICT, a = Math.abs(z);
+  return a > D.roadWidth / 2 && a < D.roadWidth / 2 + D.sidewalkWidth ? D.curbHeight : 0;
+}
+
 export function buildDistrict(rng) {
   const D = DISTRICT;
   const M = getMaterials(rng.fork('textures'));

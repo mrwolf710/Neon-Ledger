@@ -1,0 +1,142 @@
+import * as THREE from 'three';
+import { SPRITES, DIRS } from '../gen/sprites.js';
+import { CAST, groundY } from '../world/district.js';
+
+export const NPC = {
+  brightness: 0.85,   // overall sprite brightness (sprites are unlit)
+  tint: 0.25,         // how much the nearest light colours the whole sprite
+  rim: 0.8,           // how strongly it colours the silhouette edge
+  lightRange: 6,      // units; lights further away give no tint
+  shadow: { color: 0x000000, opacity: 0.55, size: 1.1, catSize: 0.7, texPx: 16 },
+};
+
+const PX = 16; // texture pixels per world unit
+
+// Sprite shader: one frame of the sheet, alpha-tested, darkened to sit in the night scene, tinted by the
+// nearest light and rim-lit on edge texels (a texel whose left, right or upper neighbour is transparent).
+const VERT = /* glsl */`
+  varying vec2 vUv;
+  void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
+const FRAG = /* glsl */`
+  uniform sampler2D map; uniform vec4 frame; uniform vec2 texel;
+  uniform vec3 lightColor; uniform float brightness, tint, rim;
+  varying vec2 vUv;
+  void main() {
+    vec2 uv = frame.xy + vUv * frame.zw;
+    vec4 c = texture2D(map, uv);
+    if (c.a < 0.5) discard;
+    float edge = 1.0 - min(min(texture2D(map, uv - vec2(texel.x, 0.0)).a, texture2D(map, uv + vec2(texel.x, 0.0)).a),
+                           texture2D(map, uv + vec2(0.0, texel.y)).a);
+    vec3 col = c.rgb * brightness + c.rgb * lightColor * tint;
+    col = mix(col, lightColor, clamp(edge, 0.0, 1.0) * rim * length(lightColor) * 0.6);
+    gl_FragColor = vec4(col, 1.0);
+  }`;
+
+let shadowMat = null;
+function shadowMaterial() {
+  if (shadowMat) return shadowMat;
+  const n = NPC.shadow.texPx, cv = Object.assign(document.createElement('canvas'), { width: n, height: n });
+  const ctx = cv.getContext('2d'), img = ctx.createImageData(n, n);
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      const d = Math.hypot(x + 0.5 - n / 2, y + 0.5 - n / 2) / (n / 2);
+      const o = (y * n + x) * 4;
+      img.data[o + 3] = d < 0.6 ? 255 : d < 1 ? 128 : 0; // two pixel-art rings: core and soft edge
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  const map = new THREE.CanvasTexture(cv);
+  map.magFilter = map.minFilter = THREE.NearestFilter;
+  map.generateMipmaps = false;
+  shadowMat = new THREE.MeshBasicMaterial({
+    color: NPC.shadow.color, map, transparent: true, opacity: NPC.shadow.opacity, depthWrite: false, fog: false,
+  });
+  return shadowMat;
+}
+
+// One character: sheet from getSheets(), opts { x, z, facing, pose, path, speed }.
+export function createBillboard(sheet, opts) {
+  const fw = sheet.frameW, fh = sheet.frameH, W = sheet.canvas.width, H = sheet.canvas.height;
+  const isCat = fw === SPRITES.cat.w;
+  const mat = new THREE.ShaderMaterial({
+    uniforms: {
+      map: { value: sheet.texture }, frame: { value: new THREE.Vector4(0, 0, fw / W, fh / H) },
+      texel: { value: new THREE.Vector2(1 / W, 1 / H) }, lightColor: { value: new THREE.Color(0, 0, 0) },
+      brightness: { value: NPC.brightness }, tint: { value: NPC.tint }, rim: { value: NPC.rim },
+    },
+    vertexShader: VERT, fragmentShader: FRAG,
+  });
+  const sprite = new THREE.Mesh(new THREE.PlaneGeometry(fw / PX, fh / PX).translate(0, fh / PX / 2, 0), mat);
+  const s = (isCat ? NPC.shadow.catSize : NPC.shadow.size);
+  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(s, s * 0.5).rotateX(-Math.PI / 2), shadowMaterial());
+  shadow.position.y = 0.02;
+  shadow.renderOrder = 1;
+  const root = new THREE.Group();
+  root.add(sprite, shadow);
+
+  const pos = new THREE.Vector3(opts.x ?? 0, 0, opts.z ?? 0);
+  let facing = opts.facing ?? 0, time = 0, leg = 0;
+  const pose = opts.pose ?? 'idle';
+  const path = opts.path, speed = opts.speed ?? 2;
+  if (path) pos.set(path[0][0], 0, path[0][1]);
+
+  function setFrame(row, col) {
+    mat.uniforms.frame.value.set((col * fw) / W, 1 - ((row + 1) * fh) / H, fw / W, fh / H);
+  }
+
+  return {
+    root,
+    get position() { return pos; },
+    // camYaw: camera yaw (radians); lights: registered lights [{ color, intensity, base, position }].
+    update(dt, camYaw, lights) {
+      time += dt;
+      let anim = pose;
+      if (path) { // walk the loop
+        const [tx, tz] = path[(leg + 1) % path.length];
+        const dx = tx - pos.x, dz = tz - pos.z, d = Math.hypot(dx, dz), step = speed * dt;
+        if (d <= step) { pos.set(tx, 0, tz); leg = (leg + 1) % path.length; } else { pos.x += (dx / d) * step; pos.z += (dz / d) * step; }
+        facing = Math.atan2(dx, dz);
+        anim = 'walk';
+      }
+      pos.y = groundY(pos.z);
+      root.position.copy(pos);
+      sprite.rotation.y = camYaw; // Y-axis billboard: stays upright
+
+      // Direction row: facing relative to the camera. 0 = toward the camera (down), +90 deg = screen right.
+      if (sheet.rows[anim] !== undefined && !sheet.anims[anim]) setFrame(sheet.rows[anim], 0); // single-frame pose
+      else {
+        const rel = THREE.MathUtils.euclideanModulo(facing - camYaw + Math.PI / 4, Math.PI * 2);
+        const dir = ['down', 'right', 'up', 'left'][Math.floor(rel / (Math.PI / 2))];
+        const A = sheet.anims[anim] ?? sheet.anims.idle;
+        const fps = SPRITES.fps[anim] ?? SPRITES.fps.idle;
+        setFrame(sheet.rows[dir], A.start + (Math.floor(time * fps) % A.frames));
+      }
+
+      // Nearest light tints the sprite and its edges.
+      let best = null, bestD = NPC.lightRange;
+      for (const l of lights) {
+        const d = l.position.distanceTo(pos);
+        if (d < bestD) { bestD = d; best = l; }
+      }
+      const lc = mat.uniforms.lightColor.value;
+      if (best) lc.setHex(best.color).multiplyScalar((1 - bestD / NPC.lightRange) * (best.intensity / best.base));
+      else lc.setRGB(0, 0, 0);
+    },
+  };
+}
+
+// Places CAST in the scene. spots: district userData.spots. Returns { list, update(dt, camYaw, lights) }.
+export function createCast(scene, sheets, spots) {
+  const list = CAST.map((c) => {
+    let x, z, facing = c.facing ?? 0;
+    if (typeof c.at === 'string') {
+      const s = spots.find((p) => p.name === c.at);
+      [x, z] = s ? [s.x, s.z] : c.fallback;
+      if (s) facing = s.facing;
+    } else if (c.at) [x, z] = c.at;
+    const b = createBillboard(sheets[c.id], { x, z, facing, pose: c.pose, path: c.path, speed: c.speed });
+    scene.add(b.root);
+    return b;
+  });
+  return { list, update: (dt, camYaw, lights) => list.forEach((b) => b.update(dt, camYaw, lights)) };
+}

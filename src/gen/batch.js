@@ -20,11 +20,13 @@ export function createBatch() {
   const m = new THREE.Matrix4();
   const tmp = new THREE.Matrix4();
   const euler = new THREE.Euler();
-  const data = { lights: [], steam: [], signs: [] }; // handed to group.userData by build()
+  const data = { lights: [], steam: [], signs: [], spots: [] }; // handed to group.userData by build()
+  let rot = 0;
 
   return {
     setTransform(x = 0, z = 0, rotY = 0) {
       m.makeRotationY(rotY).setPosition(x, 0, z);
+      rot = rotY;
     },
     // geo is in local space; it is consumed.
     add(mat, geo) {
@@ -47,6 +49,11 @@ export function createBatch() {
     },
     // Steam vent at local (x, y, z) for particles.js (userData.steam).
     steam(x, y, z) { data.steam.push(new THREE.Vector3(x, y, z).applyMatrix4(m)); },
+    // Named spot (e.g. 'stall') at local (x, z), facing local +z; for placing characters (userData.spots).
+    spot(name, x, z) {
+      const p = new THREE.Vector3(x, 0, z).applyMatrix4(m);
+      data.spots.push({ name, x: p.x, z: p.z, facing: rot });
+    },
     // Sign material + its light, for brightness and flicker (userData.signs).
     sign(mat, light) { data.signs.push({ mat, light }); },
     build() {

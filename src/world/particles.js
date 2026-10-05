@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { DISTRICT } from './district.js';
+import { DISTRICT, groundY } from './district.js';
 
 export const PARTICLES = {
   rain: { color: 0x8fa8d8, size: [0.02, 0.5], speed: 22, wind: [2, 0.6], area: [52, 18, 28], intensity: 0.35 }, // area: x/y/z box centred on the district
@@ -9,7 +9,6 @@ export const PARTICLES = {
 };
 
 const D = DISTRICT;
-const groundY = (z) => (Math.abs(z) > D.roadWidth / 2 && Math.abs(z) < D.roadWidth / 2 + D.sidewalkWidth ? D.curbHeight : 0);
 const onStreet = (x, z) => Math.abs(x) < D.length / 2 && Math.abs(z) < D.roadWidth / 2 + D.sidewalkWidth;
 
 // Round puff: brightness falls off from the centre, Bayer-dithered to stay pixel-art (additive, so black = clear).
