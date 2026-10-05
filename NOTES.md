@@ -42,6 +42,7 @@ Running summary for Claude sessions (keep under 60 lines).
   Node { speaker, text, next?, choices?: [Choice], effects?, present?: {factId: nodeId}, presentWrong?: nodeId, end? }. A node with `present` gets an
   automatic "Present evidence…" choice. Choice { text, next?, if?, effects?, end? }. Condition { flag?, notFlag?, fact?, notFact? } (all must hold).
   Effects { addFact | addPerson | addEcho: entryId } { setFlag: name } { setTime: [h, m] }, applied on entering a node / picking a choice.
+  Question menus: loop back with `next` and hide asked choices with `if: {notFlag}` + a choice `setFlag` (see Mama Teo).
   Interact skips typewriter (40 cps) then advances; W/S/D-pad choose; click/tap works. Test: Mama Teo (talk twice, present "back lock").
 - Echo (story.js ECHOES/HOTSPOTS): HOTSPOTS [{id, echo, at: [x,z] | {spot, dx, dz}, radius}]. ECHOES[id] { title, owner, entry (ENTRIES echoes id, added on first play),
   duration (s), tracks: [{sprite: sheetId, show?: [t0,t1], keys: [{t, x, z, facing?, anim?: idle|walk}]}] (linear; two keys ~0.01 s apart = a jump),

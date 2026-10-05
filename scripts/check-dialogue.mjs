@@ -31,17 +31,23 @@ run(10);                                     // finishes by itself; no choices o
 assert.ok(log.text.startsWith("You're the auditor"));
 run(0.1, 'interact');                        // advance to the question
 run(10);
-assert.deepEqual(log.choices, ['Which door did he use?', 'Did anyone follow him?']);
+assert.deepEqual(log.choices, ['Which door did he use?', 'Did anyone follow him?', "That's all."]);
 run(0.1, 'down'); run(0.1, 'up');            // wrap-around navigation
 run(0.1, 'interact');                        // pick "Which door"
 run(10);
 assert.ok(facts.has('lock_twice') && people.has('mamaTeo'), 'fact and person added');
+run(0.1, 'interact');                        // on to "anything else?"
+run(10);
+assert.deepEqual(log.choices, ['Did anyone follow him?', "That's all."], 'the other question is still offered');
+run(0.1, 'interact');                        // pick "Did anyone follow him?"
+run(10); run(0.1, 'interact'); run(10);
+assert.deepEqual(log.choices, ["That's all."], 'both asked, only the exit is left');
 run(0.1, 'interact');
 assert.ok(!d.active, 'conversation ended');
 
 d.start('teo');                              // second visit: Present
 run(10);
-assert.deepEqual(log.choices, ['Never mind.', 'Present evidence…']);
+assert.deepEqual(log.choices, ['Never mind.', 'Present evidence…'], 'asked both already: only exit and Present');
 run(0.1, 'down'); run(0.1, 'interact');      // open the case file
 assert.ok(open && presentOpts.present);
 open = false; presentOpts.onPick('lock_twice');
