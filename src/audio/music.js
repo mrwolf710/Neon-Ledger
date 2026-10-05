@@ -6,7 +6,7 @@ export const TUNING = {
   fade: 2.5,                 // default cross-fade seconds
   lookahead: 0.15, tickMs: 25,
   street: {
-    bpm: 108,
+    bpm: 88,
     // A minor, dark: Am9  Dm9  Bm7b5  E7b9 (the tense turnaround back to Am), two bars each.
     chords: [[57, 60, 64, 67, 71], [50, 57, 60, 64, 65], [47, 57, 62, 65, 69], [52, 56, 59, 62, 65]],
     roots: [45, 38, 47, 40],
