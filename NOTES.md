@@ -2,12 +2,10 @@
 Running summary for Claude sessions. Paste this file at the start of every stage chat. Keep it under 60 lines.
 
 ## Status
-
 - Current stage: 3A done (#5). Next: Stage 3B (#6).
 - Seed: 1337 (`SEED` in src/core/rng.js)
 
 ## Files
-
 - index.html: full-window canvas#game, loads src/main.js
 - src/main.js: renderer (shadows, Neutral tone map), scene, lights, district (shadows on), post, game loop
 - src/core/settings.js: TIERS high/medium/mobile (pixelRatio, bloomScale, maxLights, shadowMap, rainCount, ssr), auto-detect, ?quality=
@@ -25,7 +23,6 @@ Running summary for Claude sessions. Paste this file at the start of every stage
 - src/debug/panel.js: FPS, draw calls, triangles, seed overlay
 
 ## Key functions
-
 - `rng` (root) / `createRng(seed)` -> { seed, rand, range(a,b), int(a,b) inclusive, pick(arr), weighted({k:w}), fork(label) }.
   fork depends only on (seed, label), not call order. main uses `rng.fork('district')`.
 - `input.update()` at frame start, `input.endFrame()` at end. Read `input.moveX/moveY` (-1..1, +Y forward),
@@ -52,14 +49,11 @@ Running summary for Claude sessions. Paste this file at the start of every stage
 
 ## Data formats
 
-
 ## Known issues
-
 - Build warns chunk > 500 kB (three.js). Harmless for now.
 - Rail deck runs into the buildings near x=17 (since Stage 1). No collision on props yet.
 - Tilt-shift band is fixed at screen centre (POST.tilt.center) until there is a player. renderer.info.autoReset is off (reset per frame in main).
 - Point lights don't cast shadows; reflections stop at the road centre-ish (reflection.length).
 
 ## Next
-
 Stage 3B: particles/rain (rainCount from tier), height fog, time-of-day states, debug sliders for POST.
