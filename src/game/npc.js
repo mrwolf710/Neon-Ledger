@@ -22,7 +22,7 @@ const VERT = /* glsl */`
   void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
 const FRAG = /* glsl */`
   uniform sampler2D map; uniform vec4 frame; uniform vec2 texel;
-  uniform vec3 lightColor, rimColor; uniform float brightness, tint, rim, rimMax, maxLum, lightSide;
+  uniform vec3 lightColor, rimColor; uniform float brightness, tint, rim, rimMax, maxLum, lightSide, ghost;
   varying vec2 vUv;
   void main() {
     vec2 uv = frame.xy + vUv * frame.zw;
@@ -37,7 +37,11 @@ const FRAG = /* glsl */`
     if (!outline) col = mix(col, rimColor, clamp(edge * rim * length(rimColor), 0.0, rimMax));
     float lum = dot(col, vec3(0.2126, 0.7152, 0.0722));
     if (lum > maxLum) col *= maxLum / lum;
-    gl_FragColor = vec4(col, 1.0);
+    if (ghost > 0.5) { // echo ghost: cyan hologram
+      float gl = dot(col, vec3(0.3, 0.59, 0.11));
+      col = mix(col, vec3(0.35, 0.95, 1.1) * (gl + 0.3), 0.8);
+    }
+    gl_FragColor = vec4(col, ghost > 0.5 ? 0.62 : 1.0);
   }`;
 
 let shadowMat = null;
@@ -62,7 +66,7 @@ function shadowMaterial() {
   return shadowMat;
 }
 
-// One character: sheet from getSheets(), opts { x, z, facing, pose, path, speed }.
+// One character: sheet from getSheets(), opts { x, z, facing, pose, path, speed, ghost }.
 export function createBillboard(sheet, opts) {
   const fw = sheet.frameW, fh = sheet.frameH, W = sheet.canvas.width, H = sheet.canvas.height;
   const isCat = fw === SPRITES.cat.w;
@@ -72,8 +76,9 @@ export function createBillboard(sheet, opts) {
       texel: { value: new THREE.Vector2(1 / W, 1 / H) }, lightColor: { value: new THREE.Color(0, 0, 0) }, rimColor: { value: new THREE.Color(0, 0, 0) },
       brightness: { value: NPC.brightness }, tint: { value: NPC.tint }, rim: { value: NPC.rim }, rimMax: { value: NPC.rimMax }, maxLum: { value: NPC.maxLum }, lightSide: { value: 0 },
     },
-    vertexShader: VERT, fragmentShader: FRAG,
+    vertexShader: VERT, fragmentShader: FRAG, transparent: !!opts.ghost, depthWrite: !opts.ghost,
   });
+  mat.uniforms.ghost = { value: opts.ghost ? 1 : 0 };
   const PX = sheet.pxPerUnit; // texture pixels per world unit (characters are double density)
   const sprite = new THREE.Mesh(new THREE.PlaneGeometry(fw / PX, fh / PX).translate(0, fh / PX / 2, 0), mat);
   const s = (isCat ? NPC.shadow.catSize : NPC.shadow.size);
@@ -81,6 +86,8 @@ export function createBillboard(sheet, opts) {
   shadow.position.y = 0.02;
   shadow.renderOrder = 1;
   const root = new THREE.Group();
+  shadow.visible = !opts.ghost;
+  if (opts.ghost) sprite.renderOrder = 2;
   root.add(sprite, shadow);
 
   const pos = new THREE.Vector3(opts.x ?? 0, 0, opts.z ?? 0);

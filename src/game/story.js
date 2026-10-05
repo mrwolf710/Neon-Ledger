@@ -9,11 +9,15 @@ export const SPEAKERS = {
   vendor: { name: 'Vendor', color: '#2a6b72' },
   miso: { name: 'Miso', color: '#d9771c' },
   vending: { name: 'Vending machine', color: '#9ff4ff' },
+  unknown: { name: 'Unknown voice', color: '#e0217d' },
 };
 
 // Case file entries. kind decides the tab: people | facts | echoes. source = where Juno learned it.
 export const ENTRIES = {
   mamaTeo: { kind: 'people', title: 'Mama Teo', text: 'Runs the Sable Noodle House. Sees everyone who comes and goes.', source: 'Lowmarket Street' },
+  teo_back_room: { kind: 'echoes', title: "Mama Teo's echo: the back room", text: "Six seconds from Mama Teo's implant, the night Dex died. Two voices, one of them cut off.", source: "Mama Teo's implant" },
+  two_voices: { kind: 'facts', title: 'Two voices in the echo', text: "Mama Teo's echo holds two distinct voices. Only Dex is accounted for.", source: "Echo: Mama Teo's back room, 02.0" },
+  echo_seam: { kind: 'facts', title: 'The echo has a seam', text: 'The replay stutters at 03.5. Someone edited this memory.', source: "Echo: Mama Teo's back room, 03.5" },
   lock_twice: { kind: 'facts', title: 'The back lock turned twice', text: 'After closing, Mama Teo heard the back-room lock turn twice: once to open, once to lock.', source: 'Mama Teo' },
 };
 
@@ -49,4 +53,38 @@ export const CONVERSATIONS = {
   vending: { start: 'a', nodes: { a: { speaker: 'juno', text: 'Out of order. Naturally.', end: true } } },
   miso: { start: 'a', nodes: { a: { speaker: 'miso', text: 'Mrrp.', end: true } } },
   nobody: { start: 'a', nodes: { a: { speaker: 'juno', text: 'Nothing to say yet.', end: true } } },
+};
+
+// Echo hotspots: where F starts an echo. at: [x, z] or { spot, dx, dz } relative to a named batch spot.
+export const HOTSPOTS = [
+  { id: 'teo_back_room', echo: 'teo_back_room', at: { spot: 'stall', dx: 2.4, dz: 0.2 }, radius: 2.4 },
+];
+
+// Echoes: { title, owner, duration (s), tracks, voices, seams, tags }.
+//  tracks: [{ sprite: sheetId, show?: [t0, t1], keys: [{ t, x, z, facing?, anim?: 'idle'|'walk' }] }]
+//    positions interpolate linearly between keys; facing defaults to the direction of travel; two keys at nearly the same t make a jump.
+//  voices: [{ t0, t1, speaker: SPEAKERS id, text }] shown as captions. seams: [t] where the memory was edited (stutter + tear).
+//  tags: [{ t, window, fact: ENTRIES id, label }] the player can tag while the playhead is within t +- window.
+export const ECHOES = {
+  teo_back_room: {
+    title: "Mama Teo's view", owner: 'mamaTeo', entry: 'teo_back_room', duration: 6,
+    tracks: [
+      { sprite: 'dex', keys: [
+        { t: 0, x: 4.6, z: -3.5, facing: -Math.PI / 2, anim: 'walk' }, { t: 2, x: 1.3, z: -3.5, facing: -Math.PI / 2, anim: 'walk' },
+        { t: 2.2, x: 1.3, z: -3.5, facing: -Math.PI / 2, anim: 'idle' }, { t: 3.5, x: 1.3, z: -3.5, facing: -Math.PI / 2, anim: 'idle' },
+        { t: 3.51, x: 2.2, z: -3.5, facing: Math.PI / 2, anim: 'idle' }, { t: 6, x: 2.2, z: -3.5, facing: Math.PI / 2, anim: 'idle' },
+      ] },
+      { sprite: 'vendor', show: [1.4, 6], keys: [
+        { t: 1.4, x: -1.2, z: -3.5, facing: Math.PI / 2, anim: 'walk' }, { t: 2.6, x: 0.5, z: -3.5, facing: Math.PI / 2, anim: 'walk' },
+        { t: 2.8, x: 0.5, z: -3.5, facing: Math.PI / 2, anim: 'idle' }, { t: 3.49, x: 0.5, z: -3.5, facing: Math.PI / 2, anim: 'idle' },
+        { t: 3.5, x: 3.1, z: -3.5, facing: Math.PI / 2, anim: 'idle' }, { t: 6, x: 3.1, z: -3.5, facing: Math.PI / 2, anim: 'idle' },
+      ] },
+    ],
+    voices: [
+      { t0: 1.3, t1: 2.7, speaker: 'dex', text: "...you weren't supposed to know I kept a copy." },
+      { t0: 2.8, t1: 4.4, speaker: 'unknown', text: 'Then tell me where it is.' },
+    ],
+    seams: [3.5],
+    tags: [{ t: 2.0, window: 0.9, fact: 'two_voices', label: 'Two voices' }, { t: 3.5, window: 0.6, fact: 'echo_seam', label: 'The seam' }],
+  },
 };

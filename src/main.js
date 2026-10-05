@@ -13,6 +13,7 @@ import { createHud } from './ui/hud.js';
 import { createClock } from './game/clock.js';
 import { createCaseFile } from './game/casefile.js';
 import { createDialogue } from './game/dialogue.js';
+import { createEcho } from './game/echo.js';
 import { TALK, FALLBACK } from './game/story.js';
 import { zoneAt } from './world/district.js';
 import { createTitle } from './ui/title.js';
@@ -85,6 +86,10 @@ const hud = createHud(collision);
 const clock = createClock();
 const caseFile = createCaseFile(hud);
 const dialogue = createDialogue({ hud, caseFile, clock });
+const echo = createEcho({ scene, sheets: getSheets(), post, caseFile, hud, cast, spots: district.userData.spots });
+for (const h of echo.hotspots) {
+  interactions.add({ id: `echo:${h.id}`, position: h.position, height: 1.2, verb: 'Echo', glyph: 'echo', onInteract: () => echo.start(h.id) });
+}
 let phaseId = '';
 title.started.then(() => hud.show());
 const ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
@@ -138,7 +143,8 @@ renderer.setAnimationLoop((now) => {
   if (input.pressed('debug')) debug.toggle();
   cam.zoom(CAMERA.wheelZoom ** input.zoomSteps * CAMERA.keyZoom ** (input.zoom * dt) * input.zoomFactor);
   touchUI.update();
-  const modal = !title.done || dialogue.active || caseFile.isOpen; // title, conversation or case file: the world waits
+  const scrubAxis = input.moveX; // echo mode scrubs with the move axis
+  const modal = !title.done || dialogue.active || caseFile.isOpen || echo.active; // title, conversation or case file: the world waits
   if (modal) { input.click = null; input.moveX = input.moveY = 0; }
   cam.tilt((input.held('tiltDown') ? 1 : 0) - (input.held('tiltUp') ? 1 : 0), dt);
 
@@ -156,9 +162,15 @@ renderer.setAnimationLoop((now) => {
   player.update(dt, input, cam.yaw);
   const cfWasOpen = caseFile.isOpen;
   caseFile.update(input);
-  if (!cfWasOpen && !caseFile.isOpen && !dialogue.active && title.done && input.pressed('caseFile')) caseFile.open();
-  if (dialogue.active) { if (!cfWasOpen) dialogue.update(dt, input); }
-  else if (!cfWasOpen && title.done && input.pressed('interact')) interactions.current?.onInteract();
+  if (!cfWasOpen && !caseFile.isOpen && !dialogue.active && !echo.active && title.done && input.pressed('caseFile')) caseFile.open();
+  const echoWas = echo.active;
+  if (echoWas) echo.update(dt, input, cam.yaw, district.userData.lights, scrubAxis, player.position);
+  else if (dialogue.active) { if (!cfWasOpen) dialogue.update(dt, input); }
+  else if (!cfWasOpen && title.done) {
+    if (input.pressed('echo')) echo.tryStart(player.position);
+    else if (input.pressed('interact')) interactions.current?.onInteract();
+  }
+  if (!echoWas && !echo.active) echo.update(dt, input, cam.yaw, district.userData.lights, 0, player.position); // markers + fade-out while idle
   cam.follow(player.position);
   cam.update(dt);
 
@@ -168,7 +180,7 @@ renderer.setAnimationLoop((now) => {
   post.applyUniforms();
 
   // Clock: runs once the title is dismissed; the phase picks the time-of-day mood.
-  if (title.done) clock.update(dt);
+  if (title.done && !echo.active) clock.update(dt);
   if (clock.phase.id !== phaseId) { phaseId = clock.phase.id; tod.setTimeOfDay(phaseId, 8); }
   hud.setClock(clock.text, clock.phase.label, clock.progress);
   if (input.pressed('hideControls')) hud.toggleControls();

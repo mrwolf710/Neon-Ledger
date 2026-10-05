@@ -15,9 +15,11 @@ export const INTERACT = {
 const hex = (c) => `#${c.toString(16).padStart(6, '0')}`;
 
 // Draws "[glyph] VERB" in the pixel font for the device: key cap, mouse, Xbox A, PlayStation cross.
-function promptCanvas(verb, device, padType) {
+// glyph: 'interact' (Space / A / ×) or 'echo' (F / X / □).
+function promptCanvas(verb, device, padType, glyph = 'interact') {
+  const echo = glyph === 'echo';
   const C = INTERACT.colors, h = 11;
-  const label = device === 'keyboard' ? 'SPC' : '';
+  const label = device === 'keyboard' ? (echo ? 'F' : 'SPC') : '';
   const gw = device === 'keyboard' ? measure(label) + 4 : 7;
   const w = 3 + gw + 3 + measure(verb) + 3;
   const cv = Object.assign(document.createElement('canvas'), { width: w, height: h + 2 });
@@ -36,7 +38,7 @@ function promptCanvas(verb, device, padType) {
     const ps = padType === 'playstation';
     ctx.fillStyle = hex(ps ? C.ps : C.xbox);
     ctx.fillRect(gx + 1, gy, 5, 7); ctx.fillRect(gx, gy + 1, 7, 5);                          // round-ish button
-    drawText(ctx, ps ? '×' : 'A', gx + 2, gy + 1, hex(C.text));
+    drawText(ctx, ps ? (echo ? '□' : '×') : (echo ? 'X' : 'A'), gx + 2, gy + 1, hex(C.text));
   }
   drawText(ctx, verb, gx + gw + 3, 3, hex(C.text));
   return cv;
@@ -87,10 +89,10 @@ export function createInteractions(scene) {
       current = this.nearest(pos, facing);
       el.style.display = current ? 'block' : 'none';
       if (!current) return;
-      const key = `${current.verb}|${device}|${padType}`;
+      const key = `${current.verb}|${current.glyph}|${device}|${padType}`;
       if (key !== shownKey) {
         shownKey = key;
-        canvas = promptCanvas(current.verb, device === 'touch' ? 'mouse' : device, padType);
+        canvas = promptCanvas(current.verb, device === 'touch' ? 'mouse' : device, padType, current.glyph);
         const k = INTERACT.promptScale;
         canvas.style.cssText = `width:${canvas.width * k}px;height:${canvas.height * k}px;image-rendering:pixelated;display:block`;
         el.replaceChildren(canvas);

@@ -42,17 +42,29 @@ const Grade = {
   uniforms: {
     tDiffuse: { value: null }, lift: { value: new THREE.Vector3() }, gamma: { value: new THREE.Vector3() },
     gain: { value: new THREE.Vector3() }, saturation: { value: 1 }, grain: { value: 0 }, fringe: { value: 0 }, time: { value: 0 },
+    echo: { value: 0 }, glitch: { value: 0 },
   },
   vertexShader: TiltShift.vertexShader,
   fragmentShader: /* glsl */`
-    uniform sampler2D tDiffuse; uniform vec3 lift, gamma, gain; uniform float saturation, grain, fringe, time;
+    uniform sampler2D tDiffuse; uniform vec3 lift, gamma, gain; uniform float saturation, grain, fringe, time, echo, glitch;
     varying vec2 vUv;
     float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
     void main() {
-      vec2 off = (vUv - 0.5) * fringe * 2.0;
-      vec3 c = vec3(texture2D(tDiffuse, vUv + off).r, texture2D(tDiffuse, vUv).g, texture2D(tDiffuse, vUv - off).b);
+      vec2 uv = vUv;
+      if (glitch > 0.0) { // pixel tear: shift random horizontal bands
+        float band = floor(vUv.y * 28.0), h = hash(vec2(band, floor(time * 40.0)));
+        if (h > 0.72) uv.x += (h - 0.86) * 0.35 * glitch;
+      }
+      vec2 off = (vUv - 0.5) * (fringe + glitch * 0.01) * 2.0;
+      vec3 c = vec3(texture2D(tDiffuse, uv + off).r, texture2D(tDiffuse, uv).g, texture2D(tDiffuse, uv - off).b);
       c = pow(max(gain * (c + lift * (1.0 - c)), 0.0), 1.0 / gamma);
       c = mix(vec3(dot(c, vec3(0.299, 0.587, 0.114))), c, saturation);
+      if (echo > 0.0) { // echo mode: desaturated cyan, scanlines, slow vignette
+        float l = dot(c, vec3(0.299, 0.587, 0.114));
+        c = mix(c, vec3(l) * vec3(0.45, 0.95, 1.15) + vec3(0.0, 0.03, 0.05), echo * 0.88);
+        c *= 1.0 - echo * (0.16 + 0.1 * glitch) * (0.5 + 0.5 * sin(gl_FragCoord.y * 1.6));
+        c *= 1.0 - echo * 0.35 * smoothstep(0.35, 1.0, length(vUv - 0.5) * 1.5);
+      }
       c += (hash(vUv * 1000.0 + time) - 0.5) * grain;
       gl_FragColor = vec4(c, 1.0);
     }`,
@@ -86,6 +98,8 @@ export function createPost(renderer, scene, camera, quality) {
   return {
     composer,
     applyUniforms, // call after changing POST (debug sliders in 3B)
+    setEcho(a) { g.echo.value = a; },       // 0..1 echo-mode grade
+    setGlitch(a) { g.glitch.value = a; },   // 0..1 pixel-tear strength
     setSize(w, h) {
       composer.setSize(w, h);
       const pr = renderer.getPixelRatio();

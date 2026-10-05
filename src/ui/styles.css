@@ -111,3 +111,26 @@ body.talking #touch-ui .echo { display: none; }
 #casefile .cf-entry .s { font: italic 0.8rem var(--body); color: var(--pink); }
 #casefile .cf-empty { color: var(--dim); padding: 1rem; }
 #casefile .cf-foot { margin-top: 0.8rem; font-size: 0.8rem; color: var(--dim); }
+
+/* Echo mode */
+#echo { position: fixed; inset: 0; z-index: 7; display: none; pointer-events: none; font-family: var(--body); color: var(--text); }
+#echo.on { display: block; }
+body.echo #hud .right, body.echo #hud .banner, body.echo #hud .controls, body.echo #touch-ui .icons { display: none; }
+#echo .echo-title { position: absolute; left: calc(1.2rem + var(--safe-l)); top: calc(1rem + var(--safe-t)); font-size: 1.2rem; color: var(--cyan); text-shadow: 0 0 0.6rem var(--cyan); }
+#echo .echo-caption { position: absolute; left: 50%; bottom: calc(9rem + var(--safe-b)); transform: translateX(-50%); max-width: 44rem; text-align: center;
+  font: italic 500 1.3rem/1.4 var(--body); color: #fff; text-shadow: 0 0 0.5rem #000, 0 0 0.8rem var(--cyan); }
+#echo .echo-tag { position: absolute; left: 50%; bottom: calc(6.6rem + var(--safe-b)); transform: translateX(-50%); pointer-events: auto; cursor: pointer;
+  padding: 0.5rem 1.4rem; font: 700 1.1rem var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: #fff; background: rgba(224, 33, 125, 0.35);
+  border-color: var(--magenta); display: none; }
+#echo .echo-bar { position: absolute; left: calc(1.5rem + var(--safe-l)); right: calc(1.5rem + var(--safe-r)); bottom: calc(1.2rem + var(--safe-b)); pointer-events: auto;
+  display: flex; align-items: center; gap: 0.8rem; padding: 0.7rem 1rem; }
+@media (pointer: coarse) { #echo .echo-bar { right: calc(7.5rem + var(--safe-r)); } }
+#echo .echo-btn { width: 2.2rem; height: 2.2rem; flex: none; font: 700 1rem var(--display); color: var(--cyan); background: transparent; border: 1px solid var(--cyan); cursor: pointer; }
+#echo .echo-time { font: 600 1rem var(--display); letter-spacing: 0.06em; color: #fff; min-width: 2.6rem; text-align: center; flex: none; }
+#echo .echo-rail { position: relative; flex: 1; height: 0.7rem; background: rgba(255, 255, 255, 0.14); cursor: pointer; touch-action: none; }
+#echo .echo-rail i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--cyan); opacity: 0.55; }
+#echo .echo-rail b { position: absolute; top: -0.4rem; width: 0.35rem; height: 1.5rem; background: #fff; transform: translateX(-50%); box-shadow: 0 0 0.5rem var(--cyan); }
+#echo .echo-rail .seam { display: none; position: absolute; top: -0.5rem; width: 0.18rem; height: 1.7rem; background: #ff3b3b; text-decoration: none; transform: translateX(-50%); }
+#echo .echo-rail .seam.seen { display: block; }
+#echo .echo-rail .tagmark { position: absolute; top: 1.15rem; width: 0.55rem; height: 0.55rem; background: var(--magenta); transform: translateX(-50%) rotate(45deg); }
+#echo .echo-rail .tagmark.done { background: var(--cyan); }

@@ -1,13 +1,13 @@
 # NOTES
 Running summary for Claude sessions (keep under 60 lines).
 ## Status
-- Current stage: 6B done (#14). Next: Stage 7A (#15) echo-scan. Issues #2-#12 closed; #13 (6A) and #14 can be closed. Seed 1337 (`SEED`, src/core/rng.js)
+- Current stage: 7A done (#15), untested in browser. Next: 7B (#16) deduction board. Issues #2-#14 closed. Seed 1337 (`SEED`, src/core/rng.js)
 ## Files
 - src/core: rng.js seeded PRNG · input.js action layer · settings.js TIERS high/medium/mobile, ?quality=
 - src/render: camera.js orbit cam · lights.js · fog.js height fog + cutaway · post.js bloom, tilt-shift, grade
 - src/world: district.js layout, CAST, ZONES · collision.js walk grid · particles.js · timeofday.js moods
 - src/gen: palette.js · textures.js · batch.js merge collector · buildings.js · glyphs.js signs · props.js · sprites.js characters · pixelfont.js
-- src/game: npc.js billboards + createCast · player.js · interact.js prompts · clock.js · story.js (ALL story data) · dialogue.js · casefile.js
+- src/game: npc.js billboards + createCast · player.js · interact.js prompts · clock.js · story.js (ALL story data) · dialogue.js · casefile.js · echo.js
 - src/ui: touch.js · title.js (title.started) · styles.css (panel frame, key caps, rem, safe-area) · hud.js (HUD + dialogue box)
 - src/main.js builds everything + loop · src/debug/panel.js stats + controls (` toggles) · scripts/check-*.mjs (node self-checks), scripts/where.mjs (prints CAST and spot positions)
 ## Key functions
@@ -28,6 +28,9 @@ Running summary for Claude sessions (keep under 60 lines).
 - Look: `createLights`, `createPost` (edit POST, applyUniforms), `createHeightFog` (+cutaway), `createParticles`, `createTimeOfDay`
   (lateEvening/night/deadHour), `getTexture`, `building`. Debug panel: select/slider/button, FPS/calls/tris/heap. Tunables: constants atop each file.
 - `createCaseFile(hud)` -> { has(id), add(id), hasFlag, setFlag, open({present, onPick, onCancel}), close, toggle, isOpen, update(input) }. Tabs People/Facts/Echoes.
+  `createEcho({scene, sheets, post, caseFile, hud, cast, spots})` -> { active, hotspots, tryStart(pos), start(id), exit(), update(dt, input, camYaw, lights, scrubAxis, playerPos) }.
+  F near a hotspot (cyan diamond) starts it; F/Backspace/Esc exits. Space tags (in a tag window) else play/pause; stick or A/D scrubs, D-pad steps,
+  drag the bar. Red seam tick appears once the playhead has crossed it (stutter + pixel tear 0.2 s). `post.setEcho(0..1)`, `setGlitch(0..1)`.
   `createDialogue({hud, caseFile, clock})` -> { active, start(convId), end, update(dt, input), onChar(char, speakerId) } (voice blips hook, Stage 8).
 ## Data formats
 - Character: { name, skin, iris, lips?, lashes?, hair:{style,color,shine?}, top, legs, shoes, outfit?:{type,color,collar}, acc:[{type,color}], poses? }.
@@ -37,6 +40,9 @@ Running summary for Claude sessions (keep under 60 lines).
   automatic "Present evidence…" choice. Choice { text, next?, if?, effects?, end? }. Condition { flag?, notFlag?, fact?, notFact? } (all must hold).
   Effects { addFact | addPerson | addEcho: entryId } { setFlag: name } { setTime: [h, m] }, applied on entering a node / picking a choice.
   Interact skips typewriter (40 cps) then advances; W/S/D-pad choose; click/tap works. Test: Mama Teo (talk twice, present "back lock").
+- Echo (story.js ECHOES/HOTSPOTS): HOTSPOTS [{id, echo, at: [x,z] | {spot, dx, dz}, radius}]. ECHOES[id] { title, owner, entry (ENTRIES echoes id, added on first play),
+  duration (s), tracks: [{sprite: sheetId, show?: [t0,t1], keys: [{t, x, z, facing?, anim?: idle|walk}]}] (linear; two keys ~0.01 s apart = a jump),
+  voices: [{t0, t1, speaker, text}] captions, seams: [t], tags: [{t, window, fact, label}] }. Test: stall hotspot (cyan diamond), seam 3.5 s.
 ## Known issues
 - Chunk > 500 kB warning. Rail deck hits buildings near x=17. NPCs don't block Juno. Point lights cast no shadows. Mobile shadows may be heavy.
 ## Next
