@@ -48,14 +48,11 @@ Running summary for Claude sessions (keep under 60 lines).
   rows {down,up,left,right[,slump]}, anims {idle:{start:0,frames:2}, walk:{start:2,frames:4}} }. 24x32 (cat 16x12),
   row-run shading (lit left), neon rim (SPRITES.rim) on outermost pixels, ink outline; right = mirrored. ?sprites previews.
 - Tunables: constants at the top of each file (CAMERA, INPUT, PLAYER, INTERACT, NPC, POST, FOG, PARTICLES, TIME_OF_DAY, ...).
-
 ## Data formats
 - Character: { name, skin, eyes, hair:{style,color}, top, legs, shoes, coat?:{color,length,collar}, rolledSleeves?, stoop?,
-  acc:[{type,color}] (implant belt apron sticks bag tie stripe soles poncho trim hood visor), poses?:["slump"] }. Palette names. Dialogue/echo/board formats come in Stages 6-7.
-
+  acc:[{type,color}] (implant belt apron sticks bag tie stripe soles poncho trim hood visor), poses?:["slump"] }. Palette names.
 ## Known issues
-- Chunk > 500 kB warning (three.js). Rail deck hits buildings near x=17. NPCs don't block Juno. Point lights cast no shadows.
-- Shadows on for Mobile too (shrink if iPhone struggles). renderer.info.autoReset off (reset per frame in main).
-
+- Chunk > 500 kB warning. renderer.info.autoReset off. Rail deck hits buildings near x=17. NPCs don't block Juno. Point lights cast no shadows.
+- Shadows on for Mobile too (shrink if iPhone struggles)..
 ## Next
 Stage 5B (#11): touch stick/buttons, swipe-rotate, pinch-zoom, landscape lock, Mobile tier checks.
