@@ -56,4 +56,6 @@ Running summary for Claude sessions (keep under 60 lines).
 - WASD pans the camera until Stage 5 makes Juno the player (remove cam.pan in main). Tilt band fixed at centre.
 - Chunk > 500 kB warning (three.js). Rail deck hits buildings near x=17. No prop collision. Point lights cast no shadows.
 - Shadows on for Mobile too (shrink if iPhone struggles). renderer.info.autoReset off (reset per frame in main).
-## Next Stage 5A: player movement + input (Juno becomes the player; replace the WASD camera pan, move the tilt band to her).
+
+## Next
+Stage 5A: player movement + input (Juno becomes the player; replace the WASD camera pan, move the tilt band to her).
