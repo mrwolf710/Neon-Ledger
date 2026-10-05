@@ -2,74 +2,84 @@ import * as THREE from 'three';
 
 export const CAMERA = {
   fov: 20,
-  pitchDeg: 35,
-  minPitchDeg: 8,    // R held: look up toward the skyline
-  maxPitchDeg: 80,   // V held: look down toward top-down
-  tiltSpeed: 40,     // degrees per second
-  yawDeg: 45,
-  distance: 75,
-  minDistance: 12,
-  maxDistance: 140,
-  rotateMs: 300,
-  rotateStepDeg: 30, // Q/E swing per press
-  zoomSpeed: 60,  // units per second while Z/X held
-  wheelStep: 6,   // units per wheel notch
-  panSpeed: 12,   // units per second (WASD free-look until there is a player); x2 with Shift
-  near: 1,
+  yawDeg: 45, pitchDeg: 35, distance: 50,       // start / reset view
+  minPitchDeg: 8, maxPitchDeg: 85,
+  minDistance: 8, maxDistance: 140,
+  orbitSpeed: 0.3,    // degrees per pixel of mouse drag
+  rotateSpeed: 90,    // degrees per second while Q/E held
+  tiltSpeed: 50,      // degrees per second while R/V held
+  wheelZoom: 1.12,    // distance multiplier per wheel notch
+  keyZoom: 1.8,       // distance multiplier per second while Z/X held
+  panSpeed: 0.5,      // keyboard pan, in view-heights per second (so it scales with zoom); x2 with Shift
+  smooth: 14,         // higher = snappier; the view eases toward its goal
+  bounds: { x: 26, z: 12 }, // target stays over the district
+  near: 0.5,
   far: 500,
 };
 
-const easeInOutCubic = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
+const d2r = THREE.MathUtils.degToRad, clamp = THREE.MathUtils.clamp;
 
-// Orbit camera: fixed pitch, yaw snaps in rotateStepDeg steps around `target`.
+// Orbit camera around `target`. Inputs change goal values; update() eases the real view toward them.
 export function createCamera(aspect) {
   const camera = new THREE.PerspectiveCamera(CAMERA.fov, aspect, CAMERA.near, CAMERA.far);
+  const goal = { target: new THREE.Vector3(), yaw: 0, pitch: 0, distance: 0 };
   const target = new THREE.Vector3();
-  let pitch = THREE.MathUtils.degToRad(CAMERA.pitchDeg);
-  let yaw = THREE.MathUtils.degToRad(CAMERA.yawDeg);
-  let fromYaw = yaw, toYaw = yaw, t = 1;
-  let distance = CAMERA.distance;
+  let yaw = 0, pitch = 0, distance = 0;
 
-  function place() {
-    const flat = Math.cos(pitch) * distance;
-    camera.position.set(
-      target.x + Math.sin(yaw) * flat,
-      target.y + Math.sin(pitch) * distance,
-      target.z + Math.cos(yaw) * flat,
-    );
-    camera.lookAt(target);
+  function reset() {
+    goal.target.set(0, 0, 0);
+    goal.yaw = d2r(CAMERA.yawDeg); goal.pitch = d2r(CAMERA.pitchDeg); goal.distance = CAMERA.distance;
   }
-  place();
+  reset();
+  target.copy(goal.target); yaw = goal.yaw; pitch = goal.pitch; distance = goal.distance;
+
+  // World units covered by one screen pixel at the target (for drag-pan).
+  const unitsPerPixel = () => (2 * distance * Math.tan(d2r(CAMERA.fov) / 2)) / window.innerHeight;
+
+  function moveGoal(right, forward) {
+    goal.target.x += Math.cos(goal.yaw) * right - Math.sin(goal.yaw) * forward;
+    goal.target.z += -Math.sin(goal.yaw) * right - Math.cos(goal.yaw) * forward;
+    goal.target.x = clamp(goal.target.x, -CAMERA.bounds.x, CAMERA.bounds.x);
+    goal.target.z = clamp(goal.target.z, -CAMERA.bounds.z, CAMERA.bounds.z);
+  }
 
   return {
     camera,
     target,
     get yaw() { return yaw; },
-    rotate(dir) {
-      fromYaw = yaw;
-      toYaw += dir * THREE.MathUtils.degToRad(CAMERA.rotateStepDeg);
-      t = 0;
+    reset,
+    // Mouse drag in pixels: x turns, y tilts.
+    orbit(dx, dy) {
+      goal.yaw -= d2r(dx * CAMERA.orbitSpeed);
+      goal.pitch = clamp(goal.pitch + d2r(dy * CAMERA.orbitSpeed), d2r(CAMERA.minPitchDeg), d2r(CAMERA.maxPitchDeg));
     },
-    // Moves the target on the ground, relative to the view: x right, y forward (into the screen).
+    // Mouse drag in pixels: the ground follows the cursor.
+    dragPan(dx, dy) {
+      const u = unitsPerPixel();
+      moveGoal(-dx * u, (dy * u) / Math.max(0.3, Math.sin(pitch)));
+    },
+    // Keyboard: x right, y forward (-1..1).
     pan(x, y, dt) {
-      const s = CAMERA.panSpeed * dt;
-      target.x += (Math.cos(yaw) * x - Math.sin(yaw) * y) * s;
-      target.z += (-Math.sin(yaw) * x - Math.cos(yaw) * y) * s;
+      const s = CAMERA.panSpeed * unitsPerPixel() * window.innerHeight * dt;
+      moveGoal(x * s, y * s);
     },
+    // dir: -1 / +1 per second (Q/E held).
+    rotate(dir, dt) { goal.yaw += dir * d2r(CAMERA.rotateSpeed) * dt; },
     // dir -1 looks up (flatter), +1 looks down (steeper).
     tilt(dir, dt) {
-      const d = THREE.MathUtils.degToRad;
-      pitch = THREE.MathUtils.clamp(pitch + dir * d(CAMERA.tiltSpeed) * dt, d(CAMERA.minPitchDeg), d(CAMERA.maxPitchDeg));
+      goal.pitch = clamp(goal.pitch + dir * d2r(CAMERA.tiltSpeed) * dt, d2r(CAMERA.minPitchDeg), d2r(CAMERA.maxPitchDeg));
     },
-    zoom(delta) {
-      distance = THREE.MathUtils.clamp(distance + delta, CAMERA.minDistance, CAMERA.maxDistance);
-    },
+    // factor > 1 zooms out.
+    zoom(factor) { goal.distance = clamp(goal.distance * factor, CAMERA.minDistance, CAMERA.maxDistance); },
     update(dt) {
-      if (t < 1) {
-        t = Math.min(1, t + (dt * 1000) / CAMERA.rotateMs);
-        yaw = fromYaw + (toYaw - fromYaw) * easeInOutCubic(t);
-      }
-      place();
+      const k = 1 - Math.exp(-CAMERA.smooth * dt);
+      target.lerp(goal.target, k);
+      yaw += (goal.yaw - yaw) * k;
+      pitch += (goal.pitch - pitch) * k;
+      distance += (goal.distance - distance) * k;
+      const flat = Math.cos(pitch) * distance;
+      camera.position.set(target.x + Math.sin(yaw) * flat, target.y + Math.sin(pitch) * distance, target.z + Math.cos(yaw) * flat);
+      camera.lookAt(target);
     },
   };
 }

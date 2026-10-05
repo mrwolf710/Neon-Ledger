@@ -1,6 +1,5 @@
 # NOTES
 Running summary for Claude sessions (keep under 60 lines).
-
 ## Status
 - Current stage: 4B done (#9). Next: Stage 5A (see docs/stages/stage-05-movement-input.md). Seed: 1337 (`SEED` in src/core/rng.js)
 ## Files
@@ -17,11 +16,12 @@ Running summary for Claude sessions (keep under 60 lines).
 ## Key functions
 - `rng` / `createRng(seed)` -> { seed, rand, range, int (inclusive), pick, weighted({k:w}), fork(label) }; fork depends only on (seed, label).
 - `input.update()` / `input.endFrame()`; `moveX/moveY`, `zoom`, `zoomSteps`, `held(a)`, `pressed(a)`.
-  Keys: WASD, Shift run, Space interact, F echo, Q/E rotate, Z/X zoom, R/V tilt, Tab caseFile, B board, N map, Esc pause, ` debug.
+  Keys: WASD, Shift run, Space interact, F echo, Q/E rotate (hold), Z/X zoom, R/V tilt, C reset view, Tab caseFile, B board, N map, Esc pause, ` debug.
 - `createCast(scene, sheets, spots)` -> { list, update(dt, camYaw, lights) }. CAST (district.js): { id, at:[x,z]|spot name,
   facing (0 = +z), pose idle|walk|slump, path:[[x,z]...], speed }. Row = facing - camYaw (down/right/up/left). NPC tunables.
   `groundY(z)` (district.js) = curb height on sidewalks. `batch.spot(name, x, z)` -> userData.spots (stall cook spot).
-- `createCamera(aspect)` -> { camera, target, yaw, rotate(±1) (30 deg steps), pan(x,y,dt), tilt(dir,dt), zoom(d), update(dt) }.
+- `createCamera(aspect)` -> { camera, target, yaw, reset, orbit(dx,dy px), dragPan(dx,dy px), pan(x,y,dt), rotate(dir,dt),
+  tilt(dir,dt), zoom(factor), update(dt) }; eases toward goals (CAMERA.smooth). Mouse: left-drag orbit, right/Shift-drag pan, wheel zoom.
 - `buildDistrict(rng)` -> Group. Street along X (length 40); Z across (road 6, sidewalks 2, buildings 3 deep). Rail x=17.
   group.userData = { lights: [{color,intensity,base,position}], steam: [Vector3], signs: [{mat, light}] }.
 - `createBatch()` -> { setTransform(x,z,rotY), add(mat,geo), box(...), light(color,int,x,y,z) -> light, steam(x,y,z),

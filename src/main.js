@@ -89,10 +89,12 @@ renderer.setAnimationLoop((now) => {
   last = now;
 
   input.update();
-  if (input.pressed('rotateL')) cam.rotate(-1);
-  if (input.pressed('rotateR')) cam.rotate(1);
+  if (input.pressed('resetView')) cam.reset();
+  cam.rotate((input.held('rotateR') ? 1 : 0) - (input.held('rotateL') ? 1 : 0), dt);
+  cam.orbit(input.orbitDX, input.orbitDY);
+  cam.dragPan(input.panDX, input.panDY);
   if (input.pressed('debug')) debug.toggle();
-  cam.zoom(input.zoom * CAMERA.zoomSpeed * dt + input.zoomSteps * CAMERA.wheelStep);
+  cam.zoom(CAMERA.wheelZoom ** input.zoomSteps * CAMERA.keyZoom ** (input.zoom * dt));
   cam.pan(input.moveX, input.moveY, dt * (input.held('run') ? 2 : 1)); // ponytail: free-look until Stage 4 player
   cam.tilt((input.held('tiltDown') ? 1 : 0) - (input.held('tiltUp') ? 1 : 0), dt);
   cam.update(dt);
