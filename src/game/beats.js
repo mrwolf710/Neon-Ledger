@@ -29,17 +29,20 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
     const startX = train.position.x, stopX = platform.trainStop[0];
     focus = train.position;                                     // the camera watches the train come in
     const smooth = (x) => { const c = Math.min(1, Math.max(0, x)); return c * c * (3 - 2 * c); };
-    platform.lights.forEach((l) => { l.intensity = 0; });          // pitch black: only the train's own windows glow
+    const glowTo = (g) => platform.trainGlow.forEach((m) => m.color.copy(m.userData.base).multiplyScalar(g));
+    platform.lights.forEach((l) => { l.intensity = 0; });          // pitch black; the windows and door start almost dark too
+    glowTo(0.04);
     setExposure(BEATS.dark.exposure);
     await fade.in();
     sfx.trainArrive(BEATS.trainSeconds);
     await tween(BEATS.trainSeconds, (u) => {
       train.position.x = startX + (stopX - startX) * (1 - (1 - u) ** 3);
       setExposure(BEATS.dark.exposure + (1 - BEATS.dark.exposure) * smooth(u * 1.15));
+      glowTo(0.04 + 0.96 * smooth((u - 0.1) / 0.8));                // windows and door fade up with the rest
       const lamp = smooth((u - BEATS.dark.lampsFrom) / (1 - BEATS.dark.lampsFrom));
       platform.lights.forEach((l) => { l.intensity = l.base * lamp; });
     });
-    setExposure(1);
+    setExposure(1); glowTo(1);
     platform.lights.forEach((l) => { l.intensity = l.base; });
     await wait(BEATS.mislaid);
     const door = platform.spots.find((s) => s.name === 'start');

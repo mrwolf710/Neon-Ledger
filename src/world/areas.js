@@ -124,23 +124,27 @@ function platform(M) {
   for (const x of [-6, 3]) { b.box(PM.wood, 2.0, 0.08, 0.5, x, 0.5, 2.2); b.box(PM.pole, 0.08, 0.5, 0.4, x - 0.85, 0.25, 2.2); b.box(PM.pole, 0.08, 0.5, 0.4, x + 0.85, 0.25, 2.2); b.block(x, 2.2, 2.0, 0.5); }
   // Canopy posts with lamps.
   for (const x of [-7, 0, 7]) { b.box(M.metal, 0.25, 3.6, 0.25, x, 1.8, -2.2); b.block(x, -2.2, 0.3, 0.3); b.box(PM.lamp, 0.5, 0.1, 0.3, x, 3.55, -2.2); b.light(P.amberLight, 11, x, 3.2, -1.6); }
+  for (const x of [-9, -4.5, 0, 4.5, 9]) b.light(P.amberLight, 9, x, 2.3, -3.1);   // light for the train side and the platform edge
+  b.light(P.cyan, 7, 0, 1.4, -3.3);
   // Stairs down at the east end.
   for (let i = 0; i < 4; i++) b.box(M.metal, 0.5, 0.12, 2.4, 9 + i * 0.35, -0.08 * i, 0);
   doorMat(b, M, 8.6, 0, 1.0, 1.6);
   b.spot('start', -1.0, -2.0); b.spot('exit', 8.6, 0); b.spot('trainstop', 0, -4.6);
   // The train: its own group so it can roll in. Body faces the platform at z = -3.
   const tb = createBatch(); tb.setTransform(0, 0, 0);
+  const glow = (hex) => { const m = new THREE.MeshBasicMaterial({ color: new THREE.Color(hex).multiplyScalar(BUILDINGS.windowGlow) }); m.userData.base = m.color.clone(); return m; };
+  const trainWarm = glow(P.amber), trainCool = glow(P.cyan);          // window and door light; beats fades them in
   const L = 14;
-  tb.box(M.metal, L, 2.7, 2.6, 0, 1.55, 0);
-  tb.box(M.frame, L + 0.2, 0.2, 2.7, 0, 3.0, 0);
-  for (let i = -2.5; i <= 2.5; i++) tb.box(M.litWarm, 1.7, 0.8, 0.06, i * 2.5, 2.1, 1.33);   // windows on the platform side
-  tb.box(M.litCool, 1.2, 1.9, 0.06, 0, 1.2, 1.34);                                           // the door Juno steps out of
-  tb.box(M.rail, L, 0.3, 2.4, 0, 0.35, 0);
-  tb.light(P.amberLight, 6, 0, 2.2, 2.2);
+  tb.box(M.walls[1], L, 2.7, 2.6, 0, 1.55, 0);                         // body: pale concrete panels so the platform lamps show it
+  tb.box(M.frame, L + 0.2, 0.2, 2.7, 0, 3.0, 0);                       // roof
+  tb.box(M.rail, L, 0.5, 2.4, 0, 0.45, 0);                             // undercarriage
+  tb.box(trainCool, L, 0.08, 0.06, 0, 0.95, 1.33);                     // thin glowing stripe along the side
+  for (let i = -2.5; i <= 2.5; i++) tb.box(trainWarm, 1.7, 0.8, 0.06, i * 2.5, 2.1, 1.33);   // windows on the platform side
+  tb.box(trainCool, 1.2, 1.9, 0.06, 0, 1.2, 1.34);                    // the door Juno steps out of
   const train = tb.build();
   train.traverse((o) => { if (o.isMesh) o.castShadow = true; });
   train.position.set(AREAS.platform.origin[0] - 40, 0, AREAS.platform.origin[1] - 4.6);
-  return finish('platform', b, [-10, -3, 10, 3], { train, trainStop: [AREAS.platform.origin[0] - 0.5, -4.6] });
+  return finish('platform', b, [-10, -3, 10, 3], { train, trainGlow: [trainWarm, trainCool], trainStop: [AREAS.platform.origin[0] - 0.5, -4.6] });
 }
 
 // ---------- Sable Noodle House: front counter (west) and the back room (east) ----------
