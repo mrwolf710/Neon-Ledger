@@ -1,16 +1,18 @@
 # NOTES
-
 Running summary for Claude sessions. Paste this file at the start of every stage chat. Keep it under 60 lines.
 
 ## Status
 
-- Current stage: 2B done (#4). Next: Stage 3A (#5).
+- Current stage: 3A done (#5). Next: Stage 3B (#6).
 - Seed: 1337 (`SEED` in src/core/rng.js)
 
 ## Files
 
 - index.html: full-window canvas#game, loads src/main.js
-- src/main.js: renderer (pixel ratio cap 2), scene, temp hemi + directional light, resize, game loop
+- src/main.js: renderer (shadows, Neutral tone map), scene, lights, district (shadows on), post, game loop
+- src/core/settings.js: TIERS high/medium/mobile (pixelRatio, bloomScale, maxLights, shadowMap, rainCount, ssr), auto-detect, ?quality=
+- src/render/lights.js: moon (shadow), hemi fill, fixed pool of N point lights moved to nearest registered lights
+- src/render/post.js: Render -> UnrealBloom -> tilt-shift H/V -> OutputPass -> grade (lift/gamma/gain, sat, grain, fringe)
 - src/core/rng.js: mulberry32 seeded PRNG
 - src/core/input.js: action layer; keyboard + wheel live, mouse/gamepad/touch stubs (TODO 5A/5B)
 - src/render/camera.js: orbit camera, fov 20, pitch 35, yaw 45, 90 deg snap rotate, zoom
@@ -40,19 +42,24 @@ Running summary for Claude sessions. Paste this file at the start of every stage
 - `getTexture(name, rng, wUnits, hUnits)` -> { map, roughnessMap }, seamless tile, Nearest, no mipmaps,
   repeat = 1/size (expects world-unit UVs). Cached by name:seed:size; uses rng.fork(key). Each pixel picks
   from a palette ramp via 4x4 Bayer dither. Roughness: puddles/seams low (wet), dry high.
+- `settings.quality` = active tier. `createLights(scene, maxLights, shadowMapSize)` -> { moon, hemi, register(list), update(dt, focus) }.
+  `createPost(renderer, scene, camera, quality)` -> { composer, applyUniforms(), setSize(w,h), render(dt) }; tweak POST then applyUniforms().
+- `batch.light(color, intensity, x, y, z)` registers a light (local coords); build() puts them in group.userData.lights.
+  Signs (BUILDINGS.signLight) and lamps (PROPS.lamp.light) register lights. Each sign adds an additive fading ground
+  reflection quad (BUILDINGS.reflection), +1 draw per sign. Emissives get colour multipliers (signGlow, windowGlow, lamp.glow) for bloom.
 - `createDebugPanel(renderer, seed)` -> { toggle(), update(dt) } (call after render).
-- Tunables: CAMERA, DISTRICT, TEXTURES, BUILDINGS, GLYPHS, PROPS, PANEL, MAIN constants at the top of each file.
+- Tunables: CAMERA, DISTRICT, TEXTURES, BUILDINGS, GLYPHS, PROPS, PANEL, MAIN, TIERS, LIGHTS, POST constants at the top of each file.
 
 ## Data formats
 
-(dialogue, echo and board formats are added in Stages 6 and 7)
 
 ## Known issues
 
 - Build warns chunk > 500 kB (three.js). Harmless for now.
 - Rail deck runs into the buildings near x=17 (since Stage 1). No collision on props yet.
-- Lights in main.js are temporary; Stage 3A moves them to src/render/lights.js.
+- Tilt-shift band is fixed at screen centre (POST.tilt.center) until there is a player. renderer.info.autoReset is off (reset per frame in main).
+- Point lights don't cast shadows; reflections stop at the road centre-ish (reflection.length).
 
 ## Next
 
-Stage 3A (#5): quality tiers, light manager, post-processing (bloom will pick up signs/windows).
+Stage 3B: particles/rain (rainCount from tier), height fog, time-of-day states, debug sliders for POST.

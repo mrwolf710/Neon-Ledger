@@ -11,7 +11,7 @@ export const PROPS = {
     wood: P.rust1, crates: [P.cyanDeep, P.rust2, P.grey3], vendBody: P.magentaDeep, vendGlow: P.cyanLight,
     lantern: P.magenta, bag: P.grey0, pole: P.grey1, lamp: P.amberLight,
   },
-  lamp: { height: 4.2, arm: 0.9 },
+  lamp: { height: 4.2, arm: 0.9, glow: 2.5, light: 6 }, // glow: colour multiplier for bloom; light: point intensity
 };
 
 let cached = null;
@@ -23,7 +23,8 @@ function mats(M) {
   const glow = (color) => new THREE.MeshBasicMaterial({ color });
   const PM = {
     wood: std(C.wood), crates: C.crates.map((c) => std(c, 0.6)), vendBody: std(C.vendBody, 0.4),
-    vendGlow: glow(C.vendGlow), lantern: glow(C.lantern), bag: std(C.bag, 0.3), pole: std(C.pole, 0.5), lamp: glow(C.lamp),
+    vendGlow: glow(C.vendGlow), lantern: glow(C.lantern), bag: std(C.bag, 0.3), pole: std(C.pole, 0.5),
+    lamp: new THREE.MeshBasicMaterial({ color: new THREE.Color(C.lamp).multiplyScalar(PROPS.lamp.glow) }),
   };
   cached = { M, PM };
   return PM;
@@ -67,11 +68,12 @@ export const PROP_BUILDERS = {
     }
   },
 
-  // Pole at origin, arm reaching towards the road (+z). Emissive head only; real lights come in Stage 3.
+  // Pole at origin, arm reaching towards the road (+z). Emissive head plus a registered point light.
   lamp(rng, M, batch) {
     const PM = mats(M), L = PROPS.lamp;
     batch.add(PM.pole, cyl(0.07, L.height, 0, L.height / 2, 0));
     batch.box(PM.pole, 0.08, 0.08, L.arm, 0, L.height - 0.05, L.arm / 2);
     batch.box(PM.lamp, 0.25, 0.08, 0.4, 0, L.height - 0.13, L.arm - 0.1);
+    batch.light(PROPS.colors.lamp, L.light, 0, L.height - 0.4, L.arm - 0.1);
   },
 };
