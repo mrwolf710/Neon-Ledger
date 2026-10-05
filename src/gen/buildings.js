@@ -20,11 +20,12 @@ export const BUILDINGS = {
   awning: { depth: 1.1, slope: 0.35, y: 2.35 },
   signs: [1, 2], signGlyphs: [3, 5],
   signColors: [P.magenta, P.cyan, P.amber, P.acid, P.pink],
-  signGlow: 2.5, windowGlow: 1.3,   // colour multipliers on emissive materials; >1 feeds bloom
+  signGlow: 1.8, windowGlow: 0.8,   // colour multipliers on emissive materials; >1 feeds bloom
   signLight: 4,                     // point light intensity in front of each sign
   wet: { road: 0.55, sidewalk: 0.85 }, // roughness multipliers (texture roughnessMap still applies)
-  // Fake wet reflection under each sign: additive flipped streak over sidewalk then road.
-  reflection: { opacity: 0.35, length: 4.5, sidewalk: 2, curb: 0.15 }, // sidewalk/curb match DISTRICT
+  // Fake wet reflection under each sign: additive streak over sidewalk then road. Samples only a thin
+  // band of the sign texture (vSpan) so glyph columns smear into streaks; fade = (1 - t/length)^fadePow.
+  reflection: { opacity: 0.2, length: 5, width: 0.7, vSpan: 0.15, fadePow: 2, sidewalk: 2, curb: 0.15 }, // sidewalk/curb match DISTRICT
   colors: {
     roofTint: 0x9a96aa, frame: P.grey0, glassDark: P.night, ac: P.grey5, rail: P.grey1,
     pipe: P.rust2, cable: P.ink, litWarm: P.amber, litCool: P.cyan,
@@ -108,12 +109,12 @@ function addReflection(batch, tex, x, w, fz) {
     map: tex, transparent: true, opacity: R.opacity, blending: THREE.AdditiveBlending, depthWrite: false, vertexColors: true,
   });
   for (const [t0, t1, y] of [[0, R.sidewalk, R.curb + 0.01], [R.sidewalk, R.length, 0.01]]) {
-    const g = new THREE.PlaneGeometry(w, t1 - t0).rotateX(-Math.PI / 2).translate(x, y, fz + (t0 + t1) / 2);
+    const g = new THREE.PlaneGeometry(w * R.width, t1 - t0).rotateX(-Math.PI / 2).translate(x, y, fz + (t0 + t1) / 2);
     const uv = g.attributes.uv, col = new Float32Array(uv.count * 3);
     for (let i = 0; i < uv.count; i++) {
       const v = (uv.getY(i) === 1 ? t0 : t1) / R.length; // plane top edge (uv.y 1) ends up nearest the wall
-      uv.setY(i, v);
-      col.fill(1 - v, i * 3, i * 3 + 3);
+      uv.setY(i, 0.5 + (v - 0.5) * R.vSpan);
+      col.fill((1 - v) ** R.fadePow, i * 3, i * 3 + 3);
     }
     g.setAttribute('color', new THREE.BufferAttribute(col, 3));
     batch.add(mat, g);

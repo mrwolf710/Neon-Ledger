@@ -6,7 +6,7 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 export const POST = {
-  bloom: { strength: 0.9, radius: 0.5, threshold: 0.75 },
+  bloom: { strength: 0.6, radius: 0.35, threshold: 0.85 },
   tilt: { center: 0.5, band: 0.12, ramp: 0.3, maxBlur: 3.0 }, // screen-space 0..1; blur in pixels per tap
   grade: { lift: [0.02, 0.0, 0.05], gamma: [1.0, 1.0, 0.95], gain: [1.05, 1.0, 1.1], saturation: 1.15 },
   grain: 0.05,

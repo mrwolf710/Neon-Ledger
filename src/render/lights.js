@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 export const LIGHTS = {
-  moon: { color: 0x8aa0ff, intensity: 0.6, position: [-12, 30, 14], shadowSize: 24, bias: -0.0005 },
+  moon: { color: 0x8aa0ff, intensity: 0.9, position: [-12, 30, 14], shadowSize: 24, bias: -0.0005 },
   hemi: { sky: 0x3a4078, ground: 0x120c1a, intensity: 0.35 },
   point: { distance: 9, decay: 2 },
   reassignEvery: 0.25, // seconds between nearest-N re-sorts
