@@ -41,6 +41,9 @@ run(0.1, 'down'); run(0.1, 'up');            // wrap-around navigation
 run(0.1, 'interact');                        // pick "Did you hear anything after that?"
 run(10);
 assert.ok(facts.has('door_unlocked') && people.has('mamaTeo'), 'fact and person added');
+run(0.1, 'interact');                        // on to the city master keys
+run(10);
+assert.ok(facts.has('master_keys'), 'she explains why the door can be opened from outside');
 run(0.1, 'interact');                        // on to "anything else?"
 run(10);
 assert.deepEqual(log.choices, ['Did you see his client arrive?', "That's all."], 'the other question is still offered');
@@ -57,7 +60,15 @@ run(0.1, 'down'); run(0.1, 'interact');      // open the case file
 assert.ok(open && presentOpts.present);
 open = false; presentOpts.onPick('door_unlocked');
 run(10);
-assert.ok(log.text.startsWith('Opened from outside'), 'presented the right fact');
+assert.ok(log.text.startsWith('Yes, I told you'), 'a fact she already gave you changes nothing');
+run(0.1, 'interact');
+assert.ok(!flags.has('teo_cracked') && !d.active);
+
+d.start('teo'); run(10);
+run(0.1, 'down'); run(0.1, 'interact');
+open = false; presentOpts.onPick('someone_had_key');
+run(10);
+assert.ok(log.text.startsWith('A city key'), 'presenting the deduction cracks her');
 run(0.1, 'interact');
 assert.ok(flags.has('teo_cracked') && !d.active);
 console.log('dialogue ok');

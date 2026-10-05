@@ -3,7 +3,7 @@ import assert from 'node:assert';
 import { createBoardLogic } from '../src/game/board.js';
 import { BOARD } from '../src/game/story.js';
 
-const known = new Set(['a', 'b', 'c', 'x', 'door_unlocked', 'two_voices', 'junk']);
+const known = new Set(['a', 'b', 'c', 'x', 'door_unlocked', 'master_keys', 'two_voices', 'junk']);
 const data = {
   ...BOARD,
   conclusions: [...BOARD.conclusions, { id: 'trio', needs: ['a', 'b', 'c'], result: 'r', line: 'trio!', effects: [] }],
@@ -12,7 +12,8 @@ const L = () => createBoardLogic(data, (id) => known.has(id));
 
 let l = L();
 assert.equal(l.link('door_unlocked', 'door_unlocked').kind, 'same');
-assert.equal(l.link('door_unlocked', 'two_voices').kind, 'solved', 'the test pair locks');
+assert.equal(l.link('door_unlocked', 'master_keys').kind, 'partial', 'the story trio needs all three facts connected');
+assert.equal(l.link('master_keys', 'two_voices').kind, 'solved', 'the story trio locks once connected');
 assert.equal(l.link('door_unlocked', 'two_voices').kind, 'wrong', 'a solved conclusion no longer accepts links');
 
 l = L();
