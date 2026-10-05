@@ -70,21 +70,24 @@ export function createParticles(scene, rng, rainCount, steamVents) {
     x: rng.range(-1, 1), y: rng.range(0, 1), z: rng.range(-1, 1), p: rng.range(0, 6.28),
   }));
   let nextSplash = 0, nextPuff = 0, steamAcc = 0, time = 0;
-  const api = { rainScale: 1 }; // 0..1 fraction of drops shown (time of day can lighten the rain)
+  const api = { rainScale: 1, active: true, center: { x: 0, z: 0 } }; // center: the outdoor area the shower covers // 0..1 fraction of drops shown (time of day can lighten the rain)
 
   api.update = (dt, focus, camera) => {
+    for (const mesh of [rain, splash, steam, motes]) mesh.visible = api.active;
+    if (!api.active) return;
     time += dt;
+    const cx = api.center.x, cz = api.center.z;
     // Rain: drops live in a fixed box over the district and wrap at its edges, so the shower stays put when the camera moves.
     const shown = Math.floor(rainCount * api.rainScale);
     for (let i = 0; i < rainCount; i++) {
       const d = drops[i];
       d.x += fall.x * dt; d.y += fall.y * dt; d.z += fall.z * dt;
-      const wx = THREE.MathUtils.euclideanModulo(d.x + ax / 2, ax) - ax / 2;
-      const wz = THREE.MathUtils.euclideanModulo(d.z + az / 2, az) - az / 2;
+      const wx = cx + THREE.MathUtils.euclideanModulo(d.x - cx + ax / 2, ax) - ax / 2;
+      const wz = cz + THREE.MathUtils.euclideanModulo(d.z - cz + az / 2, az) - az / 2;
       d.x = wx; d.z = wz;
-      const gy = groundY(wz);
+      const gy = groundY(wz - cz, wx - cx);
       if (d.y < gy) {
-        if (i < shown && onStreet(wx, wz) && rng.rand() < S.perDrop) {
+        if (i < shown && onStreet(wx - cx, wz - cz) && rng.rand() < S.perDrop) {
           Object.assign(splashes[nextSplash], { t: 0, x: wx, y: gy + 0.02, z: wz });
           nextSplash = (nextSplash + 1) % S.max;
         }

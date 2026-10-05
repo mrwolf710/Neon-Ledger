@@ -10,6 +10,8 @@ export const SPEAKERS = {
   miso: { name: 'Miso', color: '#d9771c' },
   vending: { name: 'Vending machine', color: '#9ff4ff' },
   unknown: { name: 'Unknown voice', color: '#e0217d' },
+  hale: { name: 'Hale (comms)', color: '#f2a93b' },
+  preacher: { name: 'Holo-preacher', color: '#9ff4ff' },
 };
 
 // Case file entries. kind decides the tab: people | facts | echoes. source = where Juno learned it.
@@ -18,13 +20,19 @@ export const ENTRIES = {
   teo_back_room: { kind: 'echoes', title: "Mama Teo's echo: the back room", text: "Six seconds from Mama Teo's implant, the night Dex died. Two voices, one of them cut off.", source: "Mama Teo's implant" },
   two_voices: { kind: 'facts', title: 'Two voices in the echo', text: "Mama Teo's echo holds two distinct voices. Only Dex is accounted for.", source: "Echo: Mama Teo's back room, 02.0" },
   echo_seam: { kind: 'facts', title: 'The echo has a seam', text: 'The replay stutters at 03.5. Someone edited this memory.', source: "Echo: Mama Teo's back room, 03.5" },
+  dex_body: { kind: 'facts', title: 'Dex slumped at the table', text: 'No wounds and no struggle. Whatever killed him was quiet.', source: 'The back room' },
+  burned_port: { kind: 'facts', title: "Dex's implant port is burned out", text: 'The port is scorched, but the skin around it is clean. A burnout from inside would have marked it.', source: 'The back room' },
+  two_cups: { kind: 'facts', title: 'Two cups on the table', text: 'Both used, one still warm. Dex had company.', source: 'The back room' },
+  door_log: { kind: 'facts', title: 'Back door log: 1 entry, 0 exits', text: 'The terminal logged one person in tonight and nobody out.', source: 'The back room terminal' },
+  smashed_lamp: { kind: 'facts', title: 'The corner lamp was smashed', text: 'Glass swept toward the door. Someone wanted the room dark.', source: 'The back room' },
+  grey_glove: { kind: 'facts', title: 'A grey Bureau glove', text: 'Left in the alley behind the Sable. Standard Bureau issue, grey.', source: 'The alley' },
   master_keys: { kind: 'facts', title: 'City master keys', text: 'Every door on Lowmarket opens to a city master key held by crews, inspectors and the Bureau. It is written into the leases.', source: 'Mama Teo' },
   someone_had_key: { kind: 'facts', title: 'The visitor had a city key', text: 'A second person met Dex in the back room. They got in without knocking, with a city master key.', source: 'Deduction board' },
   door_unlocked: { kind: 'facts', title: 'The back door was unlocked from outside', text: "Mama Teo locked Dex in the back room. Later she heard the back door, the only other way in, click open. No knock.", source: 'Mama Teo' },
 };
 
 // Which conversation each talkable thing starts. Missing ids fall back to FALLBACK.
-export const TALK = { mamaTeo: 'teo', vending: 'vending', miso: 'miso' };
+export const TALK = { mamaTeo: 'teo', vending: 'vending', miso: 'miso', vendor: 'vendor', preacher: 'preacher' };
 export const FALLBACK = 'nobody';
 
 // Conversation: { start: nodeId | [{ if, node }...], nodes: { id: Node } }.
@@ -37,7 +45,49 @@ const TEO_QUESTIONS = [
   { text: 'Did you see his client arrive?', next: 'follow', if: { notFlag: 'teo_asked_follow' }, effects: [{ setFlag: 'teo_asked_follow' }] },
 ];
 
+// Things Juno can examine. spot: a named spot in that area (areas.js). conv: a conversation below (built by examine()).
+// Beat 3 counts the five in the Sable.
+export const EXAMINABLES = [
+  { id: 'body', area: 'sable', spot: 'body', verb: 'Examine', conv: 'ex_body' },
+  { id: 'port', area: 'sable', spot: 'port', verb: 'Examine', conv: 'ex_port' },
+  { id: 'cups', area: 'sable', spot: 'cups', verb: 'Examine', conv: 'ex_cups' },
+  { id: 'terminal', area: 'sable', spot: 'terminal', verb: 'Read', conv: 'ex_terminal' },
+  { id: 'lamp', area: 'sable', spot: 'lamp', verb: 'Examine', conv: 'ex_lamp' },
+  { id: 'glove', area: 'alley', spot: 'glove', verb: 'Pick up', conv: 'ex_glove' },
+];
+
+// One-line examine conversation: Juno speaks, adds the fact and sets the flag ex_<id>; examining again gives a shorter line.
+const examine = (id, fact, text, again) => ({
+  start: [{ if: { flag: `ex_${id}` }, node: 'again' }, { node: 'a' }],
+  nodes: {
+    a: { speaker: 'juno', text, effects: [{ addFact: fact }, { setFlag: `ex_${id}` }], end: true },
+    again: { speaker: 'juno', text: again, end: true },
+  },
+});
+
 export const CONVERSATIONS = {
+  // Beat 1: Hale on comms as Juno steps off the train.
+  hale_open: { start: 'a', nodes: {
+    a: { speaker: 'hale', text: "Vale. Lowmarket, the Sable Noodle House. A broker's dead and his implant is burned out. Burnout case. Sign it and go home.", next: 'b' },
+    b: { speaker: 'juno', text: 'Copy that. Sorry, I think I lost another hour on that train.', next: 'c' },
+    c: { speaker: 'hale', text: 'Everybody loses an hour on Line 9, Vale. Get it done.', end: true },
+  } },
+  ex_body: examine('body', 'dex_body', 'Dex Morrow. Mid-level echo broker. No wounds, no struggle. Whatever did this was quiet.', 'Dex Morrow. Still no marks on him.'),
+  ex_port: examine('port', 'burned_port', "The port at his temple is burned black, but the skin around it is clean. A burnout from the inside would have scorched that too.", 'The port. Burned from the outside, I would bet.'),
+  ex_cups: examine('cups', 'two_cups', 'Two cups on the table. Both used, and one is still warm. Dex had company.', 'Two cups. Two people.'),
+  ex_terminal: examine('terminal', 'door_log', "The back door terminal. One entry logged tonight. Zero exits. Whoever came in never left, or the log is lying.", 'One in, none out. That log is wrong or somebody is still here.'),
+  ex_lamp: examine('lamp', 'smashed_lamp', 'The corner lamp is smashed, glass swept toward the door. Someone wanted the room dark.', 'Smashed on purpose. Dark room, quiet exit.'),
+  ex_glove: examine('glove', 'grey_glove', "A grey glove. Bureau issue. I have a pair just like it.", 'Bureau grey. Same as mine.'),
+  vendor: { start: 'a', nodes: {
+    a: { speaker: 'vendor', text: "You smell like rain and Bureau paperwork. The Sable is up the street on the left, under the red awning. They found a broker in the back.", next: 'b' },
+    b: { speaker: 'juno', text: 'Did anyone go in or out tonight?', next: 'c' },
+    c: { speaker: 'vendor', text: 'Everyone and no one. Lowmarket stops looking at faces after ten.', end: true },
+  } },
+  preacher: { start: 'a', nodes: {
+    a: { speaker: 'preacher', text: 'They copy your memories and call it a record. Listen, child: what is remembered is what is owned.', next: 'b' },
+    b: { speaker: 'juno', text: 'Is that a sermon or a complaint?', next: 'c' },
+    c: { speaker: 'preacher', text: 'Both. The signal is the soul, and the soul is for sale.', end: true },
+  } },
   // Mama Teo. The chain: she locked the back door at close and later heard it unlock with no knock (fact door_unlocked).
   // Together with the echo's two voices that proves a second person let themselves in with a key (board).
   teo: {
@@ -67,13 +117,18 @@ export const CONVERSATIONS = {
     },
   },
   vending: { start: 'a', nodes: { a: { speaker: 'juno', text: 'Out of order. Naturally.', end: true } } },
-  miso: { start: 'a', nodes: { a: { speaker: 'miso', text: 'Mrrp.', end: true } } },
+  miso: { start: [{ if: { flag: 'miso_joined' }, node: 'again' }, { node: 'a' }], nodes: {
+    a: { speaker: 'juno', text: 'Hey, stray. Hungry?', next: 'b' },
+    b: { speaker: 'miso', text: 'Mrrp.', next: 'c' },
+    c: { speaker: 'juno', text: 'Fine. Follow if you want. No promises about noodles.', effects: [{ setFlag: 'miso_joined' }], end: true },
+    again: { speaker: 'miso', text: 'Mrrp.', end: true },
+  } },
   nobody: { start: 'a', nodes: { a: { speaker: 'juno', text: 'Nothing to say yet.', end: true } } },
 };
 
 // Echo hotspots: where F starts an echo. at: [x, z] or { spot, dx, dz } relative to a named batch spot.
 export const HOTSPOTS = [
-  { id: 'teo_back_room', echo: 'teo_back_room', at: { spot: 'stall', dx: 2.4, dz: 0.2 }, radius: 2.4 },
+  { id: 'teo_back_room', area: 'sable', echo: 'teo_back_room', at: { spot: 'echo' }, radius: 2.6 },
 ];
 
 // Echoes: { title, owner, duration (s), tracks, voices, seams, tags }.
@@ -86,14 +141,12 @@ export const ECHOES = {
     title: "Mama Teo's view", owner: 'mamaTeo', entry: 'teo_back_room', duration: 6,
     tracks: [
       { sprite: 'dex', keys: [
-        { t: 0, x: 4.6, z: -3.5, facing: -Math.PI / 2, anim: 'walk' }, { t: 2, x: 1.3, z: -3.5, facing: -Math.PI / 2, anim: 'walk' },
-        { t: 2.2, x: 1.3, z: -3.5, facing: -Math.PI / 2, anim: 'idle' }, { t: 3.5, x: 1.3, z: -3.5, facing: -Math.PI / 2, anim: 'idle' },
-        { t: 3.51, x: 2.2, z: -3.5, facing: Math.PI / 2, anim: 'idle' }, { t: 6, x: 2.2, z: -3.5, facing: Math.PI / 2, anim: 'idle' },
+        { t: 0, x: 154.6, z: 1.0, facing: Math.PI, anim: 'idle' }, { t: 6, x: 154.6, z: 1.0, facing: Math.PI, anim: 'idle' },
       ] },
       { sprite: 'vendor', show: [1.4, 6], keys: [
-        { t: 1.4, x: -1.2, z: -3.5, facing: Math.PI / 2, anim: 'walk' }, { t: 2.6, x: 0.5, z: -3.5, facing: Math.PI / 2, anim: 'walk' },
-        { t: 2.8, x: 0.5, z: -3.5, facing: Math.PI / 2, anim: 'idle' }, { t: 3.49, x: 0.5, z: -3.5, facing: Math.PI / 2, anim: 'idle' },
-        { t: 3.5, x: 3.1, z: -3.5, facing: Math.PI / 2, anim: 'idle' }, { t: 6, x: 3.1, z: -3.5, facing: Math.PI / 2, anim: 'idle' },
+        { t: 1.4, x: 157.8, z: -1.2, facing: -Math.PI / 2, anim: 'walk' }, { t: 2.6, x: 156.0, z: -1.2, facing: -Math.PI / 2, anim: 'walk' },
+        { t: 2.8, x: 156.0, z: -1.2, facing: -Math.PI / 2, anim: 'idle' }, { t: 3.49, x: 156.0, z: -1.2, facing: -Math.PI / 2, anim: 'idle' },
+        { t: 3.5, x: 157.2, z: -2.0, facing: Math.PI, anim: 'idle' }, { t: 6, x: 157.2, z: -2.0, facing: Math.PI, anim: 'idle' },
       ] },
     ],
     voices: [

@@ -1,6 +1,6 @@
 // node scripts/drive.mjs [steps...] — loads the BUILT game (dist/) in headless Edge over the DevTools protocol, dismisses the title,
 // then runs steps, printing console errors and saving screenshots to the OS temp folder.
-// Steps: shot:<name>  wait:<ms>  hold:<KeyCode>:<ms>  key:<KeyCode>  click:<x>:<y>  eval:<js>
+// Use QS="?start=sable&hooks" to jump to an area and get window.__nl for eval: steps. Steps: shot:<name>  wait:<ms>  hold:<KeyCode>:<ms>  key:<KeyCode>  click:<x>:<y>  eval:<js>
 // Example: node scripts/drive.mjs wait:3000 shot:start hold:KeyD:2500 shot:walking
 import http from 'node:http';
 import fs from 'node:fs';
@@ -13,7 +13,8 @@ const PORT = 5199, DEBUG = 9333;
 const dist = path.resolve('dist');
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json' };
 const server = http.createServer((req, res) => {
-  const p = path.join(dist, req.url === '/' ? 'index.html' : decodeURIComponent(req.url.split('?')[0]));
+  const url = decodeURIComponent(req.url.split('?')[0]);
+  const p = path.join(dist, url === '/' ? 'index.html' : url);
   fs.readFile(p, (e, d) => { if (e) { res.writeHead(404); res.end(); } else { res.writeHead(200, { 'content-type': types[path.extname(p)] ?? 'application/octet-stream' }); res.end(d); } });
 }).listen(PORT);
 
@@ -51,7 +52,7 @@ const shot = async (name) => {
 
 await send('Runtime.enable'); await send('Log.enable'); await send('Page.enable');
 await send('Page.navigate', { url: `http://127.0.0.1:${PORT}/${process.env.QS ?? ''}` });
-await sleep(9000);                                         // swiftshader is slow: generation + first frames
+await sleep(+(process.env.LOAD_MS ?? 9000));                                         // swiftshader is slow: generation + first frames
 await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: 640, y: 400, button: 'left', clickCount: 1 });
 await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: 640, y: 400, button: 'left', clickCount: 1 });
 await sleep(2500);

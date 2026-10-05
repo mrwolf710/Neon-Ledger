@@ -17,6 +17,12 @@ export const TUNING = {
     bass: { vol: 0.17, cutoff: 520, sub: 0.2 },
     kick: { vol: 0.34, start: 150, end: 38 }, snare: { vol: 0.12, body: 0.09 }, hat: { vol: 0.05, ghost: 0.02, open: 0.045 },
   },
+  station: {
+    bpm: 52,
+    chords: [[50, 57, 62, 65, 69], [46, 53, 57, 62, 65], [43, 50, 55, 58, 62], [45, 52, 57, 60, 64]], // Dm  Bb  Gm  Am (two bars each)
+    pad: { vol: 0.05, cutoff: 620, detune: 7, attack: 3.2, release: 3.5 },
+    drone: { vol: 0.13 }, bell: { vol: 0.04, chance: 0.14, octave: 24 }, tick: { vol: 0.016, every: 8 },
+  },
   scene: {
     bpm: 60, chord: [50, 57, 60, 65], pad: { vol: 0.05, cutoff: 700, detune: 6, attack: 2.5, release: 3 },
     drone: { freq: 55, vol: 0.1 }, pluck: { vol: 0.06, chance: 0.12, scale: [62, 65, 67, 69, 72, 74] },
@@ -71,6 +77,21 @@ export function createMusic(synth) {
         const k = S.arpPattern[i % S.arpPattern.length], n = chord[k % chord.length] + 12;
         synth.tone({ freq: midiToFreq(n), type: 'sawtooth', t, dur: S.arp.dur, vol: S.arp.vol * (i % 4 === 2 ? S.arp.accent : 1), attack: 0.002, release: 0.05,
           filter: { type: 'lowpass', freq: S.arp.cutoff, q: 1 }, to: m.out });
+      },
+    },
+    station: {
+      bpm: T.station.bpm,
+      step(m, i, t) {
+        const S = T.station, sd = stepDur(S.bpm), ci = Math.floor(i / 32) % S.chords.length, chord = S.chords[ci];
+        if (i % 32 === 0) {
+          pad(m.out, chord, t, sd * 32, S.pad);
+          synth.tone({ freq: midiToFreq(chord[0] - 12), type: 'sine', t, dur: sd * 32, vol: S.drone.vol, attack: 2.5, release: 3, to: m.out });
+        }
+        if (i % 4 === 0 && synth.rand() < S.bell.chance) { // a bell far away, ringing out into the reverb
+          const n = chord[Math.floor(synth.rand() * chord.length)] + S.bell.octave;
+          synth.tone({ freq: midiToFreq(n), type: 'sine', t, dur: 0.12, vol: S.bell.vol, release: 2.6, to: m.out });
+        }
+        if (i % S.tick.every === 0) synth.noise({ t, dur: 0.03, vol: S.tick.vol, filter: { type: 'bandpass', freq: 1200, q: 1.2 }, to: m.out }); // distant rail ticks
       },
     },
     scene: {

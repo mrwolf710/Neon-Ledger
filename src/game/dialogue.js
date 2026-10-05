@@ -6,6 +6,7 @@ export const DIALOGUE = { cps: 40 }; // typewriter characters per second
 // hud.dialogue is the box UI; caseFile supplies facts/flags and the Present picker; clock for setTime effects.
 export function createDialogue({ hud, caseFile, clock }) {
   const ui = hud.dialogue;
+  let endResolve = null;
   let conv = null, node = null, nodeId = '', shown = 0, typing = false, options = [], sel = 0, skipHold = false, clicked = false;
 
   const holds = (c) => !c
@@ -51,16 +52,20 @@ export function createDialogue({ hud, caseFile, clock }) {
   const api = {
     get active() { return !!conv; },
     onChar: null, // (char, speakerId) per typed character; Stage 8 plays voice blips from it
+    // Returns a promise that resolves when the conversation ends (cutscenes await it).
     start(id) {
+      const done = new Promise((res) => { endResolve = res; });
       conv = CONVERSATIONS[id] ?? CONVERSATIONS[FALLBACK];
       const first = Array.isArray(conv.start) ? conv.start.find((s) => holds(s.if)).node : conv.start;
       document.body.classList.add('talking');
       skipHold = true; // the press that opened the conversation must not also skip its first line
       run(first);
+      return done;
     },
     end() {
       conv = node = null; ui.hide();
       document.body.classList.remove('talking');
+      endResolve?.(); endResolve = null;
     },
     // Call each frame while active. Interact: finish the line, then advance / pick.
     update(dt, input) {

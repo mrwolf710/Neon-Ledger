@@ -2,11 +2,9 @@ import * as THREE from 'three';
 import { rng } from './core/rng.js';
 import { input } from './core/input.js';
 import { createCamera, CAMERA } from './render/camera.js';
-import { buildDistrict } from './world/district.js';
 import { createDebugPanel, showSprites } from './debug/panel.js';
 import { getSheets } from './gen/sprites.js';
 import { createCast } from './game/npc.js';
-import { createCollision } from './world/collision.js';
 import './ui/styles.css';
 import { createTouchUI } from './ui/touch.js';
 import { createHud } from './ui/hud.js';
@@ -15,11 +13,12 @@ import { createCaseFile } from './game/casefile.js';
 import { createDialogue } from './game/dialogue.js';
 import { createEcho } from './game/echo.js';
 import { createBoard } from './game/board.js';
+import { createWorld } from './game/world.js';
+import { createBeats } from './game/beats.js';
+import { createFade } from './ui/fade.js';
 import { synth } from './audio/synth.js';
 import { createSfx, surfaceAt } from './audio/sfx.js';
 import { createMusic } from './audio/music.js';
-import { TALK, FALLBACK } from './game/story.js';
-import { zoneAt } from './world/district.js';
 import { createTitle } from './ui/title.js';
 import { createPlayer } from './game/player.js';
 import { createInteractions, INTERACT } from './game/interact.js';
@@ -35,6 +34,7 @@ const MAIN = {
   background: 0x0b0b14,
   toneMapping: THREE.NeutralToneMapping, exposure: 1.0,
   todBlendSeconds: 3, // debug dropdown blends over this long
+  indoorRain: 0.25,   // how much of the rain sound leaks into rooms
 };
 
 const Q = settings.quality;
@@ -53,57 +53,67 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(MAIN.background);
 const lights = createLights(scene, Q.maxLights, Q.shadowMap);
 const fog = createHeightFog(scene);
+const fade = createFade();
+fade.black = true; // the cold open fades in from black once the title is dismissed
 
-const district = buildDistrict(rng.fork('district'));
-district.traverse((o) => {
-  if (!o.isMesh) return;
-  o.receiveShadow = true;
-  o.castShadow = !o.material.transparent;
-});
-lights.register(district.userData.lights);
-fog.patch(district);
-scene.add(district);
-const particles = createParticles(scene, rng.fork('particles'), Q.rainCount, district.userData.steam);
+// Every area is built once; the world shows one at a time and calls onAreaEnter when it changes.
+const world = createWorld({ scene, rng, lights, fog, fade, start: 'platform', onEnter: (area, spawn) => onAreaEnter(area, spawn) });
+const street = world.areas.street;
+const particles = createParticles(scene, rng.fork('particles'), Q.rainCount, street.steam);
 
 const cam = createCamera(window.innerWidth / window.innerHeight);
 const post = createPost(renderer, scene, cam.camera, Q);
-const cast = createCast(scene, getSheets(), district.userData.spots);
-const collision = createCollision(district.userData.blocks);
-const player = createPlayer(cast.byId.juno, collision);
+const cast = createCast(scene, getSheets(), world.areas);
+const player = createPlayer(cast.byId.juno, world.current.collision);
 const interactions = createInteractions(scene);
-for (const b of cast.list) {
-  if (b.id === 'juno') continue;
-  interactions.add({
-    id: b.id, position: b.position, height: b.id === 'miso' ? 0.8 : 2, verb: b.id === 'miso' ? 'Pet' : 'Talk',
-    onInteract: () => {
-      if (b.anim !== 'walk' && b.anim !== 'slump') b.facing = Math.atan2(player.position.x - b.position.x, player.position.z - b.position.z);
-      dialogue.start(TALK[b.id] ?? FALLBACK);
-    },
-  });
-}
-for (const s of district.userData.spots.filter((p) => p.name === 'vending')) {
-  interactions.add({ id: 'vending', position: new THREE.Vector3(s.x, 0, s.z), height: 1.8, verb: 'Use', onInteract: () => dialogue.start(TALK.vending) });
-}
 const touchUI = createTouchUI(input);
 const title = createTitle(() => synth.start());
 const sfx = createSfx(synth), music = createMusic(synth);
-const hud = createHud(collision);
+const hud = createHud(world.current.collision);
 const clock = createClock();
 const caseFile = createCaseFile(hud, clock);
 const dialogue = createDialogue({ hud, caseFile, clock });
-const echo = createEcho({ scene, sheets: getSheets(), post, caseFile, hud, cast, spots: district.userData.spots });
+const echo = createEcho({ scene, sheets: getSheets(), post, caseFile, hud, cast, areas: world.areas });
 for (const h of echo.hotspots) {
-  interactions.add({ id: `echo:${h.id}`, position: h.position, height: 1.2, verb: 'Echo', glyph: 'echo', onInteract: () => echo.start(h.id) });
+  interactions.add({ id: `echo:${h.id}`, area: h.area, position: h.position, height: 1.2, verb: 'Echo', glyph: 'echo', onInteract: () => echo.start(h.id) });
 }
 const board = createBoard({ caseFile, hud });
+const beats = createBeats({ world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock,
+  setExposure: (v) => { renderer.toneMappingExposure = MAIN.exposure * v; } });
+beats.setCamera(cam);
+beats.register();
 let phaseId = '';
-title.started.then(() => hud.show());
+const startParam = new URLSearchParams(location.search).get('start'); // ?start=sable jumps straight to an area (testing)
+title.started.then(() => {
+  if (startParam && world.areas[startParam]) {
+    beats.skipOpen();
+    world.jump(startParam, world.exits.find((x) => x.to === startParam)?.spawn ?? null);
+  } else beats.coldOpen();
+});
 const ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 const headPos = new THREE.Vector3(), bufSize = new THREE.Vector2();
-cam.follow(player.position, true);
-const tod = createTimeOfDay({ scene, lights, post, particles, signs: district.userData.signs, rng: rng.fork('flicker') });
+const tod = createTimeOfDay({ scene, lights, post, particles, signs: street.signs, rng: rng.fork('flicker') });
 phaseId = clock.phase.id;
 tod.setTimeOfDay(phaseId);
+
+// What changes when the player moves to another area: collision, who is drawn, what can be used, rain, the minimap.
+function onAreaEnter(area, spawn) {
+  player.setCollision(area.collision);
+  hud.setCollision(area.collision);
+  cast.setArea(area.id); interactions.setArea(area.id); echo.setArea(area.id);
+  particles.active = area.meta.outdoor;
+  tod.setIndoor(!area.meta.outdoor);
+  particles.center.x = area.meta.origin[0]; particles.center.z = area.meta.origin[1];
+  if (spawn) {
+    player.position.set(spawn[0], 0, spawn[1]);
+    cast.byId.juno.facing = spawn[2] ?? 0;
+    cam.follow(player.position, true);
+  }
+  const miso = cast.byId.miso;
+  if (miso.follow && spawn) { miso.area = area.id; miso.position.set(spawn[0] + 0.7, 0, spawn[1] + 0.7); cast.apply(); } // Miso comes along
+  beats.onEnter(area);
+}
+onAreaEnter(world.current, null);
 
 // Audio events: dialogue voice blips, UI sounds, board links, footsteps, sign crackle.
 dialogue.onChar = (ch, speaker) => sfx.voice(ch, speaker);
@@ -111,15 +121,20 @@ dialogue.onUi = caseFile.onUi = echo.onUi = board.onUi = (kind) => sfx.ui(kind);
 caseFile.onAdd = () => sfx.ui('case');
 board.onLock = () => { sfx.ui('linkOk'); music.addLink(); };
 board.onWrong = () => sfx.ui('linkWrong');
-cast.byId.juno.onStep = () => sfx.step(surfaceAt(player.position.x, player.position.z), player.position, input.run);
-cast.byId.kit.onStep = () => sfx.step(surfaceAt(cast.byId.kit.position.x, cast.byId.kit.position.z), cast.byId.kit.position, false);
-tod.onFlicker = (i) => sfx.crackle(district.userData.signs[i].light.position);
+cast.byId.juno.onStep = () => sfx.step(world.current.meta.surface ?? surfaceAt(player.position.x, player.position.z), player.position, input.run);
+tod.onFlicker = (i) => sfx.crackle(street.signs[i].light.position);
 
+// ?hooks exposes the game objects for the headless test driver (scripts/drive.mjs eval: steps).
+if (new URLSearchParams(location.search).has('hooks')) window.__nl = { cam, world, player, beats, caseFile, dialogue, cast, echo, hud, clock, board, THREE };
 const debug = createDebugPanel(renderer, rng.seed);
 if (new URLSearchParams(location.search).has('sprites')) showSprites(getSheets());
 const labels = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, v.name ?? v.label]));
 debug.select('time', labels(TIME_OF_DAY), phaseId, (v) => tod.setTimeOfDay(v, MAIN.todBlendSeconds));
 debug.select('tier', labels(TIERS), settings.tier, (v) => { location.search = `?quality=${v}`; });
+debug.select('go to', Object.fromEntries(Object.entries(world.areas).map(([id, a]) => [id, a.meta.name])), world.current.id, (id) => {
+  const e = world.exits.find((x) => x.to === id);
+  world.jump(id, e ? e.spawn : null);
+});
 const pu = () => post.applyUniforms();
 debug.slider('bloom', POST.bloom, 'strength', 0, 2, 0.05, pu);
 debug.slider('bloom thr', POST.bloom, 'threshold', 0, 1.5, 0.05, pu);
@@ -153,6 +168,7 @@ let last = performance.now();
 renderer.setAnimationLoop((now) => {
   const dt = Math.min((now - last) / 1000, MAIN.maxDt);
   last = now;
+  const area = world.current;
 
   input.update();
   if (input.pressed('resetView')) cam.reset();
@@ -162,7 +178,8 @@ renderer.setAnimationLoop((now) => {
   cam.zoom(CAMERA.wheelZoom ** input.zoomSteps * CAMERA.keyZoom ** (input.zoom * dt) * input.zoomFactor);
   touchUI.update();
   const scrubAxis = input.moveX; // echo mode scrubs with the move axis
-  const modal = !title.done || dialogue.active || caseFile.isOpen || echo.active || board.isOpen; // title, conversation or case file: the world waits
+  // Title, cutscene, area change, conversation, case file, echo or board: the world waits for the player.
+  const modal = !title.done || beats.locked || world.busy || dialogue.active || caseFile.isOpen || echo.active || board.isOpen;
   if (modal) { input.click = null; input.moveX = input.moveY = 0; }
   cam.tilt((input.held('tiltDown') ? 1 : 0) - (input.held('tiltUp') ? 1 : 0), dt);
 
@@ -179,47 +196,55 @@ renderer.setAnimationLoop((now) => {
   }
   player.update(dt, input, cam.yaw);
   const cfWasOpen = caseFile.isOpen, bdWasOpen = board.isOpen;
+  const free = title.done && !beats.locked && !world.busy; // nothing scripted is running
   board.update(input);
-  if (!bdWasOpen && !board.isOpen && title.done && !dialogue.active && !echo.active && !caseFile.isOpen && input.pressed('board')) board.open();
+  if (!bdWasOpen && !board.isOpen && free && !dialogue.active && !echo.active && !caseFile.isOpen && input.pressed('board')) board.open();
   caseFile.update(input);
-  if (!cfWasOpen && !caseFile.isOpen && !dialogue.active && !echo.active && !board.isOpen && title.done && input.pressed('caseFile')) caseFile.open();
+  if (!cfWasOpen && !caseFile.isOpen && !dialogue.active && !echo.active && !board.isOpen && free && input.pressed('caseFile')) caseFile.open();
   const echoWas = echo.active;
-  if (echoWas) echo.update(dt, input, cam.yaw, district.userData.lights, scrubAxis, player.position);
+  if (echoWas) echo.update(dt, input, cam.yaw, area.lights, scrubAxis, player.position);
   else if (dialogue.active) { if (!cfWasOpen) dialogue.update(dt, input); }
-  else if (!cfWasOpen && !bdWasOpen && !board.isOpen && title.done) {
+  else if (!cfWasOpen && !bdWasOpen && !board.isOpen && free) {
     if (input.pressed('echo')) echo.tryStart(player.position);
     else if (input.pressed('interact')) interactions.current?.onInteract();
   }
-  if (!echoWas && !echo.active) echo.update(dt, input, cam.yaw, district.userData.lights, 0, player.position); // markers + fade-out while idle
-  cam.follow(player.position);
+  if (!echoWas && !echo.active) echo.update(dt, input, cam.yaw, area.lights, 0, player.position); // markers + fade-out while idle
+  beats.update(dt);
+  const focus = beats.focus ?? player.position; // cutscenes can point the camera elsewhere
+  cam.follow(focus);
   cam.update(dt);
 
-  // Keep the tilt-shift sharp band on Juno.
-  headPos.copy(player.position).setY(player.position.y + 1).project(cam.camera);
+  // Keep the tilt-shift sharp band on whatever the camera follows.
+  headPos.copy(focus).setY(focus.y + 1).project(cam.camera);
   POST.tilt.center = (headPos.y + 1) / 2;
   post.applyUniforms();
 
   // Clock: runs once the title is dismissed; the phase picks the time-of-day mood.
-  if (title.done && !echo.active) clock.update(dt);
+  if (free && !echo.active) clock.update(dt);
   if (clock.phase.id !== phaseId) { phaseId = clock.phase.id; tod.setTimeOfDay(phaseId, 8); }
   hud.setClock(clock.text, clock.phase.label, clock.progress);
   if (input.pressed('hideControls')) hud.toggleControls();
-  { const z = zoneAt(player.position.x, player.position.z); if (title.done) hud.setLocation(z.name, z.district); }
+  const place = world.placeAt(player.position.x, player.position.z);
+  if (free) hud.setLocation(place.name, place.district);
   hud.update(dt, {
     player: { x: player.position.x, z: player.position.z, facing: player.facing }, yaw: cam.yaw,
-    people: cast.list.filter((b) => b.id !== 'juno').map((b) => ({ x: b.position.x, z: b.position.z })),
+    people: cast.list.filter((b) => b.id !== 'juno' && b.root.visible).map((b) => ({ x: b.position.x, z: b.position.z })),
   });
   if (input.pressed('music')) { synth.setMusicOn(!synth.musicOn); hud.toast(synth.musicOn ? 'Music on' : 'Music off'); }
-  music.setMood(echo.active ? 'echo' : board.isOpen ? 'board' : 'street');
+  music.setMood(echo.active ? 'echo' : board.isOpen ? 'board' : place.mood);
   sfx.setEcho(echo.active);
-  sfx.update(dt, { player: player.position, yaw: cam.yaw, rainScale: particles.rainScale, signs: district.userData.signs });
+  sfx.update(dt, {
+    player: player.position, yaw: cam.yaw, signs: area.id === 'street' ? street.signs : [],
+    rainScale: particles.rainScale * (area.meta.outdoor ? 1 : MAIN.indoorRain),
+  });
   tod.update(dt);
   particles.update(dt, cam.target, cam.camera);
-  cast.update(dt, cam.yaw, district.userData.lights);
+  cast.update(dt, cam.yaw, area.lights);
   if (modal) interactions.hide(); else interactions.update(player.position, player.facing, input.lastDevice, input.padType, cam.camera);
   fog.update(cam.camera, cam.target);
   const db = renderer.getDrawingBufferSize(bufSize);
   fog.cutaway(cam.camera, player.position, db.x, db.y);
+  lights.focus(cam.target);
   lights.update(dt, cam.target);
   renderer.info.reset();
   post.render(dt);

@@ -187,3 +187,8 @@ body.echo #hud .right, body.echo #hud .banner, body.echo #hud .controls, body.ec
 #board .bd-line .who { color: var(--magenta); margin-right: 0.8rem; font-size: 1rem; text-shadow: 0 0 0.4rem var(--magenta); }
 #board .bd-foot { position: relative; z-index: 2; margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px solid rgba(31, 214, 232, 0.3); font: 500 0.78rem monospace; letter-spacing: 0.08em; color: var(--dim); }
 #board .bd-foot .keycap { margin-left: 0.8rem; }
+
+/* Objective line (under the location banner) */
+#hud .objective { position: absolute; left: calc(1rem + var(--safe-l)); top: calc(5rem + var(--safe-t)); padding: 0.35rem 0.9rem;
+  font: 600 0.95rem/1.2 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: #ff9b9b; }
+body.echo #hud .objective { display: none !important; }

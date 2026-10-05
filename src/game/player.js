@@ -10,12 +10,14 @@ export const PLAYER = {
 };
 
 // Juno: drives a billboard (from npc.js) with camera-relative movement or click-to-move, colliding via collision.js.
-export function createPlayer(billboard, collision) {
+export function createPlayer(billboard, initialCollision) {
+  let collision = initialCollision;
   const pos = billboard.position, vel = new THREE.Vector2();
   let goal = null, stuck = 0;
 
   return {
     position: pos,
+    setCollision(c) { collision = c; goal = null; vel.set(0, 0); },
     get facing() { return billboard.facing; },
     // Walk to point (Vector3, may be a live reference), stop within reach, then call onArrive.
     walkTo(point, reach = 0.15, onArrive = null) { goal = { point, reach, onArrive }; stuck = 0; },

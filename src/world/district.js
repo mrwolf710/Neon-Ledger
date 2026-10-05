@@ -18,13 +18,17 @@ export const DISTRICT = {
 
 // Who stands where. at: [x, z] or a spot name from the batch (first match), facing: radians (0 = +z).
 // pose: idle | walk | slump. path: loop of [x, z] points for walkers.
+// Who stands where. area: which place they live in (default street). at: [x, z] in world coordinates, or a spot name
+// from that area's builder (areas.js). facing: radians (0 = +z). pose: idle | walk | slump. ghost: drawn as a hologram.
+// follow: set later by the story (Miso follows Juno once she has been petted).
 export const CAST = [
-  { id: 'juno', at: [-2, 0.8], facing: 0.6 },
-  { id: 'mamaTeo', at: 'stall', fallback: [6, -4.4] },
-  { id: 'dex', at: [-9, -4.5], facing: 0, pose: 'slump' },
-  { id: 'vendor', at: [7, 4.4], facing: Math.PI },
-  { id: 'kit', pose: 'walk', speed: 2.2, path: [[-15, 1.6], [15, 1.6], [15, -1.6], [-15, -1.6]] },
-  { id: 'miso', at: [0.5, 3.6], facing: -0.8 },
+  { id: 'juno', area: 'platform', at: 'start', facing: Math.PI },
+  { id: 'mamaTeo', area: 'sable', at: 'teo' },
+  { id: 'dex', area: 'sable', at: 'dex', facing: Math.PI, pose: 'slump' },
+  { id: 'vendor', area: 'street', at: [7, 4.4], facing: Math.PI },
+  { id: 'preacher', area: 'street', at: [-9.5, -2.2], facing: Math.PI / 2, ghost: true },
+  { id: 'kit', area: 'hostel', at: 'kit' },
+  { id: 'miso', area: 'street', at: [0.5, 3.6], facing: -0.8 },
 ];
 
 // Named areas for the location banner; the last matching zone wins. box: [x0, z0, x1, z1].
@@ -35,8 +39,9 @@ export const ZONES = [
 export const zoneAt = (x, z) => [...ZONES].reverse().find((q) => x >= q.box[0] && x <= q.box[2] && z >= q.box[1] && z <= q.box[3]) ?? ZONES[0];
 
 // Ground height at z: sidewalks are raised by the curb.
-export function groundY(z) {
+export function groundY(z, x = 0) {
   const D = DISTRICT, a = Math.abs(z);
+  if (Math.abs(x) > D.length / 2 + 2) return 0; // other areas are flat
   return a > D.roadWidth / 2 && a < D.roadWidth / 2 + D.sidewalkWidth ? D.curbHeight : 0;
 }
 

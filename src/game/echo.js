@@ -36,7 +36,8 @@ export function sample(track, t) {
 
 // Echo mode: hotspot markers in the world, then a desaturated replay of ghost sprites with a scrub bar,
 // seam glitches and tagging. Data lives in story.js (ECHOES / HOTSPOTS); format documented in NOTES.md.
-export function createEcho({ scene, sheets, post, caseFile, hud, cast, spots }) {
+export function createEcho({ scene, sheets, post, caseFile, hud, cast, areas }) {
+  let areaId = null;
   // --- Hotspots and their floating markers ---
   const hotspots = [];
   const mGeo = new THREE.OctahedronGeometry(ECHO.marker.size), mMat = new THREE.MeshBasicMaterial({ color: ECHO.marker.color, transparent: true, opacity: 0.9, fog: false });
@@ -44,7 +45,7 @@ export function createEcho({ scene, sheets, post, caseFile, hud, cast, spots }) 
     let x, z;
     if (Array.isArray(h.at)) [x, z] = h.at;
     else {
-      const s = spots.find((p) => p.name === h.at.spot);
+      const s = areas[h.area ?? 'street']?.spots.find((p) => p.name === h.at.spot);
       if (!s) { console.warn('echo: no spot', h.at.spot); continue; }
       [x, z] = [s.x + (h.at.dx ?? 0), s.z + (h.at.dz ?? 0)];
     }
@@ -52,7 +53,7 @@ export function createEcho({ scene, sheets, post, caseFile, hud, cast, spots }) 
     marker.position.set(x, ECHO.marker.height, z);
     marker.visible = false;
     scene.add(marker);
-    hotspots.push({ ...h, position: new THREE.Vector3(x, 0, z), marker });
+    hotspots.push({ ...h, area: h.area ?? 'street', position: new THREE.Vector3(x, 0, z), marker });
   }
 
   // --- Scrub bar UI ---
@@ -114,9 +115,10 @@ export function createEcho({ scene, sheets, post, caseFile, hud, cast, spots }) 
   const api = {
     get active() { return !!active; },
     hotspots,
+    setArea(id) { areaId = id; },
     // Starts the echo of the hotspot within reach of pos; false (and a toast) when there is none.
     tryStart(pos) {
-      const h = hotspots.filter((q) => Math.hypot(q.position.x - pos.x, q.position.z - pos.z) <= q.radius)
+      const h = hotspots.filter((q) => q.area === areaId && Math.hypot(q.position.x - pos.x, q.position.z - pos.z) <= q.radius)
         .sort((a, b) => a.position.distanceTo(pos) - b.position.distanceTo(pos))[0];
       if (!h) { hud.toast('No echo here'); return false; }
       api.start(h.id);
@@ -131,7 +133,7 @@ export function createEcho({ scene, sheets, post, caseFile, hud, cast, spots }) 
         return { b, tr };
       });
       active = { def, t: 0, last: 0, playing: true, freeze: 0, glitch: 0, tagged: new Set(), seen: new Set(), ghosts };
-      cast.list.forEach((c) => { c.root.visible = false; });
+      cast.setHidden(true);
       document.body.classList.add('echo');
       root.classList.add('on');
       title.textContent = `Echo · ${def.title}`;
@@ -147,7 +149,7 @@ export function createEcho({ scene, sheets, post, caseFile, hud, cast, spots }) 
         b.root.traverse((o) => { if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); } });
       }
       active = null; dragging = false;
-      cast.list.forEach((c) => { c.root.visible = true; });
+      cast.setHidden(false);
       document.body.classList.remove('echo');
       root.classList.remove('on');
       post.setGlitch(0);
@@ -162,7 +164,7 @@ export function createEcho({ scene, sheets, post, caseFile, hud, cast, spots }) 
       // Hotspot markers: bob and spin while Juno is near.
       const time = performance.now() / 1000;
       for (const h of hotspots) {
-        h.marker.visible = !active && Math.hypot(h.position.x - playerPos.x, h.position.z - playerPos.z) < ECHO.showRange;
+        h.marker.visible = !active && h.area === areaId && Math.hypot(h.position.x - playerPos.x, h.position.z - playerPos.z) < ECHO.showRange;
         h.marker.rotation.y = time * ECHO.marker.spin;
         h.marker.position.y = ECHO.marker.height + Math.sin(time * 2) * ECHO.marker.bob;
       }

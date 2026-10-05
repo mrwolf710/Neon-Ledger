@@ -16,6 +16,7 @@ export const PROPS = {
 
 let cached = null;
 
+export { mats as propMats };
 function mats(M) {
   if (cached && cached.M === M) return cached.PM;
   const C = PROPS.colors;

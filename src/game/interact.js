@@ -52,18 +52,22 @@ export function createInteractions(scene) {
   const el = document.createElement('div');
   el.style.cssText = 'position:fixed;left:0;top:0;pointer-events:none;z-index:5;display:none';
   document.body.appendChild(el);
-  let shownKey = '', current = null;
+  let shownKey = '', current = null, area = 'street';
+  const here = (it) => (it.area ?? 'street') === area;
   const v = new THREE.Vector3();
 
   return {
     items,
-    add(item) { items.push({ height: 2, ...item }); },
+    add(item) { item.height ??= 2; items.push(item); },
+    setArea(id) { area = id; },
+    get area() { return area; },
     get current() { return current; },
     // Nearest interactable in front of the player (within range).
     nearest(pos, facing) {
       const fx = Math.sin(facing), fz = Math.cos(facing);
       let best = null, bestD = INTERACT.range;
       for (const it of items) {
+        if (!here(it)) continue;
         const dx = it.position.x - pos.x, dz = it.position.z - pos.z, d = Math.hypot(dx, dz);
         if (d >= bestD) continue;
         if (d > INTERACT.closeRange && (dx * fx + dz * fz) / d < INTERACT.frontDot) continue;
@@ -75,6 +79,7 @@ export function createInteractions(scene) {
     pick(click, camera) {
       let best = null, bestD = INTERACT.pickPixels;
       for (const it of items) {
+        if (!here(it)) continue;
         v.copy(it.position).setY(it.position.y + it.height / 2).project(camera);
         if (v.z > 1) continue;
         const sx = (v.x + 1) / 2 * window.innerWidth, sy = (1 - v.y) / 2 * window.innerHeight;

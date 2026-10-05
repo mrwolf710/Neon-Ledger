@@ -101,11 +101,19 @@ export function createBillboard(sheet, opts) {
 
   // facing (radians, 0 = +z), anim (idle | walk | pose name) and fpsScale can be driven from outside (player.js).
   const api = {
-    root, position: pos, facing: opts.facing ?? 0, anim: opts.pose ?? 'idle', fpsScale: 1,
+    root, position: pos, facing: opts.facing ?? 0, anim: opts.pose ?? 'idle', fpsScale: 1, follow: null, // follow: { target, dist, speed }
     // camYaw: camera yaw (radians); lights: registered lights [{ color, intensity, base, position }].
     update(dt, camYaw, lights) {
       time += dt * api.fpsScale;
       let { anim, facing } = api;
+      if (api.follow) { // trail a target (Miso behind Juno), sitting when close
+        const t = api.follow.target.position, dx = t.x - pos.x, dz = t.z - pos.z, d = Math.hypot(dx, dz);
+        if (d > api.follow.dist) {
+          const step = Math.min(d - api.follow.dist, api.follow.speed * dt);
+          pos.x += (dx / d) * step; pos.z += (dz / d) * step;
+          facing = api.facing = Math.atan2(dx, dz); anim = api.anim = 'walk';
+        } else anim = api.anim = 'idle';
+      }
       if (path) { // walk the loop
         const [tx, tz] = path[(leg + 1) % path.length];
         const dx = tx - pos.x, dz = tz - pos.z, d = Math.hypot(dx, dz), step = speed * dt;
@@ -113,7 +121,7 @@ export function createBillboard(sheet, opts) {
         facing = api.facing = Math.atan2(dx, dz);
         anim = api.anim = 'walk';
       }
-      pos.y = groundY(pos.z);
+      pos.y = groundY(pos.z, pos.x);
       root.position.copy(pos);
       sprite.rotation.y = camYaw; // Y-axis billboard: stays upright
 
@@ -151,20 +159,29 @@ export function createBillboard(sheet, opts) {
   return api;
 }
 
-// Places CAST in the scene. spots: district userData.spots. Returns { list, update(dt, camYaw, lights) }.
-export function createCast(scene, sheets, spots) {
+// Places CAST in the scene. areas: { id: { spots } } from the world. Returns { list, byId, update, setArea, setHidden }.
+export function createCast(scene, sheets, areas) {
   const list = CAST.map((c) => {
+    const spots = areas[c.area ?? 'street']?.spots ?? [];
     let x, z, facing = c.facing ?? 0;
     if (typeof c.at === 'string') {
       const s = spots.find((p) => p.name === c.at);
-      [x, z] = s ? [s.x, s.z] : c.fallback;
-      if (s) facing = s.facing;
-    } else if (c.at) [x, z] = c.at;
-    const b = createBillboard(sheets[c.id], { x, z, facing, pose: c.pose, path: c.path, speed: c.speed });
-    b.id = c.id;
+      if (!s) console.warn('cast: no spot', c.at, 'in', c.area);
+      [x, z] = s ? [s.x, s.z] : [0, 0];
+      if (s && c.facing === undefined) facing = s.facing;
+    } else [x, z] = c.at;
+    const b = createBillboard(sheets[c.id], { x, z, facing, pose: c.pose, path: c.path, speed: c.speed, ghost: c.ghost });
+    b.id = c.id; b.area = c.area ?? 'street';
     scene.add(b.root);
     return b;
   });
   const byId = Object.fromEntries(list.map((b) => [b.id, b]));
-  return { list, byId, update: (dt, camYaw, lights) => list.forEach((b) => b.update(dt, camYaw, lights)) };
+  let areaId = null, hidden = false;
+  const apply = () => list.forEach((b) => { b.root.visible = !hidden && !b.away && b.area === areaId; }); // away: held back by the story (Juno before the train arrives)
+  return {
+    list, byId, apply,
+    update: (dt, camYaw, lights) => list.forEach((b) => { if (b.root.visible) b.update(dt, camYaw, lights); }),
+    setArea(id) { areaId = id; apply(); },     // only characters of the current area are drawn
+    setHidden(h) { hidden = h; apply(); },     // echo mode hides the real people
+  };
 }

@@ -21,6 +21,7 @@ export const TIME_OF_DAY = {
     signs: 0.75, flicker: 0.3, dead: 0.25, rain: 1,
   },
 };
+export const INDOOR = { sky: 0.18, fill: 3.0 }; // multipliers on sky colour and hemisphere light inside rooms
 export const FLICKER = { rate: [3, 12], offLevel: 0.06 }; // steps per second per sign, brightness when off
 
 const COLORS = ['sky', 'fog', 'moonColor'];
@@ -48,15 +49,15 @@ function blend(a, b, t) {
 export function createTimeOfDay({ scene, lights, post, particles, signs, rng }) {
   const per = signs.map(() => ({ rate: rng.range(...FLICKER.rate), weak: rng.rand() }));
   let from, to, cur, t = 1, dur = 0, time = 0;
-  const api = { name: 'night' };
+  const api = { name: 'night', indoor: false };
 
   function apply(s, gradeToo) {
-    scene.background.copy(s.sky);
+    scene.background.copy(s.sky).multiplyScalar(api.indoor ? INDOOR.sky : 1);
     scene.fog.color.copy(s.fog);
     scene.fog.density = s.fogDensity;
     lights.moon.intensity = s.moon;
     lights.moon.color.copy(s.moonColor);
-    lights.hemi.intensity = s.hemi;
+    lights.hemi.intensity = s.hemi * (api.indoor ? INDOOR.fill : 1);
     particles.rainScale = s.rain;
     if (gradeToo) {
       for (const k of ARRAYS) POST.grade[k] = s[k];
@@ -65,6 +66,8 @@ export function createTimeOfDay({ scene, lights, post, particles, signs, rng }) 
     }
   }
 
+  // Rooms get a darker backdrop and a brighter fill than the open street.
+  api.setIndoor = (on) => { api.indoor = on; if (cur) apply(cur, false); };
   api.setTimeOfDay = (name, seconds = 0) => {
     api.name = name;
     from = cur ?? snapshot(TIME_OF_DAY[name]);

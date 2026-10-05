@@ -34,6 +34,11 @@ export function createLights(scene, maxLights, shadowMapSize) {
   return {
     moon, hemi,
     register(list) { registered.push(...list); timer = 0; },
+    // Keep the moon's shadow box over whatever the camera looks at.
+    focus(p) {
+      moon.target.position.set(p.x, 0, p.z);
+      moon.position.set(p.x + L.moon.position[0], L.moon.position[1], p.z + L.moon.position[2]);
+    },
     // Re-sorts every reassignEvery; copies intensity every frame so flicker shows.
     update(dt, focus) {
       if ((timer -= dt) <= 0) {

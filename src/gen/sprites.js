@@ -39,6 +39,11 @@ export const CHARACTERS = {
     top: 'grey6', legs: 'indigo', shoes: 'ink', outfit: { type: 'suit', color: 'indigo' },
     acc: [{ type: 'tie', color: 'magentaDeep' }], poses: ['slump'],
   },
+  preacher: { // drawn as a cyan hologram (CAST ghost: true)
+    name: 'Holo-preacher', skin: 'bone', iris: 'ink', hair: { style: 'slick', color: 'grey6', shine: 'white' },
+    top: 'violet', legs: 'indigo', shoes: 'ink', outfit: { type: 'trench', color: 'violet', collar: true },
+    acc: [{ type: 'sticks', color: 'amberLight' }],
+  },
   vendor: {
     name: 'Street vendor', skin: 'rust3', iris: 'ink', hair: { style: 'short', color: 'ink' },
     top: 'grey2', legs: 'grey1', shoes: 'ink',

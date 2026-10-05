@@ -1,4 +1,3 @@
-import { DISTRICT } from '../world/district.js';
 import { drawText } from '../gen/pixelfont.js';
 
 export const HUD = {
@@ -62,7 +61,8 @@ function dialogueBox(root) {
 
 // HUD: banner, clock, minimap, toasts, controls panel. Everything is fed through setters / update().
 // collision: from createCollision (needs .grid for the minimap).
-export function createHud(collision) {
+export function createHud(initialCollision) {
+  let collision = initialCollision;
   const H = HUD;
   const root = el('div', '', document.body); root.id = 'hud';
 
@@ -72,6 +72,10 @@ export function createHud(collision) {
   const names = el('div', '', banner);
   const bannerName = el('div', 'name', names), bannerDistrict = el('div', 'district', names);
   frame(banner);
+
+  const objectiveEl = frame(el('div', 'objective', root));
+  const objectiveTxt = el('span', '', objectiveEl);
+  objectiveEl.style.display = 'none';
 
   const right = el('div', 'right', root);
   const clock = frame(el('div', 'clock', right));
@@ -107,14 +111,14 @@ export function createHud(collision) {
     ctx.translate(S / 2, S / 2);
     ctx.transform(k * cos, k * sin, -k * sin, k * cos, 0, 0);
     ctx.translate(-view.player.x, -view.player.z);
-    const D = DISTRICT, hx = D.length / 2, hz = D.roadWidth / 2 + D.sidewalkWidth;
-    ctx.fillStyle = c.street; ctx.fillRect(-hx, -hz, D.length, hz * 2);
-    ctx.fillStyle = c.road; ctx.fillRect(-hx, -D.roadWidth / 2, D.length, D.roadWidth);
+    const w = grid.nx * grid.cell, h = grid.nz * grid.cell;
+    ctx.fillStyle = c.street; ctx.fillRect(grid.x0, grid.z0, w, h);
+    if (grid.road) { ctx.fillStyle = c.road; ctx.fillRect(grid.x0, grid.road[0], w, grid.road[1] - grid.road[0]); }
     ctx.fillStyle = c.solid;
     const e = 0.03; // overlap so rotated cells leave no seams
     for (let j = 0; j < grid.nz; j++) {
       for (let i = 0; i < grid.nx; i++) {
-        if (grid.solid[j * grid.nx + i]) ctx.fillRect(i * grid.cell - grid.halfX - e, j * grid.cell - grid.halfZ - e, grid.cell + e * 2, grid.cell + e * 2);
+        if (grid.solid[j * grid.nx + i]) ctx.fillRect(grid.x0 + i * grid.cell - e, grid.z0 + j * grid.cell - e, grid.cell + e * 2, grid.cell + e * 2);
       }
     }
     ctx.restore();
@@ -152,6 +156,7 @@ export function createHud(collision) {
   return {
     dialogue: dialogueBox(root),
     show() { root.classList.add('on'); },
+    setCollision(c) { collision = c; mapT = 0; }, // minimap follows the current area
     // Slides the banner in for bannerMs.
     setLocation(name, district) {
       if (name === currentLoc) return;
@@ -165,6 +170,7 @@ export function createHud(collision) {
       time.textContent = text; phase.textContent = phaseLabel;
       fill.style.width = knob.style.left = `${progress * 100}%`;
     },
+    setObjectiveText(text) { objectiveTxt.textContent = text ?? ''; objectiveEl.style.display = text ? '' : 'none'; },
     // pos {x, z} or null.
     setObjective(pos) { objective = pos; },
     toast(text) {

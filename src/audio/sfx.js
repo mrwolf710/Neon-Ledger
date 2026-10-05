@@ -22,7 +22,7 @@ export const TUNING = {
   voice: { vol: 0.07, dur: 0.05, every: 2 },
   voices: { // per speaker: base Hz and waveform
     juno: [230, 'triangle'], mamaTeo: [310, 'square'], kit: [400, 'sawtooth'], dex: [165, 'square'], vendor: [195, 'triangle'],
-    miso: [760, 'sine'], unknown: [112, 'sawtooth'], vending: [540, 'square'],
+    miso: [760, 'sine'], hale: [135, 'triangle'], preacher: [150, 'sine'], unknown: [112, 'sawtooth'], vending: [540, 'square'],
   },
 };
 
@@ -218,6 +218,19 @@ export function createSfx(synth) {
     },
 
     // ---- Neon crackle when a sign flickers off, at the sign's position ----
+    // The cold-open train pulling into the platform over `seconds`: swelling rumble, wheel clacks, a brake squeal at the end.
+    trainArrive(seconds = 6) {
+      if (!synth.ready) return;
+      const t = synth.now;
+      synth.noise({ t, dur: seconds, vol: 0.45, attack: seconds * 0.5, release: 1.2, filter: { type: 'lowpass', freq: 220, sweepTo: 90 } });
+      synth.tone({ freq: 55, t, dur: seconds, vol: 0.22, attack: seconds * 0.5, release: 1.2, type: 'sawtooth', filter: { type: 'lowpass', freq: 160 } });
+      for (let i = 0; i < seconds * 4; i++) {
+        const k = 1 - i / (seconds * 4);
+        synth.noise({ t: t + i * 0.25 * (1 + (1 - k) * 0.6), dur: 0.04, vol: 0.18 * (0.3 + k), filter: { type: 'bandpass', freq: 900, q: 1.3 } });
+      }
+      synth.tone({ freq: 2100, t: t + seconds - 1.8, dur: 1.6, type: 'sawtooth', vol: 0.04, slide: 600, release: 0.3, filter: { type: 'bandpass', freq: 1500, q: 2 } });
+    },
+
     // Echo mode on / off: ambient sound fades away and a low rumble swells in.
     setEcho(on) { echoOn = on; },
 
