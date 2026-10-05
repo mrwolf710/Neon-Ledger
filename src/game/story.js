@@ -43,7 +43,8 @@ export const CONVERSATIONS = {
     start: [{ if: { flag: 'teo_cracked' }, node: 'after' }, { if: { flag: 'teo_met' }, node: 'again' }, { node: 'hello' }],
     nodes: {
       hello: { speaker: 'mamaTeo', text: "You're the auditor. Sit, eat, and keep your hands off my counter.",
-        effects: [{ addPerson: 'mamaTeo' }, { setFlag: 'teo_met' }], next: 'ask' },
+        effects: [{ addPerson: 'mamaTeo' }, { setFlag: 'teo_met' }],
+        choices: [{ text: "I'm here about Dex Morrow.", next: 'ask' }] },
       ask: { speaker: 'mamaTeo', text: 'Dex came in twice tonight. The second time he never took his hand off his temple.',
         choices: [...TEO_QUESTIONS, { text: "That's all.", end: true }] },
       door: { speaker: 'mamaTeo', text: 'I locked the back door myself at close. Later I heard it click open again. No knock. Nobody who knocks lets themselves in.',
