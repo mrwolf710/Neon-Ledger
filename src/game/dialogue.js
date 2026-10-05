@@ -26,7 +26,7 @@ export function createDialogue({ hud, caseFile, clock }) {
 
   function buildOptions() {
     options = (node.choices ?? []).filter((c) => holds(c.if));
-    if (node.present) options.push({ text: 'Present evidence…', present: true });
+    if (node.present && caseFile.facts().length) options.push({ text: 'Present evidence…', present: true });
     sel = 0;
     ui.setChoices(options.map((o) => o.text), sel, (i) => { sel = i; choose(); });
   }

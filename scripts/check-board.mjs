@@ -3,7 +3,7 @@ import assert from 'node:assert';
 import { createBoardLogic } from '../src/game/board.js';
 import { BOARD } from '../src/game/story.js';
 
-const known = new Set(['a', 'b', 'c', 'x', 'lock_twice', 'two_voices', 'junk']);
+const known = new Set(['a', 'b', 'c', 'x', 'door_unlocked', 'two_voices', 'junk']);
 const data = {
   ...BOARD,
   conclusions: [...BOARD.conclusions, { id: 'trio', needs: ['a', 'b', 'c'], result: 'r', line: 'trio!', effects: [] }],
@@ -11,9 +11,9 @@ const data = {
 const L = () => createBoardLogic(data, (id) => known.has(id));
 
 let l = L();
-assert.equal(l.link('lock_twice', 'lock_twice').kind, 'same');
-assert.equal(l.link('lock_twice', 'two_voices').kind, 'solved', 'the test pair locks');
-assert.equal(l.link('lock_twice', 'two_voices').kind, 'wrong', 'a solved conclusion no longer accepts links');
+assert.equal(l.link('door_unlocked', 'door_unlocked').kind, 'same');
+assert.equal(l.link('door_unlocked', 'two_voices').kind, 'solved', 'the test pair locks');
+assert.equal(l.link('door_unlocked', 'two_voices').kind, 'wrong', 'a solved conclusion no longer accepts links');
 
 l = L();
 assert.equal(l.link('a', 'b').kind, 'partial', 'trio needs more than one link');

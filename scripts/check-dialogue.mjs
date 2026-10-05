@@ -13,6 +13,7 @@ const facts = new Set(), flags = new Set(), people = new Set();
 let presentOpts = null, open = false;
 const caseFile = {
   get isOpen() { return open; },
+  facts: () => [...facts].map((id) => ({ id })),
   has: (id) => facts.has(id) || people.has(id), hasFlag: (n) => flags.has(n), setFlag: (n) => flags.add(n),
   add: (id) => (id === 'mamaTeo' ? people : facts).add(id),
   apply(effects = []) { for (const e of effects) { if (e.addFact) this.add(e.addFact); if (e.addPerson) this.add(e.addPerson); if (e.setFlag) flags.add(e.setFlag); } },
@@ -31,15 +32,15 @@ run(10);                                     // finishes by itself; no choices o
 assert.ok(log.text.startsWith("You're the auditor"));
 run(0.1, 'interact');                        // advance to the question
 run(10);
-assert.deepEqual(log.choices, ['Which door did he use?', 'Did anyone follow him?', "That's all."]);
+assert.deepEqual(log.choices, ['Did you lock the back door?', 'Did anyone follow him in?', "That's all."]);
 run(0.1, 'down'); run(0.1, 'up');            // wrap-around navigation
-run(0.1, 'interact');                        // pick "Which door"
+run(0.1, 'interact');                        // pick "Did you lock the back door?"
 run(10);
-assert.ok(facts.has('lock_twice') && people.has('mamaTeo'), 'fact and person added');
+assert.ok(facts.has('door_unlocked') && people.has('mamaTeo'), 'fact and person added');
 run(0.1, 'interact');                        // on to "anything else?"
 run(10);
-assert.deepEqual(log.choices, ['Did anyone follow him?', "That's all."], 'the other question is still offered');
-run(0.1, 'interact');                        // pick "Did anyone follow him?"
+assert.deepEqual(log.choices, ['Did anyone follow him in?', "That's all."], 'the other question is still offered');
+run(0.1, 'interact');                        // pick "Did anyone follow him in?"
 run(10); run(0.1, 'interact'); run(10);
 assert.deepEqual(log.choices, ["That's all."], 'both asked, only the exit is left');
 run(0.1, 'interact');
@@ -50,9 +51,9 @@ run(10);
 assert.deepEqual(log.choices, ['Never mind.', 'Present evidence…'], 'asked both already: only exit and Present');
 run(0.1, 'down'); run(0.1, 'interact');      // open the case file
 assert.ok(open && presentOpts.present);
-open = false; presentOpts.onPick('lock_twice');
+open = false; presentOpts.onPick('door_unlocked');
 run(10);
-assert.ok(log.text.startsWith('Twice'), 'presented the right fact');
+assert.ok(log.text.startsWith('Opened from outside'), 'presented the right fact');
 run(0.1, 'interact');
 assert.ok(flags.has('teo_cracked') && !d.active);
 console.log('dialogue ok');

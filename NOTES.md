@@ -48,12 +48,12 @@ Running summary for Claude sessions (keep under 60 lines).
   automatic "Present evidence…" choice. Choice { text, next?, if?, effects?, end? }. Condition { flag?, notFlag?, fact?, notFact? } (all must hold).
   Effects { addFact | addPerson | addEcho: entryId } { setFlag: name } { setTime: [h, m] }, applied on entering a node / picking a choice.
   Question menus: loop back with `next` and hide asked choices with `if: {notFlag}` + a choice `setFlag` (see Mama Teo).
-  Interact skips typewriter (40 cps) then advances; W/S/D-pad choose; click/tap works. Test: Mama Teo (talk twice, present "back lock").
+  Interact skips typewriter (40 cps) then advances; W/S/D-pad choose; click/tap works. Present shows only once you hold a fact. Test: Mama Teo (ask about the back door, then talk again and present it).
 - Echo (story.js ECHOES/HOTSPOTS): HOTSPOTS [{id, echo, at: [x,z] | {spot, dx, dz}, radius}]. ECHOES[id] { title, owner, entry (ENTRIES echoes id, added on first play),
   duration (s), tracks: [{sprite: sheetId, show?: [t0,t1], keys: [{t, x, z, facing?, anim?: idle|walk}]}] (linear; two keys ~0.01 s apart = a jump),
   voices: [{t0, t1, speaker, text}] captions, seams: [t], tags: [{t, window, fact, label}] }. Test: stall hotspot (cyan diamond), seam 3.5 s.
 - Board (story.js BOARD): { wrongLines[], partialLine, hintLine ("{fact}" = fact title), conclusions: [{id, needs: [factId x2-3], result: ENTRIES fact id,
   line (Juno), effects}] }. A pair locks on one link; a trio needs links connecting all three. Every 3rd wrong link touching a conclusion's facts hints a needed
-  fact. Result facts (source "Deduction board") show as cyan CONCLUSION cards. Style: holographic grid, cut-corner cards, flowing neon strings (CSS in styles.css). Test: lock_twice + two_voices -> someone_had_key.
+  fact. Result facts (source "Deduction board") show as cyan CONCLUSION cards. Style: holographic grid, cut-corner cards, flowing neon strings (CSS in styles.css). Test: door_unlocked + two_voices -> someone_had_key.
 ## Known issues
 - Chunk > 500 kB warning. Rail deck hits buildings near x=17. NPCs don't block Juno. Point lights cast no shadows. Mobile shadows may be heavy. iPhone test: npm run dev -- --host (Network URL, Safari landscape).

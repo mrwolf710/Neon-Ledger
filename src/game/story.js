@@ -18,8 +18,8 @@ export const ENTRIES = {
   teo_back_room: { kind: 'echoes', title: "Mama Teo's echo: the back room", text: "Six seconds from Mama Teo's implant, the night Dex died. Two voices, one of them cut off.", source: "Mama Teo's implant" },
   two_voices: { kind: 'facts', title: 'Two voices in the echo', text: "Mama Teo's echo holds two distinct voices. Only Dex is accounted for.", source: "Echo: Mama Teo's back room, 02.0" },
   echo_seam: { kind: 'facts', title: 'The echo has a seam', text: 'The replay stutters at 03.5. Someone edited this memory.', source: "Echo: Mama Teo's back room, 03.5" },
-  someone_had_key: { kind: 'facts', title: 'Someone else had a key', text: 'Two people were in the back room, and one let themselves in. Dex never owned a key.', source: 'Deduction board' },
-  lock_twice: { kind: 'facts', title: 'The back lock turned twice', text: 'After closing, Mama Teo heard the back-room lock turn twice: once to open, once to lock.', source: 'Mama Teo' },
+  someone_had_key: { kind: 'facts', title: 'Someone else had a key', text: 'The back door was opened from outside without a knock, and two voices were in the room. A second person let themselves in with a key.', source: 'Deduction board' },
+  door_unlocked: { kind: 'facts', title: 'The back door was unlocked from outside', text: 'Mama Teo locked the back door herself at close, then heard it click open again later. No knock.', source: 'Mama Teo' },
 };
 
 // Which conversation each talkable thing starts. Missing ids fall back to FALLBACK.
@@ -30,36 +30,34 @@ export const FALLBACK = 'nobody';
 // Node: { speaker, text, next?, choices?, effects?, present?, presentWrong?, end? }.
 // Choice: { text, next?, if?, effects?, end? }. Condition: { flag?, notFlag?, fact?, notFact? } (all must hold).
 // Effects: { addFact: id } { addPerson: id } { addEcho: id } { setFlag: name } { setTime: [h, m] }.
+// Mama Teo's two questions; each hides itself once asked (flag set by the choice).
+const TEO_QUESTIONS = [
+  { text: 'Did you lock the back door?', next: 'door', if: { notFlag: 'teo_asked_door' }, effects: [{ setFlag: 'teo_asked_door' }] },
+  { text: 'Did anyone follow him in?', next: 'follow', if: { notFlag: 'teo_asked_follow' }, effects: [{ setFlag: 'teo_asked_follow' }] },
+];
+
 export const CONVERSATIONS = {
-  // The Stage 6 test: four lines, one choice, one fact; talk again to present it.
+  // Mama Teo. The chain: she locked the back door at close and later heard it unlock with no knock (fact door_unlocked).
+  // Together with the echo's two voices that proves a second person let themselves in with a key (board).
   teo: {
-    start: [{ if: { flag: 'teo_met' }, node: 'again' }, { node: 'hello' }],
+    start: [{ if: { flag: 'teo_cracked' }, node: 'after' }, { if: { flag: 'teo_met' }, node: 'again' }, { node: 'hello' }],
     nodes: {
       hello: { speaker: 'mamaTeo', text: "You're the auditor. Sit, eat, and keep your hands off my counter.",
         effects: [{ addPerson: 'mamaTeo' }, { setFlag: 'teo_met' }], next: 'ask' },
       ask: { speaker: 'mamaTeo', text: 'Dex came in twice tonight. The second time he never took his hand off his temple.',
-        choices: [
-          { text: 'Which door did he use?', next: 'door', if: { notFlag: 'teo_asked_door' }, effects: [{ setFlag: 'teo_asked_door' }] },
-          { text: 'Did anyone follow him?', next: 'follow', if: { notFlag: 'teo_asked_follow' }, effects: [{ setFlag: 'teo_asked_follow' }] },
-          { text: "That's all.", end: true },
-        ] },
-      door: { speaker: 'mamaTeo', text: 'The back, after close. I heard the lock turn twice.', effects: [{ addFact: 'lock_twice' }], next: 'more' },
-      follow: { speaker: 'mamaTeo', text: 'Only the cat. Miso follows everyone.', next: 'more' },
+        choices: [...TEO_QUESTIONS, { text: "That's all.", end: true }] },
+      door: { speaker: 'mamaTeo', text: 'I locked the back door myself at close. Later I heard it click open again. No knock. Nobody who knocks lets themselves in.',
+        effects: [{ addFact: 'door_unlocked' }], next: 'more' },
+      follow: { speaker: 'mamaTeo', text: 'Only the cat. Nobody else came through the front, and I would have seen.', next: 'more' },
       more: { speaker: 'mamaTeo', text: 'Anything else, or are you going to eat?',
-        choices: [
-          { text: 'Which door did he use?', next: 'door', if: { notFlag: 'teo_asked_door' }, effects: [{ setFlag: 'teo_asked_door' }] },
-          { text: 'Did anyone follow him?', next: 'follow', if: { notFlag: 'teo_asked_follow' }, effects: [{ setFlag: 'teo_asked_follow' }] },
-          { text: "That's all.", end: true },
-        ] },
-      again: { speaker: 'mamaTeo', text: 'Back again? Ask, or show me something.',
-        present: { lock_twice: 'cracked' }, presentWrong: 'wrong',
-        choices: [
-          { text: 'Which door did he use?', next: 'door', if: { notFlag: 'teo_asked_door' }, effects: [{ setFlag: 'teo_asked_door' }] },
-          { text: 'Did anyone follow him?', next: 'follow', if: { notFlag: 'teo_asked_follow' }, effects: [{ setFlag: 'teo_asked_follow' }] },
-          { text: 'Never mind.', end: true },
-        ] },
-      cracked: { speaker: 'mamaTeo', text: 'Twice... then somebody had a key. Dex never owned one.', effects: [{ setFlag: 'teo_cracked' }], end: true },
+        choices: [...TEO_QUESTIONS, { text: "That's all.", end: true }] },
+      again: { speaker: 'mamaTeo', text: 'Back again? What is it this time?',
+        present: { door_unlocked: 'cracked' }, presentWrong: 'wrong',
+        choices: [...TEO_QUESTIONS, { text: 'Never mind.', end: true }] },
+      cracked: { speaker: 'mamaTeo', text: 'Opened from outside, with no knock... then whoever it was had a key. Mine has not left my belt.',
+        effects: [{ setFlag: 'teo_cracked' }], end: true },
       wrong: { speaker: 'mamaTeo', text: "That means nothing to me. Eat something.", end: true },
+      after: { speaker: 'mamaTeo', text: "I've told you what I know. Find out who else has a key to that door.", end: true },
     },
   },
   vending: { start: 'a', nodes: { a: { speaker: 'juno', text: 'Out of order. Naturally.', end: true } } },
@@ -110,8 +108,8 @@ export const BOARD = {
   partialLine: 'That fits. There has to be more to it.',
   hintLine: 'I keep coming back to “{fact}”.',
   conclusions: [
-    { id: 'someone_had_key', needs: ['lock_twice', 'two_voices'], result: 'someone_had_key',
-      line: 'Two voices, two turns of the lock. Someone walked in as a guest and had their own key.',
+    { id: 'someone_had_key', needs: ['door_unlocked', 'two_voices'], result: 'someone_had_key',
+      line: 'Unlocked from outside, no knock, and two voices inside. Someone walked in with their own key.',
       effects: [{ addFact: 'someone_had_key' }, { setFlag: 'key_deduced' }] },
   ],
 };
