@@ -16,24 +16,26 @@ export const NPC = {
 const PX = 16; // texture pixels per world unit
 
 // Sprite shader: one frame of the sheet, alpha-tested, darkened to sit in the night scene, tinted by the
-// summed nearby lights and rim-lit on edge texels on the side the light comes from (lightSide -1 left .. +1 right).
+// summed nearby lights (lightColor) and rim-lit by the strongest one (rimColor) on the side it comes from
+// (lightSide -1 left .. +1 right). The rim sits just inside the ink outline, which stays dark.
 const VERT = /* glsl */`
   varying vec2 vUv;
   void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
 const FRAG = /* glsl */`
   uniform sampler2D map; uniform vec4 frame; uniform vec2 texel;
-  uniform vec3 lightColor; uniform float brightness, tint, rim, rimMax, maxLum, lightSide;
+  uniform vec3 lightColor, rimColor; uniform float brightness, tint, rim, rimMax, maxLum, lightSide;
   varying vec2 vUv;
   void main() {
     vec2 uv = frame.xy + vUv * frame.zw;
     vec4 c = texture2D(map, uv);
     if (c.a < 0.5) discard;
-    float eL = 1.0 - texture2D(map, uv - vec2(texel.x, 0.0)).a;
-    float eR = 1.0 - texture2D(map, uv + vec2(texel.x, 0.0)).a;
-    float eT = 1.0 - texture2D(map, uv + vec2(0.0, texel.y)).a;
+    bool outline = dot(c.rgb, vec3(1.0)) < 0.06;     // ink outline pixels keep their colour
+    float eL = 1.0 - texture2D(map, uv - vec2(texel.x * 2.0, 0.0)).a;
+    float eR = 1.0 - texture2D(map, uv + vec2(texel.x * 2.0, 0.0)).a;
+    float eT = 1.0 - texture2D(map, uv + vec2(0.0, texel.y * 2.0)).a;
     float edge = max(eT * 0.5, mix(eL, eR, lightSide * 0.5 + 0.5) * (0.4 + 0.6 * abs(lightSide)));
     vec3 col = c.rgb * brightness + c.rgb * lightColor * tint;
-    col = mix(col, lightColor, clamp(edge * rim * length(lightColor), 0.0, rimMax));
+    if (!outline) col = mix(col, rimColor, clamp(edge * rim * length(rimColor), 0.0, rimMax));
     float lum = dot(col, vec3(0.2126, 0.7152, 0.0722));
     if (lum > maxLum) col *= maxLum / lum;
     gl_FragColor = vec4(col, 1.0);
@@ -68,7 +70,7 @@ export function createBillboard(sheet, opts) {
   const mat = new THREE.ShaderMaterial({
     uniforms: {
       map: { value: sheet.texture }, frame: { value: new THREE.Vector4(0, 0, fw / W, fh / H) },
-      texel: { value: new THREE.Vector2(1 / W, 1 / H) }, lightColor: { value: new THREE.Color(0, 0, 0) },
+      texel: { value: new THREE.Vector2(1 / W, 1 / H) }, lightColor: { value: new THREE.Color(0, 0, 0) }, rimColor: { value: new THREE.Color(0, 0, 0) },
       brightness: { value: NPC.brightness }, tint: { value: NPC.tint }, rim: { value: NPC.rim }, rimMax: { value: NPC.rimMax }, maxLum: { value: NPC.maxLum }, lightSide: { value: 0 },
     },
     vertexShader: VERT, fragmentShader: FRAG,
@@ -119,21 +121,22 @@ export function createBillboard(sheet, opts) {
         setFrame(sheet.rows[dir], A.start + (Math.floor(time * fps) % A.frames));
       }
 
-      // Nearby lights (summed, squared falloff) tint the sprite; their screen-side picks which edge glows.
+      // Nearby lights (summed, squared falloff) tint the sprite; the strongest one colours the rim on its side.
       const lc = mat.uniforms.lightColor.value.setRGB(0, 0, 0);
       const rx = Math.cos(camYaw), rz = -Math.sin(camYaw); // camera right on the ground
-      let side = 0, wsum = 0;
+      let side = 0, best = null, bestW = 0;
       for (const l of lights) {
         const d = l.position.distanceTo(pos);
         if (d >= NPC.lightRange || !l.base) continue;
         const w = (1 - d / NPC.lightRange) ** 2 * (l.intensity / l.base);
         lc.r += ((l.color >> 16) & 255) / 255 * w; lc.g += ((l.color >> 8) & 255) / 255 * w; lc.b += (l.color & 255) / 255 * w;
-        side += w * ((l.position.x - pos.x) * rx + (l.position.z - pos.z) * rz) / Math.max(d, 0.001);
-        wsum += w;
+        if (w > bestW) { bestW = w; best = l; side = ((l.position.x - pos.x) * rx + (l.position.z - pos.z) * rz) / Math.max(d, 0.001); }
       }
       const m = Math.max(lc.r, lc.g, lc.b);
       if (m > NPC.maxLight) lc.multiplyScalar(NPC.maxLight / m);
-      mat.uniforms.lightSide.value = wsum > 0 ? THREE.MathUtils.clamp(side / wsum, -1, 1) : 0;
+      const rc = mat.uniforms.rimColor.value;
+      if (best) rc.setHex(best.color).multiplyScalar(Math.min(1, bestW * 2)); else rc.setRGB(0, 0, 0);
+      mat.uniforms.lightSide.value = THREE.MathUtils.clamp(side, -1, 1);
     },
   };
 }
