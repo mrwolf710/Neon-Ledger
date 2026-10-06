@@ -9,7 +9,7 @@ export const TITLE = {
 };
 
 // onStart runs synchronously inside the first tap / key press: browsers only let audio start from there.
-export function createTitle(onStart) {
+export function createTitle(onStart, saved = false) {
   const T = TITLE;
   const el = document.createElement('div');
   el.style.cssText = `position:fixed;inset:0;z-index:15;display:flex;flex-direction:column;align-items:center;
@@ -23,15 +23,17 @@ export function createTitle(onStart) {
   const touch = matchMedia('(pointer: coarse)').matches;
   const sub = word(touch ? 'TAP TO START' : 'CLICK OR PRESS ANY KEY', T.sub, Math.max(2, T.scale / 3));
   el.append(word('NEON ECHOES', T.color, T.scale), sub);
+  if (saved) { const c = word(touch ? 'TAP HERE TO CONTINUE' : 'PRESS C TO CONTINUE YOUR SAVED GAME', T.color, Math.max(2, T.scale / 4)); c.dataset.cont = ''; el.append(c); }
   document.body.appendChild(el);
   const blink = setInterval(() => { sub.style.visibility = sub.style.visibility === 'hidden' ? 'visible' : 'hidden'; }, T.blinkMs);
 
-  const state = { done: false };
+  const state = { done: false, continuing: false };
   state.started = new Promise((resolve) => {
     const go = (e) => {
       e.preventDefault(); e.stopPropagation();
       if (state.done) return;
       state.done = true;
+      state.continuing = !!saved && (e.key === 'c' || e.key === 'C' || e.target?.dataset?.cont !== undefined);
       onStart?.();
       clearInterval(blink);
       el.remove();

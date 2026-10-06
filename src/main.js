@@ -22,6 +22,7 @@ import { createSfx, surfaceAt } from './audio/sfx.js';
 import { createMusic } from './audio/music.js';
 import { createTitle } from './ui/title.js';
 import { createMenu } from './ui/menu.js';
+import { BEATS } from './game/beats.js';
 import { createTutorial } from './ui/tutorial.js';
 import { createPlayer } from './game/player.js';
 import { createInteractions, INTERACT } from './game/interact.js';
@@ -85,10 +86,12 @@ const cast = createCast(scene, getSheets(), world.areas);
 const player = createPlayer(cast.byId.juno, world.current.collision);
 const interactions = createInteractions(scene);
 const touchUI = createTouchUI(input);
-const title = createTitle(() => synth.start());
+const SAVE_KEY = 'nl.save';
+const readSave = () => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)); } catch { return null; } };
+const title = createTitle(() => synth.start(), !!readSave());
 const sfx = createSfx(synth), music = createMusic(synth);
 const hud = createHud(world.current.collision);
-const menu = createMenu({ synth });
+const menu = createMenu({ synth, onSave: () => saveGame(), onLoad: () => loadGame(readSave()), hasSave: () => !!readSave() });
 const tutorial = createTutorial(input);
 const clock = createClock();
 const caseFile = createCaseFile(hud, clock);
@@ -104,7 +107,37 @@ beats.setCamera(cam);
 beats.register();
 let phaseId = '', sunsetT = null, lastAreaId = null, cameFromSable = false;
 const startParam = new URLSearchParams(location.search).get('start'); // ?start=sable jumps straight to an area (testing)
+// One save slot in the browser: where Juno is, the case file, the board, the clock, who she has talked to and Miso.
+function saveGame() {
+  const miso = cast.byId.miso, b = board.logic;
+  const data = {
+    v: 1, area: world.current.id, pos: [player.position.x, player.position.z], facing: cast.byId.juno.facing,
+    minutes: clock.minutes, caseFile: caseFile.dump(), visits: { ...beats.visits }, sunsetT,
+    board: { solved: [...b.solved], edges: [...b.edges], tries: [...b.tries] },
+    miso: { follow: !!miso.follow, area: miso.area, pos: [miso.position.x, miso.position.z] },
+  };
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); hud.toast('Game saved'); return true; } catch { hud.toast('Could not save'); return false; }
+}
+function loadGame(s) {
+  if (!s || s.v !== 1 || !world.areas[s.area]) return;
+  caseFile.restore(s.caseFile);
+  const b = board.logic;
+  b.solved.clear(); b.edges.clear(); b.tries.clear();
+  s.board.solved.forEach((x) => b.solved.add(x)); s.board.edges.forEach(([k, v]) => b.edges.set(k, v)); s.board.tries.forEach(([k, v]) => b.tries.set(k, v));
+  clock.add(s.minutes - clock.minutes);
+  Object.assign(beats.visits, s.visits);
+  sunsetT = s.sunsetT;
+  const miso = cast.byId.miso;
+  miso.follow = s.miso.follow ? { target: cast.byId.juno, ...BEATS.misoFollow } : null;
+  miso.area = s.miso.area; miso.position.set(s.miso.pos[0], 0, s.miso.pos[1]);
+  world.jump(s.area, [s.pos[0], s.pos[1], s.facing]); // places Juno and (if he follows) Miso, and refreshes who is drawn
+  if (miso.follow) miso.position.set(s.pos[0] + 0.7, 0, s.pos[1] + 0.7);
+  cam.follow(player.position, true);
+  hud.show();
+  hud.toast('Game loaded');
+}
 title.started.then(() => {
+  if (title.continuing && readSave()) { beats.skipOpen(); loadGame(readSave()); return; }
   if (startParam && world.areas[startParam]) {
     beats.skipOpen();
     world.jump(startParam, world.exits.find((x) => x.to === startParam)?.spawn ?? null);
@@ -149,7 +182,7 @@ tod.onFlicker = (i) => sfx.crackle(street.signs[i].light.position);
 
 // ?hooks exposes the game objects for the headless test driver (scripts/drive.mjs eval: steps).
 if (new URLSearchParams(location.search).has('hooks')) {
-  const nl = window.__nl = { menu, sfx, synth, cam, world, player, beats, caseFile, dialogue, cast, echo, hud, clock, board, THREE };
+  const nl = window.__nl = { saveGame, loadGame, readSave, menu, sfx, synth, cam, world, player, beats, caseFile, dialogue, cast, echo, hud, clock, board, THREE };
   // Visual tour helpers: stand the player d units from a point (camera side) in any area, as in play, so the cutaway applies.
   nl.look = (areaId, x, z, d = 1.8) => {
     const b = world.areas[areaId].bounds, dx = (b.x0 + b.x1) / 2 - x, dz = (b.z0 + b.z1) / 2 - z, len = Math.hypot(dx, dz) || 1;

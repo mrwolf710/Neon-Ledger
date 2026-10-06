@@ -135,6 +135,7 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
 
   const api = {
     get locked() { return locked; },
+    visits, // talks per person (a save game keeps them)
     get focus() { return focus; },
     setCamera(c) { cam = c; },
     coldOpen,

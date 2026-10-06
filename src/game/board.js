@@ -20,7 +20,7 @@ export function createBoardLogic(data, hasFact) {
   const solved = new Set(), edges = new Map(), tries = new Map();
   let wrongIdx = 0;
   return {
-    solved, edges,
+    solved, edges, tries,
     // Returns { kind: 'same' | 'wrong' | 'partial' | 'solved', conclusion?, line?, hint? }.
     link(a, b) {
       if (a === b) return { kind: 'same' };

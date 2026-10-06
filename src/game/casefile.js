@@ -77,6 +77,14 @@ export function createCaseFile(hud, clock) {
       return true;
     },
     setFlag: (name) => flags.add(name),
+    // Save games: what Juno knows (ids + order) and the story flags. restore() rebuilds both without toasts or sounds.
+    dump: () => ({ known: [...known].map(([id, e]) => [id, e.order]), flags: [...flags] }),
+    restore(d) {
+      known.clear(); flags.clear();
+      for (const [id, order] of d.known) if (ENTRIES[id]) known.set(id, { ...ENTRIES[id], id, order });
+      for (const f of d.flags) flags.add(f);
+      if (isOpen) render();
+    },
     // Story effects: { addFact | addPerson | addEcho: id } { setFlag: name } { setTime: [h, m] }.
     apply(effects = []) {
       for (const e of effects) {

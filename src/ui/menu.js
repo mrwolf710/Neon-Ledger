@@ -4,8 +4,8 @@ import { TIERS, settings, QUALITY_KEY } from '../core/settings.js';
 export const MENU = { step: 0.1, z: 20 }; // step = volume change per press
 
 // Pause menu (Esc / pad Start / touch pause): sound, video, restart, quit. Keyboard, pad (menu*), mouse and touch.
-// Quality, Restart and Quit reload the page: the game keeps no save yet, so they start again from the title.
-export function createMenu({ synth }) {
+// Save / Load use one slot in the browser (main.js). Quality, Restart and Quit reload the page and go back to the title.
+export function createMenu({ synth, onSave = () => false, onLoad = () => {}, hasSave = () => false }) {
   const root = document.createElement('div');
   root.id = 'menu';
   root.style.zIndex = MENU.z;
@@ -20,7 +20,7 @@ export function createMenu({ synth }) {
   const reload = () => { try { localStorage.setItem(QUALITY_KEY, quality); } catch { /* private mode */ } location.href = location.pathname; };
   const canFull = document.fullscreenEnabled;
   const toggleFull = () => { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen?.(); };
-  let pending = null, sel = 0, open = false, quality = settings.tier;
+  let saved = 0, pending = null, sel = 0, open = false, quality = settings.tier;
   const sure = (key, fn) => () => { if (pending === key) fn(); else pending = key; };
 
   const rows = [
@@ -34,6 +34,8 @@ export function createMenu({ synth }) {
       adj: (d) => { quality = tiers[(tiers.indexOf(quality) + d + tiers.length) % tiers.length]; } },
     ...(canFull ? [{ label: 'Fullscreen', val: () => (document.fullscreenElement ? 'On' : 'Off'), adj: toggleFull, act: toggleFull }] : []),
     { head: 'Game' },
+    { label: () => (performance.now() - saved < 2500 ? 'Game saved' : 'Save game'), act: () => { if (onSave()) saved = performance.now(); } },
+    { label: () => (!hasSave() ? 'Load game (no save yet)' : pending === 'load' ? 'Load: press again to confirm' : 'Load game'), act: () => { if (hasSave()) sure('load', () => { api.close(); onLoad(); })(); } },
     { label: () => (pending === 'restart' ? 'Restart: press again to confirm' : 'Restart'), act: sure('restart', reload) },
     { label: () => (pending === 'quit' ? 'Quit: press again to confirm' : 'Quit to title'), act: sure('quit', () => { window.close(); reload(); }) },
   ];
