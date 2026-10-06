@@ -15,7 +15,7 @@ export const AREAS = {
   sable:    { origin: [150, 0],  name: 'Sable Noodle House',     district: 'Lowmarket', outdoor: false, mood: 'street', surface: 'tile',
     zones: [{ name: 'The Back Room', box: [2.3, -3, 8, 3], mood: 'scene' }] },
   alley:    { origin: [300, 0],  name: 'Alley behind the Sable', district: 'Lowmarket', outdoor: true,  mood: 'scene',  surface: 'asphalt' },
-  hostel:   { origin: [450, 0],  name: "Kit's Capsule Hostel",   district: 'Lowmarket', outdoor: false, mood: 'street', surface: 'tile' },
+  hostel:   { origin: [450, 0],  name: "Capsule Hostel",   district: 'Lowmarket', outdoor: false, mood: 'street', surface: 'tile' },
   car:      { origin: [600, 0],  name: "Juno's Car",             district: 'Lowmarket', outdoor: false, mood: 'scene',  surface: 'tile' },
 };
 const at = (id, x, z) => [AREAS[id].origin[0] + x, AREAS[id].origin[1] + z];
@@ -29,7 +29,7 @@ const EXIT_DEFS = [
   { id: 'sable-out', area: 'sable', at: at('sable', -5.4, 0), to: 'street', spawn: [-0.3, -3.3, 0], verb: 'Leave' },
   { id: 'sable-back', area: 'sable', at: at('sable', 7.4, 0), to: 'alley', spawn: [...at('alley', 0, -6.3), 0], verb: 'Go out the back' },
   { id: 'alley-in', area: 'alley', at: at('alley', 0, -7.2), to: 'sable', spawn: [...at('sable', 6.5, 0), -H], verb: 'Back inside' },
-  { id: 'hostel-door', area: 'street', at: [10.6, 4.15], to: 'hostel', spawn: [...at('hostel', 0, 2.0), Math.PI], verb: "Enter Kit's hostel" },
+  { id: 'hostel-door', area: 'street', at: [10.6, 4.15], to: 'hostel', spawn: [...at('hostel', 0, 2.0), Math.PI], verb: "Enter the capsule hostel" },
   { id: 'hostel-out', area: 'hostel', at: at('hostel', 0, 2.9), to: 'street', spawn: [11.3, 3.5, Math.PI], verb: 'Leave' },
   { id: 'car-door', area: 'street', at: [-13.5, -0.1], to: 'car', spawn: [...at('car', 0.4, 0), H], verb: 'Get in the car' },
   { id: 'car-out', area: 'car', at: at('car', 0.5, 1.3), to: 'street', spawn: [-13.5, 0.7, 0], verb: 'Get out' },
@@ -212,7 +212,7 @@ function alley(M) {
   return area;
 }
 
-// ---------- Kit's capsule hostel ----------
+// ---------- capsule hostel ----------
 function hostel(M) {
   const b = begin('hostel'), PM = propMats(M);
   floor(b, M.walls[1], -5, -3.5, 5, 3.5);

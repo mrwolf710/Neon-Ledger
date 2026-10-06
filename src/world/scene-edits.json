@@ -1,1 +1,6 @@
-{}
+{
+  "sable": {
+    "fogDensity": 0.042,
+    "moonColor": "#ff8aef"
+  }
+}

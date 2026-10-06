@@ -6,7 +6,7 @@ import EDITS from './dialogue-edits.json' with { type: 'json' }; // made in /edi
 export const SPEAKERS = {
   juno: { name: 'Juno', color: '#1fd6e8' },
   mamaTeo: { name: 'Mama Teo', color: '#e0217d' },
-  kit: { name: 'Kit', color: '#f2a93b' },
+  kit: { name: 'Worker', color: '#f2a93b' },
   dex: { name: 'Dex', color: '#8a8a90' },
   vendor: { name: 'Vendor', color: '#2a6b72' },
   miso: { name: 'Miso', color: '#d9771c' },

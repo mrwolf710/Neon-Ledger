@@ -31,7 +31,7 @@ export const CHARACTERS = {
     acc: [{ type: 'apron', color: 'grey6' }, { type: 'sticks', color: 'amber' }],
   },
   kit: {
-    name: 'Kit Lacroix', skin: 'rust2', iris: 'rust0', hair: { style: 'cropped', color: 'ink' },
+    name: 'Worker', skin: 'rust2', iris: 'rust0', hair: { style: 'cropped', color: 'ink' },
     top: 'grey1', legs: 'indigo', shoes: 'grey3', outfit: { type: 'jacket', color: 'amber' },
     acc: [{ type: 'stripe', color: 'cyanLight' }, { type: 'bag', color: 'grey0' }, { type: 'soles', color: 'acid' }],
   },
