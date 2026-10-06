@@ -58,7 +58,16 @@ const Grade = {
         uv = p + 0.5;
         vec2 q = abs(p);
         edge = max(q.x, q.y);
-        if (edge > 0.5 || length(max(q - 0.43, 0.0)) > 0.07) { gl_FragColor = vec4(vec3(0.015, 0.015, 0.02), 1.0); return; }
+        float d = max(edge - 0.5, length(max(q - 0.43, 0.0)) - 0.07); // > 0 outside the glass
+        if (d > 0.0) { // fake beige plastic bezel: recessed lip, soft bevel lit from the top left, grain, dark room beyond it
+          vec2 bp = (vUv - 0.5) * (1.0 + crt * 0.18);
+          vec3 col = vec3(0.74, 0.69, 0.58) * (0.62 + 0.1 * (bp.x * -1.0 + bp.y) * 2.0);
+          col = mix(vec3(0.12, 0.1, 0.08), col, smoothstep(0.0, 0.035, d));              // shadow in the recess around the glass
+          col *= 1.0 - 0.35 * smoothstep(0.55, 0.66, max(abs(bp.x), abs(bp.y)));         // bezel falls off toward the edge
+          col += (hash(vUv * 900.0) - 0.5) * 0.04;                                       // plastic grain
+          if (max(abs(bp.x), abs(bp.y)) > 0.66) col = vec3(0.015, 0.015, 0.02);          // the dark room
+          gl_FragColor = vec4(col, 1.0); return;
+        }
       }
       if (glitch > 0.0) { // pixel tear: shift random horizontal bands
         float band = floor(vUv.y * 28.0), h = hash(vec2(band, floor(time * 40.0)));
