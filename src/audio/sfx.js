@@ -19,7 +19,7 @@ export const TUNING = {
   echo: { ambientLevel: 0.05, fadeOut: 0.35, fadeIn: 0.5,   // ambient bus level during an echo, and fade time constants (s)
     rumble: { vol: 0.55, lowpass: 95, sub: 41, subVol: 0.5, wobble: 0.17, in: 0.7 } },
   // Electric train motor for the cold open: a growl and a rising whine that swell as the train closes in, then settle to a quiet idle hum.
-  motor: { base: 34, peak: 92, idle: 44, whineMult: 9, lowpass: 950, swell: 0.3, idleGain: 0.03, idleAfter: 0.4, idleTime: 0.9 },
+  motor: { base: 70, peak: 180, idle: 85, whineMult: 6, lowpass: 2200, start: 0.05, swell: 0.55, idleGain: 0.03, idleAfter: 0.4, idleTime: 0.9 },
   ui: { vol: 0.16 },
   voice: { vol: 0.07, dur: 0.05, every: 2 },
   voices: { // per speaker: base Hz and waveform
@@ -69,7 +69,7 @@ export function createSfx(synth) {
   function startMotor(seconds) {
     stopMotor(0.1);
     const ctx = synth.ctx, t = synth.now, M = T.motor;
-    const out = ctx.createGain(); out.gain.setValueAtTime(0.0001, t); out.connect(synth.buses.sfx);
+    const out = ctx.createGain(); out.gain.setValueAtTime(M.start, t); out.connect(synth.buses.sfx);
     const lp = synth.filter('lowpass', M.lowpass, 0.8); lp.connect(out);
     const oscs = [['sawtooth', 1, 0.5], ['square', 2, 0.16], ['sine', M.whineMult, 0.22]].map(([type, mult, v]) => {
       const o = ctx.createOscillator(), g = ctx.createGain();
@@ -254,8 +254,9 @@ export function createSfx(synth) {
       if (!synth.ready) return;
       startMotor(seconds);
       const t = synth.now;
-      synth.noise({ t, dur: seconds, vol: 0.45, attack: seconds * 0.5, release: 1.2, filter: { type: 'lowpass', freq: 220, sweepTo: 90 } });
-      synth.tone({ freq: 55, t, dur: seconds, vol: 0.22, attack: seconds * 0.5, release: 1.2, type: 'sawtooth', filter: { type: 'lowpass', freq: 160 } });
+      synth.noise({ t, dur: seconds, vol: 0.45, attack: seconds * 0.5, release: 1.2, filter: { type: 'lowpass', freq: 700, sweepTo: 250 } });
+      synth.noise({ t, dur: seconds, vol: 0.2, attack: seconds * 0.7, release: 1, filter: { type: 'bandpass', freq: 500, sweepTo: 1800, q: 0.8 } }); // the rush of air as it nears
+      synth.tone({ freq: 80, t, dur: seconds, vol: 0.22, attack: seconds * 0.5, release: 1.2, type: 'sawtooth', filter: { type: 'lowpass', freq: 160 } });
       for (let i = 0; i < seconds * 4; i++) {
         const k = 1 - i / (seconds * 4);
         synth.noise({ t: t + i * 0.25 * (1 + (1 - k) * 0.6), dur: 0.04, vol: 0.18 * (0.3 + k), filter: { type: 'bandpass', freq: 900, q: 1.3 } });
