@@ -4,7 +4,7 @@ import { input } from './core/input.js';
 import { createCamera, CAMERA } from './render/camera.js';
 import { createDebugPanel, showSprites } from './debug/panel.js';
 import { getSheets } from './gen/sprites.js';
-import { loadJunoSheet, loadTeoSheet, loadPriestSheet, loadDexSheet, loadCatSheet, loadDexStandSheet } from './gen/junoart.js';
+import { loadJunoSheet, loadTeoSheet, loadPriestSheet, loadDexSheet, loadCatSheet, loadDexStandSheet, loadKitSheet } from './gen/junoart.js';
 import { createCast } from './game/npc.js';
 import './ui/styles.css';
 import { createTouchUI } from './ui/touch.js';
@@ -60,6 +60,7 @@ try { getSheets().mamaTeo = await loadTeoSheet(); } catch (e) { console.warn('Te
 try { getSheets().preacher = await loadPriestSheet(); } catch (e) { console.warn('Priest art not loaded, using the generated sprite:', e.message); }
 try { getSheets().dex = await loadDexSheet(); } catch (e) { console.warn('Dex art not loaded, using the generated sprite:', e.message); }
 
+try { getSheets().kit = await loadKitSheet(); } catch (e) { console.warn('Kit art not loaded, using the generated sprite:', e.message); }
 try { getSheets().miso = await loadCatSheet(); } catch (e) { console.warn('Cat art not loaded, using the generated sprite:', e.message); }
 try { getSheets().dexStanding = await loadDexStandSheet(); } catch (e) { console.warn('Standing Dex art not loaded, using the seated sprite:', e.message); }
 

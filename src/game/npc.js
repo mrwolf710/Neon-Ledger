@@ -82,7 +82,7 @@ export function createBillboard(sheet, opts) {
   });
   mat.uniforms.ghost = { value: opts.ghost ? 1 : 0 };
   const PX = sheet.pxPerUnit; // texture pixels per world unit (characters are double density)
-  const sprite = new THREE.Mesh(new THREE.PlaneGeometry(fw / PX, fh / PX).translate(0, fh / PX / 2, 0), mat);
+  const sprite = new THREE.Mesh(new THREE.PlaneGeometry(fw / PX, fh / PX).translate(0, (fh / 2 - (sheet.footPx ?? 0)) / PX, 0), mat);
   const s = (isCat ? NPC.shadow.catSize : NPC.shadow.size);
   const shadow = new THREE.Mesh(new THREE.PlaneGeometry(s, s * 0.5).rotateX(-Math.PI / 2), shadowMaterial());
   shadow.position.y = 0.02;

@@ -24,6 +24,8 @@ const DEX_FRAMES = { idle: [['', false, 0]] };
 // Other directions hold their still, so the loop only shows when the character faces the camera.
 export const CAT_ART = { base: 'sprites/cat', size: 48, pxPerUnit: 55, fps: 8, small: true, dirs: JUNO_ART.dirs }; // Miso: figure ~46 px tall facing the camera, so ~0.8 units
 export const DEX_STAND_ART = { base: 'sprites/corpo-stand', size: 48, pxPerUnit: 24, fps: 6, dirs: JUNO_ART.dirs }; // Dex standing, for his echo scenes
+// Kit (hostel): the owner's worker, one Pixellab sheet of 68 px cells: row 0 = 8 stills, rows 1-8 = the 8-frame idle loop per direction.
+export const KIT_ART = { base: 'sprites/kit', cell: 68, pxPerUnit: 24, fps: 6, foot: 11, dirs: JUNO_ART.dirs }; // foot = empty pixels under the shoes in each cell
 const LOOP = 8;
 const OPP = { south: 'south', north: 'north', east: 'west', west: 'east', 'south-east': 'south-west', 'south-west': 'south-east', 'north-east': 'north-west', 'north-west': 'north-east' };
 
@@ -50,6 +52,17 @@ export async function loadPriestSheet() {
 }
 export const loadDexSheet = () => loadSheet(DEX_ART, DEX_FRAMES, ['']);
 export const loadTeoSheet = () => loadSheet(TEO_ART, TEO_FRAMES, ['']);
+export async function loadKitSheet() {
+  const A = KIT_ART, img = await load(`${import.meta.env.BASE_URL}${A.base}/sheet.png`);
+  const canvas = Object.assign(document.createElement('canvas'), { width: img.width, height: img.height });
+  canvas.getContext('2d').drawImage(img, 0, 0);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.magFilter = texture.minFilter = THREE.NearestFilter;
+  texture.generateMipmaps = false;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  const animRows = { idle: Object.fromEntries(A.dirs.map((d, i) => [d, i + 1])) };
+  return { texture, canvas, frameW: A.cell, frameH: A.cell, pxPerUnit: A.pxPerUnit, dirs: 8, rows: {}, animRows, anims: { idle: { start: 0, frames: LOOP } }, fps: A.fps, footPx: A.foot };
+}
 export const loadCatSheet = () => loadLoopSheet(CAT_ART);
 export const loadDexStandSheet = () => loadLoopSheet(DEX_STAND_ART);
 
