@@ -5,7 +5,7 @@ export const CRT_FRAME = {
   size: 256,                       // PNG size in px
   glass: { cx: 127.5, cy: 137, w: 122 }, // the transparent screen: centre and width in PNG px (measured with scripts/pngbox.mjs)
   body: { h: 159 },                // opaque monitor height in PNG px
-  screenFrac: 0.8,                // monitor height as a share of the window height at k = 1
+  screenFrac: 0.96,                // monitor height as a share of the window height at k = 1
   glow: 'drop-shadow(0 0 3vh rgba(30,255,150,0.55)) drop-shadow(0 0 10vh rgba(20,200,120,0.4))',
 };
 
