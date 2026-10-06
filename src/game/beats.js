@@ -58,7 +58,7 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
     cam.follow?.(player.position, true);
     await walkTo(stopX, door.z + 1.6);
     player.setPose('tablet');                                   // she reads the case on her tablet during the title card and Hale's call
-    await fade.card([{ text: 'NEON LEDGER', color: '#ff6fb5', scale: 18 }, { text: 'CASE 01  LOWMARKET', color: '#1fd6e8', scale: 6 }], BEATS.cardHold);
+    await fade.card([{ text: 'NEON ECHOES', color: '#ff6fb5', scale: 18 }, { text: 'CASE 01  LOWMARKET', color: '#1fd6e8', scale: 6 }], BEATS.cardHold);
     tween(BEATS.zoomSeconds, (u) => { const k = 1 - smooth(u); setCrt(k); setVhs(k); }); // the monitor frame zooms out to the full game and the tape noise fades
     hud.show();
     await dialogue.start('hale_open');                          // Hale on comms

@@ -3,7 +3,18 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { drawText, measure } from '../gen/pixelfont.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+// Fake monitor: brand plate (top right) and knobs / buttons (bottom), sizes as fractions of the screen height.
+export const MONITOR = { brand: 'MANGAVOX', brandScale: 0.0055, brandPad: 0.03, knobR: 0.019, knobX: [0.055, 0.125], buttonW: 0.028, buttonH: 0.014, buttonX: [0.075, 0.115, 0.155, 0.195], ledX: 0.21 };
+function brandTexture() {
+  const cv = Object.assign(document.createElement('canvas'), { width: measure(MONITOR.brand), height: 5 });
+  drawText(cv.getContext('2d'), MONITOR.brand, 0, 0, '#ffffff');
+  const t = new THREE.CanvasTexture(cv);
+  t.magFilter = t.minFilter = THREE.NearestFilter; t.generateMipmaps = false;
+  return t;
+}
 
 export const POST = {
   bloom: { strength: 0.6, radius: 0.35, threshold: 0.85 },
@@ -38,15 +49,16 @@ const TiltShift = {
 };
 
 // Lift/gamma/gain + saturation, film grain and a slight chromatic fringe toward the edges. Runs in display space.
+const M = MONITOR;
 const Grade = {
   uniforms: {
     tDiffuse: { value: null }, lift: { value: new THREE.Vector3() }, gamma: { value: new THREE.Vector3() },
     gain: { value: new THREE.Vector3() }, saturation: { value: 1 }, grain: { value: 0 }, fringe: { value: 0 }, time: { value: 0 },
-    echo: { value: 0 }, glitch: { value: 0 }, vhs: { value: 0 }, crt: { value: 0 },
+    echo: { value: 0 }, glitch: { value: 0 }, vhs: { value: 0 }, crt: { value: 0 }, res: { value: new THREE.Vector2(1, 1) }, brand: { value: null }, brandSize: { value: new THREE.Vector2() },
   },
   vertexShader: TiltShift.vertexShader,
   fragmentShader: /* glsl */`
-    uniform sampler2D tDiffuse; uniform vec3 lift, gamma, gain; uniform float saturation, grain, fringe, time, echo, glitch, vhs, crt;
+    uniform sampler2D tDiffuse; uniform vec3 lift, gamma, gain; uniform float saturation, grain, fringe, time, echo, glitch, vhs, crt; uniform vec2 res, brandSize; uniform sampler2D brand;
     varying vec2 vUv;
     float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
     void main() {
@@ -63,9 +75,25 @@ const Grade = {
           vec2 bp = (vUv - 0.5) * (1.0 + crt * 0.18);
           vec3 col = vec3(0.74, 0.69, 0.58) * (0.62 + 0.1 * (bp.x * -1.0 + bp.y) * 2.0);
           col = mix(vec3(0.12, 0.1, 0.08), col, smoothstep(0.0, 0.035, d));              // shadow in the recess around the glass
-          col *= 1.0 - 0.35 * smoothstep(0.55, 0.66, max(abs(bp.x), abs(bp.y)));         // bezel falls off toward the edge
           col += (hash(vUv * 900.0) - 0.5) * 0.04;                                       // plastic grain
-          if (max(abs(bp.x), abs(bp.y)) > 0.66) col = vec3(0.015, 0.015, 0.02);          // the dark room
+          vec2 cp = bp / (1.0 + crt * 0.18) * res;                                       // pixels from the screen centre (y up)
+          float H = res.y, gx = 0.5 / (1.0 + crt * 0.125) / (1.0 + crt * 0.18) * res.x, gy = 0.5 / (1.0 + crt * 0.125) / (1.0 + crt * 0.18) * res.y;
+          float by = -(gy + 0.05 * H);                                                   // bottom strip centre line
+          for (int i = 0; i < 2; i++) { // knobs: dark ring, light cap, a tick
+            vec2 k = cp - vec2(-gx + (i == 0 ? ${M.knobX[0]} : ${M.knobX[1]}) * H, by);
+            float r = length(k) / (${M.knobR} * H);
+            if (r < 1.0) col = r > 0.78 ? vec3(0.12, 0.1, 0.08) : mix(vec3(0.3, 0.27, 0.22), vec3(0.42, 0.38, 0.31), step(0.0, k.x + k.y));
+            if (r < 0.78 && abs(k.x * (i == 0 ? 0.6 : -0.3) - k.y * 0.8) < 0.003 * H && k.y > 0.0) col = vec3(0.1);
+          }
+          for (int i = 0; i < 4; i++) { // push buttons
+            vec2 b = abs(cp - vec2(gx - (0.05 + float(3 - i) * 0.04) * H, by)) / (vec2(${M.buttonW}, ${M.buttonH}) * H);
+            if (max(b.x, b.y) < 1.0) col = max(b.x, b.y) > 0.8 ? vec3(0.2, 0.18, 0.14) : vec3(0.55, 0.51, 0.42) * (1.0 - 0.15 * step(0.0, b.y - 0.5));
+          }
+          if (length(cp - vec2(gx - ${M.ledX} * H, by)) < 0.006 * H) col = vec3(0.9, 0.12, 0.08); // power LED
+          vec2 bt = vec2(cp.x - (gx - ${M.brandPad} * H - brandSize.x * ${M.brandScale} * H), (gy + 0.05 * H + 2.5 * ${M.brandScale} * H) - cp.y) / (${M.brandScale} * H); // brand text, in text pixels
+          if (bt.x >= 0.0 && bt.x < brandSize.x && bt.y >= 0.0 && bt.y < 5.0 && texture2D(brand, vec2(bt.x / brandSize.x, 1.0 - bt.y / 5.0)).a > 0.5) col = vec3(0.2, 0.18, 0.15);
+          vec2 px = (abs(bp) - 0.5 / (1.0 + crt * 0.125)) / (1.0 + crt * 0.18) * res;       // pixels beyond the glass edge
+          if (max(px.x, px.y) > 0.1 * res.y) col = vec3(0.0);                              // plain rectangle about an inch wide, black beyond it
           gl_FragColor = vec4(col, 1.0); return;
         }
       }
@@ -123,6 +151,7 @@ export function createPost(renderer, scene, camera, quality) {
   composer.addPass(grade);
 
   const g = grade.uniforms;
+  g.brand.value = brandTexture(); g.brandSize.value.set(measure(MONITOR.brand), 5);
   function applyUniforms() {
     for (const t of [tiltH, tiltV]) {
       t.uniforms.center.value = P.tilt.center; t.uniforms.band.value = P.tilt.band;
@@ -146,6 +175,7 @@ export function createPost(renderer, scene, camera, quality) {
       const pr = renderer.getPixelRatio();
       bloom.setSize( // after composer.setSize, which sizes bloom at full res
 w * pr * quality.bloomScale, h * pr * quality.bloomScale);
+      g.res.value.set(w * pr, h * pr);
       tiltH.uniforms.dir.value.set(1 / (w * pr), 0);
       tiltV.uniforms.dir.value.set(0, 1 / (h * pr));
     },

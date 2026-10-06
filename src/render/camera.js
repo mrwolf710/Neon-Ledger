@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 export const CAMERA = {
   fov: 20,
-  yawDeg: 45, pitchDeg: 35, distance: 45,       // start / reset view
+  yawDeg: 45, pitchDeg: 35, distance: 37.5,       // start / reset view
   minPitchDeg: 8, maxPitchDeg: 85,
   minDistance: 8, maxDistance: 140,
   orbitSpeed: 0.3,    // degrees per pixel of mouse drag

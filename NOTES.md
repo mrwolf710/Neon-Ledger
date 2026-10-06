@@ -1,4 +1,4 @@
-# NOTES
+# NOTES (Neon Echoes)
 Running summary for Claude sessions (keep under 60 lines).
 ## Status
 - Current stage: 9A built (#18), needs a browser pass. Next: 9B (#19) beats 4-6, 9C (#20) beat 7. Issues #2-#17 closed. Seed 1337

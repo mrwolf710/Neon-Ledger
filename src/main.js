@@ -41,7 +41,7 @@ const MAIN = {
 };
 
 const Q = settings.quality;
-console.log('Neon Ledger', Q.name);
+console.log('Neon Echoes', Q.name);
 
 const canvas = document.getElementById('game');
 const renderer = new THREE.WebGLRenderer({ canvas });

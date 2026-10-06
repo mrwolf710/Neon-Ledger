@@ -22,7 +22,7 @@ export function createTitle(onStart) {
   };
   const touch = matchMedia('(pointer: coarse)').matches;
   const sub = word(touch ? 'TAP TO START' : 'CLICK OR PRESS ANY KEY', T.sub, Math.max(2, T.scale / 3));
-  el.append(word('NEON LEDGER', T.color, T.scale), sub);
+  el.append(word('NEON ECHOES', T.color, T.scale), sub);
   document.body.appendChild(el);
   const blink = setInterval(() => { sub.style.visibility = sub.style.visibility === 'hidden' ? 'visible' : 'hidden'; }, T.blinkMs);
 

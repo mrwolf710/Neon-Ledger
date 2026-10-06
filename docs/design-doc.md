@@ -1,10 +1,10 @@
-# Neon Ledger — Game Design Doc
+# Neon Echoes — Game Design Doc
 
 Oct 4, 2026 · Heath Fowler
 
 ## Overview
 
-Neon Ledger is a single-player cyberpunk detective game in an HD-2D isometric style, built in three.js with every texture, sprite, mesh and sound generated in code at runtime. The first deliverable is a 15–20 minute playable demo: one district, one murder, and a twist ending that sets up the full game.
+Neon Echoes is a single-player cyberpunk detective game in an HD-2D isometric style, built in three.js with every texture, sprite, mesh and sound generated in code at runtime. The first deliverable is a 15–20 minute playable demo: one district, one murder, and a twist ending that sets up the full game.
 
 **Pitch:** You are Juno Vale, a memory auditor who solves crimes by replaying the sensory "echoes" stored in people's neural implants. A data broker dies in the back room of a noodle bar. The official cause is implant burnout. The echoes say otherwise, and the last one points at you.
 
@@ -257,7 +257,7 @@ The demo runs about 18 minutes across seven beats, from Juno's arrival at 22:40 
 4. Back in the car, Juno opens her own implant log. A red band shows a 47-minute gap, 23:10 to 23:57.
 5. All the Lowmarket signs flicker off at once (the Dead Hour lighting state). Only her dashboard glows.
 6. Hale on comms, gently: "Juno. Where were you tonight between 23:10 and 23:57?"
-7. Cut to black. Card: "Neon Ledger — Case 01 continues."
+7. Cut to black. Card: "Neon Echoes — Case 01 continues."
 
 **Pacing guardrails**
 
@@ -319,7 +319,7 @@ Every stage ends by updating NOTES.md, a short running summary of the code. The 
 
 ## Open questions
 
-- [ ] Is "Neon Ledger" the working title, or do you have a name in mind?
+- [ ] Is "Neon Echoes" the working title, or do you have a name in mind?
 - [ ] Keep Juno Vale as the protagonist, or change name, look or background?
 - [ ] Fonts: allow CSS web fonts for the UI, or generate a pixel font in code to keep the rule absolute?
 - [ ] Should echo-scanning have a cost (strain meter) in the demo, or stay free?

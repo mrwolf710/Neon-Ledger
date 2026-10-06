@@ -12,7 +12,7 @@ export const FOG = {
 // See-through cutaway: geometry in front of the player, inside a circle around them on screen and above
 // street level, is discarded (dithered edge) so near buildings never hide Juno. Shares the fog patch.
 export const CUTAWAY = {
-  radius: 4,      // world units around the player
+  radius: 4.8,     // world units around the player
   minY: 0.3,      // never cut below this height (street, sidewalks, curbs)
   margin: 1.5,    // only cut things at least this much closer to the camera than the player
   edge: 0.3,      // dithered fraction of the radius
