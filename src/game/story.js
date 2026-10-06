@@ -69,7 +69,7 @@ export const CONVERSATIONS = {
   // Beat 1: Hale on comms as Juno steps off the train.
   hale_open: { start: 'a', nodes: {
     a: { speaker: 'hale', text: "Vale. Lowmarket, the Sable Noodle House. A broker's dead and his implant is fried.", next: 'a2' },
-    a2: { speaker: 'hale', text: 'Looks like a burnout. Sign off on what you find and go home.', next: 'b' },
+    a2: { speaker: 'hale', text: "Looks like a burnout. Just sign off on what you find and go home. Don't make this into more than it is. I don't need a repeat of last time, Juno.", next: 'b' },
     b: { speaker: 'juno', text: 'Copy that. Sorry, I think I lost another hour on that train.', next: 'c' },
     c: { speaker: 'hale', text: 'Everybody loses an hour on Line 9, Vale. Get it done.', end: true },
   } },
