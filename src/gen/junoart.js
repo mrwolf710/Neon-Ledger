@@ -22,7 +22,7 @@ export const DEX_ART = { base: 'sprites/corpo', size: 48, pxPerUnit: 24, dirs: J
 const DEX_FRAMES = { idle: [['', false, 0]] };
 // Animated idles (the owner's Pixellab exports): one south-facing loop of 8 frames (idle-0..7.png) plus a still per direction.
 // Other directions hold their still, so the loop only shows when the character faces the camera.
-export const CAT_ART = { base: 'sprites/cat', size: 48, pxPerUnit: 55, fps: 8, small: true, dirs: JUNO_ART.dirs }; // Miso: figure ~46 px tall facing the camera, so ~0.8 units
+export const CAT_ART = { base: 'sprites/cat', size: 48, pxPerUnit: 55, fps: 8, small: true, walk: 'walk', walkFps: 10, dirs: JUNO_ART.dirs }; // Miso: figure ~46 px tall facing the camera, so ~0.8 units
 export const DEX_STAND_ART = { base: 'sprites/corpo-stand', size: 48, pxPerUnit: 24, fps: 6, dirs: JUNO_ART.dirs }; // Dex standing, for his echo scenes
 // Kit (hostel): the owner's worker, one Pixellab sheet of 68 px cells: row 0 = 8 stills, rows 1-8 = the 8-frame idle loop per direction.
 export const KIT_ART = { base: 'sprites/kit', cell: 68, pxPerUnit: 24, fps: 6, foot: 11, dirs: JUNO_ART.dirs }; // foot = empty pixels under the shoes in each cell
@@ -70,16 +70,21 @@ async function loadLoopSheet(A) {
   const S = A.size, url = (n) => `${import.meta.env.BASE_URL}${A.base}/${n}.png`;
   const stills = await Promise.all(A.dirs.map((d) => load(url(d))));
   const loop = await Promise.all(Array.from({ length: LOOP }, (_, i) => load(url(`idle-${i}`))));
-  const canvas = Object.assign(document.createElement('canvas'), { width: S * LOOP, height: S * A.dirs.length });
+  const canvas = Object.assign(document.createElement('canvas'), { width: S * LOOP, height: S * A.dirs.length * (A.walk ? 2 : 1) });
   const ctx = canvas.getContext('2d');
   // the loop frames are 80 px, the stills 48: crop the middle of each
   A.dirs.forEach((d, row) => { for (let f = 0; f < LOOP; f++) { const im = d === 'south' ? loop[f] : stills[row]; ctx.drawImage(im, (im.width - S) / 2, (im.height - S) / 2, S, S, f * S, row * S, S, S); } });
+  const animRows = { idle: Object.fromEntries(A.dirs.map((d, i) => [d, i])) }, anims = { idle: { start: 0, frames: LOOP } };
+  if (A.walk) { // Pixellab sheet of 80 px cells: row 0 stills, rows 1-8 the 8-frame walk per direction; crop each to the middle 48 px
+    const w = await load(`${import.meta.env.BASE_URL}${A.base}/${A.walk}.png`), cell = w.width / LOOP, o = (cell - S) / 2;
+    A.dirs.forEach((d, i) => { for (let f = 0; f < LOOP; f++) ctx.drawImage(w, f * cell + o, (i + 1) * cell + o, S, S, f * S, (A.dirs.length + i) * S, S, S); });
+    animRows.walk = Object.fromEntries(A.dirs.map((d, i) => [d, A.dirs.length + i])); anims.walk = { start: 0, frames: LOOP };
+  }
   const texture = new THREE.CanvasTexture(canvas);
   texture.magFilter = texture.minFilter = THREE.NearestFilter;
   texture.generateMipmaps = false;
   texture.colorSpace = THREE.SRGBColorSpace;
-  const animRows = { idle: Object.fromEntries(A.dirs.map((d, i) => [d, i])) };
-  return { texture, canvas, frameW: S, frameH: S, pxPerUnit: A.pxPerUnit, dirs: 8, rows: {}, animRows, anims: { idle: { start: 0, frames: LOOP } }, fps: A.fps, small: !!A.small };
+  return { texture, canvas, frameW: S, frameH: S, pxPerUnit: A.pxPerUnit, dirs: 8, rows: {}, animRows, anims, fps: A.fps, walkFps: A.walkFps, small: !!A.small };
 }
 
 async function loadSheet(A, FRAMES, states, preloaded) {
