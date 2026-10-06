@@ -107,6 +107,8 @@ function drawNew() {
   const when = select([['all', 'Every time (replaces what they say now)'], ['1', 'Only the 1st visit'], ['2', 'Only the 2nd visit'], ['3', 'Only the 3rd visit'], ['4', 'The 4th visit and every one after'], ['none', 'Not yet (just save it)']], 'all', (v) => { def.when = v; });
   form.append(el('label', {}, 'Name'), name, el('label', {}, 'Juno is talking to'), withSel,
     el('label', {}, 'When does Juno hear it?'), when,
+    el('label', {}, 'Only if Juno already knows this clue (optional)'), select([['', '(no condition)'], ...facts], '', (v) => { def.fact = v; }),
+    el('label', {}, 'Only if Juno has already talked to (optional)'), select([['', '(no condition)'], ...hearers(people).map(([id, s]) => [id, s.name])], '', (v) => { def.talked = v; }),
     el('label', {}, 'What is said, in order'), lines,
     el('button', { className: 'ghost', onclick: () => { const last = def.lines.at(-1); def.lines.push({ speaker: last?.speaker === 'juno' ? def.with : 'juno', text: '' }); drawLines(); } }, '+ Add line'),
     ' ', el('button', { onclick: () => {
@@ -114,7 +116,7 @@ function drawNew() {
       const lines = def.lines.filter((l) => l.text.trim());
       if (!id || CONVERSATIONS[id] || !lines.length) { $('msg').textContent = 'Needs a unique name and at least one line.'; return; }
       (pending._new ??= {})[id] = { with: def.with, active: false, lines: lines.map((l) => ({ speaker: l.speaker, text: l.text.trim() })) };
-      if (def.when !== 'none') pending._rules = [...rules(), { conv: id, npc: def.with, when: def.when ?? 'all' }];
+      if (def.when !== 'none') pending._rules = [...rules(), { conv: id, npc: def.with, when: def.when ?? 'all', ...(def.fact ? { fact: def.fact } : {}), ...(def.talked ? { talked: def.talked } : {}) }];
       changed(); $('msg').textContent = `"${id}" will be created when you save.`;
       $('save').click();
     } }, 'Create'));
