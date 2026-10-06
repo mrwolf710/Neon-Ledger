@@ -1,4 +1,5 @@
 import { drawText } from '../gen/pixelfont.js';
+import { getSheets } from '../gen/sprites.js';
 
 export const HUD = {
   bannerMs: 4000,        // how long the location banner stays
@@ -30,6 +31,22 @@ export function frame(node) {
   return node;
 }
 
+// Speaker portrait: the head-and-shoulders crop of the speaker's front-facing idle frame (nearest-neighbour), or a letter plate for voices with no sprite.
+const PORTRAIT = { px: 64, headFrac: 0.5 }; // px = canvas size, headFrac = share of a human frame (from the top) that counts as head + shoulders
+function drawPortrait(cv, id, name, color) {
+  const g = cv.getContext('2d'); g.imageSmoothingEnabled = false; g.clearRect(0, 0, cv.width, cv.height);
+  const sh = getSheets()[id];
+  if (!sh) { g.fillStyle = color; g.font = `bold ${cv.height * 0.6}px monospace`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(name[0], cv.width / 2, cv.height / 2 + 2); return; }
+  const eight = sh.dirs === 8, row = eight ? sh.animRows.idle.south : sh.rows.down, W = sh.frameW, H = sh.frameH;
+  const ch = sh.frameH > 20 ? Math.round(H * PORTRAIT.headFrac) : H; // cats are shown whole
+  const px = sh.canvas.getContext('2d').getImageData(0, row * H, W, ch).data;
+  let x0 = W, x1 = -1, y0 = ch, y1 = -1;
+  for (let y = 0; y < ch; y++) for (let x = 0; x < W; x++) if (px[(y * W + x) * 4 + 3] > 8) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+  if (x1 < 0) return;
+  const w = x1 - x0 + 1, h = y1 - y0 + 1, k = Math.floor(Math.min(cv.width / w, cv.height / h)) || 1;
+  g.drawImage(sh.canvas, x0, row * H + y0, w, h, Math.floor((cv.width - w * k) / 2), cv.height - h * k, w * k, h * k);
+}
+
 // Dialogue box UI: full-width bottom panel with a nameplate + gem, the text, and a choice box on the right.
 function dialogueBox(root) {
   const box = el('div', 'dialogue', root);
@@ -37,11 +54,13 @@ function dialogueBox(root) {
   const gem = el('span', 'gem', plate), nameEl = el('span', 'nameplate', plate);
   const choicesEl = frame(el('div', 'choices', box));
   const textBox = frame(el('div', 'dtext', box));
+  const portrait = el('canvas', 'portrait', textBox); portrait.width = portrait.height = PORTRAIT.px;
   const body = el('div', 'body', textBox), hint = el('div', 'hint', textBox, '▼');
   let clickFn = () => {};
   textBox.addEventListener('pointerdown', (e) => { e.preventDefault(); clickFn(); });
   return {
-    show(name, color) {
+    show(name, color, id) {
+      drawPortrait(portrait, id, name, color); portrait.style.borderColor = color;
       box.classList.add('on'); nameEl.textContent = name; gem.style.background = color; gem.style.boxShadow = `0 0 0.5rem ${color}`;
     },
     hide() { box.classList.remove('on'); },

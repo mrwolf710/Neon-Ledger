@@ -81,7 +81,8 @@ html { font-size: clamp(12px, 1.7vmin, 22px); }
 #hud .dialogue .plate { align-self: flex-start; margin: 0 0 0.9rem 1rem; padding: 0.3rem 1rem 0.3rem 0.7rem; display: flex; align-items: center; gap: 0.6rem;
   font-size: 1.15rem; color: #fff; }
 #hud .dialogue .gem { width: 0.7rem; height: 0.7rem; transform: rotate(45deg); }
-#hud .dialogue .dtext { min-height: 6rem; padding: 0.9rem 1.4rem; cursor: pointer; }
+#hud .dialogue .dtext { display: flex; align-items: center; gap: 1.1rem; min-height: 6rem; padding: 0.9rem 1.4rem; cursor: pointer; }
+#hud .dialogue .portrait { flex: none; width: 6.5rem; height: 6.5rem; image-rendering: pixelated; background: rgba(5, 2, 20, 0.75); border: 2px solid; align-self: center; }
 #hud .dialogue .body { font: 400 1.2rem/1.5 var(--body); color: var(--text); max-width: 60rem; }
 #hud .dialogue .hint { position: absolute; right: 1.2rem; bottom: 0.5rem; color: var(--magenta); animation: hint-bob 0.9s infinite alternate; }
 @keyframes hint-bob { to { transform: translateY(0.25rem); } }
