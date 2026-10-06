@@ -8,6 +8,7 @@ const $ = (id) => document.getElementById(id);
 const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
 const pending = {}; // { conv: { node: { text?, speaker?, choices?: { i: text } } }, _new: { id: def | null } }
 const mine = EDITS._new ?? {};
+const added = new Set((EDITS._insert ?? []).filter((x) => x.conv).map((x) => `${x.conv}/${x.id}`)); // lines added in the editor
 const people = Object.entries(SPEAKERS).filter(([id]) => id !== 'juno'); // who Juno can talk to
 let current = decodeURIComponent(location.hash.slice(1)) || Object.keys(CONVERSATIONS)[0];
 
@@ -29,7 +30,7 @@ function drawMain() {
   const conv = CONVERSATIONS[current];
   if (!conv) return;
   const q = $('q').value.trim().toLowerCase();
-  const cards = Object.entries(conv.nodes).map(([id, n]) => {
+  const cards = Object.entries(conv.nodes).flatMap(([id, n]) => {
     const card = el('div', { className: 'node' + (pending[current]?.[id] ? ' dirty' : '') });
     const dirty = () => card.classList.add('dirty');
     card.append(el('div', { className: 'head' }, el('b', {}, id),
@@ -42,7 +43,20 @@ function drawMain() {
       const inp = el('input', { value: ch.text, oninput: () => { touch(current, id, (p) => { (p.choices ??= {})[i] = inp.value; }); dirty(); } });
       card.append(el('div', { className: 'choice' }, el('span', {}, `choice ${i + 1}`), inp, el('span', {}, ch.end ? 'ends' : ch.next ? `→ ${ch.next}` : '')));
     });
-    return card;
+    const out = [card];
+    if (!(n.choices ?? []).length) out.push(el('button', { className: 'ghost addline', onclick: () => {
+      const last = n.speaker, other = last === 'juno' ? (people.find(([k]) => k !== 'juno' && conv.nodes && Object.values(conv.nodes).some((m) => m.speaker === k))?.[0] ?? people[0][0]) : 'juno';
+      ((pending._insert ??= [])).push({ conv: current, after: id, id: `${id}_${Date.now() % 100000}`, speaker: other, text: '' }); changed(); drawMain();
+    } }, '+ Add line after this'));
+    if (added.has(`${current}/${id}`)) out.push(el('button', { className: 'danger addline', onclick: () => { (pending._remove ??= []).push({ conv: current, id }); changed(); $('msg').textContent = 'Unsaved: this added line will be removed on save.'; } }, 'Remove this added line'));
+    for (const d of (pending._insert ?? []).filter((x) => x.conv === current && x.after === id)) { // drafts not saved yet
+      const dc = el('div', { className: 'node draft' });
+      const ta = el('textarea', { value: d.text, placeholder: 'What is said...', oninput: () => { d.text = ta.value; } });
+      dc.append(el('div', { className: 'head' }, el('b', {}, 'new line'), select(Object.entries(SPEAKERS).map(([sid, s]) => [sid, s.name]), d.speaker, (v) => { d.speaker = v; }),
+        el('button', { className: 'ghost', style: 'margin-left:auto', onclick: () => { pending._insert.splice(pending._insert.indexOf(d), 1); if (!pending._insert.length) delete pending._insert; drawMain(); } }, 'Cancel')), ta);
+      out.push(dc);
+    }
+    return out;
   });
   const top = [el('h1', {}, current), el('div', { className: 'sub' }, `${cards.length} boxes. They play top to bottom unless a "→" jumps elsewhere.`)];
   if (mine[current]) top.push(el('button', { className: 'danger', style: 'margin-bottom:12px', onclick: () => { ((pending._new ??= {})[current] = null); changed(); $('msg').textContent = 'Unsaved: this conversation will be deleted on save.'; } }, 'Delete this conversation'));

@@ -146,8 +146,18 @@ for (const [id, d] of Object.entries(EDITS._new ?? {})) {
   CONVERSATIONS[id] = { start: 'n0', nodes };
   if (d.active) TALK[d.with] = id;
 }
+for (const x of EDITS._insert ?? []) { // lines added after an existing box (editor): the new box takes over the old box's next / end
+  const c = CONVERSATIONS[x.conv], n = c?.nodes[x.after];
+  if (!n) continue;
+  const added = { speaker: x.speaker, text: x.text };
+  if (n.end) { added.end = true; delete n.end; } else if (n.next) added.next = n.next;
+  n.next = x.id;
+  const ordered = {};
+  for (const [k, v] of Object.entries(c.nodes)) { ordered[k] = v; if (k === x.after) ordered[x.id] = added; }
+  c.nodes = ordered;
+}
 for (const [conv, nodes] of Object.entries(EDITS)) {
-  if (conv === '_new') continue;
+  if (conv === '_new' || conv === '_insert') continue;
   for (const [id, f] of Object.entries(nodes)) {
     const n = CONVERSATIONS[conv]?.nodes[id];
     if (!n) continue; // the node no longer exists

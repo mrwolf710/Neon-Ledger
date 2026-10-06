@@ -15,6 +15,14 @@ const dialogueEditor = {
         try {
           const patch = JSON.parse(body), edits = JSON.parse(fs.readFileSync(EDITS, 'utf8'));
           for (const [conv, nodes] of Object.entries(patch)) {
+            if (conv === '_insert') { // lines added inside an existing conversation: [{ conv, after, id, speaker, text }]
+              (edits._insert ??= []).push(...nodes);
+              continue;
+            }
+            if (conv === '_remove') { // [{ conv, id }]: drop an added line and its edits
+              for (const r of nodes) { edits._insert = (edits._insert ?? []).filter((x) => !(x.conv === r.conv && x.id === r.id)); if (edits[r.conv]) delete edits[r.conv][r.id]; }
+              continue;
+            }
             if (conv === '_new') { // new conversations: { id: { with, active, lines: [{ speaker, text }] } | null (delete) }
               edits._new ??= {};
               for (const [id, def] of Object.entries(nodes)) { if (def === null) delete edits._new[id]; else edits._new[id] = def; }

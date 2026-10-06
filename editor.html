@@ -3,11 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Neon Echoes - Dialogue editor</title>
+    <title>Neon Editor</title>
     <style>
       :root { --bg: #0b0b14; --panel: #151527; --line: #2b2b4a; --text: #e6e6f5; --dim: #8a8aa8; --cyan: #1fd6e8; --pink: #ff6fb5; }
       * { box-sizing: border-box; }
-      body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.4 system-ui, sans-serif; display: flex; height: 100vh; }
+      body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.4 system-ui, sans-serif; display: flex; flex-direction: column; height: 100vh; }
+      header { padding: 12px 24px; border-bottom: 1px solid var(--line); background: var(--panel); flex: none; display: flex; align-items: baseline; gap: 14px; }
+      header h1 { margin: 0; font-size: 24px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--pink); }
+      header span { color: var(--dim); }
+      .wrap { flex: 1; display: flex; min-height: 0; }
       #list { width: 280px; border-right: 1px solid var(--line); overflow: auto; padding: 12px; flex: none; }
       #list input { width: 100%; margin-bottom: 10px; }
       #list a { display: block; padding: 6px 8px; border-radius: 6px; color: var(--text); cursor: pointer; }
@@ -20,6 +24,8 @@
       .sub { color: var(--dim); margin-bottom: 16px; }
       .node { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; max-width: 900px; }
       .node.dirty { border-color: var(--pink); }
+      .node.draft { border-style: dashed; border-color: var(--cyan); margin-left: 28px; }
+      .addline { margin: -4px 0 12px 28px; }
       .head { display: flex; gap: 10px; align-items: center; margin-bottom: 6px; color: var(--dim); font-size: 12px; }
       .head b { color: var(--text); font-size: 13px; }
       .flow { margin-left: auto; }
@@ -41,8 +47,11 @@
     </style>
   </head>
   <body>
+    <header><h1>Neon Editor</h1><span>Neon Echoes dialogue</span></header>
+    <div class="wrap">
     <div id="list"><button id="new" style="width:100%;margin-bottom:10px">+ New conversation</button><input id="q" placeholder="Search all dialogue..." /><div id="items"></div></div>
     <div id="main"></div>
+    </div>
     <div id="bar"><button id="save" disabled>Save changes</button><span id="msg">Run the game with npm run dev. Saving rewrites src/game/dialogue-edits.json and reloads this page.</span></div>
     <script type="module" src="/src/debug/dialogue-editor.js"></script>
   </body>
