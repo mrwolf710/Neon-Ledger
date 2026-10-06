@@ -17,6 +17,9 @@ export const TEO_ART = { base: 'sprites/teo', size: 48, pxPerUnit: 24, dirs: JUN
 const TEO_FRAMES = { idle: [['', false, 0], ['', false, 1]] };
 // Holo-preacher: one 144x144 PNG, a 3x3 grid of 48 px cells in reading order = the 8 directions (the 9th cell is empty). Drawn as a cyan hologram by the CAST ghost flag.
 export const PRIEST_ART = { base: 'sprites/priest', size: 48, pxPerUnit: 25, dirs: JUNO_ART.dirs, states: [''] };
+// Dex (dead, seated in the Sable's back room): 8 still poses, one frame only so he never moves.
+export const DEX_ART = { base: 'sprites/corpo', size: 48, pxPerUnit: 24, dirs: JUNO_ART.dirs, states: [''] };
+const DEX_FRAMES = { idle: [['', false, 0]] };
 const OPP = { south: 'south', north: 'north', east: 'west', west: 'east', 'south-east': 'south-west', 'south-west': 'south-east', 'north-east': 'north-west', 'north-west': 'north-east' };
 
 // Frame recipes: [state, mirrored?, dy] where mirrored uses the opposite direction's picture flipped.
@@ -40,6 +43,7 @@ export async function loadPriestSheet() {
   });
   return loadSheet(PRIEST_ART, TEO_FRAMES, [''], imgs);
 }
+export const loadDexSheet = () => loadSheet(DEX_ART, DEX_FRAMES, ['']);
 export const loadTeoSheet = () => loadSheet(TEO_ART, TEO_FRAMES, ['']);
 
 async function loadSheet(A, FRAMES, states, preloaded) {
