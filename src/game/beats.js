@@ -7,6 +7,7 @@ export const BEATS = {
   trainSeconds: 6.5,      // the train rolling into the platform
   uiAt: 0.9,              // fraction of the zoom after which the UI fades in (quickly, see #hud.on in styles.css)
   zoomSeconds: 3,         // after the title card: the CRT frame zooms away and the VHS noise fades out
+  settle: 1.5,            // seconds Juno stands still before the title card, so the camera is centred on her
   cardHold: 2.4,          // title card hold, seconds
   mislaid: 0.6,           // pause before Juno steps out
   misoFollow: { dist: 1.5, speed: 2.6 },
@@ -58,8 +59,9 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
     focus = null;
     cam.follow?.(player.position, true);
     await walkTo(stopX, door.z + 1.6);
+    await wait(BEATS.settle);                                   // let the camera catch up so she stands in the middle of the screen, between the title words
     player.setPose('tablet');                                   // she reads the case on her tablet during the title card and Hale's call
-    await fade.card([{ text: 'NEON ECHOES', color: '#ff6fb5', scale: 18 }, { text: 'CASE 01  LOWMARKET', color: '#1fd6e8', scale: 6 }], BEATS.cardHold);
+    await fade.card([{ parts: ['NEON', 'ECHOES'], color: '#ff6fb5', scale: 13 }, { text: 'CASE 01  LOWMARKET', color: '#1fd6e8', scale: 5 }], BEATS.cardHold);
     let uiOn = false;
     await tween(BEATS.zoomSeconds, (u) => { // the monitor frame zooms out to the full game and the tape noise fades; the UI only fades in as the zoom nears its end
       const k = 1 - smooth(u); setCrt(k); setVhs(k);
