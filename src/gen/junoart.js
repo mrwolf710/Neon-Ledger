@@ -12,6 +12,9 @@ export const JUNO_ART = {
   pxPerUnit: 22,             // her figure is ~40 px tall, so ~1.8 world units like the other characters
   dirs: ['south', 'south-east', 'east', 'north-east', 'north', 'north-west', 'west', 'south-west'], // clockwise as seen on screen, 0 = facing the camera
 };
+// Mama Teo: the owner's "slow breathing idle" (one pose per direction); the breath is the pose dipping 1 px.
+export const TEO_ART = { base: 'sprites/teo', size: 48, pxPerUnit: 24, dirs: JUNO_ART.dirs, states: [''] }; // pxPerUnit: her figure is ~38 px tall and stout
+const TEO_FRAMES = { idle: [['', false, 0], ['', false, 1]] };
 const OPP = { south: 'south', north: 'north', east: 'west', west: 'east', 'south-east': 'south-west', 'south-west': 'south-east', 'north-east': 'north-west', 'north-west': 'north-east' };
 
 // Frame recipes: [state, mirrored?, dy] where mirrored uses the opposite direction's picture flipped.
@@ -25,11 +28,13 @@ const FRAMES = {
 const load = (url) => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error(`could not load ${url}`)); i.src = url; });
 
 // Returns a sheet in the same shape the billboard expects, with 8 directions per animation (sheet.dirs = 8).
-export async function loadJunoSheet() {
-  const A = JUNO_ART, S = A.size;
-  const states = ['idle', 'walk', 'sneak', 'tablet'];
+export const loadJunoSheet = () => loadSheet(JUNO_ART, FRAMES, ['idle', 'walk', 'sneak', 'tablet']);
+export const loadTeoSheet = () => loadSheet(TEO_ART, TEO_FRAMES, ['']);
+
+async function loadSheet(A, FRAMES, states) {
+  const S = A.size;
   const imgs = {};
-  await Promise.all(states.flatMap((st) => A.dirs.map(async (d) => { imgs[`${st}/${d}`] = await load(`${import.meta.env.BASE_URL}${A.base}/${st}/${d}.png`); })));
+  await Promise.all(states.flatMap((st) => A.dirs.map(async (d) => { imgs[`${st}/${d}`] = await load(`${import.meta.env.BASE_URL}${A.base}/${st ? st + '/' : ''}${d}.png`); })));
 
   const anims = Object.keys(FRAMES), cols = 4;
   const canvas = Object.assign(document.createElement('canvas'), { width: S * cols, height: S * A.dirs.length * anims.length });
