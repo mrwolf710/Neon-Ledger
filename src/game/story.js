@@ -68,7 +68,7 @@ const examine = (id, fact, text, again) => ({
 export const CONVERSATIONS = {
   // Beat 1: Hale on comms as Juno steps off the train.
   hale_open: { start: 'a', nodes: {
-    a: { speaker: 'hale', text: "Vale. Lowmarket, the Sable Noodle House. A broker's dead and his implant is burned out. Burnout case. Sign it and go home.", next: 'b' },
+    a: { speaker: 'hale', text: "Vale. Lowmarket, the Sable Noodle House. A broker's dead and his implant is fried. Looks like a burnout. Sign off on what you find and go home.", next: 'b' },
     b: { speaker: 'juno', text: 'Copy that. Sorry, I think I lost another hour on that train.', next: 'c' },
     c: { speaker: 'hale', text: 'Everybody loses an hour on Line 9, Vale. Get it done.', end: true },
   } },
