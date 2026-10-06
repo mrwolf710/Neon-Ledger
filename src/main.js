@@ -221,6 +221,7 @@ renderer.setAnimationLoop((now) => {
   tutorial.update();
   // First time Juno holds 3 clues inside the Sable: explain the board.
   if (world.current.id === 'sable' && !dialogue.active && !tutorial.isOpen && !caseFile.hasFlag('tut_board') && caseFile.facts().length >= 3) { caseFile.setFlag('tut_board'); tutorial.open('board'); }
+  if (echo.active && !tutorial.isOpen && !caseFile.hasFlag('tut_echo')) { caseFile.setFlag('tut_echo'); tutorial.open('echo'); } // first echo: explain it (the echo waits)
   const modal = tutorial.isOpen || tutWasOpen || !title.done || beats.locked || world.busy || dialogue.active || caseFile.isOpen || echo.active || board.isOpen || menu.isOpen || menuWasOpen;
   if (modal) { input.click = null; input.moveX = input.moveY = 0; }
   if (!menuWasOpen && !tutorial.isOpen && !tutWasOpen && title.done && !beats.locked && !world.busy && !dialogue.active && !caseFile.isOpen && !echo.active && !board.isOpen && input.pressed('pause')) menu.open();
@@ -245,7 +246,7 @@ renderer.setAnimationLoop((now) => {
   caseFile.update(input);
   if (!cfWasOpen && !caseFile.isOpen && !dialogue.active && !echo.active && !board.isOpen && free && input.pressed('caseFile')) caseFile.open();
   const echoWas = echo.active;
-  if (echoWas) echo.update(dt, input, cam.yaw, area.lights, scrubAxis, player.position);
+  if (echoWas && !tutorial.isOpen && !tutWasOpen) echo.update(dt, input, cam.yaw, area.lights, scrubAxis, player.position);
   else if (dialogue.active) { if (!cfWasOpen) dialogue.update(dt, input); }
   else if (!cfWasOpen && !bdWasOpen && !board.isOpen && free) {
     if (input.pressed('echo')) echo.tryStart(player.position);

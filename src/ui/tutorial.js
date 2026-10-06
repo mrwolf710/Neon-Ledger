@@ -14,6 +14,17 @@ export const TUTORIALS = {
   },
 };
 
+TUTORIALS.echo = {
+  title: 'Reading an echo',
+  lines: [
+    'An echo is a memory left in a place. You are watching it play back, and the world is paused around it.',
+    'Play and pause with Space. Scrub back and forth with A / D or the stick, step with the D-pad, or drag the bar at the bottom.',
+    'Watch for a moment that matters. While the playhead is inside a highlighted window, press Space to tag it and it is added to your Case File as a clue.',
+    'A red tick on the bar marks a seam, a spot where the memory does not quite fit. Cross it and you will see the picture stutter.',
+    'Press F, Backspace or Esc to leave the echo. You can come back to it any time.',
+  ],
+};
+
 export function createTutorial(input) {
   const root = document.createElement('div');
   root.className = 'tutorial';
