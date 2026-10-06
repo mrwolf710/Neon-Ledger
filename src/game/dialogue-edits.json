@@ -1,10 +1,13 @@
 {
   "vendor": {
     "a": {
-      "text": "You smell like rain and Bureau paperwork. The Sable is up the street on the right, under the red awning. They found a broker in the back.  Dead.  Like everything else around here."
+      "text": "You smell like rain and Bureau paperwork. You looking for that dead guy over at Sable House?"
     },
     "c": {
-      "text": "Everyone and no one. Lowmarket stops looking at faces after dark."
+      "text": "Everyone and no one. Lowmarket stops looking at faces after dark.  I gotta go."
+    },
+    "b": {
+      "text": "Did you see anyone go in or out of Sable House tonight?"
     }
   },
   "_new": {
@@ -21,6 +24,82 @@
           "text": "It's across the street with the red awning.  You can't miss it."
         }
       ]
+    },
+    "Mama_Teo_Points_to_Capsule_Hotel": {
+      "with": "mamaTeo",
+      "active": false,
+      "lines": [
+        {
+          "speaker": "juno",
+          "text": "(I should just let this go.  Another burned out cyber junkie.  But...)"
+        },
+        {
+          "speaker": "juno",
+          "text": "Any idea where Dex had been staying lately?"
+        },
+        {
+          "speaker": "mamaTeo",
+          "text": "I heard he was over at the Capsule hotel across the street.  Maybe check there."
+        }
+      ]
+    },
+    "Capsule_after_Teo": {
+      "with": "kit",
+      "active": false,
+      "lines": [
+        {
+          "speaker": "juno",
+          "text": "Hey, I'm looking to see if a guy named Dex Marrow was staying here."
+        },
+        {
+          "speaker": "mamaTeo",
+          "text": "Can't help ya. I'm just here to work on the plumbing."
+        },
+        {
+          "speaker": "juno",
+          "text": "Ok, thanks."
+        },
+        {
+          "speaker": "kit",
+          "text": "Yep, don't know anything at all about Dex Marrow. Nothing."
+        },
+        {
+          "speaker": "juno",
+          "text": "Ok..."
+        },
+        {
+          "speaker": "kit",
+          "text": "Yeah, nothing.  Boy, prices sure are going through the roof around, aren't they?  Seems like everybody needs a little help now and then.  Ya know, like, help...financially?"
+        },
+        {
+          "speaker": "juno",
+          "text": "(sigh...guess I'll play his game)"
+        },
+        {
+          "speaker": "juno",
+          "text": "Uh huh.  Seems like even 20 credits would help someone, right?"
+        },
+        {
+          "speaker": "kit",
+          "text": "Umm...maybe 30?"
+        },
+        {
+          "speaker": "juno",
+          "text": "Fine, here's 30 credits.  I hope it helps."
+        },
+        {
+          "speaker": "kit",
+          "text": "Wow, it sure does.  By the way, now that I think about it a little harder, ya know, now that I'm no so burdened with my financial worries, I do seem to remember seeing a Dex Marrow around here.  His capsule was on the third floor.  Room 3F."
+        },
+        {
+          "speaker": "juno",
+          "text": "Thanks.  Think that room is open?"
+        },
+        {
+          "speaker": "kit",
+          "text": "Definitely.  I was just up there working on some stuff.  Room is still open.  I'm going to go put this 30 credits to the good of the community.  Hope no one wonders into that room while I'm gone."
+        }
+      ]
     }
   },
   "_talk": {},
@@ -31,5 +110,77 @@
       "",
       ""
     ]
+  },
+  "_rules": [
+    {
+      "conv": "Mama_Teo_Points_to_Capsule_Hotel",
+      "npc": "mamaTeo",
+      "when": "all",
+      "fact": "someone_had_key"
+    },
+    {
+      "conv": "Capsule_after_Teo",
+      "npc": "kit",
+      "when": "all",
+      "fact": "master_keys",
+      "talked": "mamaTeo"
+    }
+  ],
+  "Mama_Teo_Points_to_Capsule_Hotel": {
+    "n0": {
+      "text": "(I should just let this go.  Another burned out cyber junkie.  But there's obviously something off about this...)"
+    },
+    "n2": {
+      "text": "I heard he was over at the Capsule Hotel across the street.  Maybe check there."
+    }
+  },
+  "Capsule_after_Teo": {
+    "n1": {
+      "speaker": "kit"
+    }
+  },
+  "_insert": [
+    {
+      "conv": "vendor",
+      "after": "a",
+      "id": "a_22851",
+      "speaker": "juno",
+      "text": "I am. Know anything about it?"
+    },
+    {
+      "conv": "vendor",
+      "after": "a_22851",
+      "id": "a_22851_60016",
+      "speaker": "vendor",
+      "text": "The Sable is up the street on the right, under the red awning. They found a echo broker in the back.  Dead.  Like everything else around here."
+    },
+    {
+      "conv": "vendor",
+      "after": "c",
+      "id": "c_96787",
+      "speaker": "juno",
+      "text": "Thanks.  Have a good night."
+    },
+    {
+      "conv": "hale_open",
+      "after": "a2",
+      "id": "a2_2487",
+      "speaker": "hale",
+      "text": "I don't need a repeat of last time, Juno."
+    }
+  ],
+  "hale_open": {
+    "a": {
+      "text": "Juno, welcome to Lowmarket.  I want you to go to the Sable Noodle House. An Echo broker's dead and his implant is fried."
+    },
+    "a2": {
+      "text": "Looks like a burnout. Just sign off on what you find and go home. Don't make this into more than it is."
+    },
+    "b": {
+      "text": "Copy that. Sorry, I'm a little out of it.  I think I lost another hour on that train."
+    },
+    "c": {
+      "text": "Everybody loses an hour on Line 9, Juno. Just get it done.  Hale out."
+    }
   }
 }

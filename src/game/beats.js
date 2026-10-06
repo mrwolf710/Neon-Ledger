@@ -67,7 +67,7 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
     await wait(BEATS.zoomDelay);                                // the zoom starts while the title words are still on screen
     let uiOn = false;
     await tween(BEATS.zoomSeconds, (u) => { // the monitor frame zooms out to the full game and the tape noise fades; the UI only fades in as the zoom nears its end
-      const k = 1 - smooth(u); setCrt(k); setVhs(k);
+      const k = 1 - smooth(u); setCrt(k); setVhs(k); fade.cardZoom(u);
       if (!uiOn && u >= BEATS.uiAt) { uiOn = true; hud.show(); }
     });
     await card;
