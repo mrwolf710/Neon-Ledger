@@ -212,3 +212,11 @@ body.echo #hud .objective { display: none !important; }
 #menu .menuval { display: flex; align-items: center; gap: 0.7rem; }
 #menu .menuval i { font-style: normal; min-width: 3.2rem; text-align: center; color: var(--pink); }
 #menu .menuval b { padding: 0 0.4rem; color: var(--cyan); cursor: pointer; }
+
+/* Tutorial window */
+.tutorial { position: fixed; inset: 0; z-index: 12; display: none; align-items: center; justify-content: center; background: rgba(7, 7, 15, 0.78); font-family: var(--body); color: var(--text); }
+.tutorial.on { display: flex; }
+.tutorial .tut-box { max-width: 36rem; margin: 1rem; padding: 1.2rem 1.6rem; }
+.tutorial h2 { margin: 0 0 0.8rem; font: 700 1.4rem/1.1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--cyan); }
+.tutorial p { margin: 0 0 0.7rem; font: 400 1rem/1.5 var(--body); }
+.tutorial .tut-hint { margin-top: 1rem; font: 500 0.8rem var(--body); color: var(--pink); text-align: right; }

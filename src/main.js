@@ -22,6 +22,7 @@ import { createSfx, surfaceAt } from './audio/sfx.js';
 import { createMusic } from './audio/music.js';
 import { createTitle } from './ui/title.js';
 import { createMenu } from './ui/menu.js';
+import { createTutorial } from './ui/tutorial.js';
 import { createPlayer } from './game/player.js';
 import { createInteractions, INTERACT } from './game/interact.js';
 import { settings, TIERS } from './core/settings.js';
@@ -88,6 +89,7 @@ const title = createTitle(() => synth.start());
 const sfx = createSfx(synth), music = createMusic(synth);
 const hud = createHud(world.current.collision);
 const menu = createMenu({ synth });
+const tutorial = createTutorial(input);
 const clock = createClock();
 const caseFile = createCaseFile(hud, clock);
 const dialogue = createDialogue({ hud, caseFile, clock });
@@ -215,9 +217,13 @@ renderer.setAnimationLoop((now) => {
   // Title, cutscene, area change, conversation, case file, echo or board: the world waits for the player.
   const menuWasOpen = menu.isOpen;
   menu.update(input);
-  const modal = !title.done || beats.locked || world.busy || dialogue.active || caseFile.isOpen || echo.active || board.isOpen || menu.isOpen || menuWasOpen;
+  const tutWasOpen = tutorial.isOpen;
+  tutorial.update();
+  // First time Juno holds 3 clues inside the Sable: explain the board.
+  if (world.current.id === 'sable' && !dialogue.active && !tutorial.isOpen && !caseFile.hasFlag('tut_board') && caseFile.facts().length >= 3) { caseFile.setFlag('tut_board'); tutorial.open('board'); }
+  const modal = tutorial.isOpen || tutWasOpen || !title.done || beats.locked || world.busy || dialogue.active || caseFile.isOpen || echo.active || board.isOpen || menu.isOpen || menuWasOpen;
   if (modal) { input.click = null; input.moveX = input.moveY = 0; }
-  if (!menuWasOpen && title.done && !beats.locked && !world.busy && !dialogue.active && !caseFile.isOpen && !echo.active && !board.isOpen && input.pressed('pause')) menu.open();
+  if (!menuWasOpen && !tutorial.isOpen && !tutWasOpen && title.done && !beats.locked && !world.busy && !dialogue.active && !caseFile.isOpen && !echo.active && !board.isOpen && input.pressed('pause')) menu.open();
   cam.tilt((input.held('tiltDown') ? 1 : 0) - (input.held('tiltUp') ? 1 : 0), dt);
 
   // Click: a person/object walks there then interacts; the ground walks there.
@@ -233,7 +239,7 @@ renderer.setAnimationLoop((now) => {
   }
   player.update(dt, input, cam.yaw, !modal);
   const cfWasOpen = caseFile.isOpen, bdWasOpen = board.isOpen;
-  const free = title.done && !beats.locked && !world.busy; // nothing scripted is running
+  const free = title.done && !beats.locked && !world.busy && !tutorial.isOpen && !tutWasOpen; // nothing scripted is running
   board.update(input);
   if (!bdWasOpen && !board.isOpen && free && !dialogue.active && !echo.active && !caseFile.isOpen && input.pressed('board')) board.open();
   caseFile.update(input);
