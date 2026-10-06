@@ -4,7 +4,7 @@ import { input } from './core/input.js';
 import { createCamera, CAMERA } from './render/camera.js';
 import { createDebugPanel, showSprites } from './debug/panel.js';
 import { getSheets } from './gen/sprites.js';
-import { loadJunoSheet, loadTeoSheet } from './gen/junoart.js';
+import { loadJunoSheet, loadTeoSheet, loadPriestSheet } from './gen/junoart.js';
 import { createCast } from './game/npc.js';
 import './ui/styles.css';
 import { createTouchUI } from './ui/touch.js';
@@ -55,6 +55,8 @@ renderer.info.autoReset = false; // composer renders several passes; count the w
 try { getSheets().juno = await loadJunoSheet(); } catch (e) { console.warn('Juno art not loaded, using the generated sprite:', e.message); }
 
 try { getSheets().mamaTeo = await loadTeoSheet(); } catch (e) { console.warn('Teo art not loaded, using the generated sprite:', e.message); }
+
+try { getSheets().preacher = await loadPriestSheet(); } catch (e) { console.warn('Priest art not loaded, using the generated sprite:', e.message); }
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(MAIN.background);

@@ -15,6 +15,8 @@ export const JUNO_ART = {
 // Mama Teo: the owner's "slow breathing idle" (one pose per direction); the breath is the pose dipping 1 px.
 export const TEO_ART = { base: 'sprites/teo', size: 48, pxPerUnit: 24, dirs: JUNO_ART.dirs, states: [''] }; // pxPerUnit: her figure is ~38 px tall and stout
 const TEO_FRAMES = { idle: [['', false, 0], ['', false, 1]] };
+// Holo-preacher: one 144x144 PNG, a 3x3 grid of 48 px cells in reading order = the 8 directions (the 9th cell is empty). Drawn as a cyan hologram by the CAST ghost flag.
+export const PRIEST_ART = { base: 'sprites/priest', size: 48, pxPerUnit: 25, dirs: JUNO_ART.dirs, states: [''] };
 const OPP = { south: 'south', north: 'north', east: 'west', west: 'east', 'south-east': 'south-west', 'south-west': 'south-east', 'north-east': 'north-west', 'north-west': 'north-east' };
 
 // Frame recipes: [state, mirrored?, dy] where mirrored uses the opposite direction's picture flipped.
@@ -29,12 +31,21 @@ const load = (url) => new Promise((res, rej) => { const i = new Image(); i.onloa
 
 // Returns a sheet in the same shape the billboard expects, with 8 directions per animation (sheet.dirs = 8).
 export const loadJunoSheet = () => loadSheet(JUNO_ART, FRAMES, ['idle', 'walk', 'sneak', 'tablet']);
+export async function loadPriestSheet() {
+  const S = PRIEST_ART.size, grid = await load(`${import.meta.env.BASE_URL}${PRIEST_ART.base}/sheet.png`), imgs = {};
+  PRIEST_ART.dirs.forEach((d, i) => {
+    const c = Object.assign(document.createElement('canvas'), { width: S, height: S });
+    c.getContext('2d').drawImage(grid, (i % 3) * S, Math.floor(i / 3) * S, S, S, 0, 0, S, S);
+    imgs[`/${d}`] = c;
+  });
+  return loadSheet(PRIEST_ART, TEO_FRAMES, [''], imgs);
+}
 export const loadTeoSheet = () => loadSheet(TEO_ART, TEO_FRAMES, ['']);
 
-async function loadSheet(A, FRAMES, states) {
+async function loadSheet(A, FRAMES, states, preloaded) {
   const S = A.size;
-  const imgs = {};
-  await Promise.all(states.flatMap((st) => A.dirs.map(async (d) => { imgs[`${st}/${d}`] = await load(`${import.meta.env.BASE_URL}${A.base}/${st ? st + '/' : ''}${d}.png`); })));
+  const imgs = preloaded || {};
+  if (!preloaded) await Promise.all(states.flatMap((st) => A.dirs.map(async (d) => { imgs[`${st}/${d}`] = await load(`${import.meta.env.BASE_URL}${A.base}/${st ? st + '/' : ''}${d}.png`); })));
 
   const anims = Object.keys(FRAMES), cols = 4;
   const canvas = Object.assign(document.createElement('canvas'), { width: S * cols, height: S * A.dirs.length * anims.length });
