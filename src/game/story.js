@@ -152,6 +152,7 @@ for (const [id, d] of Object.entries(EDITS._new ?? {})) {
   CONVERSATIONS[id] = { start: 'n0', nodes };
   if (d.active) TALK[d.with] = id;
 }
+for (const [npc, c] of Object.entries(EDITS._talk ?? {})) TALK[npc] = c; // set in the editor: what a person says every time
 for (const x of EDITS._insert ?? []) { // lines added after an existing box (editor): the new box takes over the old box's next / end
   const c = CONVERSATIONS[x.conv], n = c?.nodes[x.after];
   if (!n) continue;

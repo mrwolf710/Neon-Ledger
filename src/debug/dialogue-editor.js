@@ -1,6 +1,8 @@
 import { CONVERSATIONS, SPEAKERS, TALK } from '../game/story.js';
 import EDITS from '../game/dialogue-edits.json';
 const VISITS = EDITS._visits ?? {};
+const hearers = (e) => e.filter(([id]) => !['hale', 'unknown'].includes(id)); // people Juno can talk to
+const talkNow = () => { const t = { ...TALK }; for (const [n, c] of Object.entries(pending._talk ?? {})) { if (c) t[n] = c; } return t; };
 const visitList = (npc) => [0, 1, 2, 3].map((i) => pending._visits?.[npc]?.[i] ?? VISITS[npc]?.[i] ?? '');
 import SCENE_EDITS from '../world/scene-edits.json';
 import { SCENES, SCENE_KEYS } from '../world/scenes.js';
@@ -65,7 +67,25 @@ function dlgMain() {
     return out;
   });
   const nameBox = el('input', { value: titleOf(current) === current ? '' : titleOf(current), placeholder: current, style: 'font-size:18px;width:100%;max-width:420px', oninput: () => { (pending._titles ??= {})[current] = nameBox.value.trim() || null; changed(); } });
-  const top = [el('h1', {}, titleOf(current)), el('div', { className: 'sub' }, 'Name (shown in this list only; the game still uses the id ', el('code', {}, current), '):'), nameBox, el('div', { className: 'sub' }, `${cards.length} boxes. They play top to bottom unless a "→" jumps elsewhere.`)];
+  // Who says this, and on which visit.
+  const slot = (() => {
+    for (const [npc] of hearers(people)) { const i = visitList(npc).indexOf(current); if (i >= 0) return { npc, when: String(i + 1) }; }
+    for (const [npc, c] of Object.entries(talkNow())) if (c === current) return { npc, when: 'all' };
+    return { npc: '', when: 'all' };
+  })();
+  const assign = (npc, when) => {
+    for (const [n] of hearers(people)) { const l = visitList(n); if (l.includes(current)) { (pending._visits ??= {})[n] = l.map((c) => (c === current ? '' : c)); } }
+    for (const [n, c] of Object.entries(talkNow())) if (c === current && !(n === npc && when === 'all')) (pending._talk ??= {})[n] = null;
+    if (npc && when === 'all') (pending._talk ??= {})[npc] = current;
+    else if (npc) { const l = visitList(npc); l[+when - 1] = current; (pending._visits ??= {})[npc] = l; }
+    changed(); dlgMain();
+  };
+  const whoRow = el('div', { className: 'choice', style: 'margin-bottom:14px' }, el('span', {}, 'Plays when Juno talks to'),
+    select([['', 'Nobody (not used yet)'], ...hearers(people).map(([id, s]) => [id, s.name])], slot.npc, (v) => assign(v, v ? slot.when : 'all')),
+    el('span', {}, 'on'),
+    select([['all', 'every visit'], ['1', 'the 1st visit'], ['2', 'the 2nd visit'], ['3', 'the 3rd visit'], ['4', 'the 4th visit and after']], slot.when, (v) => assign(slot.npc, v)));
+  if (!slot.npc) whoRow.lastChild.disabled = true;
+  const top = [el('h1', {}, titleOf(current)), el('div', { className: 'sub' }, 'Name (shown in this list only; the game still uses the id ', el('code', {}, current), '):'), nameBox, whoRow, el('div', { className: 'sub' }, `${cards.length} boxes. They play top to bottom unless a "→" jumps elsewhere.`)];
   if (mine[current]) top.push(el('button', { className: 'danger', style: 'margin-bottom:12px', onclick: () => { ((pending._new ??= {})[current] = null); changed(); $('msg').textContent = 'Unsaved: this conversation will be deleted on save.'; } }, 'Delete this conversation'));
   $('main').replaceChildren(...top, ...cards);
 }
@@ -134,24 +154,10 @@ function sceneMain() {
   });
   $('main').replaceChildren(el('h1', {}, SCENES[scene]), el('div', { className: 'sub' }, 'Changes apply while Juno is in this scene. "Reset" goes back to the default value. Numbers shown for unset rows are the usual night values.'), ...rows);
 }
-// ---- Revisits: which conversation plays on each visit to a person ----
-let who = people.find(([id]) => id !== 'vending' && id !== 'unknown' && id !== 'hale')?.[0] ?? people[0][0];
-function visitList_() {
-  $('items').replaceChildren(...people.filter(([id]) => !['hale', 'unknown', 'vending'].includes(id)).map(([id, s]) => el('a', { className: id === who ? 'on' : '', onclick: () => { who = id; drawList(); drawMain(); } },
-    el('b', {}, s.name), el('small', {}, visitList(id).some(Boolean) ? 'custom revisits' : 'same every time'))));
-}
-function visitMain() {
-  const list = visitList(who), opts = [['', 'Normal (the game default)'], ...Object.keys(CONVERSATIONS).map((id) => [id, titleOf(id)])];
-  const rows = ['1st visit', '2nd visit', '3rd visit', '4th visit and every one after'].map((label, i) => {
-    const sel = select(opts, list[i], (v) => { const l = visitList(who); l[i] = v; (pending._visits ??= {})[who] = l; changed(); });
-    return el('div', { className: 'node' + (pending._visits?.[who] ? ' dirty' : '') }, el('div', { className: 'head' }, el('b', {}, label)), sel);
-  });
-  $('main').replaceChildren(el('h1', {}, SPEAKERS[who].name), el('div', { className: 'sub' }, 'Pick what they say each time Juno talks to them. "Normal" runs their usual conversation, which already reacts to clues. If you stop at the 2nd visit, it keeps repeating that one. Make new conversations with + New conversation.'), ...rows);
-}
-const drawList = () => (mode === 'conv' ? dlgList() : mode === 'scene' ? sceneList() : visitList_());
-const drawMain = () => (mode === 'conv' ? dlgMain() : mode === 'scene' ? sceneMain() : visitMain());
-const setMode = (m) => { mode = m; for (const t of ['conv', 'scene', 'visit']) $(`tab-${t}`).className = m === t ? '' : 'ghost'; $('new').style.display = $('q').style.display = m === 'conv' ? '' : 'none'; drawList(); drawMain(); };
-$('tab-conv').onclick = () => setMode('conv'); $('tab-scene').onclick = () => setMode('scene'); $('tab-visit').onclick = () => setMode('visit');
+const drawList = () => (mode === 'conv' ? dlgList() : sceneList());
+const drawMain = () => (mode === 'conv' ? dlgMain() : sceneMain());
+const setMode = (m) => { mode = m; for (const t of ['conv', 'scene']) $(`tab-${t}`).className = m === t ? '' : 'ghost'; $('new').style.display = $('q').style.display = m === 'conv' ? '' : 'none'; drawList(); drawMain(); };
+$('tab-conv').onclick = () => setMode('conv'); $('tab-scene').onclick = () => setMode('scene');
 
 $('q').oninput = () => { drawList(); drawMain(); };
 $('new').onclick = drawNew;
