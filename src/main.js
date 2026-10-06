@@ -27,6 +27,7 @@ import { createInteractions, INTERACT } from './game/interact.js';
 import { settings, TIERS } from './core/settings.js';
 import { createLights } from './render/lights.js';
 import { createPost, POST } from './render/post.js';
+import { createCrtFrame } from './ui/crtframe.js';
 import { createHeightFog } from './render/fog.js';
 import { createParticles } from './world/particles.js';
 import { createTimeOfDay, TIME_OF_DAY } from './world/timeofday.js';
@@ -77,6 +78,7 @@ const street = world.areas.street;
 const particles = createParticles(scene, rng.fork('particles'), Q.rainCount, street.steam);
 
 const cam = createCamera(window.innerWidth / window.innerHeight);
+const crtFrame = createCrtFrame(canvas);
 const post = createPost(renderer, scene, cam.camera, Q);
 const cast = createCast(scene, getSheets(), world.areas);
 const player = createPlayer(cast.byId.juno, world.current.collision);
@@ -95,7 +97,7 @@ for (const h of echo.hotspots) {
 }
 const board = createBoard({ caseFile, hud });
 const beats = createBeats({ world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock,
-  setExposure: (v) => { renderer.toneMappingExposure = MAIN.exposure * v; }, setVhs: (a) => post.setVhs(a), setCrt: (a) => post.setCrt(a) });
+  setExposure: (v) => { renderer.toneMappingExposure = MAIN.exposure * v; }, setVhs: (a) => post.setVhs(a), setCrt: (a) => { post.setCrt(a); crtFrame.set(a); } });
 beats.setCamera(cam);
 beats.register();
 let phaseId = '';

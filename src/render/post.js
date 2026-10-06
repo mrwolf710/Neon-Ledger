@@ -3,18 +3,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { drawText, measure } from '../gen/pixelfont.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-
-// Fake monitor: brand plate (top right) and knobs / buttons (bottom), sizes as fractions of the screen height.
-export const MONITOR = { brand: 'MANGAVOX', brandScale: 0.0045, brandPad: 0.02, side: 0.09, bottom: 0.2 }; // fake TV housing, as fractions of the screen height
-function brandTexture() {
-  const cv = Object.assign(document.createElement('canvas'), { width: measure(MONITOR.brand), height: 5 });
-  drawText(cv.getContext('2d'), MONITOR.brand, 0, 0, '#ffffff');
-  const t = new THREE.CanvasTexture(cv);
-  t.magFilter = t.minFilter = THREE.NearestFilter; t.generateMipmaps = false;
-  return t;
-}
 
 export const POST = {
   bloom: { strength: 0.6, radius: 0.35, threshold: 0.85 },
@@ -49,66 +38,20 @@ const TiltShift = {
 };
 
 // Lift/gamma/gain + saturation, film grain and a slight chromatic fringe toward the edges. Runs in display space.
-const M = MONITOR;
 const Grade = {
   uniforms: {
     tDiffuse: { value: null }, lift: { value: new THREE.Vector3() }, gamma: { value: new THREE.Vector3() },
     gain: { value: new THREE.Vector3() }, saturation: { value: 1 }, grain: { value: 0 }, fringe: { value: 0 }, time: { value: 0 },
-    echo: { value: 0 }, glitch: { value: 0 }, vhs: { value: 0 }, crt: { value: 0 }, res: { value: new THREE.Vector2(1, 1) }, brand: { value: null }, brandSize: { value: new THREE.Vector2() },
+    echo: { value: 0 }, glitch: { value: 0 }, vhs: { value: 0 }, crt: { value: 0 },
   },
   vertexShader: TiltShift.vertexShader,
   fragmentShader: /* glsl */`
-    uniform sampler2D tDiffuse; uniform vec3 lift, gamma, gain; uniform float saturation, grain, fringe, time, echo, glitch, vhs, crt; uniform vec2 res, brandSize; uniform sampler2D brand;
+    uniform sampler2D tDiffuse; uniform vec3 lift, gamma, gain; uniform float saturation, grain, fringe, time, echo, glitch, vhs, crt;
     varying vec2 vUv;
     float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
     void main() {
       vec2 uv = vUv;
-      float edge = 0.0;
-      if (crt > 0.0) { // playing inside a CRT monitor: the picture is shrunk, bulged, rounded and framed by a black bezel
-        vec2 p = (vUv - 0.5 - vec2(0.0, 0.055 * crt)) * (1.0 + crt * 0.28);
-        p *= 1.0 + crt * 0.5 * dot(p, p);
-        uv = p + 0.5;
-        vec2 q = abs(p);
-        edge = max(q.x, q.y);
-        float d = max(edge - 0.5, length(max(q - 0.43, 0.0)) - 0.07); // > 0 outside the glass
-        if (d > 0.0) { // dark pixel-art TV housing in nested frames with teal edge lines, a control panel underneath and a green glow around it
-          vec2 bp = (vUv - 0.5 - vec2(0.0, 0.055 * crt)) * (1.0 + crt * 0.28);
-          vec2 cp = bp / (1.0 + crt * 0.28) * res;                                       // pixels from the screen centre (y up)
-          float H = res.y, f = 0.5 / (1.0 + crt * 0.125) / (1.0 + crt * 0.28), gx = f * res.x, gy = f * res.y;
-          float dx = abs(cp.x) - gx, dyT = cp.y - gy, dyB = -cp.y - gy;
-          bool low = cp.y < 0.0;
-          float t = max(dx, low ? min(dyB, 0.06 * H) : dyT) / H;                         // distance from the glass, in screen heights
-          float o = max(dx / H - ${M.side}, low ? dyB / H - ${M.bottom} : dyT / H - ${M.side}); // > 0 outside the case
-          vec3 col;
-          if (o > 0.0) { // green halo, blocky like the pixel art
-            float h = exp(-o / 0.12) * (0.85 + 0.15 * hash(floor(cp / (0.008 * H))));
-            col = vec3(0.01, 0.02, 0.03) + vec3(0.02, 0.5, 0.32) * (floor(h * 7.0) / 7.0) * 0.6;
-          } else {
-            col = vec3(0.035, 0.07, 0.08) * (1.0 + 0.25 * step(0.0, -bp.x - bp.y));
-            if (t < 0.018) col = vec3(0.005, 0.02, 0.02);
-            else if (t < 0.023) col = vec3(0.08, 0.4, 0.36);
-            else if (t > 0.05 && t < 0.055) col = vec3(0.06, 0.26, 0.24);
-            if (low && dyB / H > 0.06) { // control panel
-              vec2 pp = vec2(cp.x, -cp.y - gy - 0.13 * H);
-              col = vec3(0.04, 0.075, 0.085);
-              if (dyB / H < 0.065) col = vec3(0.08, 0.4, 0.36);
-              vec2 gr = abs(pp - vec2(-gx + 0.12 * H, 0.0)) / (vec2(0.1, 0.035) * H);       // speaker grille
-              if (max(gr.x, gr.y) < 1.0) col = (mod(floor(cp.x / (0.007 * H)) + floor(cp.y / (0.007 * H)), 2.0) < 1.0) ? vec3(0.1, 0.2, 0.22) : vec3(0.02, 0.04, 0.05);
-              vec2 dp = abs(pp) / (vec2(0.1, 0.025) * H);                                   // red display
-              if (max(dp.x, dp.y) < 1.0) col = (max(dp.x, dp.y) > 0.85) ? vec3(0.1, 0.25, 0.25) : (mod(floor(cp.x / (0.006 * H)), 5.0) < 3.0 && abs(pp.y) < 0.006 * H) ? vec3(0.95, 0.12, 0.1) : vec3(0.12, 0.01, 0.02);
-              float pr = length(pp - vec2(gx - 0.13 * H, 0.0)) / (0.022 * H);                // green power button
-              if (pr < 1.0) col = pr > 0.75 ? vec3(0.08, 0.45, 0.4) : vec3(0.15, 0.85, 0.55);
-              float kr = length(pp - vec2(gx - 0.06 * H, 0.0)) / (0.017 * H);               // knob
-              if (kr < 1.0) col = kr > 0.75 ? vec3(0.07, 0.3, 0.28) : vec3(0.02, 0.04, 0.05);
-              for (int i = 0; i < 2; i++) if (length(pp - vec2(-gx + 0.03 * H, (float(i) - 0.5) * 0.03 * H)) < 0.006 * H) col = vec3(0.1, 0.8, 0.9); // status dots
-            }
-            if (o > -0.004) col = vec3(0.08, 0.35, 0.3);                                // outer teal edge line
-            vec2 bt = vec2(cp.x - (gx - ${M.brandPad} * H - brandSize.x * ${M.brandScale} * H), (gy + 0.0725 * H + 2.5 * ${M.brandScale} * H) - cp.y) / (${M.brandScale} * H); // brand text, in text pixels
-            if (!low && bt.x >= 0.0 && bt.x < brandSize.x && bt.y >= 0.0 && bt.y < 5.0 && texture2D(brand, vec2(bt.x / brandSize.x, 1.0 - bt.y / 5.0)).a > 0.5) col = vec3(0.2, 0.75, 0.6);
-          }
-          gl_FragColor = vec4(col, 1.0); return;
-        }
-      }
+      float edge = length(vUv - 0.5);
       if (glitch > 0.0) { // pixel tear: shift random horizontal bands
         float band = floor(vUv.y * 28.0), h = hash(vec2(band, floor(time * 40.0)));
         if (h > 0.72) uv.x += (h - 0.86) * 0.35 * glitch;
@@ -138,9 +81,7 @@ const Grade = {
         c += (hash(vUv * 700.0 - time) - 0.5) * 0.14 * vhs;
       }
       if (crt > 0.0) {
-        c *= 1.0 - crt * 0.35 * (0.5 + 0.5 * sin(gl_FragCoord.y * 2.4));                              // CRT scan lines
-        c *= 1.0 - crt * 0.12 * step(1.5, mod(gl_FragCoord.x, 3.0));                                    // phosphor mask
-        c *= 1.0 - crt * 0.7 * smoothstep(0.3, 0.52, edge);                                             // vignette toward the glass edge
+        c *= 1.0 - crt * 0.7 * smoothstep(0.35, 0.75, edge);                                             // vignette toward the glass edge
         c = mix(c, c * vec3(0.8, 1.0, 0.9) + vec3(0.0, 0.04, 0.03), crt);                                                               // faint glass glow
         c *= 1.0 + crt * 0.04 * sin(time * 110.0);                                                      // mains flicker
       }
@@ -163,7 +104,6 @@ export function createPost(renderer, scene, camera, quality) {
   composer.addPass(grade);
 
   const g = grade.uniforms;
-  g.brand.value = brandTexture(); g.brandSize.value.set(measure(MONITOR.brand), 5);
   function applyUniforms() {
     for (const t of [tiltH, tiltV]) {
       t.uniforms.center.value = P.tilt.center; t.uniforms.band.value = P.tilt.band;
@@ -187,7 +127,6 @@ export function createPost(renderer, scene, camera, quality) {
       const pr = renderer.getPixelRatio();
       bloom.setSize( // after composer.setSize, which sizes bloom at full res
 w * pr * quality.bloomScale, h * pr * quality.bloomScale);
-      g.res.value.set(w * pr, h * pr);
       tiltH.uniforms.dir.value.set(1 / (w * pr), 0);
       tiltV.uniforms.dir.value.set(0, 1 / (h * pr));
     },

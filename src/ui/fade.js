@@ -1,7 +1,7 @@
 import { drawText, measure } from '../gen/pixelfont.js';
 
 // Full-screen black fade (area changes) and a pixel-font title card (cold open, end card).
-export const FADE = { seconds: 0.35, cardY: 44.5, cardGap: 16 }; // cardY: % from the top where a split title's row is centred (where Juno stands in the cold open); cardGap: vh between its words
+export const FADE = { seconds: 0.35, cardY: 50, cardGap: 5 }; // cardY: % from the top where a split title's row is centred (where Juno stands in the cold open); cardGap: vh between its words
 
 export function createFade() {
   const el = document.createElement('div');
@@ -32,7 +32,7 @@ export function createFade() {
         row.style.cssText = `position:fixed;left:50%;top:${FADE.cardY}%;transform:translate(-50%,-50%);display:flex;gap:${FADE.cardGap}vh;align-items:center`;
         row.append(...first.parts.map((t) => line(t, first.color ?? '#ffffff', first.scale ?? 6)));
         const below = document.createElement('div');
-        below.style.cssText = `position:fixed;left:0;right:0;top:calc(${FADE.cardY}% + 12vh);display:flex;flex-direction:column;align-items:center;gap:1.4rem`;
+        below.style.cssText = `position:fixed;left:0;right:0;top:calc(${FADE.cardY}% + 6vh);display:flex;flex-direction:column;align-items:center;gap:1.4rem`;
         below.append(...rest.map((l) => line(l.text, l.color ?? '#ffffff', l.scale ?? 6)));
         els.push(row, below);
       } else els.push(...lines.map((l) => line(l.text, l.color ?? '#ffffff', l.scale ?? 6)));
