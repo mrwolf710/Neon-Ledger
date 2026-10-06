@@ -111,7 +111,7 @@ export const CONVERSATIONS = {
         effects: [{ addFact: 'door_unlocked' }], next: 'master' },
       master: { speaker: 'mamaTeo', text: "Don't look at me like that. City crews and inspectors carry a master key to every door on Lowmarket. It's in the lease. Nobody argues with the city.",
         effects: [{ addFact: 'master_keys' }], next: 'more' },
-      follow: { speaker: 'mamaTeo', text: "Someone came in but I didn't see them. And nobody else came through the front tonight but the cat.", next: 'more' },
+      follow: { speaker: 'mamaTeo', text: "Someone came in but I didn't see them. And no one else came through the front tonight except for you and the cat.", next: 'more' },
       more: { speaker: 'mamaTeo', text: 'Anything else, or are you going to eat?',
         choices: [...TEO_QUESTIONS, { text: "That's all.", end: true }] },
       again: { speaker: 'mamaTeo', text: 'Back again? What is it this time?',
