@@ -36,6 +36,12 @@ export const ENTRIES = {
 // Which conversation each talkable thing starts. Missing ids fall back to FALLBACK.
 export const TALK = { mamaTeo: 'teo', vending: 'vending', miso: 'miso', vendor: 'vendor', preacher: 'preacher' };
 export const FALLBACK = 'nobody';
+// Which conversation plays on each visit, from the editor: VISITS[personId] = [1st, 2nd, 3rd, 4th and later]; '' = the normal one (TALK).
+export const VISITS = EDITS._visits ?? {};
+export function conversationFor(personId, visit) {
+  const list = VISITS[personId];
+  return (list && list[Math.min(visit, list.length) - 1]) || TALK[personId] || FALLBACK;
+}
 
 // Conversation: { start: nodeId | [{ if, node }...], nodes: { id: Node } }.
 // Node: { speaker, text, next?, choices?, effects?, present?, presentWrong?, end? }.

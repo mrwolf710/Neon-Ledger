@@ -1,5 +1,7 @@
 import { CONVERSATIONS, SPEAKERS, TALK } from '../game/story.js';
 import EDITS from '../game/dialogue-edits.json';
+const VISITS = EDITS._visits ?? {};
+const visitList = (npc) => [0, 1, 2, 3].map((i) => pending._visits?.[npc]?.[i] ?? VISITS[npc]?.[i] ?? '');
 import SCENE_EDITS from '../world/scene-edits.json';
 import { SCENES, SCENE_KEYS } from '../world/scenes.js';
 
@@ -81,16 +83,17 @@ function drawNew() {
   }));
   const withSel = select(people.map(([id, s]) => [id, s.name]), def.with, (v) => { def.with = v; });
   const name = el('input', { placeholder: 'short name, e.g. miso_fed (letters, digits, _)', oninput: () => { def.name = name.value; } });
-  const active = el('input', { type: 'checkbox', checked: true, onchange: () => { def.active = active.checked; } });
+  const when = select([['all', 'Every time (replaces what they say now)'], ['1', 'Only the 1st visit'], ['2', 'Only the 2nd visit'], ['3', 'Only the 3rd visit'], ['4', 'The 4th visit and every one after'], ['none', 'Not yet (just save it)']], 'all', (v) => { def.when = v; });
   form.append(el('label', {}, 'Name'), name, el('label', {}, 'Juno is talking to'), withSel,
-    el('label', {}, el('span', {}, ''), active, ' Play this when Juno talks to them (replaces what they say now; the old conversation stays in the list)'),
+    el('label', {}, 'When does Juno hear it?'), when,
     el('label', {}, 'What is said, in order'), lines,
     el('button', { className: 'ghost', onclick: () => { const last = def.lines.at(-1); def.lines.push({ speaker: last?.speaker === 'juno' ? def.with : 'juno', text: '' }); drawLines(); } }, '+ Add line'),
     ' ', el('button', { onclick: () => {
       const id = def.name.trim().replace(/[^A-Za-z0-9_]/g, '_');
       const lines = def.lines.filter((l) => l.text.trim());
       if (!id || CONVERSATIONS[id] || !lines.length) { $('msg').textContent = 'Needs a unique name and at least one line.'; return; }
-      (pending._new ??= {})[id] = { with: def.with, active: def.active, lines: lines.map((l) => ({ speaker: l.speaker, text: l.text.trim() })) };
+      (pending._new ??= {})[id] = { with: def.with, active: def.when === undefined || def.when === 'all', lines: lines.map((l) => ({ speaker: l.speaker, text: l.text.trim() })) };
+      if (/^[1-4]$/.test(def.when ?? '')) { const l = visitList(def.with); l[+def.when - 1] = id; (pending._visits ??= {})[def.with] = l; } // plays on that visit only
       changed(); $('msg').textContent = `"${id}" will be created when you save.`;
       $('save').click();
     } }, 'Create'));
@@ -131,10 +134,24 @@ function sceneMain() {
   });
   $('main').replaceChildren(el('h1', {}, SCENES[scene]), el('div', { className: 'sub' }, 'Changes apply while Juno is in this scene. "Reset" goes back to the default value. Numbers shown for unset rows are the usual night values.'), ...rows);
 }
-const drawList = () => (mode === 'conv' ? dlgList() : sceneList());
-const drawMain = () => (mode === 'conv' ? dlgMain() : sceneMain());
-const setMode = (m) => { mode = m; $('tab-conv').className = m === 'conv' ? '' : 'ghost'; $('tab-scene').className = m === 'scene' ? '' : 'ghost'; $('new').style.display = $('q').style.display = m === 'conv' ? '' : 'none'; drawList(); drawMain(); };
-$('tab-conv').onclick = () => setMode('conv'); $('tab-scene').onclick = () => setMode('scene');
+// ---- Revisits: which conversation plays on each visit to a person ----
+let who = people.find(([id]) => id !== 'vending' && id !== 'unknown' && id !== 'hale')?.[0] ?? people[0][0];
+function visitList_() {
+  $('items').replaceChildren(...people.filter(([id]) => !['hale', 'unknown', 'vending'].includes(id)).map(([id, s]) => el('a', { className: id === who ? 'on' : '', onclick: () => { who = id; drawList(); drawMain(); } },
+    el('b', {}, s.name), el('small', {}, visitList(id).some(Boolean) ? 'custom revisits' : 'same every time'))));
+}
+function visitMain() {
+  const list = visitList(who), opts = [['', 'Normal (the game default)'], ...Object.keys(CONVERSATIONS).map((id) => [id, titleOf(id)])];
+  const rows = ['1st visit', '2nd visit', '3rd visit', '4th visit and every one after'].map((label, i) => {
+    const sel = select(opts, list[i], (v) => { const l = visitList(who); l[i] = v; (pending._visits ??= {})[who] = l; changed(); });
+    return el('div', { className: 'node' + (pending._visits?.[who] ? ' dirty' : '') }, el('div', { className: 'head' }, el('b', {}, label)), sel);
+  });
+  $('main').replaceChildren(el('h1', {}, SPEAKERS[who].name), el('div', { className: 'sub' }, 'Pick what they say each time Juno talks to them. "Normal" runs their usual conversation, which already reacts to clues. If you stop at the 2nd visit, it keeps repeating that one. Make new conversations with + New conversation.'), ...rows);
+}
+const drawList = () => (mode === 'conv' ? dlgList() : mode === 'scene' ? sceneList() : visitList_());
+const drawMain = () => (mode === 'conv' ? dlgMain() : mode === 'scene' ? sceneMain() : visitMain());
+const setMode = (m) => { mode = m; for (const t of ['conv', 'scene', 'visit']) $(`tab-${t}`).className = m === t ? '' : 'ghost'; $('new').style.display = $('q').style.display = m === 'conv' ? '' : 'none'; drawList(); drawMain(); };
+$('tab-conv').onclick = () => setMode('conv'); $('tab-scene').onclick = () => setMode('scene'); $('tab-visit').onclick = () => setMode('visit');
 
 $('q').oninput = () => { drawList(); drawMain(); };
 $('new').onclick = drawNew;

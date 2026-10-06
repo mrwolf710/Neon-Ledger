@@ -29,6 +29,11 @@ const dialogueEditor = {
         try {
           const patch = JSON.parse(body), edits = JSON.parse(fs.readFileSync(EDITS, 'utf8'));
           for (const [conv, nodes] of Object.entries(patch)) {
+            if (conv === '_visits') { // { npcId: [convId | '' x 4] }: which conversation plays on the 1st, 2nd, 3rd, 4th+ visit
+              edits._visits ??= {};
+              for (const [npc, list] of Object.entries(nodes)) { if (list.some(Boolean)) edits._visits[npc] = list; else delete edits._visits[npc]; }
+              continue;
+            }
             if (conv === '_titles') { // display names for conversations: { id: name | null }
               edits._titles ??= {};
               for (const [id, t] of Object.entries(nodes)) { if (t) edits._titles[id] = String(t); else delete edits._titles[id]; }

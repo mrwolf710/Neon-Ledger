@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { EXAMINABLES, TALK, FALLBACK } from './story.js';
+import { EXAMINABLES, TALK, FALLBACK, conversationFor } from './story.js';
 
 // The beat manager: the cold open cutscene, the objective line / minimap mark, and the things you can interact with.
 // Beats 1-3 live here (Stage 9A); later beats add steps to STEPS and conversations to story.js.
@@ -17,6 +17,7 @@ export const BEATS = {
 
 export function createBeats({ world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, setExposure = () => {}, setVhs = () => {}, setCrt = () => {} }) {
   const timers = [], tweens = [];
+  const visits = {}; // how many times Juno has talked to each person (picks the conversation, see story.js VISITS)
   const flag = (n) => caseFile.hasFlag(n);
   let locked = false, focus = null, lastStep = '';
 
@@ -97,7 +98,7 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
         id: b.id, get area() { return b.area; }, position: b.position, height: b.id === 'miso' ? 0.8 : 2, verb: b.id === 'miso' ? 'Pet' : 'Talk',
         onInteract: () => {
           if (b.anim !== 'walk' && b.anim !== 'slump' && !b.follow) b.facing = Math.atan2(player.position.x - b.position.x, player.position.z - b.position.z);
-          dialogue.start(TALK[b.id] ?? FALLBACK).then(() => afterTalk(b));
+          dialogue.start(conversationFor(b.id, visits[b.id] = (visits[b.id] ?? 0) + 1)).then(() => afterTalk(b));
         },
       });
     }
