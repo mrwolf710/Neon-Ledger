@@ -36,9 +36,16 @@ export const ENTRIES = {
 // Which conversation each talkable thing starts. Missing ids fall back to FALLBACK.
 export const TALK = { mamaTeo: 'teo', vending: 'vending', miso: 'miso', vendor: 'vendor', preacher: 'preacher' };
 export const FALLBACK = 'nobody';
-// Which conversation plays on each visit, from the editor: VISITS[personId] = [1st, 2nd, 3rd, 4th and later]; '' = the normal one (TALK).
+// Rules from the editor: [{ conv, npc, when: 'all' | '1'..'4' (4 = the 4th visit on), fact?: a fact Juno must know, talked?: a person she must already have talked to }].
+// Ones with conditions are tried first; the first that fits wins, else the visit lists below, else the game's own TALK.
+export const RULES = EDITS._rules ?? [];
+// Which conversation plays on each visit, from the editor (older format): VISITS[personId] = [1st, 2nd, 3rd, 4th and later]; '' = the normal one (TALK).
 export const VISITS = EDITS._visits ?? {};
-export function conversationFor(personId, visit) {
+export function conversationFor(personId, visit, ctx = {}) {
+  const fits = (r) => r.npc === personId && (r.when === 'all' || (r.when === '4' ? visit >= 4 : +r.when === visit))
+    && (!r.fact || ctx.has?.(r.fact)) && (!r.talked || ctx.talked?.(r.talked));
+  const hit = RULES.filter((r) => r.fact || r.talked).find(fits) ?? RULES.filter((r) => !r.fact && !r.talked).find(fits);
+  if (hit) return hit.conv;
   const list = VISITS[personId];
   return (list && list[Math.min(visit, list.length) - 1]) || TALK[personId] || FALLBACK;
 }

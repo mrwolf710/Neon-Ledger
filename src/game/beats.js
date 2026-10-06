@@ -98,7 +98,7 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
         id: b.id, get area() { return b.area; }, position: b.position, height: b.id === 'miso' ? 0.8 : 2, verb: b.id === 'miso' ? 'Pet' : 'Talk',
         onInteract: () => {
           if (b.anim !== 'walk' && b.anim !== 'slump' && !b.follow) b.facing = Math.atan2(player.position.x - b.position.x, player.position.z - b.position.z);
-          dialogue.start(conversationFor(b.id, visits[b.id] = (visits[b.id] ?? 0) + 1)).then(() => afterTalk(b));
+          dialogue.start(conversationFor(b.id, visits[b.id] = (visits[b.id] ?? 0) + 1, { has: (f) => caseFile.has(f), talked: (p) => (visits[p] ?? 0) > 0 })).then(() => afterTalk(b));
         },
       });
     }

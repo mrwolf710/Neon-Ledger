@@ -29,6 +29,10 @@ const dialogueEditor = {
         try {
           const patch = JSON.parse(body), edits = JSON.parse(fs.readFileSync(EDITS, 'utf8'));
           for (const [conv, nodes] of Object.entries(patch)) {
+            if (conv === '_rules') { // [{ conv, npc, when: 'all' | '1'..'4', fact?, talked? }]: who says which conversation, on which visit, under which conditions
+              edits._rules = nodes.filter((r) => r && typeof r.conv === 'string' && typeof r.npc === 'string');
+              continue;
+            }
             if (conv === '_talk') { // { npcId: convId | null (back to the game's own) }: the conversation played every time
               edits._talk ??= {};
               for (const [npc, c] of Object.entries(nodes)) { if (c) edits._talk[npc] = c; else delete edits._talk[npc]; }

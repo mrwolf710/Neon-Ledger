@@ -1,9 +1,8 @@
-import { CONVERSATIONS, SPEAKERS, TALK } from '../game/story.js';
+import { CONVERSATIONS, SPEAKERS, TALK, ENTRIES } from '../game/story.js';
 import EDITS from '../game/dialogue-edits.json';
-const VISITS = EDITS._visits ?? {};
 const hearers = (e) => e.filter(([id]) => !['hale', 'unknown'].includes(id)); // people Juno can talk to
-const talkNow = () => { const t = { ...TALK }; for (const [n, c] of Object.entries(pending._talk ?? {})) { if (c) t[n] = c; } return t; };
-const visitList = (npc) => [0, 1, 2, 3].map((i) => pending._visits?.[npc]?.[i] ?? VISITS[npc]?.[i] ?? '');
+const rules = () => pending._rules ?? EDITS._rules ?? [];  // who says which conversation, on which visit, under which conditions
+const facts = Object.entries(ENTRIES).filter(([, e]) => e.kind === 'facts').map(([id, e]) => [id, e.title]);
 import SCENE_EDITS from '../world/scene-edits.json';
 import { SCENES, SCENE_KEYS } from '../world/scenes.js';
 
@@ -67,24 +66,26 @@ function dlgMain() {
     return out;
   });
   const nameBox = el('input', { value: titleOf(current) === current ? '' : titleOf(current), placeholder: current, style: 'font-size:18px;width:100%;max-width:420px', oninput: () => { (pending._titles ??= {})[current] = nameBox.value.trim() || null; changed(); } });
-  // Who says this, and on which visit.
-  const slot = (() => {
-    for (const [npc] of hearers(people)) { const i = visitList(npc).indexOf(current); if (i >= 0) return { npc, when: String(i + 1) }; }
-    for (const [npc, c] of Object.entries(talkNow())) if (c === current) return { npc, when: 'all' };
-    return { npc: '', when: 'all' };
-  })();
-  const assign = (npc, when) => {
-    for (const [n] of hearers(people)) { const l = visitList(n); if (l.includes(current)) { (pending._visits ??= {})[n] = l.map((c) => (c === current ? '' : c)); } }
-    for (const [n, c] of Object.entries(talkNow())) if (c === current && !(n === npc && when === 'all')) (pending._talk ??= {})[n] = null;
-    if (npc && when === 'all') (pending._talk ??= {})[npc] = current;
-    else if (npc) { const l = visitList(npc); l[+when - 1] = current; (pending._visits ??= {})[npc] = l; }
+  // Who says this, on which visit, and only when what has happened.
+  const rule = rules().find((r) => r.conv === current)
+    ?? (() => { const [npc] = Object.entries(TALK).find(([, c]) => c === current) ?? ['']; return { conv: current, npc, when: 'all' }; })();
+  const setRule = (patch) => {
+    const r = { ...rule, ...patch };
+    if (!r.fact) delete r.fact;
+    if (!r.talked) delete r.talked;
+    pending._rules = [...rules().filter((x) => x.conv !== current), ...(r.npc ? [r] : [])];
     changed(); dlgMain();
   };
-  const whoRow = el('div', { className: 'choice', style: 'margin-bottom:14px' }, el('span', {}, 'Plays when Juno talks to'),
-    select([['', 'Nobody (not used yet)'], ...hearers(people).map(([id, s]) => [id, s.name])], slot.npc, (v) => assign(v, v ? slot.when : 'all')),
-    el('span', {}, 'on'),
-    select([['all', 'every visit'], ['1', 'the 1st visit'], ['2', 'the 2nd visit'], ['3', 'the 3rd visit'], ['4', 'the 4th visit and after']], slot.when, (v) => assign(slot.npc, v)));
-  if (!slot.npc) whoRow.lastChild.disabled = true;
+  const dis = (sel) => { if (!rule.npc) sel.disabled = true; return sel; };
+  const whoRow = el('div', { style: 'margin-bottom:14px' },
+    el('div', { className: 'choice' }, el('span', {}, 'Plays when Juno talks to'),
+      select([['', 'Nobody (not used yet)'], ...hearers(people).map(([id, s]) => [id, s.name])], rule.npc, (v) => setRule({ npc: v })),
+      el('span', {}, 'on'),
+      dis(select([['all', 'every visit'], ['1', 'the 1st visit'], ['2', 'the 2nd visit'], ['3', 'the 3rd visit'], ['4', 'the 4th visit and after']], rule.when, (v) => setRule({ when: v })))),
+    el('div', { className: 'choice' }, el('span', {}, 'Only if Juno knows'),
+      dis(select([['', '(anything, no condition)'], ...facts], rule.fact ?? '', (v) => setRule({ fact: v })))),
+    el('div', { className: 'choice' }, el('span', {}, 'Only if Juno has already talked to'),
+      dis(select([['', '(anyone, no condition)'], ...hearers(people).map(([id, s]) => [id, s.name])], rule.talked ?? '', (v) => setRule({ talked: v })))));
   const top = [el('h1', {}, titleOf(current)), el('div', { className: 'sub' }, 'Name (shown in this list only; the game still uses the id ', el('code', {}, current), '):'), nameBox, whoRow, el('div', { className: 'sub' }, `${cards.length} boxes. They play top to bottom unless a "→" jumps elsewhere.`)];
   if (mine[current]) top.push(el('button', { className: 'danger', style: 'margin-bottom:12px', onclick: () => { ((pending._new ??= {})[current] = null); changed(); $('msg').textContent = 'Unsaved: this conversation will be deleted on save.'; } }, 'Delete this conversation'));
   $('main').replaceChildren(...top, ...cards);
@@ -112,8 +113,8 @@ function drawNew() {
       const id = def.name.trim().replace(/[^A-Za-z0-9_]/g, '_');
       const lines = def.lines.filter((l) => l.text.trim());
       if (!id || CONVERSATIONS[id] || !lines.length) { $('msg').textContent = 'Needs a unique name and at least one line.'; return; }
-      (pending._new ??= {})[id] = { with: def.with, active: def.when === undefined || def.when === 'all', lines: lines.map((l) => ({ speaker: l.speaker, text: l.text.trim() })) };
-      if (/^[1-4]$/.test(def.when ?? '')) { const l = visitList(def.with); l[+def.when - 1] = id; (pending._visits ??= {})[def.with] = l; } // plays on that visit only
+      (pending._new ??= {})[id] = { with: def.with, active: false, lines: lines.map((l) => ({ speaker: l.speaker, text: l.text.trim() })) };
+      if (def.when !== 'none') pending._rules = [...rules(), { conv: id, npc: def.with, when: def.when ?? 'all' }];
       changed(); $('msg').textContent = `"${id}" will be created when you save.`;
       $('save').click();
     } }, 'Create'));
