@@ -23,13 +23,16 @@ export function createCrtFrame(canvas) {
   canvas.style.position = 'relative'; canvas.style.zIndex = 1; // the glow copy sits under the canvas
   let k = 0;
   function apply() {
-    if (k <= 0) { img.style.display = glow.style.display = 'none'; canvas.style.transform = ''; return; }
+    if (k <= 0) { img.style.display = glow.style.display = 'none'; canvas.style.transform = canvas.style.clipPath = ''; return; }
     const vw = window.innerWidth, vh = window.innerHeight;
     const B = (C.screenFrac * vh) / C.body.h;      // monitor px per PNG px at k = 1
     const R = Math.max(vw / C.glass.w, vh / C.glass.h); // at k = 0 the glass is at least as big as the window
     const S = B * (R / B) ** (1 - k);               // geometric: a steady zoom
     const s = Math.min(1, Math.max(C.glass.w * S / vw, C.glass.h * S / vh)); // the picture always covers the glass (no bars), and is never larger than the window
     canvas.style.transform = `scale(${s})`;
+    // the picture can be wider than the glass: clip it to the glass (in the canvas's own pixels) so it never sticks out of the monitor
+    const ix = Math.max(0, (vw - C.glass.w * S / s) / 2), iy = Math.max(0, (vh - C.glass.h * S / s) / 2);
+    canvas.style.clipPath = `inset(${iy}px ${ix}px ${iy}px ${ix}px round ${0.06 * vh / s}px)`;
     img.style.display = glow.style.display = 'block';
     img.style.transform = glow.style.transform = `scale(${S}) translate(${C.size / 2 - C.glass.cx}px, ${C.size / 2 - C.glass.cy}px)`; // glass centre on the window centre
   }
