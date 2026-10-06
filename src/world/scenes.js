@@ -7,6 +7,8 @@ export const SCENES = {
 };
 
 export const SCENE_KEYS = [
+  { key: 'sunset', label: 'Red sunset strength (street, first minutes)', type: 'num', min: 0, max: 1, step: 0.05, def: 1 },
+  { key: 'sunsetSeconds', label: 'Red sunset fade-out time (seconds)', type: 'num', min: 10, max: 600, step: 10, def: 180 },
   { key: 'sky', label: 'Backdrop / sky colour', type: 'color', def: '#0b0b14' },
   { key: 'fog', label: 'Fog colour', type: 'color', def: '#1a1430' },
   { key: 'fogDensity', label: 'Fog thickness', type: 'num', min: 0, max: 0.1, step: 0.001, def: 0.03 },

@@ -167,20 +167,34 @@
       "id": "a2_2487",
       "speaker": "hale",
       "text": "I don't need a repeat of last time, Juno."
+    },
+    {
+      "conv": "hale_open",
+      "after": "a2_2487",
+      "id": "a2_2487_89358",
+      "speaker": "juno",
+      "text": "uh"
+    },
+    {
+      "conv": "hale_open",
+      "after": "a2_2487_89358",
+      "id": "a2_2487_89358_178",
+      "speaker": "hale",
+      "text": "Juno, you copy?"
     }
   ],
   "hale_open": {
     "a": {
-      "text": "Juno, welcome to Lowmarket.  I want you to go to the Sable Noodle House. An Echo broker's dead and his implant is fried."
+      "text": "Juno, welcome to Lowmarket.  I need you to go to a place called the Sable Noodle House. An Echo broker's dead and his implant is fried."
     },
     "a2": {
       "text": "Looks like a burnout. Just sign off on what you find and go home. Don't make this into more than it is."
     },
     "b": {
-      "text": "Copy that. Sorry, I'm a little out of it.  I think I lost another hour on that train."
+      "text": "Yeah, I copy. Sorry, chief, I'm a little out of it.  I think I lost another hour on that train."
     },
     "c": {
-      "text": "Everybody loses an hour on Line 9, Juno. Just get it done.  Hale out."
+      "text": "Everybody loses an hour on Line 9, Juno. Just get it done.  Hale, out."
     }
   }
 }

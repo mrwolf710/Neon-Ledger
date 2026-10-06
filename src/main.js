@@ -322,7 +322,7 @@ renderer.setAnimationLoop((now) => {
   // Sunset: starts when Juno first reaches the street, fades to the night mood over SUNSET.seconds.
   if (area.id === 'street' && sunsetT === null) sunsetT = 0;
   if (sunsetT !== null && !modal) sunsetT += dt;
-  tod.sunset = sunsetT === null ? 0 : (1 - Math.min(1, sunsetT / SUNSET.seconds)) ** 1.5;
+  tod.sunset = sunsetT === null ? 0 : (1 - Math.min(1, sunsetT / tod.sunsetSeconds)) ** 1.5;
   tod.update(dt);
   particles.update(dt, cam.target, cam.camera);
   cast.update(dt, cam.yaw, area.lights);

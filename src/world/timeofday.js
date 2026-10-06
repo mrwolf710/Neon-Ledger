@@ -69,7 +69,7 @@ export function createTimeOfDay({ scene, lights, post, particles, signs, rng }) 
   };
   let sunWas = 0;
   const sunsetMood = snapshot(SUNSET.mood);
-  const api = { name: 'night', indoor: false, sunset: 0 }; // sunset 0..1: how much of the red sunset is laid over the mood (outdoors only)
+  const api = { name: 'night', indoor: false, sunset: 0, sunsetScale: 1, sunsetSeconds: SUNSET.seconds }; // sunset 0..1: how much of the red sunset is laid over the mood (outdoors only)
 
   function apply(s, gradeToo) {
     scene.background.copy(s.sky).multiplyScalar(api.indoor ? INDOOR.sky : 1);
@@ -91,6 +91,7 @@ export function createTimeOfDay({ scene, lights, post, particles, signs, rng }) 
   api.setScene = (id) => {
     over = SCENE_EDITS[id] ?? {};
     lights.scale = over.lightScale ?? 1;
+    api.sunsetScale = over.sunset ?? 1; api.sunsetSeconds = over.sunsetSeconds ?? SUNSET.seconds;
     POST.bloom.strength = over.bloom ?? BASE.bloom;
     POST.tilt.maxBlur = over.tiltBlur ?? BASE.tilt;
     if (cur) apply(withOver(cur), true);
@@ -104,7 +105,7 @@ export function createTimeOfDay({ scene, lights, post, particles, signs, rng }) 
 
   api.update = (dt) => {
     time += dt;
-    const sun = api.indoor ? 0 : api.sunset;
+    const sun = api.indoor ? 0 : api.sunset * api.sunsetScale;
     if (t < 1) {
       t = dur > 0 ? Math.min(1, t + dt / dur) : 1;
       cur = blend(from, to, t);
