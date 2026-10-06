@@ -14,6 +14,14 @@ export const TUTORIALS = {
   },
 };
 
+TUTORIALS.camera = {
+  title: 'Look around',
+  lines: [
+    'Buildings can hide people and clues. Spin the camera to see around them.',
+    'Q / E rotate the view, or click and drag the mouse. On touch, drag on the right half of the screen or swipe with two fingers. Z / X zoom, R / V tilt, and C resets the view.',
+  ],
+};
+
 TUTORIALS.echo = {
   title: 'Reading an echo',
   lines: [

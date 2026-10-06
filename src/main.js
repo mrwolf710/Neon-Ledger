@@ -102,7 +102,7 @@ const beats = createBeats({ world, cast, caseFile, dialogue, hud, interactions, 
   setExposure: (v) => { renderer.toneMappingExposure = MAIN.exposure * v; }, setVhs: (a) => post.setVhs(a), setCrt: (a) => { post.setCrt(a); crtFrame.set(a); } });
 beats.setCamera(cam);
 beats.register();
-let phaseId = '', sunsetT = null;
+let phaseId = '', sunsetT = null, lastAreaId = null, cameFromSable = false;
 const startParam = new URLSearchParams(location.search).get('start'); // ?start=sable jumps straight to an area (testing)
 title.started.then(() => {
   if (startParam && world.areas[startParam]) {
@@ -219,7 +219,10 @@ renderer.setAnimationLoop((now) => {
   const menuWasOpen = menu.isOpen;
   menu.update(input);
   const tutWasOpen = tutorial.isOpen;
+  if (area.id !== lastAreaId) { cameFromSable = lastAreaId === 'sable' && area.id === 'street'; lastAreaId = area.id; }
   tutorial.update();
+  // First time Juno steps back out of the Sable: show how to spin the camera.
+  if (cameFromSable && !world.busy && !beats.locked && !dialogue.active && !tutorial.isOpen) { cameFromSable = false; if (!caseFile.hasFlag('tut_camera')) { caseFile.setFlag('tut_camera'); tutorial.open('camera'); } }
   // First time Juno holds 3 clues inside the Sable: explain the board.
   if (world.current.id === 'sable' && !dialogue.active && !tutorial.isOpen && !caseFile.hasFlag('tut_board') && caseFile.facts().length >= 3) { caseFile.setFlag('tut_board'); tutorial.open('board'); }
   if (echo.active && !tutorial.isOpen && !caseFile.hasFlag('tut_echo')) { caseFile.setFlag('tut_echo'); tutorial.open('echo'); } // first echo: explain it (the echo waits)
