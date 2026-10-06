@@ -8,7 +8,7 @@ Running summary for Claude sessions (keep under 60 lines).
 - src/gen: palette.js · textures.js · batch.js · buildings.js · glyphs.js · props.js · sprites.js · pixelfont.js
 - src/game: npc.js billboards + createCast · world.js · beats.js · player.js · interact.js prompts · clock.js · story.js (ALL story data) · dialogue.js · casefile.js · echo.js · board.js
 - src/audio: synth.js (AudioContext, buses, reverb, tone/noise helpers) · sfx.js · music.js (all synthesized; TUNING at the top of each)
-- src/ui: touch.js · title.js (title.started) · styles.css (panel frame, key caps, rem, safe-area) · hud.js (HUD + dialogue box) · fade.js (black fade, title card)
+- src/ui: menu.js (pause menu: Esc/pad Start/touch pause; sound, video quality + fullscreen, restart, quit; quality saved in localStorage nl.quality) · touch.js · title.js (title.started) · styles.css (panel frame, key caps, rem, safe-area) · hud.js (HUD + dialogue box) · fade.js (black fade, title card)
 - src/main.js builds everything + loop · src/debug/panel.js (` toggles; "go to" area select) · scripts/: check-*.mjs (node self-checks), where*.mjs (positions),
   drive.mjs = headless Edge on the BUILT game: `QS="?start=sable&hooks" LOAD_MS=20000 node scripts/drive.mjs "eval:__nl.cam.zoom(0.5)" wait:5000 shot:name` (?start=<area> skips the cold open, ?hooks exposes window.__nl: look(area,x,z) / lookSpot(area,name) / lookCast(id) stand Juno beside anything for a screenshot tour; CHECK EVERY NEW THING THIS WAY before calling it done)
 ## Key functions
@@ -34,7 +34,7 @@ Running summary for Claude sessions (keep under 60 lines).
   (or tap/Space two cards; arrows or D-pad move the cursor). Pure rules in `createBoardLogic(data, hasFact)` -> link(a,b) = {kind same|wrong|partial|solved, line, hint}.
   `createDialogue({hud, caseFile, clock})` -> { active, start(convId), end, update(dt, input), onChar(char, speakerId) } (voice blips hook, Stage 8).
 - Audio: `synth.start()` runs inside the title tap (createTitle(onStart)); before that every call is a no-op. Volumes music/sfx saved in localStorage
-  (debug sliders; a real settings menu comes with the pause menu, 9C); M toggles music. `createSfx(synth)` -> { update(dt, {player, yaw, rainScale, signs}),
+  (debug sliders and the pause menu); M toggles music. `createSfx(synth)` -> { update(dt, {player, yaw, rainScale, signs}),
   step(surface, pos, run), crackle(pos), ui(kind: move|confirm|back|case|linkOk|linkWrong|echoOn|echoOff|glitch), voice(ch, speakerId) }; rain (louder
   patter under awnings), neon hum on the 3 nearest signs, train + doppler every 40-75 s (sound only); setEcho(on) ducks the ambient bus and swells a low rumble. `createMusic(synth)` -> { setMood(street|scene|echo|
   board|silent, fade), addLink(), mood }; main picks echo/board/street. Hooks: dialogue.onChar/onUi, caseFile.onAdd/onUi, board.onLock/onWrong/onUi,

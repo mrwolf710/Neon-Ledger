@@ -21,6 +21,7 @@ import { synth } from './audio/synth.js';
 import { createSfx, surfaceAt } from './audio/sfx.js';
 import { createMusic } from './audio/music.js';
 import { createTitle } from './ui/title.js';
+import { createMenu } from './ui/menu.js';
 import { createPlayer } from './game/player.js';
 import { createInteractions, INTERACT } from './game/interact.js';
 import { settings, TIERS } from './core/settings.js';
@@ -76,6 +77,7 @@ const touchUI = createTouchUI(input);
 const title = createTitle(() => synth.start());
 const sfx = createSfx(synth), music = createMusic(synth);
 const hud = createHud(world.current.collision);
+const menu = createMenu({ synth });
 const clock = createClock();
 const caseFile = createCaseFile(hud, clock);
 const dialogue = createDialogue({ hud, caseFile, clock });
@@ -134,7 +136,7 @@ tod.onFlicker = (i) => sfx.crackle(street.signs[i].light.position);
 
 // ?hooks exposes the game objects for the headless test driver (scripts/drive.mjs eval: steps).
 if (new URLSearchParams(location.search).has('hooks')) {
-  const nl = window.__nl = { sfx, synth, cam, world, player, beats, caseFile, dialogue, cast, echo, hud, clock, board, THREE };
+  const nl = window.__nl = { menu, sfx, synth, cam, world, player, beats, caseFile, dialogue, cast, echo, hud, clock, board, THREE };
   // Visual tour helpers: stand the player d units from a point (camera side) in any area, as in play, so the cutaway applies.
   nl.look = (areaId, x, z, d = 1.8) => {
     const b = world.areas[areaId].bounds, dx = (b.x0 + b.x1) / 2 - x, dz = (b.z0 + b.z1) / 2 - z, len = Math.hypot(dx, dz) || 1;
@@ -198,8 +200,11 @@ renderer.setAnimationLoop((now) => {
   touchUI.update();
   const scrubAxis = input.moveX; // echo mode scrubs with the move axis
   // Title, cutscene, area change, conversation, case file, echo or board: the world waits for the player.
-  const modal = !title.done || beats.locked || world.busy || dialogue.active || caseFile.isOpen || echo.active || board.isOpen;
+  const menuWasOpen = menu.isOpen;
+  menu.update(input);
+  const modal = !title.done || beats.locked || world.busy || dialogue.active || caseFile.isOpen || echo.active || board.isOpen || menu.isOpen || menuWasOpen;
   if (modal) { input.click = null; input.moveX = input.moveY = 0; }
+  if (!menuWasOpen && title.done && !beats.locked && !world.busy && !dialogue.active && !caseFile.isOpen && !echo.active && !board.isOpen && input.pressed('pause')) menu.open();
   cam.tilt((input.held('tiltDown') ? 1 : 0) - (input.held('tiltUp') ? 1 : 0), dt);
 
   // Click: a person/object walks there then interacts; the ground walks there.

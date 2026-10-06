@@ -6,9 +6,12 @@ export const TIERS = {
   mobile: { name: 'Mobile', pixelRatio: 1.5,   bloomScale: 0.25, maxLights: 12, shadowMap: 1024, rainCount: 1200, ssr: false },
 };
 
+export const QUALITY_KEY = 'nl.quality'; // set by the pause menu
+
 function detectTier() {
   const forced = new URLSearchParams(location.search).get('quality');
   if (forced && TIERS[forced]) return forced;
+  try { const saved = localStorage.getItem(QUALITY_KEY); if (saved && TIERS[saved]) return saved; } catch { /* private mode */ }
   const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const touchOnly = matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches;
   return ios || touchOnly ? 'mobile' : 'high';

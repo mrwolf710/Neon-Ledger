@@ -193,3 +193,16 @@ body.echo #hud .right, body.echo #hud .banner, body.echo #hud .controls, body.ec
 #hud .objective { position: absolute; left: calc(1rem + var(--safe-l)); top: calc(5rem + var(--safe-t)); padding: 0.35rem 0.9rem;
   font: 600 0.95rem/1.2 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: #ff9b9b; }
 body.echo #hud .objective { display: none !important; }
+
+/* Pause menu */
+#menu { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(4, 2, 14, 0.72); font-family: var(--body); color: var(--text); }
+#menu.on { display: flex; }
+#menu .menubox { width: min(30rem, 90vw); padding: 1.2rem 1.6rem 1.4rem; }
+@media (max-height: 460px) { #menu .menubox { padding: 0.6rem 1rem; } #menu .menutitle { font-size: 1.3rem; margin: 0; } #menu .menuhead { margin: 0.3rem 0 0; } #menu .menurow { padding: 0.15rem 0.6rem; font-size: 1rem; } }
+#menu .menutitle { font-size: 1.8rem; color: #fff; margin-bottom: 0.6rem; }
+#menu .menuhead { margin: 0.9rem 0 0.25rem; font: 700 0.95rem var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--cyan); }
+#menu .menurow { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.45rem 0.8rem; font-size: 1.15rem; cursor: pointer; border: 1px solid transparent; }
+#menu .menurow.sel { border-color: var(--magenta); background: rgba(224, 33, 125, 0.22); color: #fff; }
+#menu .menuval { display: flex; align-items: center; gap: 0.7rem; }
+#menu .menuval i { font-style: normal; min-width: 3.2rem; text-align: center; color: var(--pink); }
+#menu .menuval b { padding: 0 0.4rem; color: var(--cyan); cursor: pointer; }
