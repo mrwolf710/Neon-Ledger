@@ -1,5 +1,7 @@
 import { CONVERSATIONS, SPEAKERS, TALK } from '../game/story.js';
 import EDITS from '../game/dialogue-edits.json';
+import SCENE_EDITS from '../world/scene-edits.json';
+import { SCENES, SCENE_KEYS } from '../world/scenes.js';
 
 // Dev tool (open /editor.html on the dev server). The list is built from CONVERSATIONS, so every conversation added to story.js shows up by itself.
 // Edits text, speaker and choice labels; "New conversation" adds one of your own (who Juno talks to + what each side says).
@@ -18,7 +20,7 @@ const changed = () => { $('save').disabled = false; $('msg').textContent = 'Unsa
 const touch = (conv, node, fn) => { fn(((pending[conv] ??= {})[node] ??= {})); changed(); };
 const select = (opts, value, onchange) => el('select', { onchange: (e) => onchange(e.target.value) }, ...opts.map(([id, label]) => el('option', { value: id, selected: id === value }, label)));
 
-function drawList() {
+function dlgList() {
   const q = $('q').value.trim().toLowerCase();
   $('items').replaceChildren(...Object.entries(CONVERSATIONS)
     .filter(([id, c]) => !q || id.includes(q) || Object.values(c.nodes).some((n) => (n.text ?? '').toLowerCase().includes(q) || (n.choices ?? []).some((ch) => ch.text.toLowerCase().includes(q))))
@@ -26,7 +28,7 @@ function drawList() {
       el('b', {}, id), el('small', {}, preview(c)))));
 }
 
-function drawMain() {
+function dlgMain() {
   const conv = CONVERSATIONS[current];
   if (!conv) return;
   const q = $('q').value.trim().toLowerCase();
@@ -93,14 +95,53 @@ function drawNew() {
   $('main').replaceChildren(form);
 }
 
+// ---- Scenes: lighting and look per scene (saved to src/world/scene-edits.json) ----
+const pendingScene = {}; // { area: { key: value | null (reset to the game's own) } }
+let mode = 'conv', scene = Object.keys(SCENES)[0];
+const sceneValue = (area, key) => (pendingScene[area] && key in pendingScene[area] ? pendingScene[area][key] : SCENE_EDITS[area]?.[key] ?? null);
+const setScene = (area, key, v) => { (pendingScene[area] ??= {})[key] = v; changed(); };
+
+function sceneList() {
+  $('items').replaceChildren(...Object.entries(SCENES).map(([id, name]) => el('a', { className: id === scene ? 'on' : '', onclick: () => { scene = id; drawList(); drawMain(); } },
+    el('b', {}, name), el('small', {}, Object.keys({ ...SCENE_EDITS[id], ...pendingScene[id] }).length ? 'custom settings' : 'game defaults'))));
+}
+function sceneMain() {
+  const rows = SCENE_KEYS.map((k) => {
+    const v = sceneValue(scene, k.key), cur = v ?? k.def;
+    const row = el('div', { className: 'node' + (pendingScene[scene]?.[k.key] !== undefined ? ' dirty' : '') });
+    const tag = el('span', { className: 'flow' }, v === null ? 'game default' : 'custom');
+    let ctl;
+    if (k.type === 'color') ctl = el('input', { type: 'color', value: cur, oninput: () => { setScene(scene, k.key, ctl.value); tag.textContent = 'custom'; row.classList.add('dirty'); } });
+    else if (k.type === 'num') {
+      const num = el('input', { type: 'number', min: k.min, max: k.max, step: k.step, value: cur, style: 'width:90px' });
+      const rng = el('input', { type: 'range', min: k.min, max: k.max, step: k.step, value: cur, style: 'flex:1' });
+      const go = (src) => { num.value = rng.value = src.value; setScene(scene, k.key, +src.value); tag.textContent = 'custom'; row.classList.add('dirty'); };
+      num.oninput = () => go(num); rng.oninput = () => go(rng);
+      ctl = el('div', { className: 'choice' }, rng, num);
+    } else {
+      const ins = cur.map((x, i) => el('input', { type: 'number', min: k.min, max: k.max, step: k.step, value: x, style: 'width:90px', oninput: () => { setScene(scene, k.key, ins.map((n) => +n.value)); tag.textContent = 'custom'; row.classList.add('dirty'); } }));
+      ctl = el('div', { className: 'choice' }, ...ins);
+    }
+    const reset = el('button', { className: 'ghost', style: 'margin-left:8px', onclick: () => { setScene(scene, k.key, null); sceneMain(); } }, 'Reset');
+    row.append(el('div', { className: 'head' }, el('b', {}, k.label), tag, reset), ctl);
+    return row;
+  });
+  $('main').replaceChildren(el('h1', {}, SCENES[scene]), el('div', { className: 'sub' }, 'Changes apply while Juno is in this scene. "Reset" goes back to the default value. Numbers shown for unset rows are the usual night values.'), ...rows);
+}
+const drawList = () => (mode === 'conv' ? dlgList() : sceneList());
+const drawMain = () => (mode === 'conv' ? dlgMain() : sceneMain());
+const setMode = (m) => { mode = m; $('tab-conv').className = m === 'conv' ? '' : 'ghost'; $('tab-scene').className = m === 'scene' ? '' : 'ghost'; $('new').style.display = $('q').style.display = m === 'conv' ? '' : 'none'; drawList(); drawMain(); };
+$('tab-conv').onclick = () => setMode('conv'); $('tab-scene').onclick = () => setMode('scene');
+
 $('q').oninput = () => { drawList(); drawMain(); };
 $('new').onclick = drawNew;
 $('save').onclick = async () => {
   $('save').disabled = true; $('msg').textContent = 'Saving...';
-  const r = await fetch('/__dialogue-edits', { method: 'POST', body: JSON.stringify(pending) });
+  const post = (url, body) => (Object.keys(body).length ? fetch(url, { method: 'POST', body: JSON.stringify(body) }) : { ok: true });
+  const r1 = await post('/__dialogue-edits', pending), r = r1.ok ? await post('/__scene-edits', pendingScene) : r1;
   $('msg').textContent = r.ok ? 'Saved. Reloading...' : `Save failed: ${await r.text()}`;
-  if (r.ok) { for (const k of Object.keys(pending)) delete pending[k]; } else $('save').disabled = false;
+  if (r.ok) { for (const o of [pending, pendingScene]) for (const k of Object.keys(o)) delete o[k]; } else $('save').disabled = false;
 };
-window.addEventListener('beforeunload', (e) => { if (Object.keys(pending).length) e.preventDefault(); });
+window.addEventListener('beforeunload', (e) => { if (Object.keys(pending).length || Object.keys(pendingScene).length) e.preventDefault(); });
 if (!CONVERSATIONS[current]) current = Object.keys(CONVERSATIONS)[0];
 drawList(); drawMain();

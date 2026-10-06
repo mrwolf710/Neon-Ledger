@@ -4,9 +4,23 @@ import path from 'node:path';
 // es2022 so main.js can await the loading of Juno's art at startup (Safari 15+ and every current browser).
 // Dev only: /editor.html posts dialogue changes to /__dialogue-edits, merged into src/game/dialogue-edits.json (story.js lays them over its own text).
 const EDITS = path.resolve('src/game/dialogue-edits.json');
+const SCENES = path.resolve('src/world/scene-edits.json');
 const dialogueEditor = {
   name: 'dialogue-editor',
   configureServer(server) {
+    server.middlewares.use('/__scene-edits', (req, res) => { // { area: { key: value | null (reset) } }
+      if (req.method !== 'POST') { res.statusCode = 405; return res.end(); }
+      let body = '';
+      req.on('data', (c) => { body += c; });
+      req.on('end', () => {
+        try {
+          const patch = JSON.parse(body), all = JSON.parse(fs.readFileSync(SCENES, 'utf8'));
+          for (const [area, keys] of Object.entries(patch)) for (const [k, v] of Object.entries(keys)) { if (v === null) delete (all[area] ??= {})[k]; else (all[area] ??= {})[k] = v; }
+          fs.writeFileSync(SCENES, JSON.stringify(all, null, 2) + '\n');
+          res.end('ok');
+        } catch (e) { res.statusCode = 400; res.end(String(e)); }
+      });
+    });
     server.middlewares.use('/__dialogue-edits', (req, res) => {
       if (req.method !== 'POST') { res.statusCode = 405; return res.end(); }
       let body = '';

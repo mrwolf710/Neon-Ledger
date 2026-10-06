@@ -31,8 +31,8 @@ export function createLights(scene, maxLights, shadowMapSize) {
   const registered = []; // { position: Vector3, color, intensity }
   let timer = 0;
 
-  return {
-    moon, hemi,
+  const api = {
+    moon, hemi, scale: 1, // scale: strength of the lamp / sign pool (per-scene setting)
     register(list) { registered.push(...list); timer = 0; },
     // Keep the moon's shadow box over whatever the camera looks at.
     focus(p) {
@@ -51,7 +51,8 @@ export function createLights(scene, maxLights, shadowMapSize) {
           if (near[i]) { p.position.copy(near[i].position); p.color.setHex(near[i].color); }
         });
       }
-      for (const p of pool) p.intensity = p.userData.src ? p.userData.src.intensity : 0;
+      for (const p of pool) p.intensity = p.userData.src ? p.userData.src.intensity * api.scale : 0;
     },
   };
+  return api;
 }

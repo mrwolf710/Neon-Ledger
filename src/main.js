@@ -125,6 +125,7 @@ function onAreaEnter(area, spawn) {
   cast.setArea(area.id); interactions.setArea(area.id); echo.setArea(area.id);
   particles.active = area.meta.outdoor;
   tod.setIndoor(!area.meta.outdoor);
+  tod.setScene(area.id);
   particles.center.x = area.meta.origin[0]; particles.center.z = area.meta.origin[1];
   if (spawn) {
     player.position.set(spawn[0], 0, spawn[1]);

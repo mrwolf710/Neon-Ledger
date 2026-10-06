@@ -49,7 +49,7 @@
   <body>
     <header><h1>Neon Editor</h1><span>Neon Echoes dialogue</span></header>
     <div class="wrap">
-    <div id="list"><button id="new" style="width:100%;margin-bottom:10px">+ New conversation</button><input id="q" placeholder="Search all dialogue..." /><div id="items"></div></div>
+    <div id="list"><div style="display:flex;gap:6px;margin-bottom:10px"><button id="tab-conv" style="flex:1">Dialogue</button><button id="tab-scene" class="ghost" style="flex:1">Scenes</button></div><button id="new" style="width:100%;margin-bottom:10px">+ New conversation</button><input id="q" placeholder="Search all dialogue..." /><div id="items"></div></div>
     <div id="main"></div>
     </div>
     <div id="bar"><button id="save" disabled>Save changes</button><span id="msg">Run the game with npm run dev. Saving rewrites src/game/dialogue-edits.json and reloads this page.</span></div>

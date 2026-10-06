@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { POST } from '../render/post.js';
 import { BUILDINGS } from '../gen/buildings.js';
+import SCENE_EDITS from './scene-edits.json' with { type: 'json' };
 
 // Lighting moods. Colours are 0xRRGGBB; grade arrays are RGB. signs = sign brightness, flicker = chance a sign
 // blinks off per step, dead = fraction of signs fully off, rain = fraction of rain drops shown.
@@ -57,7 +58,15 @@ function blend(a, b, t) {
 // signs: district userData.signs ({ mat, light }). Blends all values over `seconds` in setTimeOfDay.
 export function createTimeOfDay({ scene, lights, post, particles, signs, rng }) {
   const per = signs.map(() => ({ rate: rng.range(...FLICKER.rate), weak: rng.rand() }));
-  let from, to, cur, t = 1, dur = 0, time = 0;
+  let from, to, cur, t = 1, dur = 0, time = 0, over = {};
+  const BASE = { bloom: POST.bloom.strength, tilt: POST.tilt.maxBlur };
+  // The scene's own settings (scene-edits.json, made in the Neon Editor) replace the mood's values.
+  const withOver = (s) => {
+    if (!Object.keys(over).length) return s;
+    const r = { ...s };
+    for (const k in over) if (k in s) r[k] = COLORS.includes(k) ? new THREE.Color(over[k]) : over[k];
+    return r;
+  };
   let sunWas = 0;
   const sunsetMood = snapshot(SUNSET.mood);
   const api = { name: 'night', indoor: false, sunset: 0 }; // sunset 0..1: how much of the red sunset is laid over the mood (outdoors only)
@@ -78,7 +87,14 @@ export function createTimeOfDay({ scene, lights, post, particles, signs, rng }) 
   }
 
   // Rooms get a darker backdrop and a brighter fill than the open street.
-  api.setIndoor = (on) => { api.indoor = on; if (cur) apply(cur, false); };
+  api.setIndoor = (on) => { api.indoor = on; if (cur) apply(withOver(cur), false); };
+  api.setScene = (id) => {
+    over = SCENE_EDITS[id] ?? {};
+    lights.scale = over.lightScale ?? 1;
+    POST.bloom.strength = over.bloom ?? BASE.bloom;
+    POST.tilt.maxBlur = over.tiltBlur ?? BASE.tilt;
+    if (cur) apply(withOver(cur), true);
+  };
   api.setTimeOfDay = (name, seconds = 0) => {
     api.name = name;
     from = cur ?? snapshot(TIME_OF_DAY[name]);
@@ -93,7 +109,7 @@ export function createTimeOfDay({ scene, lights, post, particles, signs, rng }) 
       t = dur > 0 ? Math.min(1, t + dt / dur) : 1;
       cur = blend(from, to, t);
     }
-    if (t < 1 || sun > 0 || sunWas > 0) apply(sun > 0 ? blend(cur, sunsetMood, sun) : cur, true); // grade is only written while blending, so debug sliders stick afterwards
+    if (t < 1 || sun > 0 || sunWas > 0) apply(sun > 0 ? blend(withOver(cur), sunsetMood, sun) : withOver(cur), true); // grade is only written while blending, so debug sliders stick afterwards
     sunWas = sun;
     signs.forEach((sg, i) => {
       const p = per[i];
