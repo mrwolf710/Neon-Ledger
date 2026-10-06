@@ -7,7 +7,7 @@ import { drawText, measure } from '../gen/pixelfont.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 // Fake monitor: brand plate (top right) and knobs / buttons (bottom), sizes as fractions of the screen height.
-export const MONITOR = { brand: 'MANGAVOX', brandScale: 0.0055, brandPad: 0.03, knobR: 0.019, knobX: [0.055, 0.125], buttonW: 0.028, buttonH: 0.014, buttonX: [0.075, 0.115, 0.155, 0.195], ledX: 0.21 };
+export const MONITOR = { brand: 'MANGAVOX', brandScale: 0.0045, brandPad: 0.02, side: 0.09, bottom: 0.2 }; // fake TV housing, as fractions of the screen height
 function brandTexture() {
   const cv = Object.assign(document.createElement('canvas'), { width: measure(MONITOR.brand), height: 5 });
   drawText(cv.getContext('2d'), MONITOR.brand, 0, 0, '#ffffff');
@@ -65,35 +65,47 @@ const Grade = {
       vec2 uv = vUv;
       float edge = 0.0;
       if (crt > 0.0) { // playing inside a CRT monitor: the picture is shrunk, bulged, rounded and framed by a black bezel
-        vec2 p = (vUv - 0.5) * (1.0 + crt * 0.18);
+        vec2 p = (vUv - 0.5 - vec2(0.0, 0.055 * crt)) * (1.0 + crt * 0.28);
         p *= 1.0 + crt * 0.5 * dot(p, p);
         uv = p + 0.5;
         vec2 q = abs(p);
         edge = max(q.x, q.y);
         float d = max(edge - 0.5, length(max(q - 0.43, 0.0)) - 0.07); // > 0 outside the glass
-        if (d > 0.0) { // fake beige plastic bezel: recessed lip, soft bevel lit from the top left, grain, dark room beyond it
-          vec2 bp = (vUv - 0.5) * (1.0 + crt * 0.18);
-          vec3 col = vec3(0.74, 0.69, 0.58) * (0.62 + 0.1 * (bp.x * -1.0 + bp.y) * 2.0);
-          col = mix(vec3(0.12, 0.1, 0.08), col, smoothstep(0.0, 0.035, d));              // shadow in the recess around the glass
-          col += (hash(vUv * 900.0) - 0.5) * 0.04;                                       // plastic grain
-          vec2 cp = bp / (1.0 + crt * 0.18) * res;                                       // pixels from the screen centre (y up)
-          float H = res.y, gx = 0.5 / (1.0 + crt * 0.125) / (1.0 + crt * 0.18) * res.x, gy = 0.5 / (1.0 + crt * 0.125) / (1.0 + crt * 0.18) * res.y;
-          float by = -(gy + 0.05 * H);                                                   // bottom strip centre line
-          for (int i = 0; i < 2; i++) { // knobs: dark ring, light cap, a tick
-            vec2 k = cp - vec2(-gx + (i == 0 ? ${M.knobX[0]} : ${M.knobX[1]}) * H, by);
-            float r = length(k) / (${M.knobR} * H);
-            if (r < 1.0) col = r > 0.78 ? vec3(0.12, 0.1, 0.08) : mix(vec3(0.3, 0.27, 0.22), vec3(0.42, 0.38, 0.31), step(0.0, k.x + k.y));
-            if (r < 0.78 && abs(k.x * (i == 0 ? 0.6 : -0.3) - k.y * 0.8) < 0.003 * H && k.y > 0.0) col = vec3(0.1);
+        if (d > 0.0) { // dark pixel-art TV housing in nested frames with teal edge lines, a control panel underneath and a green glow around it
+          vec2 bp = (vUv - 0.5 - vec2(0.0, 0.055 * crt)) * (1.0 + crt * 0.28);
+          vec2 cp = bp / (1.0 + crt * 0.28) * res;                                       // pixels from the screen centre (y up)
+          float H = res.y, f = 0.5 / (1.0 + crt * 0.125) / (1.0 + crt * 0.28), gx = f * res.x, gy = f * res.y;
+          float dx = abs(cp.x) - gx, dyT = cp.y - gy, dyB = -cp.y - gy;
+          bool low = cp.y < 0.0;
+          float t = max(dx, low ? min(dyB, 0.06 * H) : dyT) / H;                         // distance from the glass, in screen heights
+          float o = max(dx / H - ${M.side}, low ? dyB / H - ${M.bottom} : dyT / H - ${M.side}); // > 0 outside the case
+          vec3 col;
+          if (o > 0.0) { // green halo, blocky like the pixel art
+            float h = exp(-o / 0.12) * (0.85 + 0.15 * hash(floor(cp / (0.008 * H))));
+            col = vec3(0.01, 0.02, 0.03) + vec3(0.02, 0.5, 0.32) * (floor(h * 7.0) / 7.0) * 0.6;
+          } else {
+            col = vec3(0.035, 0.07, 0.08) * (1.0 + 0.25 * step(0.0, -bp.x - bp.y));
+            if (t < 0.018) col = vec3(0.005, 0.02, 0.02);
+            else if (t < 0.023) col = vec3(0.08, 0.4, 0.36);
+            else if (t > 0.05 && t < 0.055) col = vec3(0.06, 0.26, 0.24);
+            if (low && dyB / H > 0.06) { // control panel
+              vec2 pp = vec2(cp.x, -cp.y - gy - 0.13 * H);
+              col = vec3(0.04, 0.075, 0.085);
+              if (dyB / H < 0.065) col = vec3(0.08, 0.4, 0.36);
+              vec2 gr = abs(pp - vec2(-gx + 0.12 * H, 0.0)) / (vec2(0.1, 0.035) * H);       // speaker grille
+              if (max(gr.x, gr.y) < 1.0) col = (mod(floor(cp.x / (0.007 * H)) + floor(cp.y / (0.007 * H)), 2.0) < 1.0) ? vec3(0.1, 0.2, 0.22) : vec3(0.02, 0.04, 0.05);
+              vec2 dp = abs(pp) / (vec2(0.1, 0.025) * H);                                   // red display
+              if (max(dp.x, dp.y) < 1.0) col = (max(dp.x, dp.y) > 0.85) ? vec3(0.1, 0.25, 0.25) : (mod(floor(cp.x / (0.006 * H)), 5.0) < 3.0 && abs(pp.y) < 0.006 * H) ? vec3(0.95, 0.12, 0.1) : vec3(0.12, 0.01, 0.02);
+              float pr = length(pp - vec2(gx - 0.13 * H, 0.0)) / (0.022 * H);                // green power button
+              if (pr < 1.0) col = pr > 0.75 ? vec3(0.08, 0.45, 0.4) : vec3(0.15, 0.85, 0.55);
+              float kr = length(pp - vec2(gx - 0.06 * H, 0.0)) / (0.017 * H);               // knob
+              if (kr < 1.0) col = kr > 0.75 ? vec3(0.07, 0.3, 0.28) : vec3(0.02, 0.04, 0.05);
+              for (int i = 0; i < 2; i++) if (length(pp - vec2(-gx + 0.03 * H, (float(i) - 0.5) * 0.03 * H)) < 0.006 * H) col = vec3(0.1, 0.8, 0.9); // status dots
+            }
+            if (o > -0.004) col = vec3(0.08, 0.35, 0.3);                                // outer teal edge line
+            vec2 bt = vec2(cp.x - (gx - ${M.brandPad} * H - brandSize.x * ${M.brandScale} * H), (gy + 0.0725 * H + 2.5 * ${M.brandScale} * H) - cp.y) / (${M.brandScale} * H); // brand text, in text pixels
+            if (!low && bt.x >= 0.0 && bt.x < brandSize.x && bt.y >= 0.0 && bt.y < 5.0 && texture2D(brand, vec2(bt.x / brandSize.x, 1.0 - bt.y / 5.0)).a > 0.5) col = vec3(0.2, 0.75, 0.6);
           }
-          for (int i = 0; i < 4; i++) { // push buttons
-            vec2 b = abs(cp - vec2(gx - (0.05 + float(3 - i) * 0.04) * H, by)) / (vec2(${M.buttonW}, ${M.buttonH}) * H);
-            if (max(b.x, b.y) < 1.0) col = max(b.x, b.y) > 0.8 ? vec3(0.2, 0.18, 0.14) : vec3(0.55, 0.51, 0.42) * (1.0 - 0.15 * step(0.0, b.y - 0.5));
-          }
-          if (length(cp - vec2(gx - ${M.ledX} * H, by)) < 0.006 * H) col = vec3(0.9, 0.12, 0.08); // power LED
-          vec2 bt = vec2(cp.x - (gx - ${M.brandPad} * H - brandSize.x * ${M.brandScale} * H), (gy + 0.05 * H + 2.5 * ${M.brandScale} * H) - cp.y) / (${M.brandScale} * H); // brand text, in text pixels
-          if (bt.x >= 0.0 && bt.x < brandSize.x && bt.y >= 0.0 && bt.y < 5.0 && texture2D(brand, vec2(bt.x / brandSize.x, 1.0 - bt.y / 5.0)).a > 0.5) col = vec3(0.2, 0.18, 0.15);
-          vec2 px = (abs(bp) - 0.5 / (1.0 + crt * 0.125)) / (1.0 + crt * 0.18) * res;       // pixels beyond the glass edge
-          if (max(px.x, px.y) > 0.1 * res.y) col = vec3(0.0);                              // plain rectangle about an inch wide, black beyond it
           gl_FragColor = vec4(col, 1.0); return;
         }
       }
@@ -129,7 +141,7 @@ const Grade = {
         c *= 1.0 - crt * 0.35 * (0.5 + 0.5 * sin(gl_FragCoord.y * 2.4));                              // CRT scan lines
         c *= 1.0 - crt * 0.12 * step(1.5, mod(gl_FragCoord.x, 3.0));                                    // phosphor mask
         c *= 1.0 - crt * 0.7 * smoothstep(0.3, 0.52, edge);                                             // vignette toward the glass edge
-        c += vec3(0.0, 0.03, 0.04) * crt;                                                               // faint glass glow
+        c = mix(c, c * vec3(0.8, 1.0, 0.9) + vec3(0.0, 0.04, 0.03), crt);                                                               // faint glass glow
         c *= 1.0 + crt * 0.04 * sin(time * 110.0);                                                      // mains flicker
       }
       c += (hash(vUv * 1000.0 + time) - 0.5) * grain;
