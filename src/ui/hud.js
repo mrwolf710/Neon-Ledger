@@ -38,7 +38,7 @@ function drawPortrait(cv, id, name, color) {
   const sh = getSheets()[id];
   if (!sh) { g.fillStyle = color; g.font = `bold ${cv.height * 0.6}px monospace`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(name[0], cv.width / 2, cv.height / 2 + 2); return; }
   const eight = sh.dirs === 8, row = eight ? sh.animRows.idle.south : sh.rows.down, W = sh.frameW, H = sh.frameH;
-  const ch = sh.frameH > 20 ? Math.round(H * PORTRAIT.headFrac) : H; // cats are shown whole
+  const ch = sh.frameH > 20 && !sh.small ? Math.round(H * PORTRAIT.headFrac) : H; // cats are shown whole
   const px = sh.canvas.getContext('2d').getImageData(0, row * H, W, ch).data;
   let x0 = W, x1 = -1, y0 = ch, y1 = -1;
   for (let y = 0; y < ch; y++) for (let x = 0; x < W; x++) if (px[(y * W + x) * 4 + 3] > 8) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
