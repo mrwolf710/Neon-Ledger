@@ -28,7 +28,7 @@ export const CAST = [
   { id: 'vendor', area: 'street', at: [7.2, -4.2], facing: 0 }, // north sidewalk, camera side of the street is the south; she stays visible without rotating
   { id: 'preacher', area: 'street', at: [-9.5, -2.2], facing: Math.PI / 2, ghost: true },
   { id: 'kit', area: 'hostel', at: 'kit' },
-  { id: 'miso', area: 'street', at: [0.5, 3.6], facing: -0.8 },
+  { id: 'miso', area: 'street', at: [12.4, 2.4], facing: 2.2 }, // right at the foot of the station stairs (spawn 13.8, 1.3): the first character Juno sees
 ];
 
 // Named areas for the location banner; the last matching zone wins. box: [x0, z0, x1, z1].

@@ -91,8 +91,16 @@ export const CONVERSATIONS = {
   // Mama Teo. The chain: she locked the back door at close and later heard it unlock with no knock (fact door_unlocked).
   // Together with the echo's two voices that proves a second person let themselves in with a key (board).
   teo: {
-    start: [{ if: { flag: 'teo_cracked' }, node: 'after' }, { if: { flag: 'teo_met' }, node: 'again' }, { node: 'hello' }],
+    start: [{ if: { flag: 'teo_cracked' }, node: 'after' },
+      { if: { flag: 'miso_joined', notFlag: 'teo_met' }, node: 'feed' },        // Miso came along: Teo feeds him before she talks to Juno
+      { if: { flag: 'miso_joined', notFlag: 'teo_fed_miso' }, node: 'feedLate' },
+      { if: { flag: 'teo_met' }, node: 'again' }, { node: 'hello' }],
     nodes: {
+      feed: { speaker: 'mamaTeo', text: 'A stray in my shop, dripping on my floor. Hm. Come here, little one.', next: 'feed2' },
+      feed2: { speaker: 'mamaTeo', text: "Fish heads from the pot. Eat. Nobody goes hungry in here, not even the ones who bring no money.", effects: [{ setFlag: 'teo_fed_miso' }], next: 'feed3' },
+      feed3: { speaker: 'miso', text: 'Mrrp!', next: 'hello' },
+      feedLate: { speaker: 'mamaTeo', text: "And you brought the cat. Here, little one, fish heads from the pot. Eat.", effects: [{ setFlag: 'teo_fed_miso' }], next: 'feed3late' },
+      feed3late: { speaker: 'miso', text: 'Mrrp!', next: 'again' },
       hello: { speaker: 'mamaTeo', text: "You're the auditor. Sit, eat, and keep your hands off my counter.",
         effects: [{ addPerson: 'mamaTeo' }, { setFlag: 'teo_met' }],
         choices: [{ text: "I'm here about Dex Morrow.", next: 'knows' }] },
@@ -120,7 +128,9 @@ export const CONVERSATIONS = {
   miso: { start: [{ if: { flag: 'miso_joined' }, node: 'again' }, { node: 'a' }], nodes: {
     a: { speaker: 'juno', text: 'Hey, stray. Hungry?', next: 'b' },
     b: { speaker: 'miso', text: 'Mrrp.', next: 'c' },
-    c: { speaker: 'juno', text: 'Fine. Follow if you want. No promises about noodles.', effects: [{ setFlag: 'miso_joined' }], end: true },
+    c: { speaker: 'juno', text: 'You look like you have nowhere to be.',
+      choices: [{ text: 'Come with me.', next: 'd', effects: [{ setFlag: 'miso_joined' }] }, { text: 'Stay dry, stray.', end: true }] },
+    d: { speaker: 'juno', text: 'Fine. Follow if you want. No promises about noodles.', end: true },
     again: { speaker: 'miso', text: 'Mrrp.', end: true },
   } },
   nobody: { start: 'a', nodes: { a: { speaker: 'juno', text: 'Nothing to say yet.', end: true } } },
