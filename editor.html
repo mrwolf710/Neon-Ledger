@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Neon Echoes - Dialogue editor</title>
+    <style>
+      :root { --bg: #0b0b14; --panel: #151527; --line: #2b2b4a; --text: #e6e6f5; --dim: #8a8aa8; --cyan: #1fd6e8; --pink: #ff6fb5; }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.4 system-ui, sans-serif; display: flex; height: 100vh; }
+      #list { width: 280px; border-right: 1px solid var(--line); overflow: auto; padding: 12px; flex: none; }
+      #list input { width: 100%; margin-bottom: 10px; }
+      #list a { display: block; padding: 6px 8px; border-radius: 6px; color: var(--text); cursor: pointer; }
+      #list a:hover { background: var(--panel); }
+      #list a.on { background: var(--panel); outline: 1px solid var(--cyan); }
+      #list a small { display: block; color: var(--dim); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      #list a.mine b { color: var(--pink); }
+      #main { flex: 1; overflow: auto; padding: 16px 24px 120px; }
+      h1 { font-size: 20px; margin: 0 0 4px; color: var(--cyan); }
+      .sub { color: var(--dim); margin-bottom: 16px; }
+      .node { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; max-width: 900px; }
+      .node.dirty { border-color: var(--pink); }
+      .head { display: flex; gap: 10px; align-items: center; margin-bottom: 6px; color: var(--dim); font-size: 12px; }
+      .head b { color: var(--text); font-size: 13px; }
+      .flow { margin-left: auto; }
+      textarea, input, select { background: #0b0b18; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; font: inherit; }
+      textarea { width: 100%; min-height: 64px; resize: vertical; }
+      .choice { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+      .choice input { flex: 1; }
+      .choice span, .row span { color: var(--dim); font-size: 12px; white-space: nowrap; }
+      .row { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 8px; }
+      .row textarea { min-height: 44px; flex: 1; }
+      .form { max-width: 900px; }
+      .form label { display: block; margin: 12px 0 4px; color: var(--dim); }
+      #bar { position: fixed; left: 280px; right: 0; bottom: 0; padding: 12px 24px; background: var(--panel); border-top: 1px solid var(--line); display: flex; gap: 12px; align-items: center; }
+      button { background: var(--cyan); color: #04141a; border: 0; border-radius: 6px; padding: 8px 16px; font: 600 14px system-ui; cursor: pointer; }
+      button.ghost { background: transparent; color: var(--cyan); border: 1px solid var(--cyan); }
+      button.danger { background: transparent; color: var(--pink); border: 1px solid var(--pink); }
+      button:disabled { background: var(--line); color: var(--dim); border-color: var(--line); cursor: default; }
+      #msg { color: var(--dim); }
+    </style>
+  </head>
+  <body>
+    <div id="list"><button id="new" style="width:100%;margin-bottom:10px">+ New conversation</button><input id="q" placeholder="Search all dialogue..." /><div id="items"></div></div>
+    <div id="main"></div>
+    <div id="bar"><button id="save" disabled>Save changes</button><span id="msg">Run the game with npm run dev. Saving rewrites src/game/dialogue-edits.json and reloads this page.</span></div>
+    <script type="module" src="/src/debug/dialogue-editor.js"></script>
+  </body>
+</html>

@@ -1,3 +1,5 @@
+import EDITS from './dialogue-edits.json' with { type: 'json' }; // made in /editor.html (dev server): text changes and new conversations, laid over the text below
+
 // Story content as plain data: speakers, people, facts, echoes and conversations. Stage 9 writes content here only.
 // The dialogue format is documented in NOTES.md.
 
@@ -136,6 +138,24 @@ export const CONVERSATIONS = {
   } },
   nobody: { start: 'a', nodes: { a: { speaker: 'juno', text: 'Nothing to say yet.', end: true } } },
 };
+
+// Conversations made in the editor: lines play in order; active ones become what the person says when Juno talks to them.
+for (const [id, d] of Object.entries(EDITS._new ?? {})) {
+  const nodes = {};
+  d.lines.forEach((l, i) => { nodes[`n${i}`] = { speaker: l.speaker, text: l.text, ...(i < d.lines.length - 1 ? { next: `n${i + 1}` } : { end: true }) }; });
+  CONVERSATIONS[id] = { start: 'n0', nodes };
+  if (d.active) TALK[d.with] = id;
+}
+for (const [conv, nodes] of Object.entries(EDITS)) {
+  if (conv === '_new') continue;
+  for (const [id, f] of Object.entries(nodes)) {
+    const n = CONVERSATIONS[conv]?.nodes[id];
+    if (!n) continue; // the node no longer exists
+    if (f.text !== undefined) n.text = f.text;
+    if (f.speaker !== undefined) n.speaker = f.speaker;
+    for (const [i, t] of Object.entries(f.choices ?? {})) if (n.choices?.[i]) n.choices[i] = { ...n.choices[i], text: t };
+  }
+}
 
 // Echo hotspots: where F starts an echo. at: [x, z] or { spot, dx, dz } relative to a named batch spot.
 export const HOTSPOTS = [
