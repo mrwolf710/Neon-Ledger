@@ -82,7 +82,7 @@ const Grade = {
       }
       if (crt > 0.0) {
         c *= 1.0 - crt * 0.7 * smoothstep(0.35, 0.75, edge);                                             // vignette toward the glass edge
-        c = mix(c, c * vec3(0.8, 1.0, 0.9) + vec3(0.0, 0.04, 0.03), crt);                                                               // faint glass glow
+        c = mix(c, c * vec3(0.95, 1.0, 0.97), crt);                                                               // faint glass glow
         c *= 1.0 + crt * 0.04 * sin(time * 110.0);                                                      // mains flicker
       }
       c += (hash(vUv * 1000.0 + time) - 0.5) * grain;
