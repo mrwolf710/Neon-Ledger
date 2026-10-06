@@ -147,12 +147,12 @@ function limb(g, x, y, a1, a2, l1, l2, r0, r1, r2, mat) {
 
 // Side-view walk (facing -x, so negative angles step forward). Leg [thigh, shin], arm = upper-arm angle.
 const SIDE_WALK = [
-  { a: [-24, -6], b: [20, 14], armA: 18, armB: -18 },
-  { a: [0, 2], b: [-10, 38], armA: 4, armB: -4 },
-  { a: [20, 14], b: [-24, -6], armA: -18, armB: 18 },
-  { a: [-10, 38], b: [0, 2], armA: -4, armB: 4 },
+  { a: [-26, -6], b: [22, 14], armA: 36, armB: -36 },
+  { a: [0, 2], b: [-10, 38], armA: 6, armB: -6 },
+  { a: [22, 14], b: [-26, -6], armA: -36, armB: 36 },
+  { a: [-10, 38], b: [0, 2], armA: -6, armB: 6 },
 ];
-const FRONT_WALK = [{ lift: [0, 0], arm: [1, -1] }, { lift: [0, 3], arm: [0, 0] }, { lift: [0, 0], arm: [-1, 1] }, { lift: [3, 0], arm: [0, 0] }];
+const FRONT_WALK = [{ lift: [0, 0], arm: [3, -3] }, { lift: [0, 3], arm: [0, 0] }, { lift: [0, 0], arm: [-3, 3] }, { lift: [3, 0], arm: [0, 0] }];
 // Sneak: a deep crouch. Side view legs [thigh, shin] are far more bent than the walk; front view legs spread wide.
 const SIDE_SNEAK = [
   { a: [-52, -14], b: [30, 38], armA: 10, armB: -8 },
@@ -250,7 +250,7 @@ function human(def, view, pose, f) {
     }
     if (side) {
       const a = sw ? (which === 'far' ? sw.armB : sw.armA) : 0;
-      const j = limb(g, cx + 0.5, 18 + U, a, a * 0.6 - 10, 9, 8, 2.2, 1.9, 1.6, sleeve);
+      const j = limb(g, cx + 0.5, 18 + U, a, a < 0 ? a * 0.9 - 14 : a * 0.3 - 8, 9, 8, 2.2, 1.9, 1.6, sleeve);
       if (def.rolledSleeves) g.capsule(j.kx, j.ky, j.ex, j.ey, 1.7, 1.5, 'skin');
       if (acc.stripe) g.ellipse(j.kx, j.ky - 3, 2.3, 0.8, 'stripe');
       g.ellipse(j.ex - 0.5, j.ey + 1.5, 1.8, 1.8, 'skin');
@@ -272,13 +272,14 @@ function human(def, view, pose, f) {
     if (!coat) return;
     const t = outfit.type, hem = t === 'trench' ? 53 : t === 'suit' ? 39 : 37, flare = t === 'trench' ? 12 : t === 'jacket' ? 9.5 : 8.5;
     if (side) {
-      const sway = sw ? -sw.a[0] / 8 : 0;
+      const sway = sw ? -sw.a[0] / 4.5 : 0;
       g.poly(T([[cx - 4.5, 16.5], [cx + 4.5, 16.5], [cx + 5.5, 30], [cx + (t === 'trench' ? 7.5 + sway : 5), hem - U],
         [cx - (t === 'trench' ? 5.5 - sway / 2 : 5), hem - U], [cx - 5, 30]]), 'coat');
       if (outfit.collar) g.poly(T([[cx - 1, 17], [cx + 4, 17], [cx + 4.5, 11.5], [cx + 1, 12.5]]), 'coat');
       return;
     }
-    g.poly(T([[cx - 10, 16.5], [cx + 10, 16.5], [cx + 9.5, 26], [cx + 8, 33], [cx + flare, hem - U], [cx - flare, hem - U], [cx - 8, 33], [cx - 9.5, 26]]), 'coat');
+    const hs = fw && t === 'trench' ? [2, 0, -2, 0][f] : 0; // the hem swings out on the side of the trailing leg
+    g.poly(T([[cx - 10, 16.5], [cx + 10, 16.5], [cx + 9.5, 26], [cx + 8, 33], [cx + flare + Math.max(0, hs), hem - U], [cx - flare + Math.min(0, hs), hem - U], [cx - 8, 33], [cx - 9.5, 26]]), 'coat');
     if (back) { if (outfit.collar) g.rect(cx - 6, 12 + U, cx + 5, 17 + U, 'coat'); return; }
     if (t === 'suit') {                                                    // V opening with lapels
       g.poly(T([[cx - 3.5, 16.5], [cx + 3.5, 16.5], [cx, 30]]), 'top');
