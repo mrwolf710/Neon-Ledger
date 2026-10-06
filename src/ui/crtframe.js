@@ -6,7 +6,7 @@ export const CRT_FRAME = {
   glass: { cx: 127.5, cy: 137, w: 122, h: 79 }, // the transparent screen: centre and width in PNG px (measured with scripts/pngbox.mjs)
   body: { h: 159 },                // opaque monitor height in PNG px
   screenFrac: 0.96,                // monitor height as a share of the window height at k = 1
-  glow: 'drop-shadow(0 0 3vh rgba(30,255,150,0.4)) drop-shadow(0 0 10vh rgba(20,200,120,0.3))', // on a copy behind the canvas, so it never tints the picture
+  glow: 'drop-shadow(0 0 3vh rgba(57,255,20,0.65)) drop-shadow(0 0 10vh rgba(40,255,40,0.5))', // on a copy behind the canvas, so it never tints the picture
 };
 
 export function createCrtFrame(canvas) {

@@ -4,7 +4,7 @@ import { drawText, measure } from '../gen/pixelfont.js';
 // (Stage 8 unlocks Web Audio on that gesture, which iOS requires).
 export const TITLE = {
   scale: 8,                 // screen pixels per title pixel
-  color: '#ff6fb5', sub: '#1fd6e8', bg: 'rgba(7,7,15,.6)',
+  color: '#39ff14', sub: '#1fd6e8', bg: 'rgba(7,7,15,.6)',
   blinkMs: 600,
 };
 
