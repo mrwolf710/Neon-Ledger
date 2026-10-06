@@ -21,6 +21,15 @@ export const TIME_OF_DAY = {
     signs: 0.75, flicker: 0.3, dead: 0.25, rain: 1,
   },
 };
+// The strong red sunset Juno arrives in on the street. It is laid over the clock's mood and fades out over SUNSET.seconds (real seconds).
+export const SUNSET = {
+  seconds: 180,
+  mood: {
+    label: 'Sunset', sky: 0x6a1a22, fog: 0x4a1830, fogDensity: 0.02, moon: 1.1, moonColor: 0xff8a50, hemi: 0.55,
+    lift: [0.03, 0.0, 0.03], gamma: [1, 1, 1], gain: [1.12, 0.97, 0.92], saturation: 1.2,
+    signs: 1, flicker: 0.01, dead: 0, rain: 0.5,
+  },
+};
 export const INDOOR = { sky: 0.18, fill: 4.5 }; // multipliers on sky colour and hemisphere light inside rooms
 export const FLICKER = { rate: [3, 12], offLevel: 0.06 }; // steps per second per sign, brightness when off
 
@@ -49,7 +58,9 @@ function blend(a, b, t) {
 export function createTimeOfDay({ scene, lights, post, particles, signs, rng }) {
   const per = signs.map(() => ({ rate: rng.range(...FLICKER.rate), weak: rng.rand() }));
   let from, to, cur, t = 1, dur = 0, time = 0;
-  const api = { name: 'night', indoor: false };
+  let sunWas = 0;
+  const sunsetMood = snapshot(SUNSET.mood);
+  const api = { name: 'night', indoor: false, sunset: 0 }; // sunset 0..1: how much of the red sunset is laid over the mood (outdoors only)
 
   function apply(s, gradeToo) {
     scene.background.copy(s.sky).multiplyScalar(api.indoor ? INDOOR.sky : 1);
@@ -77,11 +88,13 @@ export function createTimeOfDay({ scene, lights, post, particles, signs, rng }) 
 
   api.update = (dt) => {
     time += dt;
+    const sun = api.indoor ? 0 : api.sunset;
     if (t < 1) {
       t = dur > 0 ? Math.min(1, t + dt / dur) : 1;
       cur = blend(from, to, t);
-      apply(cur, true); // grade is only written while blending, so debug sliders stick afterwards
     }
+    if (t < 1 || sun > 0 || sunWas > 0) apply(sun > 0 ? blend(cur, sunsetMood, sun) : cur, true); // grade is only written while blending, so debug sliders stick afterwards
+    sunWas = sun;
     signs.forEach((sg, i) => {
       const p = per[i];
       let k = cur.signs;

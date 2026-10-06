@@ -31,7 +31,7 @@ import { createPost, POST } from './render/post.js';
 import { createCrtFrame } from './ui/crtframe.js';
 import { createHeightFog } from './render/fog.js';
 import { createParticles } from './world/particles.js';
-import { createTimeOfDay, TIME_OF_DAY } from './world/timeofday.js';
+import { createTimeOfDay, TIME_OF_DAY, SUNSET } from './world/timeofday.js';
 
 const MAIN = {
   maxDt: 0.1, // seconds; clamps big frame gaps (tab switch)
@@ -102,7 +102,7 @@ const beats = createBeats({ world, cast, caseFile, dialogue, hud, interactions, 
   setExposure: (v) => { renderer.toneMappingExposure = MAIN.exposure * v; }, setVhs: (a) => post.setVhs(a), setCrt: (a) => { post.setCrt(a); crtFrame.set(a); } });
 beats.setCamera(cam);
 beats.register();
-let phaseId = '';
+let phaseId = '', sunsetT = null;
 const startParam = new URLSearchParams(location.search).get('start'); // ?start=sable jumps straight to an area (testing)
 title.started.then(() => {
   if (startParam && world.areas[startParam]) {
@@ -281,6 +281,10 @@ renderer.setAnimationLoop((now) => {
     player: player.position, yaw: cam.yaw, signs: area.id === 'street' ? street.signs : [],
     rainScale: particles.rainScale * (area.meta.outdoor ? 1 : MAIN.indoorRain),
   });
+  // Sunset: starts when Juno first reaches the street, fades to the night mood over SUNSET.seconds.
+  if (area.id === 'street' && sunsetT === null) sunsetT = 0;
+  if (sunsetT !== null && !modal) sunsetT += dt;
+  tod.sunset = sunsetT === null ? 0 : (1 - Math.min(1, sunsetT / SUNSET.seconds)) ** 1.5;
   tod.update(dt);
   particles.update(dt, cam.target, cam.camera);
   cast.update(dt, cam.yaw, area.lights);
