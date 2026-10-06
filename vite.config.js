@@ -29,6 +29,11 @@ const dialogueEditor = {
         try {
           const patch = JSON.parse(body), edits = JSON.parse(fs.readFileSync(EDITS, 'utf8'));
           for (const [conv, nodes] of Object.entries(patch)) {
+            if (conv === '_titles') { // display names for conversations: { id: name | null }
+              edits._titles ??= {};
+              for (const [id, t] of Object.entries(nodes)) { if (t) edits._titles[id] = String(t); else delete edits._titles[id]; }
+              continue;
+            }
             if (conv === '_insert') { // lines added inside an existing conversation: [{ conv, after, id, speaker, text }]
               (edits._insert ??= []).push(...nodes);
               continue;

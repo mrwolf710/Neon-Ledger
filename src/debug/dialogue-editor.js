@@ -10,6 +10,8 @@ const $ = (id) => document.getElementById(id);
 const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
 const pending = {}; // { conv: { node: { text?, speaker?, choices?: { i: text } } }, _new: { id: def | null } }
 const mine = EDITS._new ?? {};
+const titles = { ...(EDITS._titles ?? {}) }; // display names only: the id stays what the game refers to
+const titleOf = (id) => pending._titles?.[id] ?? titles[id] ?? id;
 const added = new Set((EDITS._insert ?? []).filter((x) => x.conv).map((x) => `${x.conv}/${x.id}`)); // lines added in the editor
 const people = Object.entries(SPEAKERS).filter(([id]) => id !== 'juno'); // who Juno can talk to
 let current = decodeURIComponent(location.hash.slice(1)) || Object.keys(CONVERSATIONS)[0];
@@ -23,9 +25,9 @@ const select = (opts, value, onchange) => el('select', { onchange: (e) => onchan
 function dlgList() {
   const q = $('q').value.trim().toLowerCase();
   $('items').replaceChildren(...Object.entries(CONVERSATIONS)
-    .filter(([id, c]) => !q || id.includes(q) || Object.values(c.nodes).some((n) => (n.text ?? '').toLowerCase().includes(q) || (n.choices ?? []).some((ch) => ch.text.toLowerCase().includes(q))))
+    .filter(([id, c]) => !q || id.includes(q) || titleOf(id).toLowerCase().includes(q) || Object.values(c.nodes).some((n) => (n.text ?? '').toLowerCase().includes(q) || (n.choices ?? []).some((ch) => ch.text.toLowerCase().includes(q))))
     .map(([id, c]) => el('a', { className: (id === current ? 'on ' : '') + (mine[id] ? 'mine' : ''), onclick: () => { current = id; location.hash = id; drawList(); drawMain(); } },
-      el('b', {}, id), el('small', {}, preview(c)))));
+      el('b', {}, titleOf(id)), el('small', {}, (titleOf(id) !== id ? `${id} · ` : '') + preview(c)))));
 }
 
 function dlgMain() {
@@ -60,7 +62,8 @@ function dlgMain() {
     }
     return out;
   });
-  const top = [el('h1', {}, current), el('div', { className: 'sub' }, `${cards.length} boxes. They play top to bottom unless a "→" jumps elsewhere.`)];
+  const nameBox = el('input', { value: titleOf(current) === current ? '' : titleOf(current), placeholder: current, style: 'font-size:18px;width:100%;max-width:420px', oninput: () => { (pending._titles ??= {})[current] = nameBox.value.trim() || null; changed(); } });
+  const top = [el('h1', {}, titleOf(current)), el('div', { className: 'sub' }, 'Name (shown in this list only; the game still uses the id ', el('code', {}, current), '):'), nameBox, el('div', { className: 'sub' }, `${cards.length} boxes. They play top to bottom unless a "→" jumps elsewhere.`)];
   if (mine[current]) top.push(el('button', { className: 'danger', style: 'margin-bottom:12px', onclick: () => { ((pending._new ??= {})[current] = null); changed(); $('msg').textContent = 'Unsaved: this conversation will be deleted on save.'; } }, 'Delete this conversation'));
   $('main').replaceChildren(...top, ...cards);
 }
