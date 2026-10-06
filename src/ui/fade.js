@@ -15,7 +15,7 @@ export function createFade() {
   const line = (text, color, scale) => {
     const cv = Object.assign(document.createElement('canvas'), { width: measure(text), height: 5 });
     drawText(cv.getContext('2d'), text, 0, 0, color);
-    cv.style.cssText = `width:${cv.width * scale}px;height:${cv.height * scale}px;image-rendering:pixelated`;
+    cv.style.cssText = `width:${cv.width * scale}px;height:${cv.height * scale}px;image-rendering:pixelated;max-width:92vw;height:auto`;
     return cv;
   };
   return {

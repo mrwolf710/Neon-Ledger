@@ -20,6 +20,11 @@ export const PRIEST_ART = { base: 'sprites/priest', size: 48, pxPerUnit: 25, dir
 // Dex (dead, seated in the Sable's back room): 8 still poses, one frame only so he never moves.
 export const DEX_ART = { base: 'sprites/corpo', size: 48, pxPerUnit: 24, dirs: JUNO_ART.dirs, states: [''] };
 const DEX_FRAMES = { idle: [['', false, 0]] };
+// Animated idles (the owner's Pixellab exports): one south-facing loop of 8 frames (idle-0..7.png) plus a still per direction.
+// Other directions hold their still, so the loop only shows when the character faces the camera.
+export const CAT_ART = { base: 'sprites/cat', size: 48, pxPerUnit: 36, fps: 8, small: true, dirs: JUNO_ART.dirs }; // Miso: his figure is ~25 px
+export const DEX_STAND_ART = { base: 'sprites/corpo-stand', size: 48, pxPerUnit: 24, fps: 6, dirs: JUNO_ART.dirs }; // Dex standing, for his echo scenes
+const LOOP = 8;
 const OPP = { south: 'south', north: 'north', east: 'west', west: 'east', 'south-east': 'south-west', 'south-west': 'south-east', 'north-east': 'north-west', 'north-west': 'north-east' };
 
 // Frame recipes: [state, mirrored?, dy] where mirrored uses the opposite direction's picture flipped.
@@ -45,6 +50,23 @@ export async function loadPriestSheet() {
 }
 export const loadDexSheet = () => loadSheet(DEX_ART, DEX_FRAMES, ['']);
 export const loadTeoSheet = () => loadSheet(TEO_ART, TEO_FRAMES, ['']);
+export const loadCatSheet = () => loadLoopSheet(CAT_ART);
+export const loadDexStandSheet = () => loadLoopSheet(DEX_STAND_ART);
+
+async function loadLoopSheet(A) {
+  const S = A.size, url = (n) => `${import.meta.env.BASE_URL}${A.base}/${n}.png`;
+  const stills = await Promise.all(A.dirs.map((d) => load(url(d))));
+  const loop = await Promise.all(Array.from({ length: LOOP }, (_, i) => load(url(`idle-${i}`))));
+  const canvas = Object.assign(document.createElement('canvas'), { width: S * LOOP, height: S * A.dirs.length });
+  const ctx = canvas.getContext('2d');
+  A.dirs.forEach((d, row) => { for (let f = 0; f < LOOP; f++) ctx.drawImage(d === 'south' ? loop[f] : stills[row], f * S, row * S); });
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.magFilter = texture.minFilter = THREE.NearestFilter;
+  texture.generateMipmaps = false;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  const animRows = { idle: Object.fromEntries(A.dirs.map((d, i) => [d, i])) };
+  return { texture, canvas, frameW: S, frameH: S, pxPerUnit: A.pxPerUnit, dirs: 8, rows: {}, animRows, anims: { idle: { start: 0, frames: LOOP } }, fps: A.fps, small: !!A.small };
+}
 
 async function loadSheet(A, FRAMES, states, preloaded) {
   const S = A.size;

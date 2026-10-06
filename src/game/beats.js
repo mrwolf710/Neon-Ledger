@@ -11,7 +11,7 @@ export const BEATS = {
   dark: { exposure: 0.06, lampsFrom: 0.3 }, // the opening starts almost black; station lamps fade up once the train is 30% of the way in
 };
 
-export function createBeats({ world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, setExposure = () => {} }) {
+export function createBeats({ world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, setExposure = () => {}, setVhs = () => {} }) {
   const timers = [], tweens = [];
   const flag = (n) => caseFile.hasFlag(n);
   let locked = false, focus = null, lastStep = '';
@@ -36,6 +36,7 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
     const glowTo = (g) => platform.trainGlow.forEach((m) => m.color.copy(m.userData.base).multiplyScalar(g));
     platform.lights.forEach((l) => { l.intensity = 0; });          // pitch black; the windows and door start almost dark too
     glowTo(0.04);
+    setVhs(1);                                                  // old VHS tape look until the title card is gone
     setExposure(BEATS.dark.exposure);
     await fade.in();
     sfx.trainArrive(BEATS.trainSeconds);
@@ -56,7 +57,8 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
     cam.follow?.(player.position, true);
     await walkTo(stopX, door.z + 1.6);
     player.setPose('tablet');                                   // she reads the case on her tablet during the title card and Hale's call
-    await fade.card([{ text: 'NEON LEDGER', color: '#ff6fb5', scale: 10 }, { text: 'CASE 01  LOWMARKET', color: '#1fd6e8', scale: 4 }], BEATS.cardHold);
+    await fade.card([{ text: 'NEON LEDGER', color: '#ff6fb5', scale: 18 }, { text: 'CASE 01  LOWMARKET', color: '#1fd6e8', scale: 6 }], BEATS.cardHold);
+    setVhs(0);
     hud.show();
     await dialogue.start('hale_open');                          // Hale on comms
     player.setPose(null);

@@ -14,7 +14,7 @@ export const HUD = {
 // Rows of the controls panel: [keys, label]. See the design doc's Controls table.
 const CONTROLS = [
   ['WASD', 'Move'], ['Shift', 'Run'], ['G', 'Sneak'], ['Space', 'Talk / Examine'], ['F', 'Echo-scan'], ['Q / E', 'Rotate'],
-  ['Z / X', 'Zoom'], ['Tab', 'Case file'], ['B', 'Board'], ['H', 'Hide this'],
+  ['Z / X', 'Zoom'], ['Tab', 'Case file'], ['B', 'Board'], ['H', 'Close help'],
 ];
 
 const el = (tag, cls, parent, text) => {
@@ -118,8 +118,10 @@ export function createHud(initialCollision) {
   const toasts = el('div', 'toasts', root);
 
   const controls = frame(el('div', 'controls', root));
+  const hint = el('div', 'row hint', controls); // collapsed by default: just "H Help"; H opens the full list
+  el('span', 'keycap', hint, 'H'); el('span', '', hint, 'Help');
   for (const [k, label] of CONTROLS) {
-    const r = el('div', 'row', controls);
+    const r = el('div', 'row full', controls);
     el('span', 'keycap', r, k);
     el('span', '', r, label);
   }
@@ -203,7 +205,7 @@ export function createHud(initialCollision) {
       setTimeout(() => t.classList.add('out'), H.toastMs - 400);
       setTimeout(() => t.remove(), H.toastMs);
     },
-    toggleControls() { controls.classList.toggle('off'); },
+    toggleControls() { controls.classList.toggle('open'); },
     setControls(on) { controls.classList.toggle('off', !on); },
     // view: { player: {x, z, facing}, yaw, people: [{x, z, color?}] }
     update(dt, view) {

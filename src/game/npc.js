@@ -71,7 +71,7 @@ const NAMES8 = ['south', 'south-east', 'east', 'north-east', 'north', 'north-wes
 // One character: sheet from getSheets(), opts { x, z, facing, pose, path, speed, ghost }.
 export function createBillboard(sheet, opts) {
   const fw = sheet.frameW, fh = sheet.frameH, W = sheet.canvas.width, H = sheet.canvas.height;
-  const isCat = fw === SPRITES.cat.w;
+  const isCat = fw === SPRITES.cat.w || !!sheet.small;
   const mat = new THREE.ShaderMaterial({
     uniforms: {
       map: { value: sheet.texture }, frame: { value: new THREE.Vector4(0, 0, fw / W, fh / H) },
@@ -135,7 +135,7 @@ export function createBillboard(sheet, opts) {
         const dir = eight ? NAMES8[Math.floor(rel / (Math.PI / 4))] : ['down', 'right', 'up', 'left'][Math.floor(rel / (Math.PI / 2))];
         const key = sheet.anims[anim] ? anim : 'idle';
         const A = sheet.anims[key];
-        const fps = SPRITES.fps[key] ?? SPRITES.fps.idle;
+        const fps = (key === 'idle' && sheet.fps) || (SPRITES.fps[key] ?? SPRITES.fps.idle);
         const fi = Math.floor(time * fps) % A.frames, stepping = anim === 'walk' || anim === 'sneak';
         setFrame(sheet.animRows?.[key]?.[dir] ?? sheet.rows[dir], A.start + fi);
         if (stepping && fi !== lastStep) { lastStep = fi; if (fi % 2 === 0) api.onStep?.(fi, anim); } // footfall

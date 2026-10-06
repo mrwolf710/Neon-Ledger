@@ -42,11 +42,11 @@ const Grade = {
   uniforms: {
     tDiffuse: { value: null }, lift: { value: new THREE.Vector3() }, gamma: { value: new THREE.Vector3() },
     gain: { value: new THREE.Vector3() }, saturation: { value: 1 }, grain: { value: 0 }, fringe: { value: 0 }, time: { value: 0 },
-    echo: { value: 0 }, glitch: { value: 0 },
+    echo: { value: 0 }, glitch: { value: 0 }, vhs: { value: 0 },
   },
   vertexShader: TiltShift.vertexShader,
   fragmentShader: /* glsl */`
-    uniform sampler2D tDiffuse; uniform vec3 lift, gamma, gain; uniform float saturation, grain, fringe, time, echo, glitch;
+    uniform sampler2D tDiffuse; uniform vec3 lift, gamma, gain; uniform float saturation, grain, fringe, time, echo, glitch, vhs;
     varying vec2 vUv;
     float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
     void main() {
@@ -56,7 +56,14 @@ const Grade = {
         if (h > 0.72) uv.x += (h - 0.86) * 0.35 * glitch;
       }
       vec2 off = (vUv - 0.5) * (fringe + glitch * 0.01) * 2.0;
-      vec3 c = vec3(texture2D(tDiffuse, uv + off).r, texture2D(tDiffuse, uv).g, texture2D(tDiffuse, uv - off).b);
+      if (vhs > 0.0) { // old VHS tape: line jitter, a rolling tracking-error band, strong colour bleed
+        float row = floor(vUv.y * 240.0);
+        uv.x += (hash(vec2(row, floor(time * 12.0))) - 0.5) * 0.004 * vhs;
+        float d = abs(vUv.y - fract(time * 0.12));
+        uv.x += smoothstep(0.07, 0.0, d) * 0.03 * vhs * sin(vUv.y * 90.0 + time * 30.0);
+        off += vec2(0.004 * vhs, 0.0);
+      }
+      vec3 c =vec3(texture2D(tDiffuse, uv + off).r, texture2D(tDiffuse, uv).g, texture2D(tDiffuse, uv - off).b);
       c = pow(max(gain * (c + lift * (1.0 - c)), 0.0), 1.0 / gamma);
       c = mix(vec3(dot(c, vec3(0.299, 0.587, 0.114))), c, saturation);
       if (echo > 0.0) { // echo mode: desaturated cyan, scanlines, slow vignette
@@ -64,6 +71,13 @@ const Grade = {
         c = mix(c, vec3(l) * vec3(0.45, 0.95, 1.15) + vec3(0.0, 0.03, 0.05), echo * 0.88);
         c *= 1.0 - echo * (0.16 + 0.1 * glitch) * (0.5 + 0.5 * sin(gl_FragCoord.y * 1.6));
         c *= 1.0 - echo * 0.35 * smoothstep(0.35, 1.0, length(vUv - 0.5) * 1.5);
+      }
+      if (vhs > 0.0) {
+        c = mix(vec3(dot(c, vec3(0.299, 0.587, 0.114))), c, 1.0 - 0.35 * vhs) * vec3(1.04, 1.0, 0.92); // washed, slightly warm
+        c *= 1.0 - vhs * 0.22 * (0.5 + 0.5 * sin(vUv.y * 720.0));                                       // scan lines
+        c += smoothstep(0.07, 0.0, abs(vUv.y - fract(time * 0.12))) * 0.12 * vhs;                        // band glows
+        if (vUv.y < 0.04) c = mix(c, vec3(hash(vUv * 500.0 + time)), 0.6 * vhs);                         // head-switching noise at the bottom
+        c += (hash(vUv * 700.0 - time) - 0.5) * 0.14 * vhs;
       }
       c += (hash(vUv * 1000.0 + time) - 0.5) * grain;
       gl_FragColor = vec4(c, 1.0);
@@ -99,6 +113,7 @@ export function createPost(renderer, scene, camera, quality) {
     composer,
     applyUniforms, // call after changing POST (debug sliders in 3B)
     setEcho(a) { g.echo.value = a; },       // 0..1 echo-mode grade
+    setVhs(a) { g.vhs.value = a; },         // 0..1 old-VHS-tape look (cold open)
     setGlitch(a) { g.glitch.value = a; },   // 0..1 pixel-tear strength
     setSize(w, h) {
       composer.setSize(w, h);

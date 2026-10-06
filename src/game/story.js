@@ -140,7 +140,7 @@ export const ECHOES = {
   teo_back_room: {
     title: "Mama Teo's view", owner: 'mamaTeo', entry: 'teo_back_room', duration: 6,
     tracks: [
-      { sprite: 'dex', keys: [
+      { sprite: 'dexStanding', keys: [
         { t: 0, x: 154.6, z: 1.0, facing: Math.PI, anim: 'idle' }, { t: 6, x: 154.6, z: 1.0, facing: Math.PI, anim: 'idle' },
       ] },
       { sprite: 'vendor', show: [1.4, 6], keys: [

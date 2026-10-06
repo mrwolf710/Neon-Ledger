@@ -25,7 +25,7 @@ export const CAST = [
   { id: 'juno', area: 'platform', at: 'start', facing: Math.PI },
   { id: 'mamaTeo', area: 'sable', at: 'teo' },
   { id: 'dex', area: 'sable', at: 'dex', facing: Math.PI, pose: 'slump' },
-  { id: 'vendor', area: 'street', at: [7, 4.4], facing: Math.PI },
+  { id: 'vendor', area: 'street', at: [7.2, -4.2], facing: 0 }, // north sidewalk, camera side of the street is the south; she stays visible without rotating
   { id: 'preacher', area: 'street', at: [-9.5, -2.2], facing: Math.PI / 2, ghost: true },
   { id: 'kit', area: 'hostel', at: 'kit' },
   { id: 'miso', area: 'street', at: [0.5, 3.6], facing: -0.8 },

@@ -4,7 +4,7 @@ import { input } from './core/input.js';
 import { createCamera, CAMERA } from './render/camera.js';
 import { createDebugPanel, showSprites } from './debug/panel.js';
 import { getSheets } from './gen/sprites.js';
-import { loadJunoSheet, loadTeoSheet, loadPriestSheet, loadDexSheet } from './gen/junoart.js';
+import { loadJunoSheet, loadTeoSheet, loadPriestSheet, loadDexSheet, loadCatSheet, loadDexStandSheet } from './gen/junoart.js';
 import { createCast } from './game/npc.js';
 import './ui/styles.css';
 import { createTouchUI } from './ui/touch.js';
@@ -35,6 +35,7 @@ const MAIN = {
   maxDt: 0.1, // seconds; clamps big frame gaps (tab switch)
   background: 0x0b0b14,
   toneMapping: THREE.NeutralToneMapping, exposure: 1.0,
+  maxPixels: 2.5e6,   // drawing-buffer cap (about 1440p); the post chain renders several full-size float targets, so 4K at DPR 2 can hang the GPU
   todBlendSeconds: 3, // debug dropdown blends over this long
   indoorRain: 0.25,   // how much of the rain sound leaks into rooms
 };
@@ -58,6 +59,9 @@ try { getSheets().mamaTeo = await loadTeoSheet(); } catch (e) { console.warn('Te
 
 try { getSheets().preacher = await loadPriestSheet(); } catch (e) { console.warn('Priest art not loaded, using the generated sprite:', e.message); }
 try { getSheets().dex = await loadDexSheet(); } catch (e) { console.warn('Dex art not loaded, using the generated sprite:', e.message); }
+
+try { getSheets().miso = await loadCatSheet(); } catch (e) { console.warn('Cat art not loaded, using the generated sprite:', e.message); }
+try { getSheets().dexStanding = await loadDexStandSheet(); } catch (e) { console.warn('Standing Dex art not loaded, using the seated sprite:', e.message); }
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(MAIN.background);
@@ -90,7 +94,7 @@ for (const h of echo.hotspots) {
 }
 const board = createBoard({ caseFile, hud });
 const beats = createBeats({ world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock,
-  setExposure: (v) => { renderer.toneMappingExposure = MAIN.exposure * v; } });
+  setExposure: (v) => { renderer.toneMappingExposure = MAIN.exposure * v; }, setVhs: (a) => post.setVhs(a) });
 beats.setCamera(cam);
 beats.register();
 let phaseId = '';
@@ -180,12 +184,15 @@ debug.button('pause clock', () => { clock.paused = !clock.paused; });
 debug.button('log values', () => console.log(JSON.stringify({ POST, fogFalloff: fog.uniforms.fogFalloff.value, fogHigh: fog.uniforms.fogHigh.value, fogGround: fog.uniforms.fogGround.value })));
 
 function resize() {
+  const w = window.innerWidth, h = window.innerHeight;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, Q.pixelRatio, Math.sqrt(MAIN.maxPixels / (w * h))));
   renderer.setSize(window.innerWidth, window.innerHeight, false);
   post.setSize(window.innerWidth, window.innerHeight);
   cam.camera.aspect = window.innerWidth / window.innerHeight;
   cam.camera.updateProjectionMatrix();
 }
 window.addEventListener('resize', resize);
+canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); renderer.setAnimationLoop(null); setTimeout(() => location.reload(), 500); }); // ponytail: reload instead of rebuilding GPU state
 resize();
 
 let last = performance.now();

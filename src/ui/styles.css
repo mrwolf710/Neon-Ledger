@@ -71,6 +71,8 @@ html { font-size: clamp(12px, 1.7vmin, 22px); }
 @media (pointer: coarse) { #hud .controls { display: none; } }
 #hud .controls.off { display: none; }
 #hud .controls .row { display: flex; align-items: center; margin: 0.2rem 0; font: 500 0.8rem/1.3 var(--body); }
+#hud .controls .row.full, #hud .controls.open .row.hint { display: none; }
+#hud .controls.open .row.full { display: flex; }
 #hud .controls .row .keycap { min-width: 2.6rem; }
 
 /* Dialogue box (bottom, full width) */
