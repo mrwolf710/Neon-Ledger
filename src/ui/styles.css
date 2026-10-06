@@ -10,7 +10,8 @@
 html { font-size: clamp(12px, 1.7vmin, 22px); }
 
 #hud { position: fixed; inset: 0; z-index: 4; pointer-events: none; display: none; font-family: var(--body); color: var(--text); }
-#hud.on { display: block; }
+#hud.on { display: block; animation: hud-in 0.25s ease-out; }
+@keyframes hud-in { from { opacity: 0; } }
 
 /* Panel frame: dark translucent, 1px cyan border, a diamond on each corner. Active items go magenta. */
 .panel { position: relative; background: var(--panel); border: 1px solid var(--cyan); box-sizing: border-box; }

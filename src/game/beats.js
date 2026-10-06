@@ -5,6 +5,7 @@ import { EXAMINABLES, TALK, FALLBACK } from './story.js';
 // Beats 1-3 live here (Stage 9A); later beats add steps to STEPS and conversations to story.js.
 export const BEATS = {
   trainSeconds: 6.5,      // the train rolling into the platform
+  uiAt: 0.9,              // fraction of the zoom after which the UI fades in (quickly, see #hud.on in styles.css)
   zoomSeconds: 3,         // after the title card: the CRT frame zooms away and the VHS noise fades out
   cardHold: 2.4,          // title card hold, seconds
   mislaid: 0.6,           // pause before Juno steps out
@@ -59,7 +60,11 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
     await walkTo(stopX, door.z + 1.6);
     player.setPose('tablet');                                   // she reads the case on her tablet during the title card and Hale's call
     await fade.card([{ text: 'NEON ECHOES', color: '#ff6fb5', scale: 18 }, { text: 'CASE 01  LOWMARKET', color: '#1fd6e8', scale: 6 }], BEATS.cardHold);
-    tween(BEATS.zoomSeconds, (u) => { const k = 1 - smooth(u); setCrt(k); setVhs(k); }); // the monitor frame zooms out to the full game and the tape noise fades
+    let uiOn = false;
+    await tween(BEATS.zoomSeconds, (u) => { // the monitor frame zooms out to the full game and the tape noise fades; the UI only fades in as the zoom nears its end
+      const k = 1 - smooth(u); setCrt(k); setVhs(k);
+      if (!uiOn && u >= BEATS.uiAt) { uiOn = true; hud.show(); }
+    });
     hud.show();
     await dialogue.start('hale_open');                          // Hale on comms
     player.setPose(null);
