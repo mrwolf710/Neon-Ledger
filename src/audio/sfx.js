@@ -21,7 +21,7 @@ export const TUNING = {
   // Electric train motor for the cold open: a growl and a rising whine that swell as the train closes in, then settle to a quiet idle hum.
   motor: { base: 70, peak: 180, idle: 85, whineMult: 6, lowpass: 2200, start: 0.05, swell: 0.55, idleGain: 0.03, idleAfter: 0.4, idleTime: 0.9 },
   ui: { vol: 0.16 },
-  voice: { vol: 0.2, dur: 0.07, every: 2 },
+  voice: { vol: 0.09, dur: 0.06, every: 2 },
   voices: { // per speaker: base Hz and waveform
     juno: [230, 'triangle'], mamaTeo: [310, 'square'], kit: [400, 'sawtooth'], dex: [165, 'square'], vendor: [195, 'triangle'],
     miso: [760, 'sine'], hale: [135, 'triangle'], preacher: [150, 'sine'], unknown: [112, 'sawtooth'], vending: [540, 'square'],
@@ -312,7 +312,7 @@ export function createSfx(synth) {
       const [base, type] = T.voices[speaker] ?? T.voices.juno;
       const semis = ((ch.toLowerCase().charCodeAt(0) * 7) % 7) - 3;
       synth.tone({ freq: base * 2 ** (semis / 12), type, dur: T.voice.dur, release: 0.03, vol: T.voice.vol,
-        filter: { type: 'lowpass', freq: base * 8, q: 0.7 } });
+        filter: { type: 'lowpass', freq: base * 6, q: 0.7 } });
     },
   };
   return api;
