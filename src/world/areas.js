@@ -108,6 +108,17 @@ function finish(id, b, bounds, extra = {}) {
   };
 }
 
+// The discarded glove: the owner's pixel art (public/sprites/glove/glove.png) lying flat on the alley floor. Skipped where there is no browser (node checks).
+const GLOVE = { size: 1.0, y: 0.05, turn: -0.5 }; // size in world units; turn = rotation on the floor, radians
+function gloveSprite(x, z) {
+  if (typeof Image === 'undefined') return null;
+  const map = new THREE.TextureLoader().load(`${import.meta.env?.BASE_URL ?? '/'}sprites/glove/glove.png`);
+  map.magFilter = map.minFilter = THREE.NearestFilter; map.generateMipmaps = false; map.colorSpace = THREE.SRGBColorSpace;
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(GLOVE.size, GLOVE.size).rotateX(-Math.PI / 2).rotateY(GLOVE.turn), new THREE.MeshStandardMaterial({ map, alphaTest: 0.5, roughness: 0.8 }));
+  mesh.position.set(x, GLOVE.y, z);
+  return mesh;
+}
+
 // ---------- Line 9 platform ----------
 function platform(M) {
   const b = begin('platform'), PM = propMats(M);
@@ -192,15 +203,13 @@ function alley(M) {
   b.box(PM.crates[0], 1.2, 1.0, 0.8, -0.9, 0.5, -3.6); b.block(-0.9, -3.6, 1.2, 0.8);
   crates(b, PM, 1.0, 5.8, 2); crates(b, PM, -1.1, 6.3, 1); b.box(PM.bag, 0.5, 0.4, 0.5, 1.1, 0.2, -1.2);
   b.box(M.pipe, 0.18, 2.5, 0.18, -1.45, 1.25, 1.0); b.box(M.pipe, 0.18, 2.5, 0.18, 1.45, 1.25, -2.4);
-  // The discarded glove: a flat palm and four fingers.
-  const gloveMat = new THREE.MeshStandardMaterial({ color: P.grey6, roughness: 0.7 });
-  b.box(gloveMat, 0.4, 0.07, 0.46, 0.7, 0.04, 3.4);
-  for (let i = 0; i < 4; i++) b.box(gloveMat, 0.07, 0.06, 0.3, 0.55 + i * 0.1, 0.04, 3.05);
-  b.box(gloveMat, 0.1, 0.06, 0.24, 0.98, 0.04, 3.28);                  // thumb
   b.light(P.white, 7, 0.7, 1.3, 3.2);                                   // a clue deserves a light
   b.light(P.amber, 11, 0, 2.5, -2.5); b.light(P.cyan, 9, 0, 2.4, 5.5); b.light(P.magenta, 6, 0, 2.0, 1.0);
   b.spot('glove', 0.7, 3.3); b.spot('echo', 0, 0.5);
-  return finish('alley', b, [-1.6, -8, 1.6, 8]);
+  const area = finish('alley', b, [-1.6, -8, 1.6, 8]);
+  const glove = gloveSprite(AREAS.alley.origin[0] + 0.7, 3.3);
+  if (glove) area.group.add(glove);
+  return area;
 }
 
 // ---------- Kit's capsule hostel ----------
