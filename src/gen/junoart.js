@@ -22,7 +22,7 @@ export const DEX_ART = { base: 'sprites/corpo', size: 48, pxPerUnit: 24, dirs: J
 const DEX_FRAMES = { idle: [['', false, 0]] };
 // Animated idles (the owner's Pixellab exports): one south-facing loop of 8 frames (idle-0..7.png) plus a still per direction.
 // Other directions hold their still, so the loop only shows when the character faces the camera.
-export const CAT_ART = { base: 'sprites/cat', size: 48, pxPerUnit: 36, fps: 8, small: true, dirs: JUNO_ART.dirs }; // Miso: his figure is ~25 px
+export const CAT_ART = { base: 'sprites/cat', size: 48, pxPerUnit: 55, fps: 8, small: true, dirs: JUNO_ART.dirs }; // Miso: figure ~46 px tall facing the camera, so ~0.8 units
 export const DEX_STAND_ART = { base: 'sprites/corpo-stand', size: 48, pxPerUnit: 24, fps: 6, dirs: JUNO_ART.dirs }; // Dex standing, for his echo scenes
 const LOOP = 8;
 const OPP = { south: 'south', north: 'north', east: 'west', west: 'east', 'south-east': 'south-west', 'south-west': 'south-east', 'north-east': 'north-west', 'north-west': 'north-east' };
@@ -59,7 +59,8 @@ async function loadLoopSheet(A) {
   const loop = await Promise.all(Array.from({ length: LOOP }, (_, i) => load(url(`idle-${i}`))));
   const canvas = Object.assign(document.createElement('canvas'), { width: S * LOOP, height: S * A.dirs.length });
   const ctx = canvas.getContext('2d');
-  A.dirs.forEach((d, row) => { for (let f = 0; f < LOOP; f++) ctx.drawImage(d === 'south' ? loop[f] : stills[row], f * S, row * S); });
+  // the loop frames are 80 px, the stills 48: crop the middle of each
+  A.dirs.forEach((d, row) => { for (let f = 0; f < LOOP; f++) { const im = d === 'south' ? loop[f] : stills[row]; ctx.drawImage(im, (im.width - S) / 2, (im.height - S) / 2, S, S, f * S, row * S, S, S); } });
   const texture = new THREE.CanvasTexture(canvas);
   texture.magFilter = texture.minFilter = THREE.NearestFilter;
   texture.generateMipmaps = false;
