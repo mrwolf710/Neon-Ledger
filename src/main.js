@@ -94,7 +94,7 @@ for (const h of echo.hotspots) {
 }
 const board = createBoard({ caseFile, hud });
 const beats = createBeats({ world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock,
-  setExposure: (v) => { renderer.toneMappingExposure = MAIN.exposure * v; }, setVhs: (a) => post.setVhs(a) });
+  setExposure: (v) => { renderer.toneMappingExposure = MAIN.exposure * v; }, setVhs: (a) => post.setVhs(a), setCrt: (a) => post.setCrt(a) });
 beats.setCamera(cam);
 beats.register();
 let phaseId = '';
