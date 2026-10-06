@@ -82,6 +82,8 @@ html { font-size: clamp(12px, 1.7vmin, 22px); }
   font-size: 1.15rem; color: #fff; }
 #hud .dialogue .gem { width: 0.7rem; height: 0.7rem; transform: rotate(45deg); }
 #hud .dialogue .dtext { display: flex; align-items: center; gap: 1.1rem; min-height: 6rem; padding: 0.9rem 1.4rem; cursor: pointer; }
+#hud .dialogue .portrait.holo { box-shadow: 0 0 0.8rem #9ff4ff, inset 0 0 0.8rem rgba(60, 230, 255, 0.35); animation: holoflick 2.4s steps(1) infinite; }
+@keyframes holoflick { 0%, 100% { opacity: 1; } 46% { opacity: 0.8; } 50% { opacity: 0.95; } 52% { opacity: 0.7; } }
 #hud .dialogue .portrait { flex: none; width: 6.5rem; height: 6.5rem; image-rendering: pixelated; background: rgba(5, 2, 20, 0.75); border: 2px solid; align-self: center; }
 #hud .dialogue .body { font: 400 1.2rem/1.5 var(--body); color: var(--text); max-width: 60rem; }
 #hud .dialogue .hint { position: absolute; right: 1.2rem; bottom: 0.5rem; color: var(--magenta); animation: hint-bob 0.9s infinite alternate; }

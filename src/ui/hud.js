@@ -32,7 +32,7 @@ export function frame(node) {
 }
 
 // Speaker portrait: the head-and-shoulders crop of the speaker's front-facing idle frame (nearest-neighbour), or a letter plate for voices with no sprite.
-const PORTRAIT = { px: 64, headFrac: 0.5 }; // px = canvas size, headFrac = share of a human frame (from the top) that counts as head + shoulders
+const PORTRAIT = { px: 64, headFrac: 0.5, holo: ['preacher'], holoTint: 'rgba(60,230,255,0.6)', scanAlpha: 0.4 }; // px = canvas size, headFrac = share of a human frame (from the top) that counts as head + shoulders
 function drawPortrait(cv, id, name, color) {
   const g = cv.getContext('2d'); g.imageSmoothingEnabled = false; g.clearRect(0, 0, cv.width, cv.height);
   const sh = getSheets()[id];
@@ -45,6 +45,12 @@ function drawPortrait(cv, id, name, color) {
   if (x1 < 0) return;
   const w = x1 - x0 + 1, h = y1 - y0 + 1, k = Math.floor(Math.min(cv.width / w, cv.height / h)) || 1;
   g.drawImage(sh.canvas, x0, row * H + y0, w, h, Math.floor((cv.width - w * k) / 2), cv.height - h * k, w * k, h * k);
+  if (PORTRAIT.holo.includes(id)) { // hologram: cyan wash + scanlines, like the in-world ghost
+    g.globalCompositeOperation = 'source-atop'; g.fillStyle = PORTRAIT.holoTint; g.fillRect(0, 0, cv.width, cv.height);
+    g.globalCompositeOperation = 'destination-out'; g.fillStyle = `rgba(0,0,0,${PORTRAIT.scanAlpha})`;
+    for (let y = 0; y < cv.height; y += 4) g.fillRect(0, y, cv.width, 2);
+    g.globalCompositeOperation = 'source-over';
+  }
 }
 
 // Dialogue box UI: full-width bottom panel with a nameplate + gem, the text, and a choice box on the right.
@@ -60,7 +66,7 @@ function dialogueBox(root) {
   textBox.addEventListener('pointerdown', (e) => { e.preventDefault(); clickFn(); });
   return {
     show(name, color, id) {
-      drawPortrait(portrait, id, name, color); portrait.style.borderColor = color;
+      drawPortrait(portrait, id, name, color); portrait.style.borderColor = color; portrait.classList.toggle('holo', PORTRAIT.holo.includes(id));
       box.classList.add('on'); nameEl.textContent = name; gem.style.background = color; gem.style.boxShadow = `0 0 0.5rem ${color}`;
     },
     hide() { box.classList.remove('on'); },
