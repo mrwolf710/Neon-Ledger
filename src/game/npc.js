@@ -66,6 +66,8 @@ function shadowMaterial() {
   return shadowMat;
 }
 
+const NAMES8 = ['south', 'south-east', 'east', 'north-east', 'north', 'north-west', 'west', 'south-west']; // clockwise on screen, from facing the camera
+
 // One character: sheet from getSheets(), opts { x, z, facing, pose, path, speed, ghost }.
 export function createBillboard(sheet, opts) {
   const fw = sheet.frameW, fh = sheet.frameH, W = sheet.canvas.width, H = sheet.canvas.height;
@@ -125,15 +127,17 @@ export function createBillboard(sheet, opts) {
       root.position.copy(pos);
       sprite.rotation.y = camYaw; // Y-axis billboard: stays upright
 
-      // Direction row: facing relative to the camera. 0 = toward the camera (down), +90 deg = screen right.
+      // Direction: facing relative to the camera. 0 = toward the camera (down / south), +90 deg = screen right (east).
       if (sheet.rows[anim] !== undefined && !sheet.anims[anim]) setFrame(sheet.rows[anim], 0); // single-frame pose
       else {
-        const rel = THREE.MathUtils.euclideanModulo(facing - camYaw + Math.PI / 4, Math.PI * 2);
-        const dir = ['down', 'right', 'up', 'left'][Math.floor(rel / (Math.PI / 2))];
-        const A = sheet.anims[anim] ?? sheet.anims.idle;
-        const fps = SPRITES.fps[anim] ?? SPRITES.fps.idle;
+        const eight = sheet.dirs === 8;
+        const rel = THREE.MathUtils.euclideanModulo(facing - camYaw + (eight ? Math.PI / 8 : Math.PI / 4), Math.PI * 2);
+        const dir = eight ? NAMES8[Math.floor(rel / (Math.PI / 4))] : ['down', 'right', 'up', 'left'][Math.floor(rel / (Math.PI / 2))];
+        const key = sheet.anims[anim] ? anim : 'idle';
+        const A = sheet.anims[key];
+        const fps = SPRITES.fps[key] ?? SPRITES.fps.idle;
         const fi = Math.floor(time * fps) % A.frames, stepping = anim === 'walk' || anim === 'sneak';
-        setFrame(sheet.animRows?.[anim]?.[dir] ?? sheet.rows[dir], A.start + fi);
+        setFrame(sheet.animRows?.[key]?.[dir] ?? sheet.rows[dir], A.start + fi);
         if (stepping && fi !== lastStep) { lastStep = fi; if (fi % 2 === 0) api.onStep?.(fi, anim); } // footfall
         else if (!stepping) lastStep = -1;
       }

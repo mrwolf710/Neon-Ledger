@@ -4,6 +4,7 @@ import { input } from './core/input.js';
 import { createCamera, CAMERA } from './render/camera.js';
 import { createDebugPanel, showSprites } from './debug/panel.js';
 import { getSheets } from './gen/sprites.js';
+import { loadJunoSheet } from './gen/junoart.js';
 import { createCast } from './game/npc.js';
 import './ui/styles.css';
 import { createTouchUI } from './ui/touch.js';
@@ -48,6 +49,9 @@ renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.toneMapping = MAIN.toneMapping;
 renderer.toneMappingExposure = MAIN.exposure;
 renderer.info.autoReset = false; // composer renders several passes; count the whole frame
+
+// Juno is the owner's own pixel art (public/sprites/juno). If it cannot load, the generated Juno stays.
+try { getSheets().juno = await loadJunoSheet(); } catch (e) { console.warn('Juno art not loaded, using the generated sprite:', e.message); }
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(MAIN.background);
