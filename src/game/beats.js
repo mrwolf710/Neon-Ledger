@@ -123,8 +123,15 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
         const left = EXAMINABLES.filter((x) => x.area === 'sable' && !flag(`ex_${x.id}`)).map((x) => spotXZ('sable', x.spot));
         return left.sort((a, b) => Math.hypot(a.x - player.position.x, a.z - player.position.z) - Math.hypot(b.x - player.position.x, b.z - player.position.z))[0];
       }, done: () => examined() >= sableTotal },
-    { id: 'echo', text: 'Scan the room for an echo (F)', area: 'sable', pos: () => spotXZ('sable', 'echo'), done: () => caseFile.has('teo_back_room') },
-    { id: 'teo', text: 'Question Mama Teo', area: 'sable', pos: () => spotXZ('sable', 'teo'), done: () => flag('teo_cracked') },
+    { id: 'echo', text: 'Scan the room for an echo (F)', area: 'sable', pos: () => spotXZ('sable', 'echo'), done: () => caseFile.has('two_voices') && caseFile.has('echo_seam') },
+    { id: 'teo', text: 'Question Mama Teo', area: 'sable', pos: () => spotXZ('sable', 'teo'), done: () => caseFile.has('door_unlocked') && caseFile.has('master_keys') },
+    { id: 'visitor', text: 'Link the two cups and two voices on the board (B)', area: 'car', done: () => caseFile.has('someone_else') },
+    { id: 'override', text: 'Link the visitor, door testimony and auditor access trace (B)', area: 'car', done: () => caseFile.has('auditor_override') },
+    { id: 'alley', text: 'Scan the alley; tag Kit at 23:40 and the glove (F)', area: 'alley', pos: () => spotXZ('alley', 'echo'), done: () => caseFile.has('kit_at_2340') && caseFile.has('grey_glove') },
+    { id: 'kit', text: 'Question Kit at the hostel; present the 23:40 echo', area: 'hostel', pos: () => spotXZ('hostel', 'kit'), done: () => flag('kit_pressed') },
+    { id: 'bureau', text: 'Link auditor access, the glove and the Bureau coat (B)', area: 'car', done: () => caseFile.has('bureau_involved') },
+    { id: 'backup', text: 'Recover Dex’s backup beneath the hostel shelf', area: 'hostel', pos: () => spotXZ('hostel', 'backup'), done: () => caseFile.has('backup_chip') },
+    { id: 'last', text: 'Return to the car with Dex’s backup', area: 'car', pos: () => spotXZ('car', 'seat'), done: () => false },
   ];
   function markFor(step) {
     const here = world.current.id;

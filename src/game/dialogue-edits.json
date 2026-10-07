@@ -13,7 +13,7 @@
   "_new": {
     "Kit_s_Capsule_Hotel_Convo_1": {
       "with": "kit",
-      "active": true,
+      "active": false,
       "lines": [
         {
           "speaker": "juno",
@@ -31,7 +31,7 @@
       "lines": [
         {
           "speaker": "juno",
-          "text": "(I should just let this go.  Another burned out cyber junkie.  But...)"
+          "text": "A city key narrows nothing. I need the terminal’s access class."
         },
         {
           "speaker": "juno",
@@ -42,70 +42,12 @@
           "text": "I heard he was over at the Capsule hotel across the street.  Maybe check there."
         }
       ]
-    },
-    "Capsule_after_Teo": {
-      "with": "kit",
-      "active": false,
-      "lines": [
-        {
-          "speaker": "juno",
-          "text": "Hey, I'm looking to see if a guy named Dex Marrow was staying here."
-        },
-        {
-          "speaker": "mamaTeo",
-          "text": "Can't help ya. I'm just here to work on the plumbing."
-        },
-        {
-          "speaker": "juno",
-          "text": "Ok, thanks."
-        },
-        {
-          "speaker": "kit",
-          "text": "Yep, don't know anything at all about Dex Marrow. Nothing."
-        },
-        {
-          "speaker": "juno",
-          "text": "Ok..."
-        },
-        {
-          "speaker": "kit",
-          "text": "Yeah, nothing.  Boy, prices sure are going through the roof around, aren't they?  Seems like everybody needs a little help now and then.  Ya know, like, help...financially?"
-        },
-        {
-          "speaker": "juno",
-          "text": "(sigh...guess I'll play his game)"
-        },
-        {
-          "speaker": "juno",
-          "text": "Uh huh.  Seems like even 20 credits would help someone, right?"
-        },
-        {
-          "speaker": "kit",
-          "text": "Umm...maybe 30?"
-        },
-        {
-          "speaker": "juno",
-          "text": "Fine, here's 30 credits.  I hope it helps."
-        },
-        {
-          "speaker": "kit",
-          "text": "Wow, it sure does.  By the way, now that I think about it a little harder, ya know, now that I'm no so burdened with my financial worries, I do seem to remember seeing a Dex Marrow around here.  His capsule was on the third floor.  Room 3F."
-        },
-        {
-          "speaker": "juno",
-          "text": "Thanks.  Think that room is open?"
-        },
-        {
-          "speaker": "kit",
-          "text": "Definitely.  I was just up there working on some stuff.  Room is still open.  I'm going to go put this 30 credits to the good of the community.  Hope no one wonders into that room while I'm gone."
-        }
-      ]
     }
   },
   "_talk": {},
   "_visits": {
     "kit": [
-      "Kit_s_Capsule_Hotel_Convo_1",
+      "",
       "",
       "",
       ""
@@ -117,26 +59,14 @@
       "npc": "mamaTeo",
       "when": "all",
       "fact": "someone_had_key"
-    },
-    {
-      "conv": "Capsule_after_Teo",
-      "npc": "kit",
-      "when": "all",
-      "fact": "master_keys",
-      "talked": "mamaTeo"
     }
   ],
   "Mama_Teo_Points_to_Capsule_Hotel": {
     "n0": {
-      "text": "(I should just let this go.  Another burned out cyber junkie.  But there's obviously something off about this...)"
+      "text": "A city key narrows nothing. I need the terminal’s access class."
     },
     "n2": {
       "text": "I heard he was over at the Capsule Hotel across the street.  Maybe check there."
-    }
-  },
-  "Capsule_after_Teo": {
-    "n1": {
-      "speaker": "kit"
     }
   },
   "_insert": [
@@ -152,7 +82,7 @@
       "after": "a_22851",
       "id": "a_22851_60016",
       "speaker": "vendor",
-      "text": "The Sable is up the street on the right, under the red awning. They found a echo broker in the back.  Dead.  Like everything else around here."
+      "text": "The Sable is up the street on the right, under the red awning. They found an echo broker in the back.  Dead.  Like everything else around here."
     },
     {
       "conv": "vendor",

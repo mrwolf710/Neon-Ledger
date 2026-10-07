@@ -3,7 +3,7 @@ import assert from 'node:assert';
 import { createClock } from '../src/game/clock.js';
 
 const c = createClock();
-assert.equal(c.text, '22:40'); assert.equal(c.phase.id, 'lateEvening');
+assert.equal(c.text, '00:35'); assert.equal(c.phase.id, 'night');
 c.setTime(23, 0); assert.equal(c.phase.id, 'night');
 c.setTime(1, 29); assert.equal(c.text, '01:29'); assert.equal(c.phase.id, 'night');
 c.setTime(1, 30); assert.equal(c.phase.id, 'deadHour');

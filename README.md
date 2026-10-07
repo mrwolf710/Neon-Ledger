@@ -1,53 +1,47 @@
-# Neon Ledger
+# Neon Echoes
 
-A cyberpunk detective game in an HD-2D isometric style, built in three.js. Every texture, character, mesh and sound is generated in code at runtime: the game ships no image, model or audio files.
+Neon Echoes is a cyberpunk detective game with an HD-2D isometric look, built with three.js, Vite and plain JavaScript. **Neon Ledger** is the repository/project name.
 
-You play Juno Vale, a memory auditor who solves crimes by replaying the "echoes" stored in people's neural implants. The first goal is a 15–20 minute playable demo that ends on a cliffhanger.
+Play Juno Vale, a memory auditor investigating an echo broker’s death in Lowmarket. Examine evidence, replay implant memories, question witnesses and connect facts on the deduction board. The target is a 15–20 minute demo with a cliffhanger; the full ending and pacing pass are still in development.
 
-**Platforms:** desktop browsers (Chrome, Edge, Firefox) and iOS Safari. **Input:** keyboard and mouse, gamepad, or touch.
-
-## Docs
-
-| File | What's in it |
-| --- | --- |
-| [docs/claude-code.md](docs/claude-code.md) | **Start here.** Install Claude Code, work through issues, and save usage on the Pro plan |
-| [CLAUDE.md](CLAUDE.md) | Standing rules Claude Code reads automatically every session |
-| [docs/design-doc.md](docs/design-doc.md) | Full game design: visuals, tech approach, gameplay, story, demo script, UI, audio |
-| [docs/dev-stages.md](docs/dev-stages.md) | The 9-stage build plan and how to run each stage cheaply with Claude |
-| [docs/stages/](docs/stages/) | One file per stage, each with a paste-ready prompt and a done-when checklist |
-| [NOTES.md](NOTES.md) | Running summary of the code, updated at the end of every stage |
+Desktop browsers and iOS Safari are targets, with keyboard/mouse, gamepad and touch input. Device playthrough validation remains outstanding.
 
 ## Status
 
 | Stage | Status |
 | --- | --- |
-| 1. Foundation and grey-box street | Not started |
-| 2. Procedural textures and buildings | Not started |
-| 3. Lighting, post-processing and rain | Not started |
-| 4. Pixel character generator | Not started |
-| 5. Movement, input and iOS tier | Not started |
-| 6. HUD, dialogue and case file | Not started |
-| 7. Echo-scan and deduction board | Not started |
-| 8. Procedural audio | Not started |
-| 9. Demo content and cliffhanger | Not started |
+| 1. Foundation and grey-box street | Complete |
+| 2. Procedural textures and buildings | Complete |
+| 3. Lighting, post-processing and rain | Complete |
+| 4. Character generation | Complete; selected characters now use PNG art |
+| 5. Movement, input and mobile tier | Complete; device validation ongoing |
+| 6. HUD, dialogue and case file | Complete |
+| 7. Echo-scan and deduction board | Complete |
+| 8. Procedural audio | Complete |
+| 9A. Locations and beats 1–3 | Implemented; browser playthrough pending |
+| 9B. Echoes, interviews and deductions | Implemented in this change; playthrough validation pending |
+| 9C. Final backup replay, cliffhanger and pacing | Planned; not implemented |
 
-## Running it (from Stage 1 on)
+## Art and audio
 
-```
-npm install
+The game uses a hybrid approach: procedural buildings, geometry, surface textures, lighting, effects and synthesized Web Audio, alongside selected PNG sprites and props. Juno, Mama Teo, Kit, the vendor, Dex, Miso, the holo-preacher, CRT frame and alley glove use curated PNG art. Procedural character generation provides fallbacks; unidentified echo visitors use a dedicated anonymous silhouette. See [CLAUDE.md](CLAUDE.md) for the approved asset exceptions.
+
+## Run and build
+
+Use Node.js compatible with Vite 8 (Node 22.12+ or a supported newer release).
+
+```powershell
+npm ci
 npm run dev
 ```
 
-Then open http://localhost:5173. To test on an iPhone on the same Wi-Fi, run `npm run dev -- --host` and open the Network address it prints.
+Open the local URL Vite prints. For an iPhone on the same Wi-Fi, use `npm run dev -- --host` and open the Network URL in Safari. Build with `npm run build`. The development dialogue/scene editor is at `/editor.html`; dialogue edits are saved in `src/game/dialogue-edits.json` and override the base story text.
 
-## Saving to GitHub
+## Documentation
 
-At the end of each stage (or any time the game is in a working state), run these in PowerShell from the project folder:
-
-```
-git add .
-git commit -m "Stage 1: foundation and grey-box street"
-git push
-```
-
-Change the message to describe what you did. If something breaks later, every commit is a safe point you can go back to.
+- [Design doc](docs/design-doc.md): setting, systems, visuals and intended demo.
+- [Story review](docs/story-review.md): narrative findings and Stage 9B/9C decisions (contains spoilers).
+- [Stage 9 plan](docs/stages/stage-09-demo-content.md): content sessions and completion checks.
+- [Build stages](docs/dev-stages.md) and [stage files](docs/stages/): historical implementation plan.
+- [NOTES.md](NOTES.md): current implementation summary and next steps.
+- [CLAUDE.md](CLAUDE.md): repository working rules.

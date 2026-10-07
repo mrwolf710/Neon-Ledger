@@ -6,7 +6,7 @@ import EDITS from './dialogue-edits.json' with { type: 'json' }; // made in /edi
 export const SPEAKERS = {
   juno: { name: 'Juno', color: '#1fd6e8' },
   mamaTeo: { name: 'Mama Teo', color: '#e0217d' },
-  kit: { name: 'Worker', color: '#f2a93b' },
+  kit: { name: 'Kit', color: '#f2a93b' },
   dex: { name: 'Dex', color: '#8a8a90' },
   vendor: { name: 'Vendor', color: '#2a6b72' },
   miso: { name: 'Miso', color: '#d9771c' },
@@ -24,7 +24,7 @@ export const ENTRIES = {
   echo_seam: { kind: 'facts', title: 'The echo has a seam', text: 'The replay stutters at 03.5. Someone edited this memory.', source: "Echo: Mama Teo's back room, 03.5" },
   dex_body: { kind: 'facts', title: 'Dex slumped at the table', text: 'No wounds and no struggle. Whatever killed him was quiet.', source: 'The back room' },
   burned_port: { kind: 'facts', title: "Dex's implant port is burned out", text: 'The port is scorched, but the skin around it is clean. A burnout from inside would have marked it.', source: 'The back room' },
-  two_cups: { kind: 'facts', title: 'Two cups on the table', text: 'Both used, one still warm. Dex had company.', source: 'The back room' },
+  two_cups: { kind: 'facts', title: 'Two cups on the table', text: 'Both used. Dex had company.', source: 'The back room' },
   door_log: { kind: 'facts', title: 'Back door log: 1 entry, 0 exits', text: 'The terminal logged one person in tonight and nobody out.', source: 'The back room terminal' },
   smashed_lamp: { kind: 'facts', title: 'The corner lamp was smashed', text: 'Glass swept toward the door. Someone wanted the room dark.', source: 'The back room' },
   grey_glove: { kind: 'facts', title: 'A grey Bureau glove', text: 'Left in the alley behind the Sable. Standard Bureau issue, grey.', source: 'The alley' },
@@ -90,10 +90,10 @@ export const CONVERSATIONS = {
   } },
   ex_body: examine('body', 'dex_body', 'Dex Morrow. Mid-level echo broker. No wounds, no struggle. Whatever did this was quiet.', 'Dex Morrow. Still no marks on him.'),
   ex_port: examine('port', 'burned_port', "The port at his temple is burned black, but the skin around it is clean. A burnout from the inside would have scorched that too.", 'The port. Burned from the outside, I would bet.'),
-  ex_cups: examine('cups', 'two_cups', 'Two cups on the table. Both used, and one is still warm. Dex had company.', 'Two cups. Two people.'),
+  ex_cups: examine('cups', 'two_cups', 'Two cups on the table. Both used. Dex had company.', 'Two cups. Two people.'),
   ex_terminal: examine('terminal', 'door_log', "The back door terminal. One entry logged tonight. Zero exits. Whoever came in never left, or the log is lying.", 'One in, none out. That log is wrong or somebody is still here.'),
   ex_lamp: examine('lamp', 'smashed_lamp', 'The corner lamp is smashed, glass swept toward the door. Someone wanted the room dark.', 'Smashed on purpose. Dark room, quiet exit.'),
-  ex_glove: examine('glove', 'grey_glove', "A grey glove. Bureau issue. I have a pair just like it.", 'Bureau grey. Same as mine.'),
+  ex_glove: examine('glove', 'grey_glove', "A grey glove. Bureau service issue; auditors, inspectors and field crews all wear these.", 'Bureau issue. It tells me an organization, not a name.'),
   vendor: { start: 'a', nodes: {
     a: { speaker: 'vendor', text: "You smell like rain and Bureau paperwork. The Sable is up the street on the left, under the red awning. They found a broker in the back.", next: 'b' },
     b: { speaker: 'juno', text: 'Did anyone go in or out tonight?', next: 'c' },
@@ -152,6 +152,228 @@ export const CONVERSATIONS = {
   nobody: { start: 'a', nodes: { a: { speaker: 'juno', text: 'Nothing to say yet.', end: true } } },
 };
 
+// Stage 9B: editor overrides are still applied below.
+Object.assign(ENTRIES, {
+  "kit": {
+    "kind": "people",
+    "title": "Kit Lacroix",
+    "text": "Courier and Dex’s last client. The maintenance job was a cover for buying an echo of her erased past.",
+    "source": "Capsule hostel"
+  },
+  "someone_else": {
+    "kind": "facts",
+    "title": "Someone else was in the room",
+    "text": "Two cups and two voices establish that Dex met a second person. The edited echo does not identify them.",
+    "source": "Deduction board"
+  },
+  "override_trace": {
+    "kind": "facts",
+    "title": "Auditor-class override at 23:18",
+    "text": "The terminal’s hardware access journal records AUDITOR / FORCED UNLOCK at 23:18. The credential identity is redacted. This is separate from the editable entry counter.",
+    "source": "Back room terminal"
+  },
+  "auditor_override": {
+    "kind": "facts",
+    "title": "The visitor used an auditor override",
+    "text": "The door opened from outside without a knock, and its hardware journal records auditor-class access. A generic city key alone would not prove this.",
+    "source": "Deduction board"
+  },
+  "kit_claim": {
+    "kind": "facts",
+    "title": "Kit says she left at 23:00",
+    "text": "Kit claims she left the Sable at 23:00 and went straight back to the hostel.",
+    "source": "Kit"
+  },
+  "kit_at_2340": {
+    "kind": "facts",
+    "title": "Kit outside the Sable at 23:40",
+    "text": "Mama Teo’s alley memory places Kit by the back door at 23:40, before Juno’s 00:35 arrival.",
+    "source": "Alley echo"
+  },
+  "bureau_coat": {
+    "kind": "facts",
+    "title": "Kit saw a Bureau coat",
+    "text": "Pressed with the 23:40 echo, Kit admits seeing a figure leave in a Bureau coat. She could not see their face.",
+    "source": "Kit, confronted with the alley echo"
+  },
+  "bureau_involved": {
+    "kind": "facts",
+    "title": "Bureau involvement",
+    "text": "Auditor-class access, a Bureau glove and Kit’s account of a Bureau coat point to Bureau involvement. They do not identify an individual.",
+    "source": "Deduction board"
+  },
+  "backup_chip": {
+    "kind": "facts",
+    "title": "Dex’s isolated backup",
+    "text": "Kit hid Dex’s read-only optical chip beneath the hostel reception shelf. It was removed before the meeting and has no connection to his implant, so the implant burn and memory edits could not erase it.",
+    "source": "Capsule hostel"
+  },
+  "alley_memory": {
+    "kind": "echoes",
+    "title": "Mama Teo’s alley memory — 23:40",
+    "text": "A timestamped fragment: Kit at the back door, an unidentified figure departing, a grey glove at the latch. Faces are lost in the rain.",
+    "source": "Mama Teo’s implant"
+  }
+});
+Object.assign(CONVERSATIONS, {
+  "kit": {
+    "start": [
+      {
+        "if": {
+          "flag": "kit_pressed"
+        },
+        "node": "after"
+      },
+      {
+        "if": {
+          "flag": "kit_met"
+        },
+        "node": "again"
+      },
+      {
+        "node": "hello"
+      }
+    ],
+    "nodes": {
+      "hello": {
+        "speaker": "kit",
+        "text": "Plumbing. That’s all I’m here for. Unless you have thirty credits for a very expensive leak.",
+        "next": "cover"
+      },
+      "cover": {
+        "speaker": "juno",
+        "text": "You’re holding a courier bag. Let’s start with your name.",
+        "next": "name"
+      },
+      "name": {
+        "speaker": "kit",
+        "text": "Kit Lacroix. Fine. I carry things for Dex. Tonight I was the client. He had a memory from before my wipe. The uniform was so nobody asked why I came.",
+        "effects": [
+          {
+            "addPerson": "kit"
+          },
+          {
+            "setFlag": "kit_met"
+          }
+        ],
+        "next": "claim"
+      },
+      "claim": {
+        "speaker": "kit",
+        "text": "I left the Sable at 23:00. Straight back here. Whatever happened after that, I wasn’t there.",
+        "effects": [
+          {
+            "addFact": "kit_claim"
+          }
+        ],
+        "next": "again"
+      },
+      "again": {
+        "speaker": "kit",
+        "text": "I told you when I left. What else?",
+        "present": {
+          "kit_at_2340": "caught"
+        },
+        "presentWrong": "wrong",
+        "choices": [
+          {
+            "text": "That’s all for now.",
+            "end": true
+          }
+        ]
+      },
+      "caught": {
+        "speaker": "juno",
+        "text": "Teo’s implant clock says 23:40. You’re outside the back door. You didn’t go straight home.",
+        "next": "coat"
+      },
+      "coat": {
+        "speaker": "kit",
+        "text": "I went back. I wanted that memory. Someone came out in a Bureau coat. Grey glove on the latch. I stayed behind the bins. I never saw a face.",
+        "effects": [
+          {
+            "addFact": "bureau_coat"
+          },
+          {
+            "setFlag": "kit_pressed"
+          }
+        ],
+        "next": "copy"
+      },
+      "copy": {
+        "speaker": "kit",
+        "text": "Dex gave me a backup before the meeting. Read-only optical chip, already out of his implant. I hid it under that shelf. Whatever they did to his head, they couldn’t reach it.",
+        "effects": [
+          {
+            "setFlag": "backup_location"
+          }
+        ],
+        "end": true
+      },
+      "wrong": {
+        "speaker": "kit",
+        "text": "That doesn’t put me at the Sable. Do you have something that does?",
+        "end": true
+      },
+      "after": {
+        "speaker": "kit",
+        "text": "The chip is under the reception shelf. Please don’t lose the only piece of my life he managed to save.",
+        "end": true
+      }
+    }
+  },
+  "ex_backup": {
+    "start": [
+      {
+        "if": {
+          "flag": "ex_backup"
+        },
+        "node": "again"
+      },
+      {
+        "if": {
+          "flag": "backup_location"
+        },
+        "node": "take"
+      },
+      {
+        "node": "wait"
+      }
+    ],
+    "nodes": {
+      "wait": {
+        "speaker": "juno",
+        "text": "A reception shelf. Nothing obvious.",
+        "end": true
+      },
+      "take": {
+        "speaker": "juno",
+        "text": "A read-only optical chip, taped underneath. Physically separate from Dex’s implant. I’ll use the reader in my car.",
+        "effects": [
+          {
+            "addFact": "backup_chip"
+          },
+          {
+            "setFlag": "ex_backup"
+          }
+        ],
+        "end": true
+      },
+      "again": {
+        "speaker": "juno",
+        "text": "I have the chip. The car has a reader.",
+        "end": true
+      }
+    }
+  }
+});
+TALK.kit = 'kit';
+EXAMINABLES.push({ id: 'backup', area: 'hostel', spot: 'backup', verb: 'Examine', conv: 'ex_backup' });
+CONVERSATIONS.ex_terminal.nodes.a.next = 'trace';
+delete CONVERSATIONS.ex_terminal.nodes.a.end;
+CONVERSATIONS.ex_terminal.nodes.trace = { speaker: 'juno', text: 'The entry counter was edited. The hardware journal is separate: 23:18, AUDITOR, FORCED UNLOCK. Credential identity redacted. That is more than a city master key.', effects: [{ addFact: 'override_trace' }], end: true };
+CONVERSATIONS.ex_terminal.nodes.again.effects = [{ addFact: 'override_trace' }];
+
 // Conversations made in the editor: lines play in order; active ones become what the person says when Juno talks to them.
 for (const [id, d] of Object.entries(EDITS._new ?? {})) {
   const nodes = {};
@@ -183,6 +405,7 @@ for (const [conv, nodes] of Object.entries(EDITS)) {
 
 // Echo hotspots: where F starts an echo. at: [x, z] or { spot, dx, dz } relative to a named batch spot.
 export const HOTSPOTS = [
+  { id: 'alley_memory', area: 'alley', echo: 'alley_memory', at: { spot: 'echo' }, radius: 2.6 },
   { id: 'teo_back_room', area: 'sable', echo: 'teo_back_room', at: { spot: 'echo' }, radius: 2.6 },
 ];
 
@@ -198,7 +421,7 @@ export const ECHOES = {
       { sprite: 'dexStanding', keys: [
         { t: 0, x: 154.6, z: 1.0, facing: Math.PI, anim: 'idle' }, { t: 6, x: 154.6, z: 1.0, facing: Math.PI, anim: 'idle' },
       ] },
-      { sprite: 'vendor', show: [1.4, 6], keys: [
+      { sprite: 'unknownEcho', show: [1.4, 6], keys: [
         { t: 1.4, x: 157.8, z: -1.2, facing: -Math.PI / 2, anim: 'walk' }, { t: 2.6, x: 156.0, z: -1.2, facing: -Math.PI / 2, anim: 'walk' },
         { t: 2.8, x: 156.0, z: -1.2, facing: -Math.PI / 2, anim: 'idle' }, { t: 3.49, x: 156.0, z: -1.2, facing: -Math.PI / 2, anim: 'idle' },
         { t: 3.5, x: 157.2, z: -2.0, facing: Math.PI, anim: 'idle' }, { t: 6, x: 157.2, z: -2.0, facing: Math.PI, anim: 'idle' },
@@ -227,3 +450,136 @@ export const BOARD = {
       effects: [{ addFact: 'someone_had_key' }, { setFlag: 'key_deduced' }] },
   ],
 };
+
+ECHOES.alley_memory = {
+  "title": "Alley, 23:40 — Mama Teo’s view",
+  "owner": "mamaTeo",
+  "entry": "alley_memory",
+  "duration": 8,
+  "tracks": [
+    {
+      "sprite": "kit",
+      "keys": [
+        {
+          "t": 0,
+          "x": 301,
+          "z": 2,
+          "facing": 3.141592653589793,
+          "anim": "idle"
+        },
+        {
+          "t": 8,
+          "x": 301,
+          "z": 2,
+          "facing": 3.141592653589793,
+          "anim": "idle"
+        }
+      ]
+    },
+    {
+      "sprite": "unknownEcho",
+      "show": [
+        1,
+        6
+      ],
+      "keys": [
+        {
+          "t": 1,
+          "x": 300,
+          "z": -2,
+          "anim": "walk"
+        },
+        {
+          "t": 6,
+          "x": 300,
+          "z": 4,
+          "anim": "walk"
+        }
+      ]
+    }
+  ],
+  "voices": [
+    {
+      "t0": 0,
+      "t1": 3,
+      "speaker": "mamaTeo",
+      "text": "23:40. That courier’s still here."
+    },
+    {
+      "t0": 3,
+      "t1": 7,
+      "speaker": "mamaTeo",
+      "text": "Grey glove on the latch. Can’t see a face through this rain."
+    }
+  ],
+  "seams": [],
+  "tags": [
+    {
+      "t": 2,
+      "window": 1,
+      "fact": "kit_at_2340",
+      "label": "Kit at 23:40"
+    },
+    {
+      "t": 4.5,
+      "window": 1,
+      "fact": "grey_glove",
+      "label": "Bureau glove at the latch"
+    }
+  ]
+};
+BOARD.conclusions.push(...[
+  {
+    "id": "someone_else",
+    "needs": [
+      "two_cups",
+      "two_voices"
+    ],
+    "result": "someone_else",
+    "line": "Two cups, two voices. Dex was not alone. The missing face is still missing.",
+    "effects": [
+      {
+        "addFact": "someone_else"
+      },
+      {
+        "setFlag": "visitor_deduced"
+      }
+    ]
+  },
+  {
+    "id": "auditor_override",
+    "needs": [
+      "someone_else",
+      "door_unlocked",
+      "override_trace"
+    ],
+    "result": "auditor_override",
+    "line": "A visitor entered from outside. The hardware journal identifies auditor-class override access, not an ordinary city key.",
+    "effects": [
+      {
+        "addFact": "auditor_override"
+      },
+      {
+        "setFlag": "override_deduced"
+      }
+    ]
+  },
+  {
+    "id": "bureau_involved",
+    "needs": [
+      "auditor_override",
+      "grey_glove",
+      "bureau_coat"
+    ],
+    "result": "bureau_involved",
+    "line": "Auditor access. Bureau equipment. A witness who saw the coat. The Bureau is involved; I still cannot name the person.",
+    "effects": [
+      {
+        "addFact": "bureau_involved"
+      },
+      {
+        "setFlag": "bureau_deduced"
+      }
+    ]
+  }
+]);

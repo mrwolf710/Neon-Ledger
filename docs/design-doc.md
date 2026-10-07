@@ -4,7 +4,7 @@ Oct 4, 2026 · Heath Fowler
 
 ## Overview
 
-Neon Echoes is a single-player cyberpunk detective game in an HD-2D isometric style, built in three.js with every texture, sprite, mesh and sound generated in code at runtime. The first deliverable is a 15–20 minute playable demo: one district, one murder, and a twist ending that sets up the full game.
+Neon Echoes is a single-player cyberpunk detective game in an HD-2D isometric style, built in three.js with procedural environments and synthesized audio alongside selected PNG character and prop art. The first deliverable is a 15–20 minute playable demo: one district, one murder, and a twist ending that sets up the full game.
 
 **Pitch:** You are Juno Vale, a memory auditor who solves crimes by replaying the sensory "echoes" stored in people's neural implants. A data broker dies in the back room of a noodle bar. The official cause is implant burnout. The echoes say otherwise, and the last one points at you.
 
@@ -12,7 +12,7 @@ Neon Echoes is a single-player cyberpunk detective game in an HD-2D isometric st
 
 - **A diorama you want to live in.** Pixel-art people in a lit, rainy, miniature-looking 3D city. Every street corner should be screenshot-worthy.
 - **Deduction, not hunting.** Clues are easy to find. The challenge is connecting them on the deduction board and catching contradictions.
-- **Everything is code.** No image, model or audio files ship with the game. The whole world is generated at load from seeds and rules.
+- **A procedural world with selected pixel art.** Environments and audio are generated at load from seeds and rules. Approved PNG sprites and props provide the character art.
 - **Short and sharp.** The demo respects the player's time and ends on a hook strong enough to want the next chapter.
 
 | Item | Decision |
@@ -43,17 +43,17 @@ Keep the reference shots' recipe and swap the palette: chunky pixel sprites stan
 - **Atmosphere:** low height fog that catches sign light, steam from vents and noodle pots, drifting holo-ads.
 - **Density:** taller verticality than the village. Walkways, fire escapes and an elevated train line give layers above the street.
 
-**Time of day:** the demo runs at night, roughly 22:40 to 02:10 in-game. Three lighting states carry it: Late Evening (purple sky edge, signs warming up), Night (full neon), and Dead Hour (signs flicker off, cold blue, for the ending).
+**Time of day:** the demo runs at night, roughly 00:35 to 02:10 in-game, after the previous evening’s 23:10–23:57 memory gap. Three lighting states carry it: Late Evening (purple sky edge, signs warming up), Night (full neon), and Dead Hour (signs flicker off, cold blue, for the ending).
 
 **Pixel scale rule:** 1 world unit = 16 texture pixels. Characters are 24–32 px tall sprites. Every procedural texture follows this rule so pixel density matches across walls, floors and people.
 
 ## Technical approach
 
-The game ships as JavaScript only. At load, a seeded generator builds every texture, sprite sheet, mesh and sound into memory, then the renderer draws the scene through a short post-processing chain. Load time target: under 4 seconds on a mid-range PC.
+The game ships JavaScript and selected PNG art. At load, seeded generators build procedural textures, fallback sprite sheets, meshes and synthesized sound, while approved PNG sheets and props load into memory. The renderer draws the scene through a short post-processing chain. Load time target: under 4 seconds on a mid-range PC.
 
-**Rules for "no pre-rendered assets"**
+**Asset rules (hybrid procedural/PNG approach)**
 
-- No PNG, GLB, MP3 or font-atlas files. Allowed: three.js and its official add-ons (post-processing passes), plus our own code.
+- Approved PNG art: Juno, Mama Teo, Kit, vendor, seated/standing Dex, Miso, holo-preacher, CRT frame and alley glove; see CLAUDE.md for paths. Other environment assets remain procedural. Audio remains Web Audio synthesis; do not add GLB, MP3 or font-atlas files. three.js and official add-ons remain the rendering foundation.
 - All randomness comes from a seeded PRNG (for example mulberry32), so the same seed always builds the same city. Seed is shown in the debug panel.
 - Generated assets are cached in memory for the session; nothing is written to disk.
 
@@ -233,11 +233,11 @@ The city of Saint Halvard runs on implants that record what people see and hear.
 
 **The truth of the case (hidden from the player until the end)**
 
-Dex was selling an echo that proved the Bureau wipes auditors' memories after off-book jobs. Someone used an auditor override to enter the back room, burned out Dex's implant, and edited the nearby echoes. The override code and the grey Bureau glove both trace to Juno. Juno has no memory of it.
+Dex was selling an echo that proved the Bureau wipes auditors' memories after off-book jobs. Someone used an auditor override to enter the back room, burned out Dex's implant, and edited the nearby echoes. The early access trace and grey glove establish Bureau involvement without identifying an individual; Dex’s isolated backup reveals Juno. Juno has no memory of it.
 
 ## Demo script
 
-The demo runs about 18 minutes across seven beats, from Juno's arrival at 22:40 to the reveal at 02:10. Each beat teaches one system before the next one leans on it.
+The demo runs about 18 minutes across seven beats, from Juno's arrival at 00:35 on the following day to the reveal at 02:10. Each beat teaches one system before the next one leans on it.
 
 | # | Beat | Time | Location | What happens | What it teaches |
 | --- | --- | --- | --- | --- | --- |
@@ -246,7 +246,7 @@ The demo runs about 18 minutes across seven beats, from Juno's arrival at 22:40 
 | 3 | The scene | ~4 min | Sable back room | Examine 5 spots: body, burned port, two cups, door terminal, smashed lamp. Door log shows one entry, no exit. | Examine, case file |
 | 4 | First echo | ~2 min | Sable back room | Echo from Mama Teo: she hears two voices before finding Dex. The echo has a visible seam. | Echo-scan, scrubbing, seams |
 | 5 | Interviews | ~4 min | Counter, alley, hostel | Mama Teo, then Kit. Alley echo shows a grey-gloved hand. Kit says she left at 23:00; her echo puts her outside at 23:40. | Questioning, presenting facts |
-| 6 | The board | ~3 min | Juno's car | Link 3 conclusions: "Someone else was in the room", "The killer used an override", "Kit saw them leave". Kit, pressed, describes a Bureau coat. | Deduction board |
+| 6 | The board | ~3 min | Juno's car | Link 3 conclusions: "Someone else was in the room", "The visitor used an auditor override", "Bureau involvement". Present the 23:40 echo to Kit; pressed, she describes a Bureau coat but no face. | Deduction board |
 | 7 | The last echo | ~2 min | Juno's car | Juno recovers Dex's hidden backup echo. Cliffhanger plays. | (payoff) |
 
 **Beat 7 — the cliffhanger, shot by shot**
@@ -254,7 +254,7 @@ The demo runs about 18 minutes across seven beats, from Juno's arrival at 22:40 
 1. Juno slots Dex's backup chip. The world drains to the echo palette, and the replay is from Dex's eyes.
 2. The door opens. A figure in a grey Bureau glove sits across from him. Rain on the window, two cups on the table.
 3. The figure leans into the light. It is Juno, calm, wearing the same coat she has on now.
-4. Back in the car, Juno opens her own implant log. A red band shows a 47-minute gap, 23:10 to 23:57.
+4. Back in the car, Juno opens her own implant log. A red band shows a 47-minute gap on the preceding evening, 23:10 to 23:57.
 5. All the Lowmarket signs flicker off at once (the Dead Hour lighting state). Only her dashboard glows.
 6. Hale on comms, gently: "Juno. Where were you tonight between 23:10 and 23:57?"
 7. Cut to black. Card: "Neon Echoes — Case 01 continues."
@@ -316,6 +316,14 @@ The build runs in 9 stages, each with its own file in [docs/stages](stages/) and
 Stages 1–3 build the look before any gameplay. If the street doesn't look right after Stage 3, adjust the style before going further.
 
 Every stage ends by updating NOTES.md, a short running summary of the code. The next stage's chat starts from that file instead of the whole project.
+
+## Stage 9 decisions and remaining work
+
+- The original 22:40 arrival contradicted Dex’s death during the planned 23:10–23:57 gap. 9B adopts 00:35 on the next day; keep historical clues on the preceding evening.
+- Unresolved for 9C: accelerated live-clock progression, beat-based lighting and the intended 02:10 ending need a coordinated pacing pass.
+- Kit’s maintenance identity is a cover for her courier/client role. An auditor-class hardware access record distinguishes an override from generic city keys.
+- Dex’s backup is a read-only optical chip removed before the meeting, hidden by Kit, and disconnected from his implant. Its final replay remains 9C work.
+- See [story-review.md](story-review.md) for evidence logic, baseline findings and validation still required.
 
 ## Open questions
 

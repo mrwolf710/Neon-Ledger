@@ -1,5 +1,5 @@
 export const CLOCK = {
-  start: 22 * 60 + 40,       // game minutes since midnight at first load (beat 1: 22:40)
+  start: 24 * 60 + 35,       // game minutes since midnight at first load (beat 1: 00:35)
   speed: 1,                  // game minutes per real second
   slider: [22 * 60, 29 * 60], // the night bar runs from 22:00 to 05:00 (minutes; > 1440 is after midnight)
   // Phase boundaries in minutes (after midnight counts on from 1440).
