@@ -228,7 +228,7 @@ function hostel(M) {
   table(b, PM, -2.2, 1.2, 1.4, 0.8); stool(b, PM, -2.9, 1.9); stool(b, PM, -1.5, 1.9);
   b.box(signMat('CAPSULES', P.pink), 3.2, 0.8, 0.1, 0.5, 2.8, -2.0, 0, 0, false);       // hangs above the bunks, clear of every wall
   b.light(P.magenta, 12, 0, 2.5, -0.5); b.light(P.cyan, 9, 3.0, 2.2, 2.0); b.light(P.amberLight, 8, -3.5, 2.2, 1.0);
-  b.spot('kit', 1.2, 0.6); b.spot('door', 0, 2.9);
+  b.spot('kit', 1.2, 0.6); b.spot('backup', 3.4, 2.0); b.spot('door', 0, 2.9);
   return finish('hostel', b, [-5, -3.5, 5, 3.5]);
 }
 

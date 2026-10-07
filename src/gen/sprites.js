@@ -538,11 +538,26 @@ export function spriteSheet(def, isCat = false) {
   return { texture, canvas, frameW: fw, frameH: fh, pxPerUnit: isCat ? SPRITES.cat.pxPerUnit : SPRITES.pxPerUnit, rows, animRows, anims };
 }
 
+// An intentionally anonymous echo: a plain silhouette with no cast member's face, clothing or accessories.
+const UNKNOWN_ECHO = { color: '#173b46' };
+function unknownEchoSheet() {
+  const frameW = SPRITES.w, frameH = SPRITES.h;
+  const canvas = Object.assign(document.createElement('canvas'), { width: frameW, height: frameH });
+  const ctx = canvas.getContext('2d'); ctx.fillStyle = UNKNOWN_ECHO.color;
+  ctx.fillRect(15, 4, 10, 12); ctx.fillRect(11, 16, 18, 29);
+  ctx.fillRect(7, 19, 4, 24); ctx.fillRect(29, 19, 4, 24);
+  ctx.fillRect(12, 45, 7, 18); ctx.fillRect(21, 45, 7, 18);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.magFilter = texture.minFilter = THREE.NearestFilter;
+  texture.generateMipmaps = false; texture.colorSpace = THREE.SRGBColorSpace;
+  return { texture, canvas, frameW, frameH, pxPerUnit: SPRITES.pxPerUnit,
+    rows: { down: 0, up: 0, left: 0, right: 0 }, anims: { idle: { start: 0, frames: 1 }, walk: { start: 0, frames: 1 } } };
+}
 // All sheets by id, built once.
 let sheets = null;
 export function getSheets() {
   if (!sheets) {
-    sheets = {};
+    sheets = { unknownEcho: unknownEchoSheet() };
     for (const [id, def] of Object.entries(CHARACTERS)) sheets[id] = spriteSheet(def);
     for (const [id, def] of Object.entries(CATS)) sheets[id] = spriteSheet(def, true);
   }

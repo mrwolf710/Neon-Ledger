@@ -1,8 +1,6 @@
 # NOTES (Neon Echoes)
-Running summary for Claude sessions (keep under 60 lines).
 ## Status
-- Current stage: 9A built (#18), needs a browser pass. Next: 9B (#19) beats 4-6, 9C (#20) beat 7. Issues #2-#17 closed. Seed 1337
-## Files
+- Current stage: 9A (#18) and 9B (#19) implemented; browser/device playthrough pending. Next: 9C (#20), final replay + pacing. Issues #2-#17 closed. Seed 1337
 - src/core: rng.js seeded PRNG · input.js action layer · settings.js TIERS high/medium/mobile, ?quality=
 - src/render: camera.js · lights.js · fog.js (height fog + cutaway) · post.js · src/world: district.js (street, CAST, ZONES), areas.js (all areas, EXITS), collision.js, particles.js, timeofday.js
 - src/gen: palette.js · textures.js · batch.js · buildings.js · glyphs.js · props.js · sprites.js · pixelfont.js
@@ -11,7 +9,6 @@ Running summary for Claude sessions (keep under 60 lines).
 - src/ui: menu.js (pause menu: Esc/pad Start/touch pause; sound, video quality + fullscreen, restart, quit; quality saved in localStorage nl.quality) · touch.js · title.js (title.started) · styles.css (panel frame, key caps, rem, safe-area) · hud.js (HUD + dialogue box) · fade.js (black fade, title card)
 - src/main.js builds everything + loop · src/debug/panel.js (` toggles; "go to" area select) · scripts/: check-*.mjs (node self-checks), where*.mjs (positions),
   drive.mjs = headless Edge on the BUILT game: `QS="?start=sable&hooks" LOAD_MS=20000 node scripts/drive.mjs "eval:__nl.cam.zoom(0.5)" wait:5000 shot:name` (?start=<area> skips the cold open, ?hooks exposes window.__nl: look(area,x,z) / lookSpot(area,name) / lookCast(id) stand Juno beside anything for a screenshot tour; CHECK EVERY NEW THING THIS WAY before calling it done)
-## Key functions
 - `createRng(seed)` -> { seed, rand, range, int, pick, weighted, fork(label) }; fork depends only on (seed, label). All randomness goes through it.
 - `input`: update()/endFrame(); moveX/moveY, run, zoom, zoomSteps, orbitDX/DY, lookX, click {x,y}, zoomFactor, lastDevice, padType,
   held(a), pressed(a), pressAction/releaseAction. Keys: WASD/arrows, Shift run, G sneak (hold), Space/Enter interact, Backspace back, F echo, Q/E rotate,
@@ -26,7 +23,7 @@ Running summary for Claude sessions (keep under 60 lines).
 - Dialogue portrait: ids in `PORTRAIT.holo` (hud.js) get a cyan wash, scanlines and flicker. Dead corpo (seated, 8 dirs, 48x48): public/sprites/corpo/<dir>.png, from Pixellab; Dex (sable back room): loadDexSheet, one still frame. Animated idles (junoart loadLoopSheet; south = 8-frame loop, other dirs a still): Miso = public/sprites/cat (sheets.miso, no walk anim, he slides), standing Dex = public/sprites/corpo-stand (sheets.dexStanding, used by his echo); Kit and the vendor = owner sheets (public/sprites/kit, /vendor; loadKitSheet(A), cell px, footPx offset). Every cast member now uses owner art. Cold open plays inside the owner CRT PNG (public/sprites/crt/frame.png, ui/crtframe.js: canvas CSS-scaled into the glass, zooms out with post.setCrt) with a VHS look (post.setVhs). HUD help is collapsed to "H Help"; H opens the list.
 - `createInteractions(scene)` -> { add({id, position, height, verb, onInteract}), nearest, pick, current, hide, update(...) }: DOM prompt, pixel font.
 - `createHud(collision)` -> { dialogue (box UI; speaker portrait cropped from the sheet by drawPortrait), show, setCollision, setLocation, setClock, setObjectiveText, setObjective({x,z}|null), toast, toggleControls, update(dt, view) }.
-  `createClock()` 1 s = 1 game min from 22:40; phase picks the time-of-day mood. `frame(el)` = panel frame. Debug panel: select/slider/button + stats. Tunables are constants atop each file.
+  `createClock()` 1 s = 1 game min from 00:35 (next day after the 23:10–23:57 gap); phase picks the time-of-day mood. `frame(el)` = panel frame. Debug panel: select/slider/button + stats. Tunables are constants atop each file.
 - `createCaseFile(hud, clock)` -> { apply(effects), facts(), has(id), add(id), hasFlag, setFlag, open({present, onPick, onCancel}), close, toggle, isOpen, update(input) }. Tabs People/Facts/Echoes.
   `createEcho({scene, sheets, post, caseFile, hud, cast, areas})` -> { active, hotspots, tryStart(pos), start(id), exit(), update(dt, input, camYaw, lights, scrubAxis, playerPos) }.
   F near a hotspot (cyan diamond) starts it; F/Backspace/Esc exits. Space tags (in a tag window) else play/pause; stick or A/D scrubs, D-pad steps,
@@ -42,7 +39,6 @@ Running summary for Claude sessions (keep under 60 lines).
   echo.onUi, tod.onFlicker(i), billboard.onStep(frame). Voices per speaker in sfx TUNING.voices.
 - Neon Editor (dev only): run npm run dev, open /editor.html; Each conversation has a "plays when Juno talks to X, on visit N, only if she knows fact F / has talked to Y" row (story.js RULES, conversationFor; beats counts visits); Scenes tab = per-scene lighting (world/scenes.js keys, saved to world/scene-edits.json, applied by timeofday.setScene); "+ Add line after this" inserts boxes (_insert in the edits file). Lists every CONVERSATIONS entry (new ones in story.js appear by themselves); edits text, speaker, choice labels; "+ New conversation" = pick who Juno talks to + lines. Saves via vite.config.js to src/game/dialogue-edits.json, which story.js lays over its data (_new = your conversations; active ones replace TALK[person]).
 - Save game: pause menu Save/Load (one slot, localStorage nl.save, main.js saveGame/loadGame: area, position, clock, caseFile.dump(), board logic, beats.visits, Miso, sunsetT); title offers "press C to continue" when a save exists.
-## Data formats
 - Character: { name, skin, iris, lips?, lashes?, hair:{style,color,shine?}, top, legs, shoes, outfit?:{type,color,collar}, acc:[{type,color}], poses? }.
 - Beats (beats.js): cold open (dark platform, train, lamps fade up, title card, Hale), STEPS = objective list (text, area, pos, done), registers doors / EXAMINABLES
   / NPCs as interactables. Miso follows after being petted (flag miso_joined). dialogue.start(id) returns a promise. Flags: visited_<area>, ex_<id>, seen_backroom.
@@ -59,4 +55,5 @@ Running summary for Claude sessions (keep under 60 lines).
   line (Juno), effects}] }. A pair locks on one link; a trio needs links connecting all three. Every 3rd wrong link touching a conclusion's facts hints a needed
   fact. Result facts (source "Deduction board") show as cyan CONCLUSION cards. Style: holographic grid, cut-corner cards, flowing neon strings (CSS in styles.css). Test: door_unlocked + master_keys + two_voices (a trio) -> someone_had_key.
 ## Known issues
+- 9B: terminal hardware journal at 23:18; Kit’s maintenance cover/23:00 claim + alley echo at 23:40; present kit_at_2340 for bureau_coat; recover isolated backup at hostel backup spot. Board: two_cups+two_voices -> someone_else; +door_unlocked+override_trace -> auditor_override; +grey_glove+bureau_coat -> bureau_involved. Anonymous echoes use unknownEcho. Old city-key rule retained for saves. 9C ending and live-clock/lighting pacing remain unimplemented.
 - Chunk > 500 kB warning. Rail deck hits buildings near x=17. NPCs don't block Juno. Point lights cast no shadows. Mobile shadows may be heavy. iPhone test: npm run dev -- --host (Network URL, Safari landscape).
