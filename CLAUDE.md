@@ -7,6 +7,7 @@ Cyberpunk detective game, HD-2D isometric look, three.js + Vite, plain JavaScrip
 - No asset files. Every texture, sprite, mesh and sound is generated in code at runtime (canvas, geometry, Web Audio). Do not add PNG, GLB, MP3, font atlases or similar.
   - One exception, by the owner's decision: Juno's own pixel-art PNGs in `public/sprites/juno/<state>/<direction>.png` (idle, walk, sneak, tablet; 8 directions; 48x48), and Mama Teo's in `public/sprites/teo/<direction>.png` (idle), and the Holo-preacher's in `public/sprites/priest/sheet.png` (3x3 grid, 8 directions), the cat, standing Dex, Kit, the vendor (`vendor`), the CRT monitor frame and the alley glove (`public/sprites/cat`, `corpo`, `corpo-stand`, `kit`, `crt`, `glove`), loaded by `src/gen/junoart.js`. Everything else stays generated.
 - All randomness goes through `src/core/rng.js` (seeded) so the same seed rebuilds the same city.
+- Hale's owner-supplied PNG sheet is also approved: `public/sprites/hale/sheet.png`, copied from `Assets/Hale`. His dialogue portrait uses its north-west (rear-left) frame.
 - Pixel rule: 1 world unit = 16 texture pixels; textures use NearestFilter.
 - Keep the Mobile quality tier working (iPhone): watch draw calls, light count and texture memory.
 

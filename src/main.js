@@ -4,7 +4,7 @@ import { input } from './core/input.js';
 import { createCamera, CAMERA } from './render/camera.js';
 import { createDebugPanel, showSprites } from './debug/panel.js';
 import { getSheets } from './gen/sprites.js';
-import { loadJunoSheet, loadTeoSheet, loadPriestSheet, loadDexSheet, loadCatSheet, loadDexStandSheet, loadKitSheet, loadVendorSheet } from './gen/junoart.js';
+import { loadJunoSheet, loadTeoSheet, loadPriestSheet, loadDexSheet, loadCatSheet, loadDexStandSheet, loadKitSheet, loadVendorSheet, loadHaleSheet } from './gen/junoart.js';
 import { createCast } from './game/npc.js';
 import './ui/styles.css';
 import { createTouchUI } from './ui/touch.js';
@@ -67,6 +67,7 @@ try { getSheets().vendor = await loadVendorSheet(); } catch (e) { console.warn('
 try { getSheets().kit = await loadKitSheet(); } catch (e) { console.warn('Kit art not loaded, using the generated sprite:', e.message); }
 try { getSheets().miso = await loadCatSheet(); } catch (e) { console.warn('Cat art not loaded, using the generated sprite:', e.message); }
 try { getSheets().dexStanding = await loadDexStandSheet(); } catch (e) { console.warn('Standing Dex art not loaded, using the seated sprite:', e.message); }
+try { getSheets().hale = await loadHaleSheet(); } catch (e) { console.warn('Hale art not loaded, using the letter portrait:', e.message); }
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(MAIN.background);

@@ -31,13 +31,13 @@ export function frame(node) {
   return node;
 }
 
-// Speaker portrait: the head-and-shoulders crop of the speaker's front-facing idle frame (nearest-neighbour), or a letter plate for voices with no sprite.
+// Speaker portrait: head-and-shoulders idle crop (nearest-neighbour), with an optional direction override, or a letter plate for voices with no sprite.
 const PORTRAIT = { px: 64, headFrac: 0.5, catTop: 0.3, holo: ['preacher'], holoTint: 'rgba(60,230,255,0.6)', scanAlpha: 0.4 }; // px = canvas size, headFrac = share of a human frame (from the top) that counts as head + shoulders
 function drawPortrait(cv, id, name, color) {
   const g = cv.getContext('2d'); g.imageSmoothingEnabled = false; g.clearRect(0, 0, cv.width, cv.height);
   const sh = getSheets()[id];
   if (!sh) { g.fillStyle = color; g.font = `bold ${cv.height * 0.6}px monospace`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(name[0], cv.width / 2, cv.height / 2 + 2); return; }
-  const eight = sh.dirs === 8, row = eight ? sh.animRows.idle.south : sh.rows.down, W = sh.frameW, H = sh.frameH;
+  const eight = sh.dirs === 8, row = eight ? sh.animRows.idle[sh.portraitDirection ?? 'south'] : sh.rows.down, W = sh.frameW, H = sh.frameH;
   const oy = sh.small ? Math.round(H * PORTRAIT.catTop) : 0; // cats: skip the tail, keep head and body
   const ch = sh.small ? H - oy : Math.round(H * (sh.frameH > 20 ? PORTRAIT.headFrac : 1));
   const px = sh.canvas.getContext('2d').getImageData(0, row * H + oy, W, ch).data;

@@ -28,6 +28,8 @@ export const DEX_STAND_ART = { base: 'sprites/corpo-stand', size: 48, pxPerUnit:
 export const KIT_ART = { base: 'sprites/kit', cell: 68, pxPerUnit: 24, fps: 6, foot: 11, dirs: JUNO_ART.dirs }; // foot = empty pixels under the shoes in each cell
 // The street vendor: same kind of sheet, 64 px cells, a 4-frame breathing loop.
 export const VENDOR_ART = { base: 'sprites/vendor', cell: 64, pxPerUnit: 24, fps: 4, foot: 10, frames: 4, dirs: JUNO_ART.dirs };
+// Hale: eight 48 px rotation frames across one row; comms show the rear-left (north-west) view.
+export const HALE_ART = { base: 'sprites/hale', size: 48, pxPerUnit: 24, dirs: JUNO_ART.dirs, portraitDirection: 'north-west' };
 const LOOP = 8;
 const OPP = { south: 'south', north: 'north', east: 'west', west: 'east', 'south-east': 'south-west', 'south-west': 'south-east', 'north-east': 'north-west', 'north-west': 'north-east' };
 
@@ -55,6 +57,15 @@ export async function loadPriestSheet() {
 export const loadDexSheet = () => loadSheet(DEX_ART, DEX_FRAMES, ['']);
 export const loadTeoSheet = () => loadSheet(TEO_ART, TEO_FRAMES, ['']);
 export const loadVendorSheet = () => loadKitSheet(VENDOR_ART);
+export async function loadHaleSheet() {
+  const A = HALE_ART, grid = await load(`${import.meta.env.BASE_URL}${A.base}/sheet.png`), imgs = {};
+  A.dirs.forEach((dir, i) => {
+    const canvas = Object.assign(document.createElement('canvas'), { width: A.size, height: A.size });
+    canvas.getContext('2d').drawImage(grid, i * A.size, 0, A.size, A.size, 0, 0, A.size, A.size);
+    imgs[`/${dir}`] = canvas;
+  });
+  return { ...await loadSheet(A, DEX_FRAMES, [''], imgs), portraitDirection: A.portraitDirection };
+}
 export async function loadKitSheet(A = KIT_ART) {
   const img = await load(`${import.meta.env.BASE_URL}${A.base}/sheet.png`);
   const canvas = Object.assign(document.createElement('canvas'), { width: img.width, height: img.height });
