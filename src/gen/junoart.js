@@ -32,14 +32,15 @@ export const VENDOR_ART = { base: 'sprites/vendor', cell: 64, pxPerUnit: 24, fps
 // Hale: eight 48 px rotation frames across one row; comms show the rear-left (north-west) view.
 export const HALE_ART = { base: 'sprites/hale', size: 48, pxPerUnit: 24, dirs: JUNO_ART.dirs, portraitDirection: 'north-west' };
 const LEGS_Y = 38; // px row where the legs start (below the coat hem): walk/sneak frames swap only the part below it
+const FOOT_LIFT = 3; // px a stepping foot is raised (the left / right half of the legs alternate), so the feet visibly move
 const LOOP = 8;
 const OPP = { south: 'south', north: 'north', east: 'west', west: 'east', 'south-east': 'south-west', 'south-west': 'south-east', 'north-east': 'north-west', 'north-west': 'north-east' };
 
 // Frame recipes: [state, mirrored?, dy] where mirrored uses the opposite direction's picture flipped.
 const FRAMES = {
   idle: [['idle', false, 0], ['idle', false, 1]],
-  walk: [['walk', false, 1], ['walk', false, 0], ['walk', 'legs', 1], ['walk', 'legs', 0]],
-  sneak: [['sneak', false, 0], ['sneak', false, 1], ['sneak', 'legs', 0], ['sneak', 'legs', 1]],
+  walk: [['walk', false, 1, [FOOT_LIFT, 0]], ['walk', false, 0], ['walk', 'legs', 1, [0, FOOT_LIFT]], ['walk', 'legs', 0]],
+  sneak: [['sneak', false, 0, [1, 0]], ['sneak', false, 1], ['sneak', 'legs', 0, [0, 1]], ['sneak', 'legs', 1]],
   tablet: [['tablet', false, 0], ['tablet', true, 0]],
 };
 
@@ -118,14 +119,20 @@ async function loadSheet(A, FRAMES, states, preloaded) {
     A.dirs.forEach((dir, di) => {
       const row = ai * A.dirs.length + di;
       animRows[anim][dir] = row;
-      FRAMES[anim].forEach(([state, mirrored, dy], f) => {
+      FRAMES[anim].forEach(([state, mirrored, dy, lift], f) => {
         const x = f * S, y = row * S + dy;
         ctx.save();
         ctx.beginPath(); ctx.rect(x, row * S, S, S); ctx.clip();
-        if (!mirrored) ctx.drawImage(imgs[`${state}/${dir}`], x, y);
-        else if (mirrored === 'legs') { // same upper body, legs from the opposite side's picture, flipped
+        if (!mirrored && !lift) ctx.drawImage(imgs[`${state}/${dir}`], x, y);
+        else if (mirrored === 'legs' || lift) { // legs: the left and right half are drawn separately (one foot raised), then the upper body on top
+          const flip = mirrored === 'legs', legs = imgs[`${state}/${flip ? OPP[dir] : dir}`];
+          [0, 1].forEach((half) => {
+            ctx.save(); ctx.beginPath(); ctx.rect(x + (half * S) / 2, row * S, S / 2, S); ctx.clip();
+            const up = lift?.[half] ?? 0;
+            if (flip) { ctx.translate(x + S, y); ctx.scale(-1, 1); ctx.drawImage(legs, 0, LEGS_Y, S, S - LEGS_Y, 0, LEGS_Y - up, S, S - LEGS_Y); } else ctx.drawImage(legs, 0, LEGS_Y, S, S - LEGS_Y, x, y + LEGS_Y - up, S, S - LEGS_Y);
+            ctx.restore();
+          });
           ctx.drawImage(imgs[`${state}/${dir}`], 0, 0, S, LEGS_Y, x, y, S, LEGS_Y);
-          ctx.translate(x + S, y); ctx.scale(-1, 1); ctx.drawImage(imgs[`${state}/${OPP[dir]}`], 0, LEGS_Y, S, S - LEGS_Y, 0, LEGS_Y, S, S - LEGS_Y);
         } else { ctx.translate(x + S, y); ctx.scale(-1, 1); ctx.drawImage(imgs[`${state}/${OPP[dir]}`], 0, 0); }
         ctx.restore();
       });
