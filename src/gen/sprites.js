@@ -45,6 +45,10 @@ export const CHARACTERS = {
     top: 'violet', legs: 'indigo', shoes: 'ink', outfit: { type: 'trench', color: 'violet', collar: true },
     acc: [{ type: 'sticks', color: 'amberLight' }],
   },
+  figure: { // the unknown visitor in echoes: a plain dark human shape, no face or outfit
+    name: 'Unknown figure', skin: 'grey1', iris: 'grey1', hair: { style: 'cropped', color: 'grey1' },
+    top: 'grey1', legs: 'grey1', shoes: 'grey0', acc: [],
+  },
   vendor: {
     name: 'Street vendor', skin: 'rust3', iris: 'ink', hair: { style: 'short', color: 'ink' },
     top: 'grey2', legs: 'grey1', shoes: 'ink',

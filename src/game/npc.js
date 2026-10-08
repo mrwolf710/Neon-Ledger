@@ -22,7 +22,7 @@ const VERT = /* glsl */`
   void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
 const FRAG = /* glsl */`
   uniform sampler2D map; uniform vec4 frame; uniform vec2 texel;
-  uniform vec3 lightColor, rimColor; uniform float brightness, tint, rim, rimMax, maxLum, lightSide, ghost;
+  uniform vec3 lightColor, rimColor; uniform float brightness, tint, rim, rimMax, maxLum, lightSide, ghost, uTime;
   varying vec2 vUv;
   void main() {
     vec2 uv = frame.xy + vUv * frame.zw;
@@ -37,6 +37,13 @@ const FRAG = /* glsl */`
     if (!outline) col = mix(col, rimColor, clamp(edge * rim * length(rimColor), 0.0, rimMax));
     float lum = dot(col, vec3(0.2126, 0.7152, 0.0722));
     if (lum > maxLum) col *= maxLum / lum;
+    if (ghost > 1.5) { // redacted figure: a faint, flat shape whose scanlines keep dropping out, like someone cut it from the video feed
+      float row = floor(vUv.y * 48.0), tick = floor(uTime * 9.0);
+      float n = fract(sin(row * 12.9898 + tick * 78.233) * 43758.5453), m = fract(sin(tick * 3.1 + floor(uTime * 0.7) * 17.0) * 9341.7);
+      float gap = step(0.78, n) + step(0.93, m) * step(0.5, fract(row * 0.37));
+      gl_FragColor = vec4(vec3(0.11, 0.15, 0.2) + 0.12 * n, gap > 0.5 ? 0.0 : 0.16 + 0.1 * n);
+      return;
+    }
     if (ghost > 0.5) { // echo ghost: cyan hologram
       float gl = dot(col, vec3(0.3, 0.59, 0.11));
       col = mix(col, vec3(0.35, 0.95, 1.1) * (gl + 0.3), 0.8);
@@ -80,7 +87,8 @@ export function createBillboard(sheet, opts) {
     },
     vertexShader: VERT, fragmentShader: FRAG, transparent: !!opts.ghost, depthWrite: !opts.ghost,
   });
-  mat.uniforms.ghost = { value: opts.ghost ? 1 : 0 };
+  mat.uniforms.ghost = { value: opts.ghost === 2 ? 2 : opts.ghost ? 1 : 0 }; // 2 = redacted figure (see the shader)
+  mat.uniforms.uTime = { value: 0 };
   const PX = sheet.pxPerUnit; // texture pixels per world unit (characters are double density)
   const sprite = new THREE.Mesh(new THREE.PlaneGeometry(fw / PX, fh / PX).translate(0, (fh / 2 - (sheet.footPx ?? 0)) / PX, 0), mat);
   const s = (isCat ? NPC.shadow.catSize : NPC.shadow.size);
@@ -107,6 +115,7 @@ export function createBillboard(sheet, opts) {
     // camYaw: camera yaw (radians); lights: registered lights [{ color, intensity, base, position }].
     update(dt, camYaw, lights) {
       time += dt * api.fpsScale;
+      mat.uniforms.uTime.value = performance.now() / 1000;
       let { anim, facing } = api;
       if (api.follow) { // trail a target (Miso behind Juno), sitting when close
         const t = api.follow.target.position, dx = t.x - pos.x, dz = t.z - pos.z, d = Math.hypot(dx, dz);

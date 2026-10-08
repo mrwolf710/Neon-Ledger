@@ -251,7 +251,7 @@ export const ECHOES = {
       { sprite: 'dexStanding', keys: [
         { t: 0, x: 154.6, z: 1.0, facing: Math.PI, anim: 'idle' }, { t: 6, x: 154.6, z: 1.0, facing: Math.PI, anim: 'idle' },
       ] },
-      { sprite: 'vendor', show: [1.4, 6], keys: [
+      { redacted: true, sprite: 'figure', show: [1.4, 6], keys: [
         { t: 1.4, x: 157.8, z: -1.2, facing: -Math.PI / 2, anim: 'walk' }, { t: 2.6, x: 156.0, z: -1.2, facing: -Math.PI / 2, anim: 'walk' },
         { t: 2.8, x: 156.0, z: -1.2, facing: -Math.PI / 2, anim: 'idle' }, { t: 3.49, x: 156.0, z: -1.2, facing: -Math.PI / 2, anim: 'idle' },
         { t: 3.5, x: 157.2, z: -2.0, facing: Math.PI, anim: 'idle' }, { t: 6, x: 157.2, z: -2.0, facing: Math.PI, anim: 'idle' },
@@ -268,7 +268,7 @@ export const ECHOES = {
   alley_echo: {
     title: 'The back door', owner: 'unknown', entry: 'alley_echo', duration: 6,
     tracks: [
-      { sprite: 'vendor', keys: [
+      { redacted: true, sprite: 'figure', keys: [
         { t: 0, x: 300, z: -7.0, facing: Math.PI, anim: 'idle' }, { t: 2.4, x: 300, z: -7.0, facing: Math.PI, anim: 'idle' },
         { t: 2.5, x: 300, z: -6.4, facing: 0, anim: 'walk' }, { t: 6, x: 300.4, z: 1.5, facing: 0, anim: 'walk' },
       ] },
@@ -282,7 +282,7 @@ export const ECHOES = {
     title: "Dex's backup", owner: 'dex', entry: 'dex_backup', duration: 9,
     tracks: [
       { sprite: 'dexStanding', keys: [{ t: 0, x: 599.4, z: 0, facing: Math.PI / 2, anim: 'idle' }, { t: 9, x: 599.4, z: 0, facing: Math.PI / 2, anim: 'idle' }] },
-      { sprite: 'vendor', show: [1.6, 4.6], keys: [
+      { redacted: true, sprite: 'figure', show: [1.6, 4.6], keys: [
         { t: 1.6, x: 600.5, z: 1.5, facing: Math.PI, anim: 'walk' }, { t: 3.0, x: 601.3, z: 0.3, facing: -Math.PI / 2, anim: 'walk' }, { t: 3.2, x: 601.3, z: 0.3, facing: -Math.PI / 2, anim: 'idle' }, { t: 4.6, x: 601.3, z: 0.3, facing: -Math.PI / 2, anim: 'idle' },
       ] },
       { sprite: 'juno', show: [4.6, 9], keys: [{ t: 4.6, x: 601.3, z: 0.3, facing: -Math.PI / 2, anim: 'idle' }, { t: 9, x: 601.3, z: 0.3, facing: -Math.PI / 2, anim: 'idle' }] },
@@ -301,7 +301,7 @@ export const ECHOES = {
       { sprite: 'kit', keys: [
         { t: 0, x: 299.2, z: -1.5, facing: Math.PI, anim: 'idle' }, { t: 8, x: 299.2, z: -1.5, facing: Math.PI, anim: 'idle' },
       ] },
-      { sprite: 'vendor', show: [3.6, 8], keys: [
+      { redacted: true, sprite: 'figure', show: [3.6, 8], keys: [
         { t: 3.6, x: 300, z: -7.0, facing: 0, anim: 'walk' }, { t: 8, x: 300.6, z: 3.0, facing: 0, anim: 'walk' },
       ] },
     ],

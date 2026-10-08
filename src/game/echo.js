@@ -129,7 +129,7 @@ export function createEcho({ scene, sheets, post, caseFile, hud, cast, areas }) 
       const h = hotspots.find((q) => q.id === hotspotId), def = h && ECHOES[h.echo];
       if (!def) return;
       const ghosts = def.tracks.map((tr) => {
-        const b = createBillboard(sheets[tr.sprite], { ghost: true, x: tr.keys[0].x, z: tr.keys[0].z });
+        const b = createBillboard(sheets[tr.sprite], { ghost: tr.redacted ? 2 : true, x: tr.keys[0].x, z: tr.keys[0].z });
         scene.add(b.root);
         return { b, tr };
       });
