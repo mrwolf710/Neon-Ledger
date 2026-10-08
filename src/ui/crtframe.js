@@ -5,6 +5,7 @@ export const CRT_FRAME = {
   size: 256,                       // PNG size in px
   glass: { cx: 127.5, cy: 137, w: 122, h: 79 }, // the transparent screen: centre and width in PNG px (measured with scripts/pngbox.mjs)
   body: { h: 159 },                // opaque monitor height in PNG px
+  bleed: 1.06,                     // the picture is this much bigger than the measured glass; the monitor body (drawn on top) hides the overlap, so no gap or green glow shows at the edges
   screenFrac: 0.96,                // monitor height as a share of the window height at k = 1
   glow: 'drop-shadow(0 0 3vh rgba(57,255,20,0.65)) drop-shadow(0 0 10vh rgba(40,255,40,0.5))', // on a copy behind the canvas, so it never tints the picture
 };
@@ -29,11 +30,12 @@ export function createCrtFrame(canvas) {
     const R = Math.max(vw / C.glass.w, vh / C.glass.h); // at k = 0 the glass is at least as big as the window
     const S = B * (R / B) ** (1 - k);
     ratio = S / B;               // geometric: a steady zoom
-    const s = Math.min(1, Math.max(C.glass.w * S / vw, C.glass.h * S / vh)); // the picture always covers the glass (no bars), and is never larger than the window
+    const gw = C.glass.w * C.bleed, gh = C.glass.h * C.bleed;
+    const s = Math.min(1, Math.max(gw * S / vw, gh * S / vh)); // the picture always covers the glass (no bars), and is never larger than the window
     canvas.style.transform = `scale(${s})`;
     // the picture can be wider than the glass: clip it to the glass (in the canvas's own pixels) so it never sticks out of the monitor
-    const ix = Math.max(0, (vw - C.glass.w * S / s) / 2), iy = Math.max(0, (vh - C.glass.h * S / s) / 2);
-    canvas.style.clipPath = `inset(${iy}px ${ix}px ${iy}px ${ix}px round ${0.06 * vh / s}px)`;
+    const ix = Math.max(0, (vw - gw * S / s) / 2), iy = Math.max(0, (vh - gh * S / s) / 2);
+    canvas.style.clipPath = `inset(${iy}px ${ix}px ${iy}px ${ix}px)`;
     img.style.display = glow.style.display = 'block';
     img.style.transform = glow.style.transform = `scale(${S}) translate(${C.size / 2 - C.glass.cx}px, ${C.size / 2 - C.glass.cy}px)`; // glass centre on the window centre
   }
