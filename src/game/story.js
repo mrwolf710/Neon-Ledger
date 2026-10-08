@@ -31,6 +31,7 @@ export const ENTRIES = {
   master_keys: { kind: 'facts', title: 'City master keys', text: 'Every door on Lowmarket opens to a city master key held by crews, inspectors and the Bureau. It is written into the leases.', source: 'Mama Teo' },
   someone_had_key: { kind: 'facts', title: 'The visitor had a city key', text: 'A second person met Dex in the back room. They got in without knocking, with a city master key.', source: 'Deduction board' },
   dex_backup: { kind: 'echoes', title: "Dex's backup echo", text: 'The copy Dex hid in his jacket. Nine seconds, his own eyes, a visitor in his back room.', source: "Dex's backup chip" },
+  dex_chip: { kind: 'facts', title: "Dex hid a chip in his capsule", text: "Taped under the bunk in Room 3F: a data chip. His backup copy, the one the visitor wanted.", source: 'Capsule 3F' },
   kit: { kind: 'people', title: 'Kit Lacroix', text: "A courier who lives in the capsule hostel. Nervous, talks too much. Says she was Dex's last client.", source: 'Capsule hostel' },
   alley_echo: { kind: 'echoes', title: 'The alley: the back door', text: 'A residue echo in the alley. Someone in a grey glove lets themselves out of the Sable and shuts the door behind them.', source: 'The alley' },
   kit_echo: { kind: 'echoes', title: "Kit's echo: the alley", text: "Eight seconds from Kit's implant, in the alley behind the Sable.", source: "Kit's implant" },
@@ -52,7 +53,10 @@ export const FALLBACK = 'nobody';
 export const RULES = EDITS._rules ?? [];
 // Which conversation plays on each visit, from the editor (older format): VISITS[personId] = [1st, 2nd, 3rd, 4th and later]; '' = the normal one (TALK).
 export const VISITS = EDITS._visits ?? {};
+// Flags set by the end of conversations made in the editor (matched by id; the last line of the conversation gets them).
+const DONE_EFFECTS = { Capsule_after_Teo: [{ setFlag: 'kit_paid' }] };
 export function conversationFor(personId, visit, ctx = {}) {
+  if (personId === 'kit' && ctx.flag?.('kit_paid')) return 'kit'; // once she has been paid, Kit has the interview instead of the shake-down
   const fits = (r) => r.npc === personId && (r.when === 'all' || (r.when === '4' ? visit >= 4 : +r.when === visit))
     && (!r.fact || ctx.has?.(r.fact)) && (!r.talked || ctx.talked?.(r.talked));
   const hit = RULES.filter((r) => r.fact || r.talked).find(fits) ?? RULES.filter((r) => !r.fact && !r.talked).find(fits);
@@ -79,6 +83,7 @@ export const EXAMINABLES = [
   { id: 'cups', area: 'sable', spot: 'cups', verb: 'Examine', conv: 'ex_cups' },
   { id: 'terminal', area: 'sable', spot: 'terminal', verb: 'Read', conv: 'ex_terminal' },
   { id: 'lamp', area: 'sable', spot: 'lamp', verb: 'Examine', conv: 'ex_lamp' },
+  { id: 'capsule', area: 'hostel', spot: 'capsule3f', verb: 'Search', conv: 'ex_capsule' },
   { id: 'glove', area: 'alley', spot: 'glove', verb: 'Pick up', conv: 'ex_glove' },
 ];
 
@@ -155,9 +160,9 @@ export const CONVERSATIONS = {
   kit: {
     start: [{ if: { flag: 'kit_coat' }, node: 'done' }, { if: { flag: 'kit_broken' }, node: 'after' }, { if: { flag: 'kit_met' }, node: 'again' }, { node: 'hello' }],
     nodes: {
-      hello: { speaker: 'kit', text: "You're Bureau. Great. I already told the Sable lady everything, which is nothing, because I wasn't there. Much.",
-        effects: [{ addPerson: 'kit' }, { setFlag: 'kit_met' }], choices: [{ text: 'You met Dex tonight.', next: 'claim' }] },
-      claim: { speaker: 'kit', text: "Delivery slip, he signed, I left. Eleven o'clock, on the dot. Straight home, hot shower, bad noodles. Ask the hostel clock.",
+      hello: { speaker: 'kit', text: 'You again. Room 3F treat you well? Not that I would know.',
+        effects: [{ addPerson: 'kit' }, { setFlag: 'kit_met' }], choices: [{ text: 'Where were you tonight, Kit?', next: 'claim' }] },
+      claim: { speaker: 'kit', text: 'Up in 3F with a leaking pipe. Done by eleven, then straight to my bunk. Ask the building, it keeps better time than I do.',
         effects: [{ addFact: 'kit_claim' }], next: 'claim2' },
       claim2: { speaker: 'juno', text: "Eleven. Got it.", end: true },
       again: { speaker: 'kit', text: 'Still here, still innocent. What now?',
@@ -165,8 +170,8 @@ export const CONVERSATIONS = {
         choices: [{ text: 'Nothing yet.', end: true }] },
       repeat: { speaker: 'kit', text: 'Eleven. I said eleven. Write it down.', end: true },
       wrong: { speaker: 'kit', text: "I don't know what that is. Can I go back to pretending to sleep?", end: true },
-      broken: { speaker: 'kit', text: "...Okay. Okay! I was out back. Twenty to midnight. I went to buy something from Dex that he never sold me, and I lost my nerve.", effects: [{ setFlag: 'kit_broken' }], next: 'broken2' },
-      broken2: { speaker: 'kit', text: "I was behind the Sable. I didn't see anything. Don't look at me like that.", end: true },
+      broken: { speaker: 'kit', text: '...Okay. Okay! I was out back. Twenty to midnight, a smoke I am not supposed to have. Do not tell the manager.', effects: [{ setFlag: 'kit_broken' }], next: 'broken2' },
+      broken2: { speaker: 'kit', text: 'I was behind the Sable. I did not see anything. Do not look at me like that.', end: true },
       after: { speaker: 'kit', text: "I told you I was out back. What else do you want from me?",
         present: { kit_saw_them: 'coat' }, presentWrong: 'wrong', choices: [{ text: 'Nothing yet.', end: true }] },
       coat: { speaker: 'kit', text: "Fine. Somebody came out of that door. Long grey coat, Bureau collar, gloves. Head down, in no hurry. Like they owned the street.", effects: [{ addFact: 'bureau_coat' }, { setFlag: 'kit_coat' }, { setFlag: 'kit_broken' }], next: 'coat2' },
@@ -174,6 +179,12 @@ export const CONVERSATIONS = {
       done: { speaker: 'kit', text: 'A Bureau coat. That is all I know. Go away, auditor.', end: true },
     },
   },
+  // Dex's capsule (Room 3F, hostel): Kit unlocks it for 30 credits (flag kit_paid, set by the editor conversation Capsule_after_Teo, see DONE_EFFECTS).
+  ex_capsule: { start: [{ if: { flag: 'ex_capsule' }, node: 'again' }, { if: { notFlag: 'kit_paid' }, node: 'locked' }, { node: 'a' }], nodes: {
+    a: { speaker: 'juno', text: 'Room 3F. A thin pillow, a dead plant, and a data chip taped under the bunk. Dex hid his backup well.', effects: [{ addFact: 'dex_chip' }, { setFlag: 'ex_capsule' }], end: true },
+    again: { speaker: 'juno', text: 'Nothing else in here. Dex travelled light.', end: true },
+    locked: { speaker: 'juno', text: "Dex's capsule. The hatch is locked. Somebody here has the key.", end: true },
+  } },
   vending: { start: 'a', nodes: { a: { speaker: 'juno', text: 'Out of order. Naturally.', end: true } } },
   miso: { start: [{ if: { flag: 'miso_joined' }, node: 'again' }, { node: 'a' }], nodes: {
     a: { speaker: 'juno', text: 'Hey, stray. Hungry?', next: 'b' },
@@ -185,10 +196,10 @@ export const CONVERSATIONS = {
   } },
   // Beat 7: the cliffhanger lines (beats.js plays them in order).
   chip_open: { start: 'a', nodes: {
-    a: { speaker: 'juno', text: "Dex's backup chip. The evidence tech found it sewn into his jacket lining and sent it to my car. The one echo he was afraid of.", next: 'b' },
+    a: { speaker: 'juno', text: "Dex's backup chip, from under his bunk in 3F. The one echo he was afraid of.", next: 'b' },
     b: { speaker: 'juno', text: 'Fine. Let us see what scared him.', end: true },
   } },
-  chip_early: { start: 'a', nodes: { a: { speaker: 'juno', text: 'Not yet. I need to know more before I slot that chip.', end: true } } },
+  chip_early: { start: 'a', nodes: { a: { speaker: 'juno', text: 'Not yet. I need to find Dex backup and know who is lying to me first.', end: true } } },
   log_open: { start: 'a', nodes: {
     a: { speaker: 'juno', text: 'Forty-seven minutes. That is not overwork.', end: true },
   } },
@@ -228,6 +239,10 @@ for (const [conv, nodes] of Object.entries(EDITS)) {
   }
 }
 
+for (const [id, eff] of Object.entries(DONE_EFFECTS)) {
+  const nodes = Object.values(CONVERSATIONS[id]?.nodes ?? {}), last = nodes[nodes.length - 1];
+  if (last) last.effects = [...(last.effects ?? []), ...eff];
+}
 // Conversations rebuilt in the editor's Story flow tab replace the game's own (last, so they win over the text edits above).
 for (const [id, g] of Object.entries(EDITS._graph ?? {})) CONVERSATIONS[id] = { start: g.start, nodes: g.nodes };
 

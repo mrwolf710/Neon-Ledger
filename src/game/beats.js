@@ -21,14 +21,14 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
   const flag = (n) => caseFile.hasFlag(n);
   let locked = false, focus = null, lastStep = '', ending = false;
   const beatTimes = [0, 0, 0, 0, 0, 0, 0]; // seconds spent per beat (debug panel)
-  const STEP_BEAT = { down: 1, sable: 2, back: 3, examine: 3, echo: 4, teo: 5, alley: 5, kit: 5, kitecho: 5, kitbreak: 5, board: 6, press: 6, chip: 7 };
+  const STEP_BEAT = { down: 1, sable: 2, back: 3, examine: 3, echo: 4, teo: 5, alley: 5, kit: 5, kitecho: 5, capsule: 5, kitbreak: 5, board: 6, press: 6, chip: 7 };
   // Debug 'skip to beat N': the flags and case file entries a player would hold when beat N starts (cumulative), then jump there.
   const SKIP = {
     2: { flags: ['visited_street'], to: 'street' },
     3: { flags: ['visited_sable'], to: 'sable' },
     4: { flags: ['seen_backroom', 'ex_body', 'ex_port', 'ex_cups', 'ex_terminal', 'ex_lamp'], add: ['dex_body', 'burned_port', 'two_cups', 'door_log', 'smashed_lamp'], to: 'sable' },
     5: { add: ['teo_back_room', 'two_voices', 'echo_seam'], to: 'sable' },
-    6: { flags: ['teo_met', 'teo_cracked', 'ex_glove', 'kit_met', 'kit_broken'], add: ['mamaTeo', 'door_unlocked', 'master_keys', 'grey_glove', 'alley_echo', 'gloved_hand', 'kit', 'kit_claim', 'kit_echo', 'kit_outside'], to: 'car' },
+    6: { flags: ['teo_met', 'teo_cracked', 'ex_glove', 'kit_met', 'kit_paid', 'ex_capsule', 'kit_broken'], add: ['mamaTeo', 'door_unlocked', 'master_keys', 'grey_glove', 'alley_echo', 'gloved_hand', 'dex_chip', 'kit', 'kit_claim', 'kit_echo', 'kit_outside'], to: 'car' },
     7: { flags: ['kit_deduced', 'kit_coat'], add: ['someone_else', 'override_used', 'kit_saw_them', 'bureau_coat'], to: 'car' },
   };
 
@@ -121,14 +121,14 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
     }
     const seat = world.spot('car', 'seat');
     interactions.add({ id: 'chip', area: 'car', position: new THREE.Vector3(seat.x, 0, seat.z), height: 1.0, verb: "Slot Dex's chip",
-      onInteract: () => { if (locked) return; if (flag('kit_coat')) cliffhanger(); else dialogue.start('chip_early'); } });
+      onInteract: () => { if (locked) return; if (flag('kit_coat') && flag('ex_capsule')) cliffhanger(); else dialogue.start('chip_early'); } });
     for (const b of cast.list) {
       if (b.id === 'juno' || b.id === 'dex') continue;       // Dex is examined, not spoken to
       interactions.add({
         id: b.id, get area() { return b.area; }, position: b.position, height: b.id === 'miso' ? 0.8 : 2, verb: b.id === 'miso' ? 'Pet' : 'Talk',
         onInteract: () => {
           if (b.anim !== 'walk' && b.anim !== 'slump' && !b.follow) b.facing = Math.atan2(player.position.x - b.position.x, player.position.z - b.position.z);
-          dialogue.start(conversationFor(b.id, visits[b.id] = (visits[b.id] ?? 0) + 1, { has: (f) => caseFile.has(f), talked: (p) => (visits[p] ?? 0) > 0 })).then(() => afterTalk(b));
+          dialogue.start(conversationFor(b.id, visits[b.id] = (visits[b.id] ?? 0) + 1, { has: (f) => caseFile.has(f), talked: (p) => (visits[p] ?? 0) > 0, flag })).then(() => afterTalk(b));
         },
       });
     }
@@ -156,7 +156,8 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
     { id: 'echo', text: 'Scan the room for an echo (F)', area: 'sable', pos: () => spotXZ('sable', 'echo'), done: () => caseFile.has('teo_back_room') },
     { id: 'teo', text: 'Question Mama Teo', area: 'sable', pos: () => spotXZ('sable', 'teo'), done: () => flag('teo_asked_door') },
     { id: 'alley', text: 'Scan the alley behind the Sable (F)', area: 'alley', pos: () => spotXZ('alley', 'echo'), done: () => caseFile.has('alley_echo') },
-    { id: 'kit', text: "Find Kit at the capsule hostel", area: 'hostel', pos: () => spotXZ('hostel', 'kit'), done: () => flag('kit_met') },
+    { id: 'kit', text: 'Ask around the capsule hostel about Dex', area: 'hostel', pos: () => spotXZ('hostel', 'kit'), done: () => flag('kit_paid') },
+    { id: 'capsule', text: "Search Dex's capsule, Room 3F", area: 'hostel', pos: () => spotXZ('hostel', 'capsule3f'), done: () => flag('ex_capsule') },
     { id: 'kitecho', text: "Scan the alley again for Kit's echo (F)", area: 'alley', pos: () => spotXZ('alley', 'echo'), done: () => caseFile.has('kit_echo') },
     { id: 'kitbreak', text: "Present Kit's alley echo to her", area: 'hostel', pos: () => spotXZ('hostel', 'kit'), done: () => flag('kit_broken') },
     { id: 'board', text: 'Link the evidence on the board (B)', area: 'car', done: () => flag('kit_deduced') },
