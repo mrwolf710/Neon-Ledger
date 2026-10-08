@@ -78,12 +78,12 @@ export function createEcho({ scene, sheets, post, caseFile, hud, cast, areas }) 
     crossSeams(active.last, active.t, true);
     active.last = active.t;
   }
-  rail.addEventListener('pointerdown', (e) => { if (!active) return; dragging = true; rail.setPointerCapture(e.pointerId); setFromPointer(e); });
+  rail.addEventListener('pointerdown', (e) => { if (!active || active.cine) return; dragging = true; rail.setPointerCapture(e.pointerId); setFromPointer(e); });
   rail.addEventListener('pointermove', (e) => { if (dragging) setFromPointer(e); });
   rail.addEventListener('pointerup', () => { dragging = false; });
   rail.addEventListener('pointercancel', () => { dragging = false; });
-  playBtn.addEventListener('click', () => { if (active) active.playing = !active.playing; });
-  closeBtn.addEventListener('click', () => api.exit());
+  playBtn.addEventListener('click', () => { if (active && !active.cine) active.playing = !active.playing; });
+  closeBtn.addEventListener('click', () => { if (!active?.cine) api.exit(); });
   tagBtn.addEventListener('click', () => doTag());
 
   function crossSeams(a, b, scrubbed) {
@@ -99,7 +99,7 @@ export function createEcho({ scene, sheets, post, caseFile, hud, cast, areas }) 
 
   const tagNear = () => active.def.tags?.find((g) => !active.tagged.has(g.fact) && Math.abs(active.t - g.t) <= g.window);
   function doTag() {
-    const g = active && tagNear();
+    const g = active && !active.cine && tagNear();
     if (!g) return false;
     active.tagged.add(g.fact);
     caseFile.add(g.fact);
@@ -118,13 +118,14 @@ export function createEcho({ scene, sheets, post, caseFile, hud, cast, areas }) 
     setArea(id) { areaId = id; },
     // Starts the echo of the hotspot within reach of pos; false (and a toast) when there is none.
     tryStart(pos) {
-      const h = hotspots.filter((q) => q.area === areaId && Math.hypot(q.position.x - pos.x, q.position.z - pos.z) <= q.radius)
+      const h = hotspots.filter((q) => !q.hidden && q.area === areaId && Math.hypot(q.position.x - pos.x, q.position.z - pos.z) <= q.radius)
         .sort((a, b) => a.position.distanceTo(pos) - b.position.distanceTo(pos))[0];
       if (!h) { hud.toast('No echo here'); return false; }
       api.start(h.id);
       return true;
     },
-    start(hotspotId) {
+    // cine: a function = cinematic play (no scrubbing, no exit, no loop); it is called when the replay ends.
+    start(hotspotId, cine) {
       const h = hotspots.find((q) => q.id === hotspotId), def = h && ECHOES[h.echo];
       if (!def) return;
       const ghosts = def.tracks.map((tr) => {
@@ -132,7 +133,7 @@ export function createEcho({ scene, sheets, post, caseFile, hud, cast, areas }) 
         scene.add(b.root);
         return { b, tr };
       });
-      active = { def, t: 0, last: 0, playing: true, freeze: 0, glitch: 0, tagged: new Set(), seen: new Set(), ghosts };
+      active = { def, t: 0, last: 0, playing: true, freeze: 0, glitch: 0, tagged: new Set(), seen: new Set(), ghosts, cine };
       cast.setHidden(true);
       document.body.classList.add('echo');
       root.classList.add('on');
@@ -164,24 +165,25 @@ export function createEcho({ scene, sheets, post, caseFile, hud, cast, areas }) 
       // Hotspot markers: bob and spin while Juno is near.
       const time = performance.now() / 1000;
       for (const h of hotspots) {
-        h.marker.visible = !active && h.area === areaId && Math.hypot(h.position.x - playerPos.x, h.position.z - playerPos.z) < ECHO.showRange;
+        h.marker.visible = !active && !h.hidden && h.area === areaId && Math.hypot(h.position.x - playerPos.x, h.position.z - playerPos.z) < ECHO.showRange;
         h.marker.rotation.y = time * ECHO.marker.spin;
         h.marker.position.y = ECHO.marker.height + Math.sin(time * 2) * ECHO.marker.bob;
       }
       if (!active) return;
 
       const A = active, D = A.def;
-      if (input.pressed('echo') || input.pressed('back') || input.pressed('pause')) { api.exit(); return; }
-      let scrubbing = dragging;
-      if (Math.abs(axis) > 0.2) { A.t += axis * ECHO.scrubSpeed * dt; scrubbing = true; }
-      if (input.pressed('menuLeft')) A.t -= ECHO.step;
-      if (input.pressed('menuRight')) A.t += ECHO.step;
-      if (input.pressed('interact') && !doTag()) A.playing = !A.playing;
+      if (!A.cine && (input.pressed('echo') || input.pressed('back') || input.pressed('pause'))) { api.exit(); return; }
+      let scrubbing = dragging && !A.cine;
+      if (!A.cine && Math.abs(axis) > 0.2) { A.t += axis * ECHO.scrubSpeed * dt; scrubbing = true; }
+      if (!A.cine && input.pressed('menuLeft')) A.t -= ECHO.step;
+      if (!A.cine && input.pressed('menuRight')) A.t += ECHO.step;
+      if (!A.cine && input.pressed('interact') && !doTag()) A.playing = !A.playing;
       A.t = Math.min(D.duration, Math.max(0, A.t));
 
       A.freeze = Math.max(0, A.freeze - dt);
       if (A.playing && !scrubbing && A.freeze <= 0) {
         A.t += dt;
+        if (A.cine && A.t >= D.duration) { const done = A.cine; api.exit(); done(); return; }
         if (A.t >= D.duration) { A.t = 0; A.last = 0; } // loop
       }
       crossSeams(A.last, A.t, scrubbing);

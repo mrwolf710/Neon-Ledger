@@ -10,7 +10,7 @@ export function createFade() {
   const wait = (s) => new Promise((r) => setTimeout(r, s * 1000));
   const card = document.createElement('div');
   card.style.cssText = `position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.4rem;
-    pointer-events:none;z-index:13;opacity:0;transition:opacity 1.2s ease`;
+    pointer-events:none;z-index:15;opacity:0;transition:opacity 1.2s ease`;
   document.body.appendChild(card);
   let zooming = false;
   const line = (text, color, scale) => {
@@ -30,6 +30,28 @@ export function createFade() {
       zooming = true; card.style.transition = 'none';
       const f = Math.min(1, Math.max(0, (u - 0.1) / 0.8));
       card.style.opacity = String(1 - f * f * (3 - 2 * f));
+    },
+    // Beat 7: Juno's implant log, 22:40-02:10 as a bar with a red 47-minute hole (23:10-23:57) that opens up.
+    async log(hold = 5) {
+      const gap = document.createElement('div');
+      gap.style.cssText = `position:absolute;top:0;bottom:0;left:${(30 / 210) * 100}%;width:0;background:#ff2a3a;box-shadow:0 0 12px #ff2a3a;transition:width 1.6s ease .8s`;
+      const bar = document.createElement('div');
+      bar.style.cssText = 'position:relative;width:100%;height:18px;background:#10303a';
+      bar.append(gap);
+      const ends = document.createElement('div');
+      ends.style.cssText = 'display:flex;justify-content:space-between;width:100%';
+      ends.append(line('22:40', '#9ff4ff', 3), line('02:10', '#9ff4ff', 3));
+      const p = document.createElement('div');
+      p.style.cssText = 'position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);width:min(80vw,640px);z-index:13;opacity:0;transition:opacity .8s ease;pointer-events:none;'
+        + 'display:flex;flex-direction:column;gap:1.2rem;align-items:center;background:rgba(2,6,10,.88);padding:1.6rem;border:1px solid #1fd6e8';
+      p.append(line('IMPLANT LOG - JUNO VALE', '#1fd6e8', 4), bar, ends, line('23:10 - 23:57  NO RECORD  47 MIN', '#ff2a3a', 4));
+      document.body.append(p);
+      void p.offsetWidth;
+      p.style.opacity = '1'; gap.style.width = `${(47 / 210) * 100}%`;
+      await wait(hold);
+      p.style.opacity = '0';
+      await wait(0.9);
+      p.remove();
     },
     // lines: [{ text, color, scale }]. Fades in, holds, fades out; resolves when gone.
     async card(lines, hold = 3) {

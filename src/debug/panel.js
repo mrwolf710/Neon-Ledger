@@ -63,7 +63,7 @@ export function createDebugPanel(renderer, seed) {
       if (elapsed * 1000 < PANEL.refreshMs) return;
       const { calls, triangles } = renderer.info.render;
       const heap = performance.memory ? `${Math.round(performance.memory.usedJSHeapSize / 1048576)} MB` : 'n/a';
-      stats.textContent = `FPS   ${Math.round(frames / elapsed)}\ncalls ${calls}\ntris  ${triangles}\nheap  ${heap}\nseed  ${seed}`;
+      stats.textContent = `FPS   ${Math.round(frames / elapsed)}\ncalls ${calls}\ntris  ${triangles}\nheap  ${heap}\nseed  ${seed}${this.extra ? `\n${this.extra()}` : ''}`;
       if (el.style.display !== 'none') syncs.forEach((f) => f());
       frames = 0;
       elapsed = 0;

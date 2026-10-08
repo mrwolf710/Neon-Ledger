@@ -21,6 +21,11 @@ export const TIME_OF_DAY = {
     lift: [0, 0, 0.03], gamma: [0.95, 0.95, 1], gain: [0.9, 0.95, 1.05], saturation: 0.85,
     signs: 0.75, flicker: 0.3, dead: 0.25, rain: 1,
   },
+  blackout: { // beat 7: every sign dies, only the dashboard glows
+    label: 'Blackout', sky: 0x020204, fog: 0x06060e, fogDensity: 0.05, moon: 0.2, moonColor: 0x7088d0, hemi: 0.08,
+    lift: [0, 0, 0.02], gamma: [0.95, 0.95, 1], gain: [0.85, 0.92, 1.05], saturation: 0.8,
+    signs: 0, flicker: 0, dead: 1, rain: 1,
+  },
 };
 // The strong red sunset Juno arrives in on the street. It is laid over the clock's mood and fades out over SUNSET.seconds (real seconds).
 export const SUNSET = {

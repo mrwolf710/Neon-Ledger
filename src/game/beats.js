@@ -15,11 +15,22 @@ export const BEATS = {
   dark: { exposure: 0.06, lampsFrom: 0.3 }, // the opening starts almost black; station lamps fade up once the train is 30% of the way in
 };
 
-export function createBeats({ world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, setExposure = () => {}, setVhs = () => {}, setCrt = () => {} }) {
+export function createBeats({ world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, echo, deadHour = () => {}, setExposure = () => {}, setVhs = () => {}, setCrt = () => {} }) {
   const timers = [], tweens = [];
   const visits = {}; // how many times Juno has talked to each person (picks the conversation, see story.js VISITS)
   const flag = (n) => caseFile.hasFlag(n);
-  let locked = false, focus = null, lastStep = '';
+  let locked = false, focus = null, lastStep = '', ending = false;
+  const beatTimes = [0, 0, 0, 0, 0, 0, 0]; // seconds spent per beat (debug panel)
+  const STEP_BEAT = { down: 1, sable: 2, back: 3, examine: 3, echo: 4, teo: 5, alley: 5, kit: 5, kitecho: 5, kitbreak: 5, board: 6, press: 6, chip: 7 };
+  // Debug 'skip to beat N': the flags and case file entries a player would hold when beat N starts (cumulative), then jump there.
+  const SKIP = {
+    2: { flags: ['visited_street'], to: 'street' },
+    3: { flags: ['visited_sable'], to: 'sable' },
+    4: { flags: ['seen_backroom', 'ex_body', 'ex_port', 'ex_cups', 'ex_terminal', 'ex_lamp'], add: ['dex_body', 'burned_port', 'two_cups', 'door_log', 'smashed_lamp'], to: 'sable' },
+    5: { add: ['teo_back_room', 'two_voices', 'echo_seam'], to: 'sable' },
+    6: { flags: ['teo_met', 'teo_cracked', 'ex_glove', 'kit_met', 'kit_broken'], add: ['mamaTeo', 'door_unlocked', 'master_keys', 'grey_glove', 'alley_echo', 'gloved_hand', 'kit', 'kit_claim', 'kit_echo', 'kit_outside'], to: 'car' },
+    7: { flags: ['kit_deduced', 'kit_coat'], add: ['someone_else', 'override_used', 'kit_saw_them', 'bureau_coat'], to: 'car' },
+  };
 
   // ---- tiny async helpers driven by update(dt) (so cutscenes pause with the game, not wall-clock) ----
   const wait = (s) => new Promise((res) => timers.push({ left: s, res }));
@@ -78,6 +89,22 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
   }
   let cam = null;
 
+  // ---- Beat 7: the cliffhanger ----
+  async function cliffhanger() {
+    locked = true;
+    await dialogue.start('chip_open');
+    await new Promise((res) => echo.start('dex_backup', res));   // Dex's backup, from his eyes
+    await wait(0.9);
+    await fade.log();                                            // the red 47-minute gap
+    await dialogue.start('log_open');
+    deadHour(); ending = true;                                   // signs die, music cuts to one low tone
+    await wait(3);
+    await dialogue.start('hale_end');
+    await wait(1.2);
+    await fade.out();
+    await fade.card([{ text: 'NEON ECHOES', color: '#39ff14', scale: 6 }, { text: 'CASE 01 CONTINUES', color: '#1fd6e8', scale: 3 }], 3.5);
+  }
+
   // ---- Interactables: doors, clues, people ----
   function register() {
     for (const e of world.exits) {
@@ -92,6 +119,9 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
     for (const s of world.areas.street.spots.filter((p) => p.name === 'vending')) {
       interactions.add({ id: 'vending', area: 'street', position: new THREE.Vector3(s.x, 0, s.z), height: 1.8, verb: 'Use', onInteract: () => dialogue.start(TALK.vending) });
     }
+    const seat = world.spot('car', 'seat');
+    interactions.add({ id: 'chip', area: 'car', position: new THREE.Vector3(seat.x, 0, seat.z), height: 1.0, verb: "Slot Dex's chip",
+      onInteract: () => { if (locked) return; if (flag('kit_coat')) cliffhanger(); else dialogue.start('chip_early'); } });
     for (const b of cast.list) {
       if (b.id === 'juno' || b.id === 'dex') continue;       // Dex is examined, not spoken to
       interactions.add({
@@ -131,6 +161,7 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
     { id: 'kitbreak', text: "Present Kit's alley echo to her", area: 'hostel', pos: () => spotXZ('hostel', 'kit'), done: () => flag('kit_broken') },
     { id: 'board', text: 'Link the evidence on the board (B)', area: 'car', done: () => flag('kit_deduced') },
     { id: 'press', text: 'Press Kit about what she saw', area: 'hostel', pos: () => spotXZ('hostel', 'kit'), done: () => flag('kit_coat') },
+    { id: 'chip', text: "Slot Dex's backup chip in your car", area: 'car', pos: () => spotXZ('car', 'seat'), done: () => ending },
   ];
   function markFor(step) {
     const here = world.current.id;
@@ -143,6 +174,16 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
     get locked() { return locked; },
     visits, // talks per person (a save game keeps them)
     get focus() { return focus; },
+    get ending() { return ending; },
+    get beatNo() { return STEP_BEAT[STEPS.find((s) => !s.done())?.id] ?? 7; },
+    beatTimes,
+    cliffhanger, // also for the ?hooks test driver
+    skipTo(n) {
+      caseFile.setFlag('visited_street'); fade.black = false; hud.show();
+      for (let k = 2; k <= n; k++) { SKIP[k].flags?.forEach((f) => caseFile.setFlag(f)); SKIP[k].add?.forEach((id) => caseFile.add(id)); }
+      const e = world.exits.find((x) => x.to === SKIP[n].to);
+      world.jump(SKIP[n].to, e ? e.spawn : null);
+    },
     setCamera(c) { cam = c; },
     coldOpen,
     // Debug / ?start=<area>: skip the cold open and drop straight into an area.
@@ -154,6 +195,7 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
       if (area.id === 'street' && !flag('toasted_street')) { caseFile.setFlag('toasted_street'); hud.toast('Lowmarket Street'); }
     },
     update(dt) {
+      if (!locked) beatTimes[api.beatNo - 1] += dt;
       for (let i = timers.length - 1; i >= 0; i--) { timers[i].left -= dt; if (timers[i].left <= 0) { timers[i].res(); timers.splice(i, 1); } }
       for (let i = tweens.length - 1; i >= 0; i--) {
         const t = tweens[i]; t.t += dt;

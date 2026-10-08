@@ -4,7 +4,7 @@ import { input } from './core/input.js';
 import { createCamera, CAMERA } from './render/camera.js';
 import { createDebugPanel, showSprites } from './debug/panel.js';
 import { getSheets } from './gen/sprites.js';
-import { loadJunoSheet, loadTeoSheet, loadPriestSheet, loadDexSheet, loadCatSheet, loadDexStandSheet, loadKitSheet, loadVendorSheet } from './gen/junoart.js';
+import { loadJunoSheet, loadTeoSheet, loadPriestSheet, loadDexSheet, loadCatSheet, loadDexStandSheet, loadKitSheet, loadVendorSheet, loadHaleSheet } from './gen/junoart.js';
 import { createCast } from './game/npc.js';
 import './ui/styles.css';
 import { createTouchUI } from './ui/touch.js';
@@ -67,6 +67,7 @@ try { getSheets().vendor = await loadVendorSheet(); } catch (e) { console.warn('
 try { getSheets().kit = await loadKitSheet(); } catch (e) { console.warn('Kit art not loaded, using the generated sprite:', e.message); }
 try { getSheets().miso = await loadCatSheet(); } catch (e) { console.warn('Cat art not loaded, using the generated sprite:', e.message); }
 try { getSheets().dexStanding = await loadDexStandSheet(); } catch (e) { console.warn('Standing Dex art not loaded, using the seated sprite:', e.message); }
+try { getSheets().hale = await loadHaleSheet(); } catch (e) { console.warn('Hale art not loaded, using the letter portrait:', e.message); }
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(MAIN.background);
@@ -98,11 +99,13 @@ const clock = createClock();
 const caseFile = createCaseFile(hud, clock);
 const dialogue = createDialogue({ hud, caseFile, clock });
 const echo = createEcho({ scene, sheets: getSheets(), post, caseFile, hud, cast, areas: world.areas });
-for (const h of echo.hotspots) {
+for (const h of echo.hotspots.filter((q) => !q.hidden)) {
   interactions.add({ id: `echo:${h.id}`, area: h.area, position: h.position, height: 1.2, verb: 'Echo', glyph: 'echo', onInteract: () => echo.start(h.id) });
 }
 const board = createBoard({ caseFile, hud });
-const beats = createBeats({ world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock,
+const beats = createBeats({ world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, echo,
+  deadHour: () => { tod.setTimeOfDay('blackout', 0.5); lights.scale = 0.3; synth.tone({ freq: 55, type: 'sine', dur: 40, vol: 0.3, attack: 2.5, release: 4, bus: 'music' }); }, // beat 7: signs die, one low tone
+
   setExposure: (v) => { renderer.toneMappingExposure = MAIN.exposure * v; }, setVhs: (a) => post.setVhs(a), setCrt: (a) => { post.setCrt(a); crtFrame.set(a); fade.cardScale(crtFrame.ratio); } });
 beats.setCamera(cam);
 beats.register();
@@ -221,6 +224,8 @@ debug.slider('fog high', fog.uniforms.fogHigh, 'value', 0, 1, 0.01);
 debug.slider('fog ground', fog.uniforms.fogGround, 'value', 0, 1, 0.01);
 debug.slider('music volume', synth.volumes, 'music', 0, 1, 0.05, () => synth.setVolume('music', synth.volumes.music));
 debug.slider('sfx volume', synth.volumes, 'sfx', 0, 1, 0.05, () => synth.setVolume('sfx', synth.volumes.sfx));
+debug.select('skip to beat', { '': '-', ...Object.fromEntries([2, 3, 4, 5, 6, 7].map((n) => [n, `Beat ${n}`])) }, '', (n) => { if (n) beats.skipTo(+n); });
+debug.extra = () => `beat ${beats.beatNo}  ${beats.beatTimes.map((s, i) => (s ? `${i + 1}:${Math.round(s)}s` : '')).filter(Boolean).join(' ')}`;
 debug.button('toast', () => hud.toast('Case file updated'));
 debug.button('clock +30 min', () => clock.add(30));
 debug.button('pause clock', () => { clock.paused = !clock.paused; });
@@ -306,7 +311,7 @@ renderer.setAnimationLoop((now) => {
 
   // Clock: runs once the title is dismissed; the phase picks the time-of-day mood.
   if (free && !echo.active) clock.update(dt);
-  if (clock.phase.id !== phaseId) { phaseId = clock.phase.id; tod.setTimeOfDay(phaseId, 8); }
+  if (clock.phase.id !== phaseId && !beats.ending) { phaseId = clock.phase.id; tod.setTimeOfDay(phaseId, 8); }
   hud.setClock(clock.text, clock.phase.label, clock.progress);
   if (input.pressed('hideControls')) hud.toggleControls();
   const place = world.placeAt(player.position.x, player.position.z);
@@ -316,7 +321,7 @@ renderer.setAnimationLoop((now) => {
     people: cast.list.filter((b) => b.id !== 'juno' && b.root.visible).map((b) => ({ x: b.position.x, z: b.position.z })),
   });
   if (input.pressed('music')) { synth.setMusicOn(!synth.musicOn); hud.toast(synth.musicOn ? 'Music on' : 'Music off'); }
-  music.setMood(echo.active ? 'echo' : board.isOpen ? 'board' : place.mood);
+  music.setMood(beats.ending ? 'silent' : echo.active ? 'echo' : board.isOpen ? 'board' : place.mood);
   sfx.setEcho(echo.active);
   sfx.update(dt, {
     player: player.position, yaw: cam.yaw, signs: area.id === 'street' ? street.signs : [],

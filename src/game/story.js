@@ -30,6 +30,7 @@ export const ENTRIES = {
   grey_glove: { kind: 'facts', title: 'A grey Bureau glove', text: 'Left in the alley behind the Sable. Standard Bureau issue, grey.', source: 'The alley' },
   master_keys: { kind: 'facts', title: 'City master keys', text: 'Every door on Lowmarket opens to a city master key held by crews, inspectors and the Bureau. It is written into the leases.', source: 'Mama Teo' },
   someone_had_key: { kind: 'facts', title: 'The visitor had a city key', text: 'A second person met Dex in the back room. They got in without knocking, with a city master key.', source: 'Deduction board' },
+  dex_backup: { kind: 'echoes', title: "Dex's backup echo", text: 'The copy Dex hid in his jacket. Nine seconds, his own eyes, a visitor in his back room.', source: "Dex's backup chip" },
   kit: { kind: 'people', title: 'Kit Lacroix', text: "A courier who lives in the capsule hostel. Nervous, talks too much. Says she was Dex's last client.", source: 'Capsule hostel' },
   alley_echo: { kind: 'echoes', title: 'The alley: the back door', text: 'A residue echo in the alley. Someone in a grey glove lets themselves out of the Sable and shuts the door behind them.', source: 'The alley' },
   kit_echo: { kind: 'echoes', title: "Kit's echo: the alley", text: "Eight seconds from Kit's implant, in the alley behind the Sable.", source: "Kit's implant" },
@@ -182,6 +183,19 @@ export const CONVERSATIONS = {
     d: { speaker: 'juno', text: 'Fine. Follow if you want. No promises about noodles.', end: true },
     again: { speaker: 'miso', text: 'Mrrp.', end: true },
   } },
+  // Beat 7: the cliffhanger lines (beats.js plays them in order).
+  chip_open: { start: 'a', nodes: {
+    a: { speaker: 'juno', text: "Dex's backup chip. It was sewn into his jacket lining. The one echo he was afraid of.", next: 'b' },
+    b: { speaker: 'juno', text: 'Fine. Let us see what scared him.', end: true },
+  } },
+  chip_early: { start: 'a', nodes: { a: { speaker: 'juno', text: 'Not yet. I need to know more before I slot that chip.', end: true } } },
+  log_open: { start: 'a', nodes: {
+    a: { speaker: 'juno', text: 'Forty-seven minutes. That is not overwork.', end: true },
+  } },
+  hale_end: { start: 'a', nodes: {
+    a: { speaker: 'hale', text: 'Juno.', next: 'b' },
+    b: { speaker: 'hale', text: 'Where were you tonight between 23:10 and 23:57?', end: true },
+  } },
   nobody: { start: 'a', nodes: { a: { speaker: 'juno', text: 'Nothing to say yet.', end: true } } },
 };
 
@@ -218,6 +232,7 @@ for (const [conv, nodes] of Object.entries(EDITS)) {
 export const HOTSPOTS = [
   { id: 'teo_back_room', area: 'sable', echo: 'teo_back_room', at: { spot: 'echo' }, radius: 2.6 },
   { id: 'alley_echo', area: 'alley', echo: 'alley_echo', at: { spot: 'echo', dx: 0, dz: 0 }, radius: 2.4 },
+  { id: 'dex_backup', area: 'car', echo: 'dex_backup', at: { spot: 'seat' }, radius: 1, hidden: true }, // beat 7, played by beats.js (no marker, no F)
   { id: 'kit_echo', area: 'alley', echo: 'kit_echo', at: { spot: 'echo', dx: 0, dz: -5 }, radius: 2.0 },
 ];
 
@@ -258,6 +273,23 @@ export const ECHOES = {
     voices: [{ t0: 0.6, t1: 2.2, speaker: 'unknown', text: '...locks never stop an auditor.' }],
     seams: [],
     tags: [{ t: 2.0, window: 0.8, fact: 'gloved_hand', label: 'Grey glove on the door' }],
+  },
+  // Beat 7: Dex's hidden backup, from his eyes in Juno's car (origin x 600). A hooded stranger sits across from him, then leans into the light: it is Juno.
+  dex_backup: {
+    title: "Dex's backup", owner: 'dex', entry: 'dex_backup', duration: 9,
+    tracks: [
+      { sprite: 'dexStanding', keys: [{ t: 0, x: 599.4, z: 0, facing: Math.PI / 2, anim: 'idle' }, { t: 9, x: 599.4, z: 0, facing: Math.PI / 2, anim: 'idle' }] },
+      { sprite: 'vendor', show: [1.6, 4.6], keys: [
+        { t: 1.6, x: 600.5, z: 1.5, facing: Math.PI, anim: 'walk' }, { t: 3.0, x: 601.3, z: 0.3, facing: -Math.PI / 2, anim: 'walk' }, { t: 3.2, x: 601.3, z: 0.3, facing: -Math.PI / 2, anim: 'idle' }, { t: 4.6, x: 601.3, z: 0.3, facing: -Math.PI / 2, anim: 'idle' },
+      ] },
+      { sprite: 'juno', show: [4.6, 9], keys: [{ t: 4.6, x: 601.3, z: 0.3, facing: -Math.PI / 2, anim: 'idle' }, { t: 9, x: 601.3, z: 0.3, facing: -Math.PI / 2, anim: 'idle' }] },
+    ],
+    voices: [
+      { t0: 2.4, t1: 4.4, speaker: 'dex', text: 'You came yourself. Of course you did.' },
+      { t0: 5.0, t1: 6.8, speaker: 'juno', text: 'Where is the other copy, Dex?' },
+      { t0: 7.2, t1: 8.8, speaker: 'dex', text: "...you won't remember this, will you." },
+    ],
+    seams: [], tags: [],
   },
   // Kit, out behind the Sable at 23:40, watches the gloved visitor leave.
   kit_echo: {
