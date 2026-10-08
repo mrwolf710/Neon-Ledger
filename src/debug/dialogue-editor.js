@@ -3,6 +3,7 @@ import EDITS from '../game/dialogue-edits.json';
 const hearers = (e) => e.filter(([id]) => !['hale', 'unknown'].includes(id)); // people Juno can talk to
 const rules = () => pending._rules ?? EDITS._rules ?? [];  // who says which conversation, on which visit, under which conditions
 const facts = Object.entries(ENTRIES).filter(([, e]) => e.kind === 'facts').map(([id, e]) => [id, e.title]);
+import { createFlow } from './flow-editor.js';
 import SCENE_EDITS from '../world/scene-edits.json';
 import { SCENES, SCENE_KEYS } from '../world/scenes.js';
 
@@ -157,10 +158,11 @@ function sceneMain() {
   });
   $('main').replaceChildren(el('h1', {}, SCENES[scene]), el('div', { className: 'sub' }, 'Changes apply while Juno is in this scene. "Reset" goes back to the default value. Numbers shown for unset rows are the usual night values.'), ...rows);
 }
-const drawList = () => (mode === 'conv' ? dlgList() : sceneList());
-const drawMain = () => (mode === 'conv' ? dlgMain() : sceneMain());
-const setMode = (m) => { mode = m; for (const t of ['conv', 'scene']) $(`tab-${t}`).className = m === t ? '' : 'ghost'; $('new').style.display = $('q').style.display = m === 'conv' ? '' : 'none'; drawList(); drawMain(); };
-$('tab-conv').onclick = () => setMode('conv'); $('tab-scene').onclick = () => setMode('scene');
+let flowDraw = null;
+const drawList = () => (mode === 'scene' ? sceneList() : dlgList());
+const drawMain = () => (mode === 'conv' ? dlgMain() : mode === 'flow' ? (flowDraw ??= createFlow({ el, pending, changed }))(document.getElementById('main'), current) : sceneMain());
+const setMode = (m) => { mode = m; for (const t of ['conv', 'flow', 'scene']) $(`tab-${t}`).className = m === t ? '' : 'ghost'; $('new').style.display = m === 'conv' ? '' : 'none'; $('q').style.display = m === 'scene' ? 'none' : ''; drawList(); drawMain(); };
+$('tab-conv').onclick = () => setMode('conv'); $('tab-scene').onclick = () => setMode('scene'); $('tab-flow').onclick = () => setMode('flow');
 
 $('q').oninput = () => { drawList(); drawMain(); };
 $('new').onclick = drawNew;

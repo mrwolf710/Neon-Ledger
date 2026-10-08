@@ -2,8 +2,9 @@ import * as THREE from 'three';
 
 // Juno's sprites are the owner's own pixel art (48x48, 8 directions), loaded from public/sprites/juno/<state>/<direction>.png.
 // Each state is one key pose per direction, so the animations are assembled from those poses:
-//   walk   = arm-swing pose (down), the same pose 1 px up, the opposite-side pose (mirrored, down), and 1 px up: no standing frames, so the stride never stops
-//   sneak  = crouched pose, a 1 px dip, the opposite-side pose (mirrored), a 1 px dip
+//   walk   = arm-swing pose (down), the same pose 1 px up, then the same upper body with the LEGS from the opposite-side pose (mirrored), down and up: no standing frames, so the stride never stops.
+//            Only the legs are mirrored: mirroring the whole figure flipped her armband and hair side every step (flicker).
+//   sneak  = the same, crouched
 //   tablet = tablet pose, then the opposite-side pose (mirrored) so the hands seem to tap
 //   idle   = standing pose, then the same pose 1 px lower (breathing)
 export const JUNO_ART = {
@@ -28,14 +29,17 @@ export const DEX_STAND_ART = { base: 'sprites/corpo-stand', size: 48, pxPerUnit:
 export const KIT_ART = { base: 'sprites/kit', cell: 68, pxPerUnit: 24, fps: 6, foot: 11, dirs: JUNO_ART.dirs }; // foot = empty pixels under the shoes in each cell
 // The street vendor: same kind of sheet, 64 px cells, a 4-frame breathing loop.
 export const VENDOR_ART = { base: 'sprites/vendor', cell: 64, pxPerUnit: 24, fps: 4, foot: 10, frames: 4, dirs: JUNO_ART.dirs };
+// Hale: eight 48 px rotation frames across one row; comms show the rear-left (north-west) view.
+export const HALE_ART = { base: 'sprites/hale', size: 48, pxPerUnit: 24, dirs: JUNO_ART.dirs, portraitDirection: 'north-west' };
+const LEGS_Y = 38; // px row where the legs start (below the coat hem): walk/sneak frames swap only the part below it
 const LOOP = 8;
 const OPP = { south: 'south', north: 'north', east: 'west', west: 'east', 'south-east': 'south-west', 'south-west': 'south-east', 'north-east': 'north-west', 'north-west': 'north-east' };
 
 // Frame recipes: [state, mirrored?, dy] where mirrored uses the opposite direction's picture flipped.
 const FRAMES = {
   idle: [['idle', false, 0], ['idle', false, 1]],
-  walk: [['walk', false, 1], ['walk', false, 0], ['walk', true, 1], ['walk', true, 0]],
-  sneak: [['sneak', false, 0], ['sneak', false, 1], ['sneak', true, 0], ['sneak', true, 1]],
+  walk: [['walk', false, 1], ['walk', false, 0], ['walk', 'legs', 1], ['walk', 'legs', 0]],
+  sneak: [['sneak', false, 0], ['sneak', false, 1], ['sneak', 'legs', 0], ['sneak', 'legs', 1]],
   tablet: [['tablet', false, 0], ['tablet', true, 0]],
 };
 
@@ -55,6 +59,15 @@ export async function loadPriestSheet() {
 export const loadDexSheet = () => loadSheet(DEX_ART, DEX_FRAMES, ['']);
 export const loadTeoSheet = () => loadSheet(TEO_ART, TEO_FRAMES, ['']);
 export const loadVendorSheet = () => loadKitSheet(VENDOR_ART);
+export async function loadHaleSheet() {
+  const A = HALE_ART, grid = await load(`${import.meta.env.BASE_URL}${A.base}/sheet.png`), imgs = {};
+  A.dirs.forEach((dir, i) => {
+    const canvas = Object.assign(document.createElement('canvas'), { width: A.size, height: A.size });
+    canvas.getContext('2d').drawImage(grid, i * A.size, 0, A.size, A.size, 0, 0, A.size, A.size);
+    imgs[`/${dir}`] = canvas;
+  });
+  return { ...await loadSheet(A, DEX_FRAMES, [''], imgs), portraitDirection: A.portraitDirection };
+}
 export async function loadKitSheet(A = KIT_ART) {
   const img = await load(`${import.meta.env.BASE_URL}${A.base}/sheet.png`);
   const canvas = Object.assign(document.createElement('canvas'), { width: img.width, height: img.height });
@@ -110,7 +123,10 @@ async function loadSheet(A, FRAMES, states, preloaded) {
         ctx.save();
         ctx.beginPath(); ctx.rect(x, row * S, S, S); ctx.clip();
         if (!mirrored) ctx.drawImage(imgs[`${state}/${dir}`], x, y);
-        else { ctx.translate(x + S, y); ctx.scale(-1, 1); ctx.drawImage(imgs[`${state}/${OPP[dir]}`], 0, 0); }
+        else if (mirrored === 'legs') { // same upper body, legs from the opposite side's picture, flipped
+          ctx.drawImage(imgs[`${state}/${dir}`], 0, 0, S, LEGS_Y, x, y, S, LEGS_Y);
+          ctx.translate(x + S, y); ctx.scale(-1, 1); ctx.drawImage(imgs[`${state}/${OPP[dir]}`], 0, LEGS_Y, S, S - LEGS_Y, 0, LEGS_Y, S, S - LEGS_Y);
+        } else { ctx.translate(x + S, y); ctx.scale(-1, 1); ctx.drawImage(imgs[`${state}/${OPP[dir]}`], 0, 0); }
         ctx.restore();
       });
     });

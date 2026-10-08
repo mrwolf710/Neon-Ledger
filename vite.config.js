@@ -56,6 +56,16 @@ const dialogueEditor = {
               for (const r of nodes) { edits._insert = (edits._insert ?? []).filter((x) => !(x.conv === r.conv && x.id === r.id)); if (edits[r.conv]) delete edits[r.conv][r.id]; }
               continue;
             }
+            if (conv === '_graph') { // whole conversations drawn in the flowchart tab: { id: { start, nodes } }
+              edits._graph ??= {};
+              for (const [id, g] of Object.entries(nodes)) { if (g === null) delete edits._graph[id]; else edits._graph[id] = g; }
+              continue;
+            }
+            if (conv === '_layout') { // card positions in the flowchart: { id: { node: [x, y] } }
+              edits._layout ??= {};
+              for (const [id, p] of Object.entries(nodes)) edits._layout[id] = p;
+              continue;
+            }
             if (conv === '_new') { // new conversations: { id: { with, active, lines: [{ speaker, text }] } | null (delete) }
               edits._new ??= {};
               for (const [id, def] of Object.entries(nodes)) { if (def === null) delete edits._new[id]; else edits._new[id] = def; }

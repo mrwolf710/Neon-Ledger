@@ -228,6 +228,9 @@ for (const [conv, nodes] of Object.entries(EDITS)) {
   }
 }
 
+// Conversations rebuilt in the editor's Story flow tab replace the game's own (last, so they win over the text edits above).
+for (const [id, g] of Object.entries(EDITS._graph ?? {})) CONVERSATIONS[id] = { start: g.start, nodes: g.nodes };
+
 // Echo hotspots: where F starts an echo. at: [x, z] or { spot, dx, dz } relative to a named batch spot.
 export const HOTSPOTS = [
   { id: 'teo_back_room', area: 'sable', echo: 'teo_back_room', at: { spot: 'echo' }, radius: 2.6 },
