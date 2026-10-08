@@ -120,7 +120,10 @@ function saveGame() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); hud.toast('Game saved'); return true; } catch { hud.toast('Could not save'); return false; }
 }
 function loadGame(s) {
-  if (!s || s.v !== 1 || !world.areas[s.area]) return;
+  const num = (n) => Number.isFinite(n);
+  if (!s || s.v !== 1 || !world.areas[s.area] || !Array.isArray(s.pos) || !s.pos.every(num) || !num(s.minutes) || !num(s.facing)
+    || !s.board || !Array.isArray(s.board.solved) || !Array.isArray(s.board.edges) || !Array.isArray(s.board.tries)
+    || !s.miso || !Array.isArray(s.miso.pos) || !s.miso.pos.every(num) || !s.caseFile || typeof s.visits !== 'object') { hud.toast('Save is damaged'); return; }
   caseFile.restore(s.caseFile);
   const b = board.logic;
   b.solved.clear(); b.edges.clear(); b.tries.clear();

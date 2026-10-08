@@ -47,9 +47,17 @@ export function createCollision(blocks, bounds = streetBounds(), opts = {}) {
     // Long moves are split into small steps so fast motion can't tunnel through a cell.
     move(pos, dx, dz, r) {
       const x0 = pos.x, z0 = pos.z, n = Math.max(1, Math.ceil(Math.hypot(dx, dz) / (c * 0.4)));
+      const sx = dx / n, sz = dz / n, len = Math.hypot(sx, sz);
       for (let k = 0; k < n; k++) {
-        if (!hits(pos.x + dx / n, pos.z, r)) pos.x += dx / n;
-        if (!hits(pos.x, pos.z + dz / n, r)) pos.z += dz / n;
+        const okX = !hits(pos.x + sx, pos.z, r), okZ = !hits(pos.x, pos.z + sz, r);
+        if (okX && okZ && !hits(pos.x + sx, pos.z + sz, r)) { pos.x += sx; pos.z += sz; continue; }
+        // Blocked on one axis: slide along the wall at full speed instead of only the free component.
+        if (okX && !okZ && sx) { const m = Math.sign(sx) * len; if (!hits(pos.x + m, pos.z, r)) pos.x += m; else pos.x += sx; }
+        else if (okZ && !okX && sz) { const m = Math.sign(sz) * len; if (!hits(pos.x, pos.z + m, r)) pos.z += m; else pos.z += sz; }
+        else {
+          if (okX) pos.x += sx;
+          if (!hits(pos.x, pos.z + sz, r)) pos.z += sz;
+        }
       }
       return pos.x !== x0 || pos.z !== z0;
     },
