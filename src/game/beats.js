@@ -125,6 +125,12 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
       }, done: () => examined() >= sableTotal },
     { id: 'echo', text: 'Scan the room for an echo (F)', area: 'sable', pos: () => spotXZ('sable', 'echo'), done: () => caseFile.has('teo_back_room') },
     { id: 'teo', text: 'Question Mama Teo', area: 'sable', pos: () => spotXZ('sable', 'teo'), done: () => flag('teo_cracked') },
+    { id: 'alley', text: 'Scan the alley behind the Sable (F)', area: 'alley', pos: () => spotXZ('alley', 'echo'), done: () => caseFile.has('alley_echo') },
+    { id: 'kit', text: "Find Kit at the capsule hostel", area: 'hostel', pos: () => spotXZ('hostel', 'kit'), done: () => flag('kit_met') },
+    { id: 'kitecho', text: "Scan the alley again for Kit's echo (F)", area: 'alley', pos: () => spotXZ('alley', 'echo'), done: () => caseFile.has('kit_echo') },
+    { id: 'kitbreak', text: "Present Kit's alley echo to her", area: 'hostel', pos: () => spotXZ('hostel', 'kit'), done: () => flag('kit_broken') },
+    { id: 'board', text: 'Link the evidence on the board (B)', area: 'car', done: () => flag('kit_deduced') },
+    { id: 'press', text: 'Press Kit about what she saw', area: 'hostel', pos: () => spotXZ('hostel', 'kit'), done: () => flag('kit_coat') },
   ];
   function markFor(step) {
     const here = world.current.id;

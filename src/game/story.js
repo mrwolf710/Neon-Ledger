@@ -30,11 +30,21 @@ export const ENTRIES = {
   grey_glove: { kind: 'facts', title: 'A grey Bureau glove', text: 'Left in the alley behind the Sable. Standard Bureau issue, grey.', source: 'The alley' },
   master_keys: { kind: 'facts', title: 'City master keys', text: 'Every door on Lowmarket opens to a city master key held by crews, inspectors and the Bureau. It is written into the leases.', source: 'Mama Teo' },
   someone_had_key: { kind: 'facts', title: 'The visitor had a city key', text: 'A second person met Dex in the back room. They got in without knocking, with a city master key.', source: 'Deduction board' },
+  kit: { kind: 'people', title: 'Kit Lacroix', text: "A courier who lives in the capsule hostel. Nervous, talks too much. Says she was Dex's last client.", source: 'Capsule hostel' },
+  alley_echo: { kind: 'echoes', title: 'The alley: the back door', text: 'A residue echo in the alley. Someone in a grey glove lets themselves out of the Sable and shuts the door behind them.', source: 'The alley' },
+  kit_echo: { kind: 'echoes', title: "Kit's echo: the alley", text: "Eight seconds from Kit's implant, in the alley behind the Sable.", source: "Kit's implant" },
+  gloved_hand: { kind: 'facts', title: 'A grey-gloved hand on the back door', text: "In the alley echo a hand in a grey Bureau glove pulls the Sable's back door shut. Same kind of glove as the one on the ground.", source: 'Echo: the alley, 02.0' },
+  kit_claim: { kind: 'facts', title: 'Kit says she left at 23:00', text: 'Kit swears she met Dex, got her delivery slip signed and went straight home to the hostel at eleven.', source: 'Kit' },
+  kit_outside: { kind: 'facts', title: 'Kit was in the alley at 23:40', text: "Kit's own echo puts her behind the Sable forty minutes after she says she left.", source: "Echo: Kit's alley, 02.5" },
+  someone_else: { kind: 'facts', title: 'Someone else was in the room', text: 'Two cups, two voices. Dex was not alone.', source: 'Deduction board' },
+  override_used: { kind: 'facts', title: 'The killer used an auditor override', text: 'A burned port with clean skin, a Bureau glove on the door. Only an auditor override burns an implant from outside.', source: 'Deduction board' },
+  kit_saw_them: { kind: 'facts', title: 'Kit saw them leave', text: 'Kit was in the alley when the gloved visitor came out of the back door.', source: 'Deduction board' },
+  bureau_coat: { kind: 'facts', title: 'The visitor wore a Bureau coat', text: "Kit, pressed: long grey coat, Bureau collar. She never saw the face.", source: 'Kit' },
   door_unlocked: { kind: 'facts', title: 'The back door was unlocked from outside', text: "Mama Teo locked Dex in the back room. Later she heard the back door, the only other way in, click open. No knock.", source: 'Mama Teo' },
 };
 
 // Which conversation each talkable thing starts. Missing ids fall back to FALLBACK.
-export const TALK = { mamaTeo: 'teo', vending: 'vending', miso: 'miso', vendor: 'vendor', preacher: 'preacher' };
+export const TALK = { mamaTeo: 'teo', vending: 'vending', miso: 'miso', vendor: 'vendor', preacher: 'preacher', kit: 'kit' };
 export const FALLBACK = 'nobody';
 // Rules from the editor: [{ conv, npc, when: 'all' | '1'..'4' (4 = the 4th visit on), fact?: a fact Juno must know, talked?: a person she must already have talked to }].
 // Ones with conditions are tried first; the first that fits wins, else the visit lists below, else the game's own TALK.
@@ -140,6 +150,29 @@ export const CONVERSATIONS = {
       after: { speaker: 'mamaTeo', text: "I've told you what I know. Find out who signed out a key tonight.", end: true },
     },
   },
+  // Kit: claims she left at 23:00 (fact kit_claim). Present kit_outside (her echo) to break the story; present kit_saw_them to press her for the coat.
+  kit: {
+    start: [{ if: { flag: 'kit_coat' }, node: 'done' }, { if: { flag: 'kit_broken' }, node: 'after' }, { if: { flag: 'kit_met' }, node: 'again' }, { node: 'hello' }],
+    nodes: {
+      hello: { speaker: 'kit', text: "You're Bureau. Great. I already told the Sable lady everything, which is nothing, because I wasn't there. Much.",
+        effects: [{ addPerson: 'kit' }, { setFlag: 'kit_met' }], choices: [{ text: 'You met Dex tonight.', next: 'claim' }] },
+      claim: { speaker: 'kit', text: "Delivery slip, he signed, I left. Eleven o'clock, on the dot. Straight home, hot shower, bad noodles. Ask the hostel clock.",
+        effects: [{ addFact: 'kit_claim' }], next: 'claim2' },
+      claim2: { speaker: 'juno', text: "Eleven. Got it.", end: true },
+      again: { speaker: 'kit', text: 'Still here, still innocent. What now?',
+        present: { kit_claim: 'repeat', kit_outside: 'broken', kit_saw_them: 'coat' }, presentWrong: 'wrong',
+        choices: [{ text: 'Nothing yet.', end: true }] },
+      repeat: { speaker: 'kit', text: 'Eleven. I said eleven. Write it down.', end: true },
+      wrong: { speaker: 'kit', text: "I don't know what that is. Can I go back to pretending to sleep?", end: true },
+      broken: { speaker: 'kit', text: "...Okay. Okay! I was out back. Twenty to midnight. I went to buy something from Dex that he never sold me, and I lost my nerve.", effects: [{ setFlag: 'kit_broken' }], next: 'broken2' },
+      broken2: { speaker: 'kit', text: "I was behind the Sable. I didn't see anything. Don't look at me like that.", end: true },
+      after: { speaker: 'kit', text: "I told you I was out back. What else do you want from me?",
+        present: { kit_saw_them: 'coat' }, presentWrong: 'wrong', choices: [{ text: 'Nothing yet.', end: true }] },
+      coat: { speaker: 'kit', text: "Fine. Somebody came out of that door. Long grey coat, Bureau collar, gloves. Head down, in no hurry. Like they owned the street.", effects: [{ addFact: 'bureau_coat' }, { setFlag: 'kit_coat' }], next: 'coat2' },
+      coat2: { speaker: 'kit', text: "No face. I swear. The hood, the rain, the lamps going out... that's all I have.", end: true },
+      done: { speaker: 'kit', text: 'A Bureau coat. That is all I know. Go away, auditor.', end: true },
+    },
+  },
   vending: { start: 'a', nodes: { a: { speaker: 'juno', text: 'Out of order. Naturally.', end: true } } },
   miso: { start: [{ if: { flag: 'miso_joined' }, node: 'again' }, { node: 'a' }], nodes: {
     a: { speaker: 'juno', text: 'Hey, stray. Hungry?', next: 'b' },
@@ -184,6 +217,8 @@ for (const [conv, nodes] of Object.entries(EDITS)) {
 // Echo hotspots: where F starts an echo. at: [x, z] or { spot, dx, dz } relative to a named batch spot.
 export const HOTSPOTS = [
   { id: 'teo_back_room', area: 'sable', echo: 'teo_back_room', at: { spot: 'echo' }, radius: 2.6 },
+  { id: 'alley_echo', area: 'alley', echo: 'alley_echo', at: { spot: 'echo', dx: 0, dz: 0 }, radius: 2.4 },
+  { id: 'kit_echo', area: 'alley', echo: 'kit_echo', at: { spot: 'echo', dx: 0, dz: -5 }, radius: 2.0 },
 ];
 
 // Echoes: { title, owner, duration (s), tracks, voices, seams, tags }.
@@ -211,6 +246,34 @@ export const ECHOES = {
     seams: [3.5],
     tags: [{ t: 2.0, window: 0.9, fact: 'two_voices', label: 'Two voices' }, { t: 3.5, window: 0.6, fact: 'echo_seam', label: 'The seam' }],
   },
+  // The alley (origin x 300): the Sable's back door is at z -7.96. A figure steps out and pulls it shut; the hand wears a grey glove.
+  alley_echo: {
+    title: 'The back door', owner: 'unknown', entry: 'alley_echo', duration: 6,
+    tracks: [
+      { sprite: 'vendor', keys: [
+        { t: 0, x: 300, z: -7.0, facing: Math.PI, anim: 'idle' }, { t: 2.4, x: 300, z: -7.0, facing: Math.PI, anim: 'idle' },
+        { t: 2.5, x: 300, z: -6.4, facing: 0, anim: 'walk' }, { t: 6, x: 300.4, z: 1.5, facing: 0, anim: 'walk' },
+      ] },
+    ],
+    voices: [{ t0: 0.6, t1: 2.2, speaker: 'unknown', text: '...locks never stop an auditor.' }],
+    seams: [],
+    tags: [{ t: 2.0, window: 0.8, fact: 'gloved_hand', label: 'Grey glove on the door' }],
+  },
+  // Kit, out behind the Sable at 23:40, watches the gloved visitor leave.
+  kit_echo: {
+    title: "Kit's view", owner: 'kit', entry: 'kit_echo', duration: 8,
+    tracks: [
+      { sprite: 'kit', keys: [
+        { t: 0, x: 299.2, z: -1.5, facing: Math.PI, anim: 'idle' }, { t: 8, x: 299.2, z: -1.5, facing: Math.PI, anim: 'idle' },
+      ] },
+      { sprite: 'vendor', show: [3.6, 8], keys: [
+        { t: 3.6, x: 300, z: -7.0, facing: 0, anim: 'walk' }, { t: 8, x: 300.6, z: 3.0, facing: 0, anim: 'walk' },
+      ] },
+    ],
+    voices: [{ t0: 1.0, t1: 3.2, speaker: 'kit', text: "23:40. Not my business. Keep walking, Kit." }],
+    seams: [],
+    tags: [{ t: 2.0, window: 1.4, fact: 'kit_outside', label: 'Kit in the alley, 23:40' }],
+  },
 };
 
 // Deduction board: each conclusion needs a pair (or trio) of fact ids linked together on the board.
@@ -225,5 +288,11 @@ export const BOARD = {
     { id: 'someone_had_key', needs: ['door_unlocked', 'master_keys', 'two_voices'], result: 'someone_had_key',
       line: 'Unlocked from outside, no knock, a city key that opens any door on the street, and two voices in the room. Someone with city access met Dex in there.',
       effects: [{ addFact: 'someone_had_key' }, { setFlag: 'key_deduced' }] },
+    { id: 'someone_else', needs: ['two_cups', 'two_voices'], result: 'someone_else',
+      line: 'Two cups and two voices. Someone else was in the room with Dex.', effects: [{ addFact: 'someone_else' }] },
+    { id: 'override_used', needs: ['burned_port', 'gloved_hand'], result: 'override_used',
+      line: 'A port burned from outside and a Bureau glove on the door. The killer used an auditor override.', effects: [{ addFact: 'override_used' }] },
+    { id: 'kit_saw_them', needs: ['kit_outside', 'gloved_hand'], result: 'kit_saw_them',
+      line: 'Kit was in the alley when the gloved hand came out. She saw them leave, and she has been lying about it.', effects: [{ addFact: 'kit_saw_them' }, { setFlag: 'kit_deduced' }] },
   ],
 };
