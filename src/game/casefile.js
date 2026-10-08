@@ -46,6 +46,7 @@ export function createCaseFile(hud, clock) {
         return d;
       }));
     }
+    list.querySelector('.sel')?.scrollIntoView({ block: 'nearest' });
     foot.textContent = present ? 'Up / Down choose · Space present · Esc cancel' : 'A / D or Q / E tabs · Tab closes';
   }
 

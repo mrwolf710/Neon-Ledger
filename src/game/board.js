@@ -178,6 +178,7 @@ export function createBoard({ caseFile, hud }) {
     if (!facts.length) cardsEl.innerHTML = '<div class="bd-empty">&gt; NO DATA. TALK TO PEOPLE. SCAN ECHOES.</div>';
     status.textContent = `FACTS ${facts.length} · LINKS ${logic.solved.size}/${BOARD.conclusions.length}`;
     cards = facts.map((f) => f.id);
+    cardsEl.querySelector('.cursor')?.scrollIntoView({ block: 'nearest' }); // pad / keys moving the cursor scroll the grid
     requestAnimationFrame(drawStrings);
   }
 
@@ -201,6 +202,7 @@ export function createBoard({ caseFile, hud }) {
     if (best >= 0) { cursor = best; render(); }
   }
 
+  cardsEl.addEventListener('scroll', () => drawStrings()); // strings follow the cards when the grid scrolls
   closeBtn.addEventListener('click', () => api.close());
   window.addEventListener('resize', () => { if (isOpen) drawStrings(); });
 
