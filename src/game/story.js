@@ -6,7 +6,7 @@ import EDITS from './dialogue-edits.json' with { type: 'json' }; // made in /edi
 export const SPEAKERS = {
   juno: { name: 'Juno', color: '#1fd6e8' },
   mamaTeo: { name: 'Mama Teo', color: '#e0217d' },
-  kit: { name: 'Worker', color: '#f2a93b' },
+  kit: { name: 'Kit', color: '#f2a93b' },
   dex: { name: 'Dex', color: '#8a8a90' },
   vendor: { name: 'Vendor', color: '#2a6b72' },
   miso: { name: 'Miso', color: '#d9771c' },
@@ -169,7 +169,7 @@ export const CONVERSATIONS = {
       broken2: { speaker: 'kit', text: "I was behind the Sable. I didn't see anything. Don't look at me like that.", end: true },
       after: { speaker: 'kit', text: "I told you I was out back. What else do you want from me?",
         present: { kit_saw_them: 'coat' }, presentWrong: 'wrong', choices: [{ text: 'Nothing yet.', end: true }] },
-      coat: { speaker: 'kit', text: "Fine. Somebody came out of that door. Long grey coat, Bureau collar, gloves. Head down, in no hurry. Like they owned the street.", effects: [{ addFact: 'bureau_coat' }, { setFlag: 'kit_coat' }], next: 'coat2' },
+      coat: { speaker: 'kit', text: "Fine. Somebody came out of that door. Long grey coat, Bureau collar, gloves. Head down, in no hurry. Like they owned the street.", effects: [{ addFact: 'bureau_coat' }, { setFlag: 'kit_coat' }, { setFlag: 'kit_broken' }], next: 'coat2' },
       coat2: { speaker: 'kit', text: "No face. I swear. The hood, the rain, the lamps going out... that's all I have.", end: true },
       done: { speaker: 'kit', text: 'A Bureau coat. That is all I know. Go away, auditor.', end: true },
     },
@@ -185,7 +185,7 @@ export const CONVERSATIONS = {
   } },
   // Beat 7: the cliffhanger lines (beats.js plays them in order).
   chip_open: { start: 'a', nodes: {
-    a: { speaker: 'juno', text: "Dex's backup chip. It was sewn into his jacket lining. The one echo he was afraid of.", next: 'b' },
+    a: { speaker: 'juno', text: "Dex's backup chip. The evidence tech found it sewn into his jacket lining and sent it to my car. The one echo he was afraid of.", next: 'b' },
     b: { speaker: 'juno', text: 'Fine. Let us see what scared him.', end: true },
   } },
   chip_early: { start: 'a', nodes: { a: { speaker: 'juno', text: 'Not yet. I need to know more before I slot that chip.', end: true } } },

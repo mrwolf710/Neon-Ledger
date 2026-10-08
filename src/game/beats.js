@@ -154,7 +154,7 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
         return left.sort((a, b) => Math.hypot(a.x - player.position.x, a.z - player.position.z) - Math.hypot(b.x - player.position.x, b.z - player.position.z))[0];
       }, done: () => examined() >= sableTotal },
     { id: 'echo', text: 'Scan the room for an echo (F)', area: 'sable', pos: () => spotXZ('sable', 'echo'), done: () => caseFile.has('teo_back_room') },
-    { id: 'teo', text: 'Question Mama Teo', area: 'sable', pos: () => spotXZ('sable', 'teo'), done: () => flag('teo_cracked') },
+    { id: 'teo', text: 'Question Mama Teo', area: 'sable', pos: () => spotXZ('sable', 'teo'), done: () => flag('teo_asked_door') },
     { id: 'alley', text: 'Scan the alley behind the Sable (F)', area: 'alley', pos: () => spotXZ('alley', 'echo'), done: () => caseFile.has('alley_echo') },
     { id: 'kit', text: "Find Kit at the capsule hostel", area: 'hostel', pos: () => spotXZ('hostel', 'kit'), done: () => flag('kit_met') },
     { id: 'kitecho', text: "Scan the alley again for Kit's echo (F)", area: 'alley', pos: () => spotXZ('alley', 'echo'), done: () => caseFile.has('kit_echo') },
