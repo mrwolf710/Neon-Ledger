@@ -1,4 +1,5 @@
 import { drawText, measure } from '../gen/pixelfont.js';
+import { CRT_FRAME } from './crtframe.js';
 
 // Full-screen black fade (area changes) and a pixel-font title card (cold open, end card).
 export const FADE = { seconds: 0.35, cardY: 50, cardGap: 5 }; // cardY: % from the top where a split title's row is centred (where Juno stands in the cold open); cardGap: vh between its words
@@ -68,6 +69,12 @@ export function createFade() {
         const box = document.createElement('div'); // bottom-left corner: the words, then the subtitle underneath
         box.style.cssText = 'position:fixed;left:4vw;bottom:5vh;display:flex;flex-direction:column;align-items:flex-start;gap:1.6rem';
         box.append(row, below);
+        els.push(box);
+      } else if (first.corner === 'glass') { // inside the CRT glass, bottom-left (the card scales with the monitor, so it stays there)
+        const B = (CRT_FRAME.screenFrac * window.innerHeight) / CRT_FRAME.body.h, gw = CRT_FRAME.glass.w * B, gh = CRT_FRAME.glass.h * B, pad = 0.05 * gh;
+        const box = document.createElement('div');
+        box.style.cssText = `position:fixed;left:calc(50% - ${gw / 2 - pad}px);bottom:calc(50% - ${gh / 2 - pad}px);display:flex;flex-direction:column;align-items:flex-start;gap:0.6rem`;
+        box.append(...lines.map((l) => line(l.text, l.color ?? '#ffffff', l.scale ?? 6)));
         els.push(box);
       } else if (first.corner) { // plain lines stacked in the bottom-left corner
         const box = document.createElement('div');

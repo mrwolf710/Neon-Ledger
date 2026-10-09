@@ -74,7 +74,7 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
     await walkTo(stopX, door.z + 1.6);
     await wait(BEATS.settle);                                   // let the camera catch up so she stands in the middle of the screen, between the title words
     player.setPose('tablet');                                   // she reads the case on her tablet during the title card and Hale's call
-    const card = fade.card([{ text: 'CASE 01  LOWMARKET', color: '#1fd6e8', scale: 4, corner: true }], BEATS.cardHold);
+    const card = fade.card([{ text: 'CASE 01  LOWMARKET', color: '#1fd6e8', scale: 2, corner: 'glass' }], BEATS.cardHold);
     await wait(BEATS.zoomDelay);                                // the zoom starts while the title words are still on screen
     let uiOn = false;
     await tween(BEATS.zoomSeconds, (u) => { // the monitor frame zooms out to the full game and the tape noise fades; the UI only fades in as the zoom nears its end
