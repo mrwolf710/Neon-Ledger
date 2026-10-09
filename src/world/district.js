@@ -12,7 +12,7 @@ export const DISTRICT = {
   buildingDepth: 3,       // road 6 + sidewalks 2x2 + buildings 2x3 = 16 wide
   buildingGap: [0.4, 1.6],
   rail: { x: 17, height: 7, deckWidth: 2.5, deckThickness: 0.6, deckLength: 24, pillarSize: 0.8 },
-  lamps: { spacing: 10, curbInset: 0.25 },
+  lamps: { spacing: 10, curbInset: 0.25, southStart: 9, block: 0.16 }, // southStart keeps the south poles off the hostel door (x 10.6) and the rail pillar (x 17),
   props: { inset: 0.7, gap: [1.5, 4], pillarClear: 1.4, depth: 0.9 }, // inset from the building line; depth = collision
 };
 
@@ -83,10 +83,10 @@ export function buildDistrict(rng) {
   const pr = rng.fork('props');
   const curbZ = D.roadWidth / 2 + D.lamps.curbInset;
   for (const s of [-1, 1]) {
-    for (let x = -D.length / 2 + (s < 0 ? 5 : 10); x < D.length / 2; x += D.lamps.spacing) {
+    for (let x = -D.length / 2 + (s < 0 ? 5 : D.lamps.southStart); x < D.length / 2; x += D.lamps.spacing) {
       batch.setTransform(x, s * curbZ, sideRot(s));
       PROP_BUILDERS.lamp(pr, M, batch);
-      batch.block(0, 0, 0.3, 0.3);
+      batch.block(0, 0, D.lamps.block, D.lamps.block);
     }
   }
 
