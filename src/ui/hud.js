@@ -4,6 +4,7 @@ import { getSheets } from '../gen/sprites.js';
 export const HUD = {
   bannerMs: 4000,        // how long the location banner stays
   toastMs: 3000,
+  objectiveCenterSeconds: 3, // a new objective sits in the middle of the screen this long, then moves to the corner
   mapPx: 112,            // minimap canvas size (square)
   mapRange: 26,          // world units across the minimap
   mapRefreshMs: 66,
@@ -31,21 +32,23 @@ export function frame(node) {
   return node;
 }
 
-// Speaker portrait: the head-and-shoulders crop of the speaker's front-facing idle frame (nearest-neighbour), or a letter plate for voices with no sprite.
-const PORTRAIT = { px: 64, headFrac: 0.5, catTop: 0.3, holo: ['preacher'], holoTint: 'rgba(60,230,255,0.6)', scanAlpha: 0.4 }; // px = canvas size, headFrac = share of a human frame (from the top) that counts as head + shoulders
+// Speaker portrait: head-and-shoulders idle crop (nearest-neighbour), with an optional direction override, or a letter plate for voices with no sprite.
+const PORTRAIT = { px: 64, fit: { vendor: 48 }, headFrac: 0.5, catTop: 0.3, holo: ['preacher'], holoTint: 'rgba(60,230,255,0.6)', scanAlpha: 0.4 }; // px = canvas size, headFrac = share of a human frame (from the top) that counts as head + shoulders
 function drawPortrait(cv, id, name, color) {
   const g = cv.getContext('2d'); g.imageSmoothingEnabled = false; g.clearRect(0, 0, cv.width, cv.height);
   const sh = getSheets()[id];
   if (!sh) { g.fillStyle = color; g.font = `bold ${cv.height * 0.6}px monospace`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(name[0], cv.width / 2, cv.height / 2 + 2); return; }
-  const eight = sh.dirs === 8, row = eight ? sh.animRows.idle.south : sh.rows.down, W = sh.frameW, H = sh.frameH;
+  const eight = sh.dirs === 8, row = eight ? sh.animRows.idle[sh.portraitDirection ?? 'south'] : sh.rows.down, W = sh.frameW, H = sh.frameH;
   const oy = sh.small ? Math.round(H * PORTRAIT.catTop) : 0; // cats: skip the tail, keep head and body
   const ch = sh.small ? H - oy : Math.round(H * (sh.frameH > 20 ? PORTRAIT.headFrac : 1));
   const px = sh.canvas.getContext('2d').getImageData(0, row * H + oy, W, ch).data;
   let x0 = W, x1 = -1, y0 = ch, y1 = -1;
   for (let y = 0; y < ch; y++) for (let x = 0; x < W; x++) if (px[(y * W + x) * 4 + 3] > 8) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
   if (x1 < 0) return;
-  const w = x1 - x0 + 1, h = y1 - y0 + 1, k = Math.floor(Math.min(cv.width / w, cv.height / h)) || 1;
-  g.drawImage(sh.canvas, x0, row * H + oy + y0, w, h, Math.floor((cv.width - w * k) / 2), cv.height - h * k, w * k, h * k);
+  const w = x1 - x0 + 1, h = y1 - y0 + 1, fit = PORTRAIT.fit[id]; // fit: sheets with bigger frames (the vendor's 64 px cells) are scaled to fit this many px so they match the others
+  const k = fit ? Math.min(fit / w, fit / h) : Math.floor(Math.min(cv.width / w, cv.height / h)) || 1;
+  const dw = Math.round(w * k), dh = Math.round(h * k);
+  g.drawImage(sh.canvas, x0, row * H + oy + y0, w, h, Math.floor((cv.width - dw) / 2), cv.height - dh, dw, dh);
   if (PORTRAIT.holo.includes(id)) { // hologram: cyan wash + scanlines, like the in-world ghost
     g.globalCompositeOperation = 'source-atop'; g.fillStyle = PORTRAIT.holoTint; g.fillRect(0, 0, cv.width, cv.height);
     g.globalCompositeOperation = 'destination-out'; g.fillStyle = `rgba(0,0,0,${PORTRAIT.scanAlpha})`;
@@ -127,6 +130,7 @@ export function createHud(initialCollision) {
     el('span', '', r, label);
   }
 
+  let objectiveTimer = 0;
   let objective = null, mapT = 0, bannerTimer = 0, currentLoc = '';
 
   function drawMap(view) {
@@ -198,7 +202,13 @@ export function createHud(initialCollision) {
       time.textContent = text; phase.textContent = phaseLabel;
       fill.style.width = knob.style.left = `${progress * 100}%`;
     },
-    setObjectiveText(text) { objectiveTxt.textContent = text ?? ''; objectiveEl.style.display = text ? '' : 'none'; },
+    // A new objective shows big in the middle of the screen for objectiveCenterSeconds, then slides to the corner.
+    setObjectiveText(text) {
+      if ((text ?? '') === objectiveTxt.textContent) return;
+      objectiveTxt.textContent = text ?? ''; objectiveEl.style.display = text ? '' : 'none';
+      clearTimeout(objectiveTimer);
+      if (text) { objectiveEl.classList.add('center'); objectiveTimer = setTimeout(() => objectiveEl.classList.remove('center'), H.objectiveCenterSeconds * 1000); }
+    },
     // pos {x, z} or null.
     setObjective(pos) { objective = pos; },
     toast(text) {
