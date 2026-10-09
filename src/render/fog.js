@@ -12,7 +12,7 @@ export const FOG = {
 // See-through cutaway: geometry in front of the player, inside a circle around them on screen and above
 // street level, is discarded (dithered edge) so near buildings never hide Juno. Shares the fog patch.
 export const CUTAWAY = {
-  radius: 4.8,     // world units around the player
+  radius: 5.76,    // world units around the player (was 4.8, +20%)
   minY: 0.3,      // never cut below this height (street, sidewalks, curbs)
   margin: 1.5,    // only cut things at least this much closer to the camera than the player
   edge: 0.3,      // dithered fraction of the radius
@@ -72,6 +72,7 @@ export function createHeightFog(scene) {
     update(camera, focus) { uniforms.fogStart.value = camera.position.distanceTo(focus) - FOG.startOffset; },
     // Centres the cutaway on the player. bufferW/H: drawing-buffer pixels (gl_FragCoord space).
     cutaway(camera, playerPos, bufferW, bufferH) {
+      camera.updateMatrixWorld(); // the camera moved this frame; the renderer would only refresh its matrix after this runs, which left the circle a frame behind (off-centre while moving)
       v.copy(playerPos).setY(playerPos.y + 1).applyMatrix4(camera.matrixWorldInverse);
       const depth = -v.z;
       uniforms.cutDepth.value = depth - CUTAWAY.margin;
