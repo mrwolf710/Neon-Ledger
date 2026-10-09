@@ -6,24 +6,26 @@ export const TITLE = {
   scale: 8,                 // screen pixels per title pixel
   color: '#ffffff', sub: '#1fd6e8', bg: 'rgba(7,7,15,.6)',
   blinkMs: 600,
+  touchBottom: 22,          // % of the screen height kept clear at the bottom on phones (browser bars, thumbs)
 };
 
 // onStart runs synchronously inside the first tap / key press: browsers only let audio start from there.
 export function createTitle(onStart, saved = false) {
-  const T = TITLE;
+  const T = TITLE, touch = matchMedia('(pointer: coarse)').matches;
   const el = document.createElement('div');
   el.style.cssText = `position:fixed;inset:0;z-index:15;display:flex;flex-direction:column;align-items:flex-start;
-    justify-content:flex-end;gap:28px;padding:0 4vw 5vh;background:${T.bg};cursor:pointer;touch-action:none`;
+    justify-content:flex-end;gap:28px;padding:0 4vw ${touch ? TITLE.touchBottom : 5}vh;background:${T.bg};cursor:pointer;touch-action:none`;
   const word = (text, color, scale) => {
     const cv = Object.assign(document.createElement('canvas'), { width: measure(text), height: 5 });
     drawText(cv.getContext('2d'), text, 0, 0, color);
     cv.style.cssText = `width:${cv.width * scale}px;height:${cv.height * scale}px;image-rendering:pixelated`;
     return cv;
   };
-  const touch = matchMedia('(pointer: coarse)').matches;
   const sub = word(touch ? 'TAP TO START' : 'CLICK OR PRESS ANY KEY OR BUTTON', T.sub, Math.max(2, T.scale / 3));
   el.append(word('NEON ECHOES', T.color, T.scale), sub);
-  if (saved) { const c = word(touch ? 'TAP HERE TO CONTINUE' : 'PRESS C (PAD: Y) TO CONTINUE YOUR SAVED GAME', T.color, Math.max(2, T.scale / 4)); c.dataset.cont = ''; el.append(c); }
+  if (saved) { const c = word(touch ? 'TAP HERE TO CONTINUE' : 'PRESS C (PAD: Y) TO CONTINUE YOUR SAVED GAME', T.color, Math.max(2, T.scale / (touch ? 3 : 4))); c.dataset.cont = '';
+    if (touch) c.style.cssText += ';padding:18px 24px;margin:-18px -24px;border:1px solid rgba(255,255,255,.5)'; // a big, boxed tap target
+    el.append(c); }
   document.body.appendChild(el);
   const blink = setInterval(() => { sub.style.visibility = sub.style.visibility === 'hidden' ? 'visible' : 'hidden'; }, T.blinkMs);
 
