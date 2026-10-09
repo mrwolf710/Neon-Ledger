@@ -207,6 +207,11 @@ export const CONVERSATIONS = {
   log_open: { start: 'a', nodes: {
     a: { speaker: 'juno', text: 'Forty-seven minutes. That is not overwork.', end: true },
   } },
+  // Juno, alone with it, before Hale calls.
+  self_doubt: { start: 'a', nodes: {
+    a: { speaker: 'juno', text: '(That was me. My coat. My gloves. I was in that room with Dex.)', next: 'b' },
+    b: { speaker: 'juno', text: "(That's impossible. I would remember it. I would...)", end: true },
+  } },
   hale_end: { start: 'a', nodes: {
     a: { speaker: 'hale', text: 'Juno.', next: 'b' },
     b: { speaker: 'hale', text: 'Where were you tonight between 23:10 and 23:57?', end: true },
@@ -312,6 +317,7 @@ export const ECHOES = {
       { t0: 7.2, t1: 8.8, speaker: 'dex', text: "...you won't remember this, will you." },
     ],
     seams: [], tags: [],
+    cues: [{ t: 4.6, name: 'stinger' }], // the hooded figure leans into the light and is Juno
   },
   // Kit, out behind the Sable at 23:40, watches the gloved visitor leave.
   kit_echo: {

@@ -98,7 +98,11 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
     await fade.log();                                            // the red 47-minute gap
     await dialogue.start('log_open');
     deadHour(); ending = true;                                   // signs die, music cuts to one low tone
-    await wait(3);
+    await wait(2.5);
+    await dialogue.start('self_doubt');                          // Juno to herself
+    await wait(1.2);
+    sfx.comms?.();                                               // Hale calls
+    await wait(0.9);
     await dialogue.start('hale_end');
     await wait(1.2);
     await fade.out();

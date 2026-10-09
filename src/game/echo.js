@@ -189,6 +189,7 @@ export function createEcho({ scene, sheets, post, caseFile, hud, cast, areas }) 
         if (A.t >= D.duration) { A.t = 0; A.last = 0; } // loop
       }
       crossSeams(A.last, A.t, scrubbing);
+      for (const c of D.cues ?? []) if (A.last < c.t && A.t >= c.t && A.t - A.last < 1) api.onCue?.(c.name); // sound cues in the replay (the reveal stinger)
       A.last = A.t;
       A.glitch = Math.max(0, A.glitch - dt);
       post.setGlitch(A.glitch / ECHO.glitchSeconds);

@@ -102,6 +102,7 @@ const echo = createEcho({ scene, sheets: getSheets(), post, caseFile, hud, cast,
 for (const h of echo.hotspots.filter((q) => !q.hidden)) {
   interactions.add({ id: `echo:${h.id}`, area: h.area, position: h.position, height: 1.2, verb: 'Echo', glyph: 'echo', onInteract: () => echo.start(h.id) });
 }
+echo.onCue = (name) => { if (name === 'stinger') sfx.stinger(); };
 const board = createBoard({ caseFile, hud });
 const beats = createBeats({ world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, echo,
   deadHour: () => { tod.setTimeOfDay('blackout', 0.5); lights.scale = 0.3; synth.tone({ freq: 55, type: 'sine', dur: 40, vol: 0.3, attack: 2.5, release: 4, bus: 'music' }); }, // beat 7: signs die, one low tone
