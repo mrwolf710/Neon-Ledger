@@ -31,6 +31,13 @@ export const TUNING = {
     bpm: 60, chord: [50, 57, 62, 65], pad: { vol: 0.055, detune: 28, swell: 3.6, cutoff: 1400 },
     heart: { freq: 58, vol: 0.32 },
   },
+  // The end card: fast, hard and tense. E phrygian (E, with F a semitone above), 168 bpm, kick on every beat, sixteenth bass, tritone stabs, snare fills.
+  finale: {
+    bpm: 168, roots: [40, 40, 41, 40],
+    bassPattern: [0, 0, 12, 0, 1, 0, 12, 13],
+    kick: { vol: 0.55, start: 170, end: 36 }, snare: { vol: 0.22, body: 0.14 }, hat: { vol: 0.07 },
+    bass: { vol: 0.2, cutoff: 700 }, stab: { vol: 0.07, cutoff: 2600 }, riser: { vol: 0.12 },
+  },
   board: {
     bpm: 96, tick: { vol: 0.04 }, pulse: { freq: 55, vol: 0.13 },
     ladder: [57, 60, 64, 67, 69, 72, 76], noteVol: 0.06, dingVol: 0.12,
@@ -121,6 +128,26 @@ export function createMusic(synth) {
           kick(m.out, t + 0.24, S.heart.vol * 0.65, S.heart.freq * 1.7);
         }
         if (i % 32 === 16) synth.tone({ freq: midiToFreq(S.chord[0] + 24), type: 'sine', t, dur: sd * 6, vol: 0.03, release: 1.2, to: m.out });
+      },
+    },
+    finale: {
+      bpm: T.finale.bpm,
+      step(m, i, t) {
+        const S = T.finale, sd = stepDur(S.bpm), bar = Math.floor(i / 16), root = S.roots[bar % S.roots.length], fill = i % 64 >= 56;
+        if (i % 4 === 0 || i % 32 === 30) { // hard kick with a click on top
+          synth.tone({ freq: S.kick.start, type: 'sine', t, dur: 0.22, vol: S.kick.vol, slide: S.kick.end, attack: 0.001, release: 0.05, to: m.out });
+          synth.noise({ t, dur: 0.012, vol: S.kick.vol * 0.35, filter: { type: 'highpass', freq: 2500 }, to: m.out });
+        }
+        if (i % 8 === 4 || fill) { // snare on 2 and 4, rolling sixteenths in the last half bar of every four
+          synth.noise({ t, dur: 0.12, vol: S.snare.vol * (fill ? 0.7 : 1), filter: { type: 'bandpass', freq: 2100, q: 0.7 }, to: m.out });
+          synth.tone({ freq: 200, type: 'triangle', t, dur: 0.09, vol: S.snare.body, slide: 110, to: m.out });
+        }
+        synth.noise({ t, dur: 0.025, vol: S.hat.vol * (i % 2 ? 0.55 : 1), filter: { type: 'highpass', freq: 8000 }, to: m.out });
+        // Sixteenth-note bass, a saw through a lowpass: it never lets up.
+        synth.tone({ freq: midiToFreq(root + S.bassPattern[i % S.bassPattern.length]), type: 'sawtooth', t, dur: sd * 0.9, vol: S.bass.vol, attack: 0.002, release: 0.03, filter: { type: 'lowpass', freq: S.bass.cutoff, q: 1.4 }, to: m.out });
+        // Tritone stabs on the offbeats.
+        if (i % 16 === 3 || i % 16 === 10) for (const n of [root + 24, root + 30, root + 31]) synth.tone({ freq: midiToFreq(n), type: 'sawtooth', t, dur: sd * 1.6, vol: S.stab.vol, attack: 0.002, release: 0.08, detune: i % 2 ? 12 : -12, filter: { type: 'lowpass', freq: S.stab.cutoff, q: 2 }, to: m.out });
+        if (i % 64 === 0) synth.noise({ t, dur: sd * 14, vol: S.riser.vol, attack: sd * 12, release: 0.2, filter: { type: 'bandpass', freq: 400, q: 1.2, sweepTo: 7000 }, to: m.out }); // a riser into the next phrase
       },
     },
     board: {

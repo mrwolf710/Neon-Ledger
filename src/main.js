@@ -191,7 +191,7 @@ tod.onFlicker = (i) => sfx.crackle(street.signs[i].light.position);
 
 // ?hooks exposes the game objects for the headless test driver (scripts/drive.mjs eval: steps).
 if (new URLSearchParams(location.search).has('hooks')) {
-  const nl = window.__nl = { fade, crtFrame, saveGame, loadGame, readSave, menu, sfx, synth, cam, world, player, beats, caseFile, dialogue, cast, echo, hud, clock, board, THREE };
+  const nl = window.__nl = { fade, crtFrame, music, saveGame, loadGame, readSave, menu, sfx, synth, cam, world, player, beats, caseFile, dialogue, cast, echo, hud, clock, board, THREE };
   // Visual tour helpers: stand the player d units from a point (camera side) in any area, as in play, so the cutaway applies.
   nl.look = (areaId, x, z, d = 1.8) => {
     const b = world.areas[areaId].bounds, dx = (b.x0 + b.x1) / 2 - x, dz = (b.z0 + b.z1) / 2 - z, len = Math.hypot(dx, dz) || 1;
@@ -326,7 +326,7 @@ renderer.setAnimationLoop((now) => {
     people: cast.list.filter((b) => b.id !== 'juno' && b.root.visible).map((b) => ({ x: b.position.x, z: b.position.z })),
   });
   if (input.pressed('music')) { synth.setMusicOn(!synth.musicOn); hud.toast(synth.musicOn ? 'Music on' : 'Music off'); }
-  music.setMood(beats.ending ? 'silent' : echo.active ? 'echo' : board.isOpen ? 'board' : place.mood);
+  music.setMood(beats.finale ? 'finale' : beats.ending ? 'silent' : echo.active ? 'echo' : board.isOpen ? 'board' : place.mood, beats.finale ? 0.4 : undefined);
   sfx.setEcho(echo.active);
   sfx.update(dt, {
     player: player.position, yaw: cam.yaw, signs: area.id === 'street' ? street.signs : [],

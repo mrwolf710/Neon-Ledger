@@ -19,7 +19,7 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
   const timers = [], tweens = [];
   const visits = {}; // how many times Juno has talked to each person (picks the conversation, see story.js VISITS)
   const flag = (n) => caseFile.hasFlag(n);
-  let locked = false, focus = null, lastStep = '', ending = false;
+  let locked = false, focus = null, lastStep = '', ending = false, finale = false;
   const beatTimes = [0, 0, 0, 0, 0, 0, 0]; // seconds spent per beat (debug panel)
   const STEP_BEAT = { down: 1, sable: 2, back: 3, examine: 3, echo: 4, teo: 5, deduce: 5, teo2: 5, kit: 5, capsule: 5, alley: 5, kitecho: 5, board2: 6, kit2: 6, kitbreak: 6, press: 6, chip: 7 };
   // Debug 'skip to beat N': the flags and case file entries a player would hold when beat N starts (cumulative), then jump there.
@@ -106,7 +106,16 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
     await dialogue.start('hale_end');
     await wait(1.2);
     await fade.out();
-    await fade.card([{ text: 'NEON ECHOES', color: '#ffffff', scale: 6 }, { text: 'CASE 01 CONTINUES', color: '#1fd6e8', scale: 3 }], 3.5);
+    finale = true;                                               // the end card: fast, hard music
+    fade.card([{ text: 'NEON ECHOES', color: '#ffffff', scale: 6 }, { text: 'CASE 01 CONTINUES', color: '#1fd6e8', scale: 3 }, { text: 'TAP OR PRESS ANY BUTTON', color: '#8a8aa8', scale: 2 }], 3600); // stays up
+    await wait(2.5);                                             // a moment, so a stray tap does not skip it
+    await new Promise((res) => {                                 // any tap, key or pad button
+      let raf = 0;
+      const done = () => { window.removeEventListener('pointerdown', done, true); window.removeEventListener('keydown', done, true); cancelAnimationFrame(raf); res(); };
+      const poll = () => { if ([...(navigator.getGamepads?.() ?? [])].some((p) => p?.buttons.some((b) => b.pressed))) return done(); raf = requestAnimationFrame(poll); };
+      window.addEventListener('pointerdown', done, true); window.addEventListener('keydown', done, true); poll();
+    });
+    location.reload();                                           // back to the title screen
   }
 
   // ---- Interactables: doors, clues, people ----
@@ -184,6 +193,7 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
     visits, // talks per person (a save game keeps them)
     get focus() { return focus; },
     get ending() { return ending; },
+    get finale() { return finale; },
     get beatNo() { return STEP_BEAT[STEPS.find((s) => !s.done())?.id] ?? 7; },
     beatTimes,
     cliffhanger, // also for the ?hooks test driver
