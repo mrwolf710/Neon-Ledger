@@ -69,6 +69,11 @@ export function createFade() {
         box.style.cssText = 'position:fixed;left:4vw;bottom:5vh;display:flex;flex-direction:column;align-items:flex-start;gap:1.6rem';
         box.append(row, below);
         els.push(box);
+      } else if (first.corner) { // plain lines stacked in the bottom-left corner
+        const box = document.createElement('div');
+        box.style.cssText = 'position:fixed;left:4vw;bottom:5vh;display:flex;flex-direction:column;align-items:flex-start;gap:1.6rem';
+        box.append(...lines.map((l) => line(l.text, l.color ?? '#ffffff', l.scale ?? 6)));
+        els.push(box);
       } else els.push(...lines.map((l) => line(l.text, l.color ?? '#ffffff', l.scale ?? 6)));
       card.replaceChildren(...els);
       card.style.opacity = '1';
