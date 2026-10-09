@@ -26,8 +26,10 @@ export function createCamera(aspect) {
   const target = new THREE.Vector3();
   let yaw = 0, pitch = 0, distance = 0;
 
-  function reset() {
+  // snap: jump there at once instead of easing (used when entering a room)
+  function reset(snap = false) {
     goal.yaw = d2r(CAMERA.yawDeg); goal.pitch = d2r(CAMERA.pitchDeg); goal.distance = CAMERA.distance;
+    if (snap) { yaw = goal.yaw; pitch = goal.pitch; distance = goal.distance; }
   }
   reset();
   target.copy(goal.target); yaw = goal.yaw; pitch = goal.pitch; distance = goal.distance;

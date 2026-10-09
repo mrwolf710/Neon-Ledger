@@ -72,7 +72,7 @@ export function createBoard({ caseFile, hud }) {
   const foot = el('div', 'bd-foot', box);
   foot.innerHTML = '<span class="keycap">Drag</span>card onto card <span class="keycap">Arrows</span><span class="keycap">Space</span>pick two <span class="keycap">Esc</span>close';
 
-  let isOpen = false, cursor = 0, first = null, drag = null, temp = null, flash = null, lineTimer = 0, cards = [], newId = null;
+  let isOpen = false, cursor = 0, first = null, drag = null, temp = null, flash = null, lineTimer = 0, cards = [], newId = null, jumpToNew = false;
   const api = {
     get isOpen() { return isOpen; },
     onLock: null,   // (conclusion) when a link locks in; Stage 8 plays the ticking / chime
@@ -135,7 +135,7 @@ export function createBoard({ caseFile, hud }) {
       say(r.line);
       if (r.kind === 'solved') {
         caseFile.apply(r.conclusion.effects);
-        newId = r.conclusion.result;
+        newId = r.conclusion.result; jumpToNew = true; // the next render scrolls to the new conclusion card
         api.onLock?.(r.conclusion);
       }
     }
@@ -144,6 +144,8 @@ export function createBoard({ caseFile, hud }) {
 
   function render() {
     const facts = caseFile.facts();
+    const jump = jumpToNew; jumpToNew = false;
+    if (jump) { const k = facts.findIndex((f) => f.id === newId); if (k >= 0) cursor = k; }
     cursor = Math.min(cursor, Math.max(0, facts.length - 1));
     cardsEl.replaceChildren(...facts.map((f, i) => {
       const d = el('div', 'bd-card', null);
@@ -178,7 +180,7 @@ export function createBoard({ caseFile, hud }) {
     if (!facts.length) cardsEl.innerHTML = '<div class="bd-empty">&gt; NO DATA. TALK TO PEOPLE. SCAN ECHOES.</div>';
     status.textContent = `FACTS ${facts.length} · LINKS ${logic.solved.size}/${BOARD.conclusions.length}`;
     cards = facts.map((f) => f.id);
-    cardsEl.querySelector('.cursor')?.scrollIntoView({ block: 'nearest' }); // pad / keys moving the cursor scroll the grid
+    cardsEl.querySelector('.cursor')?.scrollIntoView({ block: jump ? 'center' : 'nearest' }); // pad / keys moving the cursor scroll the grid
     requestAnimationFrame(drawStrings);
   }
 

@@ -166,6 +166,7 @@ function onAreaEnter(area, spawn) {
   particles.active = area.meta.outdoor;
   tod.setIndoor(!area.meta.outdoor);
   tod.setScene(area.id);
+  if (area.id === 'hostel') cam.reset(true); // the default view looks at the back wall: Kit and the capsules, no spinning needed
   particles.center.x = area.meta.origin[0]; particles.center.z = area.meta.origin[1];
   if (spawn) {
     player.position.set(spawn[0], 0, spawn[1]);
