@@ -76,7 +76,7 @@ export function createBoard({ caseFile, hud }) {
   el('span', 'who nameplate', lineEl, 'Juno');
   const lineTxt = el('span', '', lineEl);
   const foot = el('div', 'bd-foot', box);
-  foot.innerHTML = '<span class="keycap">Drag</span>card onto card <span class="keycap">Arrows</span><span class="keycap">Space</span>pick two <span class="keycap">H</span><span class="keycap">Y</span>hint <span class="keycap">Esc</span>close';
+  foot.innerHTML = '<span class="keycap">Drag</span>card onto card <span class="keycap">Arrows</span><span class="keycap">Space</span>pick two <span class="keycap">H</span><span class="keycap">Y</span>hint <span class="keycap">RT</span>solve <span class="keycap">Esc</span>close';
 
   let isOpen = false, cursor = 0, first = null, drag = null, temp = null, flash = null, lineTimer = 0, cards = [], newId = null, jumpToNew = false;
   let misses = 0, hinted = new Set(), hintTimer = 0, solving = false;
@@ -271,6 +271,7 @@ export function createBoard({ caseFile, hud }) {
       if (p('up') || p('menuUp')) moveCursor(0, -1);
       if (p('down') || p('menuDown')) moveCursor(0, 1);
       if (p('hideControls') || (p('caseFile') && input.lastDevice === 'gamepad')) hint(); // H on the keyboard, Y / Triangle on a pad (the case file button, unused while the board is open)
+      if (p('solve') && solveBtn.style.display !== 'none') solve(); // right trigger, once the Solve button has appeared
       if (p('interact') && cards[cursor]) pick(cards[cursor]);
     },
   });

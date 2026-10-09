@@ -39,7 +39,7 @@ export const KEY_BINDINGS = {
 // Standard gamepad mapping (Xbox names; PlayStation is the same layout).
 export const PAD_BINDINGS = {
   0: 'interact', 1: 'back', 2: 'echo', 3: 'caseFile', 4: 'rotateL', 5: 'rotateR',
-  8: 'board', 9: 'pause', 12: 'menuUp', 13: 'menuDown', 14: 'menuLeft', 15: 'menuRight',
+  7: 'solve', 8: 'board', 9: 'pause', 12: 'menuUp', 13: 'menuDown', 14: 'menuLeft', 15: 'menuRight',
 };
 
 const held = new Set();
