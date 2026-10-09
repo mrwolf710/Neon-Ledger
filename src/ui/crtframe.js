@@ -5,9 +5,9 @@ export const CRT_FRAME = {
   size: 256,                       // PNG size in px
   glass: { cx: 127.5, cy: 137, w: 122, h: 79 }, // the transparent screen: centre and width in PNG px (measured with scripts/pngbox.mjs)
   body: { h: 159 },                // opaque monitor height in PNG px
-  bleed: 1.06,                     // the picture is this much bigger than the measured glass; the monitor body (drawn on top) hides the overlap, so no gap or green glow shows at the edges
+  bleed: 1.06,                     // the picture is this much bigger than the measured glass; the monitor body (drawn on top) hides the overlap, so no gap or glow shows at the edges
   screenFrac: 0.96,                // monitor height as a share of the window height at k = 1
-  glow: 'drop-shadow(0 0 3vh rgba(57,255,20,0.65)) drop-shadow(0 0 10vh rgba(40,255,40,0.5))', // on a copy behind the canvas, so it never tints the picture
+  glow: 'drop-shadow(0 0 3vh rgba(255,255,255,0.6)) drop-shadow(0 0 10vh rgba(235,240,255,0.45))', // on a copy behind the canvas, so it never tints the picture
 };
 
 export function createCrtFrame(canvas) {
