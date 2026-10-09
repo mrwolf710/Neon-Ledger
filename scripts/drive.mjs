@@ -71,10 +71,9 @@ for (const step of process.argv.slice(2)) {
   else if (cmd === 'down') await keyEv('keyDown', a);
   else if (cmd === 'up') await keyEv('keyUp', a);
   else if (cmd === 'key') { await keyEv('keyDown', a); await sleep(80); await keyEv('keyUp', a); }
-  else if (cmd === 'tap') { // tap:<x>:<y> as a finger (touch events)
+  else if (cmd === 'tap') { // tap:<x>:<y> as a finger
     await send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
-    await send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: +a, y: +b }] }); await sleep(80);
-    await send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await send('Input.synthesizeTapGesture', { x: +a, y: +b, duration: 60, tapCount: 1, gestureSourceType: 'touch' });
   }
   else if (cmd === 'click') { await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: +a, y: +b, button: 'left', clickCount: 1 }); await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: +a, y: +b, button: 'left', clickCount: 1 }); }
   else if (cmd === 'eval') console.log('eval ->', JSON.stringify((await send('Runtime.evaluate', { expression: step.slice(5), returnByValue: true })).result?.result?.value));
