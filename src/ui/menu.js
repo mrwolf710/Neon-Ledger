@@ -52,15 +52,17 @@ export function createMenu({ synth, onSave = () => false, onLoad = () => {}, has
         const v = document.createElement('span'); v.className = 'menuval';
         const arrow = (t, dir) => {
           const b = Object.assign(document.createElement('b'), { textContent: t });
-          b.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); sel = i; pending = null; r.adj(dir); render(); });
+          b.addEventListener('click', (e) => { e.stopPropagation(); sel = i; pending = null; r.adj(dir); render(); });
           return b;
         };
         v.append(arrow('◄', -1), Object.assign(document.createElement('i'), { textContent: r.val() }), arrow('►', 1));
         d.appendChild(v);
       }
-      d.addEventListener('pointerdown', (e) => { e.preventDefault(); if (sel !== i) pending = null; sel = i; r.act?.(); render(); });
+      d.addEventListener('click', () => { if (sel !== i) pending = null; // click, not pointerdown: dragging to scroll the list on a phone must not press a row
+         sel = i; r.act?.(); render(); });
       box.appendChild(d);
     });
+    box.querySelector('.menurow.sel')?.scrollIntoView({ block: 'nearest' }); // pad / keys: keep the chosen row visible
   }
 
   const api = {

@@ -23,8 +23,8 @@ export const TUNING = {
   ui: { vol: 0.16 },
   voice: { vol: 0.09, dur: 0.06, every: 2 },
   voices: { // per speaker: base Hz and waveform
-    juno: [230, 'triangle'], mamaTeo: [310, 'square'], kit: [400, 'sawtooth'], dex: [165, 'square'], vendor: [195, 'triangle'],
-    miso: [760, 'sine'], hale: [185, 'sawtooth'], preacher: [150, 'sine'], unknown: [112, 'sawtooth'], vending: [540, 'square'],
+    juno: [230, 'triangle'], mamaTeo: [310, 'square'], kit: [400, 'sawtooth'], dex: [200, 'square'], vendor: [195, 'triangle'],
+    miso: [760, 'sine'], hale: [185, 'sawtooth'], preacher: [190, 'triangle'], unknown: [170, 'sawtooth'], vending: [540, 'square'],
   },
 };
 
