@@ -28,7 +28,11 @@ const dialogueEditor = {
       req.on('end', () => {
         try {
           const patch = JSON.parse(body), edits = JSON.parse(fs.readFileSync(EDITS, 'utf8'));
-          for (const [conv, nodes] of Object.entries(patch)) {
+          // A conversation drawn in the Story flow tab is stored whole in edits._graph and wins over per-line edits, so every edit from the
+          // Dialogue tab (text, speaker, added or removed lines) is written through to it as well. Added lines are handled first.
+          const G = (c) => edits._graph?.[c];
+          const order = Object.entries(patch).sort(([a], [b]) => (b === '_insert') - (a === '_insert'));
+          for (const [conv, nodes] of order) {
             if (conv === '_rules') { // [{ conv, npc, when: 'all' | '1'..'4', fact?, talked? }]: who says which conversation, on which visit, under which conditions
               edits._rules = nodes.filter((r) => r && typeof r.conv === 'string' && typeof r.npc === 'string');
               continue;
@@ -50,10 +54,27 @@ const dialogueEditor = {
             }
             if (conv === '_insert') { // lines added inside an existing conversation: [{ conv, after, id, speaker, text }]
               (edits._insert ??= []).push(...nodes);
+              for (const x of nodes) { // the same insertion inside the flowchart copy: the new line takes over the old line's next / end
+                const g = G(x.conv), n = g?.nodes[x.after];
+                if (!n || g.nodes[x.id]) continue;
+                const added = { speaker: x.speaker, text: x.text };
+                if (n.end) { added.end = true; delete n.end; } else if (n.next) added.next = n.next;
+                n.next = x.id; g.nodes[x.id] = added;
+              }
               continue;
             }
             if (conv === '_remove') { // [{ conv, id }]: drop an added line and its edits
-              for (const r of nodes) { edits._insert = (edits._insert ?? []).filter((x) => !(x.conv === r.conv && x.id === r.id)); if (edits[r.conv]) delete edits[r.conv][r.id]; }
+              for (const r of nodes) {
+                edits._insert = (edits._insert ?? []).filter((x) => !(x.conv === r.conv && x.id === r.id)); if (edits[r.conv]) delete edits[r.conv][r.id];
+                const g = G(r.conv), gone = g?.nodes[r.id];
+                if (!gone) continue;
+                const fix = (o) => { if (o.next === r.id) { delete o.next; if (gone.end) o.end = true; else if (gone.next) o.next = gone.next; } };
+                for (const m of Object.values(g.nodes)) { fix(m); (m.choices ?? []).forEach(fix); }
+                const rules = Array.isArray(g.start) ? g.start : [];
+                rules.forEach((s) => { if (s.node === r.id && gone.next) s.node = gone.next; });
+                if (g.start === r.id && gone.next) g.start = gone.next;
+                delete g.nodes[r.id];
+              }
               continue;
             }
             if (conv === '_graph') { // whole conversations drawn in the flowchart tab: { id: { start, nodes } }
@@ -76,6 +97,12 @@ const dialogueEditor = {
               if (typeof f.text === 'string') n.text = f.text;
               if (typeof f.speaker === 'string') n.speaker = f.speaker;
               for (const [i, t] of Object.entries(f.choices ?? {})) if (typeof t === 'string') (n.choices ??= {})[i] = t;
+              const gn = G(conv)?.nodes[node]; // write-through to the flowchart copy
+              if (gn) {
+                if (typeof f.text === 'string') gn.text = f.text;
+                if (typeof f.speaker === 'string') gn.speaker = f.speaker;
+                for (const [i, t] of Object.entries(f.choices ?? {})) if (typeof t === 'string' && gn.choices?.[i]) gn.choices[i].text = t;
+              }
             }
           }
           fs.writeFileSync(EDITS, JSON.stringify(edits, null, 2) + '\n');
