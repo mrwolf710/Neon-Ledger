@@ -19,6 +19,9 @@ export function createCaseFile(hud, clock) {
   const head = document.createElement('div'); head.className = 'cf-head'; box.appendChild(head);
   const tabsEl = document.createElement('div'); tabsEl.className = 'cf-tabs'; head.appendChild(tabsEl);
   const title = document.createElement('div'); title.className = 'cf-title nameplate'; head.appendChild(title);
+  const closeBtn = Object.assign(document.createElement('button'), { className: 'cf-close', textContent: '✕' }); // the way out on touch screens
+  closeBtn.addEventListener('click', () => close());
+  head.appendChild(closeBtn);
   const list = document.createElement('div'); list.className = 'cf-list'; box.appendChild(list);
   const foot = document.createElement('div'); foot.className = 'cf-foot'; box.appendChild(foot);
 
