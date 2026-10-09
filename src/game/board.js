@@ -5,6 +5,9 @@ export const BOARDUI = {
   lineSeconds: 4.5,               // how long Juno's line stays up
   snapMs: 450,                    // wrong-link string flash
   dragStart: 6,
+  solveAfter: 3,                  // wrong links + hints before the Solve button appears
+  hintGlowSeconds: 6,             // how long hinted cards glow
+  solveStepMs: 1300,              // Solve: time per link (select the first card, then the second)
 };
 
 // --- Pure link logic (no DOM; see scripts/check-board.mjs) ---
@@ -62,7 +65,10 @@ export function createBoard({ caseFile, hud }) {
   const titleBox = el('div', 'bd-titlebox', head);
   el('div', 'bd-title nameplate', titleBox, 'Deduction matrix');
   const status = el('div', 'bd-status', titleBox);
-  const closeBtn = el('button', 'bd-close', head, '✕');
+  const right = el('div', 'bd-right', head);
+  const solveBtn = el('button', 'bd-tool', right, 'Solve'); solveBtn.style.display = 'none'; // appears after BOARDUI.solveAfter misses
+  const hintBtn = el('button', 'bd-tool', right, 'Hint');
+  const closeBtn = el('button', 'bd-close', right, '✕');
   const cardsEl = el('div', 'bd-cards', box);
   const svgNS = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(svgNS, 'svg'); svg.setAttribute('class', 'bd-strings'); box.appendChild(svg);
@@ -73,6 +79,8 @@ export function createBoard({ caseFile, hud }) {
   foot.innerHTML = '<span class="keycap">Drag</span>card onto card <span class="keycap">Arrows</span><span class="keycap">Space</span>pick two <span class="keycap">Esc</span>close';
 
   let isOpen = false, cursor = 0, first = null, drag = null, temp = null, flash = null, lineTimer = 0, cards = [], newId = null, jumpToNew = false;
+  let misses = 0, hinted = new Set(), hintTimer = 0, solving = false;
+  const hintCount = new Map();
   const api = {
     get isOpen() { return isOpen; },
     onLock: null,   // (conclusion) when a link locks in; Stage 8 plays the ticking / chime
@@ -127,7 +135,7 @@ export function createBoard({ caseFile, hud }) {
     const r = logic.link(a, b);
     if (r.kind === 'same') { render(); return; }
     if (r.kind === 'wrong') {
-      flash = [a, b]; api.onWrong?.();
+      flash = [a, b]; api.onWrong?.(); misses++;
       const title = (id) => caseFile.facts().find((f) => f.id === id)?.title;
       say(r.hint ? `${r.line} ${BOARD.hintLine.replace('{fact}', title(r.hint) ?? '…')}` : r.line);
       setTimeout(() => { flash = null; drawStrings(); }, BOARDUI.snapMs);
@@ -135,6 +143,7 @@ export function createBoard({ caseFile, hud }) {
       say(r.line);
       if (r.kind === 'solved') {
         caseFile.apply(r.conclusion.effects);
+        misses = 0; hintCount.clear(); hinted.clear();
         newId = r.conclusion.result; jumpToNew = true; // the next render scrolls to the new conclusion card
         api.onLock?.(r.conclusion);
       }
@@ -154,6 +163,7 @@ export function createBoard({ caseFile, hud }) {
       if (f.id === first) d.classList.add('sel');
       if (f.source === 'Deduction board') d.classList.add('result');
       if (f.id === newId) d.classList.add('new');
+      if (hinted.has(f.id)) d.classList.add('hinted');
       el('div', 'tag', d, f.source === 'Deduction board' ? 'CONCLUSION' : `FACT-${String(i + 1).padStart(2, '0')}`);
       el('div', 't', d, f.title); el('div', 'x', d, f.text);
       el('div', 'src', d, f.source);
@@ -180,8 +190,44 @@ export function createBoard({ caseFile, hud }) {
     if (!facts.length) cardsEl.innerHTML = '<div class="bd-empty">&gt; NO DATA. TALK TO PEOPLE. SCAN ECHOES.</div>';
     status.textContent = `FACTS ${facts.length} · LINKS ${logic.solved.size}/${BOARD.conclusions.length}`;
     cards = facts.map((f) => f.id);
+    solveBtn.style.display = misses >= BOARDUI.solveAfter && nextOpen() ? '' : 'none';
     cardsEl.querySelector('.cursor')?.scrollIntoView({ block: jump ? 'center' : 'nearest' }); // pad / keys moving the cursor scroll the grid
     requestAnimationFrame(drawStrings);
+  }
+
+  // The next conclusion Juno could draw: the first unsolved one whose facts she holds.
+  const nextOpen = () => BOARD.conclusions.find((c) => !logic.solved.has(c.id) && c.needs.every((f) => caseFile.has(f)));
+  const factTitle = (id) => caseFile.facts().find((f) => f.id === id)?.title ?? '…';
+
+  // Hint: each press on the same conclusion says more (one clue, then the pair, then all of them) and makes those cards glow.
+  function hint() {
+    const c = nextOpen();
+    if (!c) { say('Nothing more to connect with what I have. I need more evidence.'); return; }
+    const n = Math.min(c.needs.length, (hintCount.get(c.id) ?? 0) + 1);
+    hintCount.set(c.id, n); misses++;
+    const ids = c.needs.slice(0, n);
+    hinted = new Set(ids);
+    clearTimeout(hintTimer); hintTimer = setTimeout(() => { hinted.clear(); render(); }, BOARDUI.hintGlowSeconds * 1000);
+    const t = ids.map((f) => `“${factTitle(f)}”`);
+    say(n === 1 ? BOARD.hintLine.replace('{fact}', factTitle(ids[0])) : `${t.slice(0, -1).join(', ')} and ${t.at(-1)} belong together.`);
+    const k = cards.indexOf(ids[0]); if (k >= 0) cursor = k;
+    render();
+  }
+
+  // Solve: Juno picks the right cards herself, one link at a time.
+  function solve() {
+    const c = nextOpen();
+    if (!c || solving) return;
+    solving = true;
+    const [a, b, d] = c.needs, seq = [[a, b]];
+    if (d) seq.push([b, d]);
+    const had = (x, y) => (logic.edges.get(c.id) ?? []).some(([p, q]) => (p === x && q === y) || (p === y && q === x));
+    const todo = seq.filter(([x, y]) => !had(x, y));
+    todo.forEach(([x, y], i) => {
+      setTimeout(() => { first = x; const k = cards.indexOf(x); if (k >= 0) cursor = k; render(); }, i * BOARDUI.solveStepMs);
+      setTimeout(() => { const k = cards.indexOf(y); if (k >= 0) cursor = k; propose(x, y); if (i === todo.length - 1) solving = false; }, i * BOARDUI.solveStepMs + BOARDUI.solveStepMs / 2);
+    });
+    if (!todo.length) solving = false;
   }
 
   // Select a card; the second selection proposes the link.
@@ -206,10 +252,12 @@ export function createBoard({ caseFile, hud }) {
 
   cardsEl.addEventListener('scroll', () => drawStrings()); // strings follow the cards when the grid scrolls
   closeBtn.addEventListener('click', () => api.close());
+  hintBtn.addEventListener('click', () => hint());
+  solveBtn.addEventListener('click', () => solve());
   window.addEventListener('resize', () => { if (isOpen) drawStrings(); });
 
   Object.assign(api, {
-    open() { isOpen = true; first = null; newId = null; root.classList.add('on'); render(); api.onUi?.('confirm'); },
+    open() { isOpen = true; first = null; newId = null; hinted.clear(); root.classList.add('on'); render(); api.onUi?.('confirm'); },
     close() { isOpen = false; drag = temp = null; root.classList.remove('on'); api.onUi?.('back'); },
     toggle() { if (isOpen) api.close(); else api.open(); },
     // Every frame while open.
@@ -222,6 +270,7 @@ export function createBoard({ caseFile, hud }) {
       if (p('right') || p('menuRight')) moveCursor(1, 0);
       if (p('up') || p('menuUp')) moveCursor(0, -1);
       if (p('down') || p('menuDown')) moveCursor(0, 1);
+      if (p('hideControls')) hint(); // H
       if (p('interact') && cards[cursor]) pick(cards[cursor]);
     },
   });

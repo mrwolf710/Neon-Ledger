@@ -169,6 +169,10 @@ body.echo #hud .right, body.echo #hud .banner, body.echo #hud .controls, body.ec
   padding-bottom: 0.6rem; border-bottom: 1px solid rgba(31, 214, 232, 0.5); }
 #board .bd-title { font-size: 1.6rem; color: var(--cyan); text-shadow: 0 0 0.7rem var(--cyan); letter-spacing: 0.16em; }
 #board .bd-status { margin-top: 0.15rem; font: 500 0.8rem/1 monospace; letter-spacing: 0.15em; color: var(--magenta); }
+#board .bd-right { display: flex; align-items: center; gap: 0.6rem; }
+#board .bd-tool { height: max(2.2rem, 44px); padding: 0 1rem; font: 700 0.9rem var(--display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--pink); background: transparent; border: 1px solid var(--magenta); cursor: pointer; }
+#board .bd-tool:hover { background: rgba(224, 33, 125, 0.25); }
+#board .bd-card.hinted { box-shadow: 0 0 1.1rem var(--magenta), inset 0 0 0.8rem rgba(224, 33, 125, 0.35); }
 #board .bd-close { width: max(2.2rem, 44px); height: max(2.2rem, 44px); font: 700 1rem var(--display); color: var(--cyan); background: transparent; border: 1px solid var(--cyan); cursor: pointer; }
 #board .bd-cards { position: relative; z-index: 1; flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 1.8rem 1.6rem; align-content: start; overflow: auto; padding: 0.6rem 0.4rem; }
 /* Touch: the cards take drags (to link), so keep a margin on the right and room below where a swipe scrolls the list. */
