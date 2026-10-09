@@ -14,7 +14,7 @@ export const FOG = {
 export const CUTAWAY = {
   radius: 5.76,    // world units around the player (was 4.8, +20%)
   minY: 0.3,      // never cut below this height (street, sidewalks, curbs)
-  margin: 1.5,    // only cut things at least this much closer to the camera than the player
+  margin: 0.8,    // only cut things at least this much closer to the camera than the player
   edge: 0.3,      // dithered fraction of the radius
 };
 
