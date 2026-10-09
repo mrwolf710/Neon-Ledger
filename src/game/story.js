@@ -54,7 +54,7 @@ export const RULES = EDITS._rules ?? [];
 // Which conversation plays on each visit, from the editor (older format): VISITS[personId] = [1st, 2nd, 3rd, 4th and later]; '' = the normal one (TALK).
 export const VISITS = EDITS._visits ?? {};
 // Flags set by the end of conversations made in the editor (matched by id; the last line of the conversation gets them).
-const DONE_EFFECTS = { Capsule_after_Teo: [{ setFlag: 'kit_paid' }] };
+const DONE_EFFECTS = { Capsule_after_Teo: [{ setFlag: 'kit_paid' }], Mama_Teo_Points_to_Capsule_Hotel: [{ setFlag: 'teo_pointed' }, { setFlag: 'teo_cracked' }] };
 export function conversationFor(personId, visit, ctx = {}) {
   if (personId === 'kit' && ctx.flag?.('kit_paid')) return 'kit'; // once she has been paid, Kit has the interview instead of the shake-down
   const fits = (r) => r.npc === personId && (r.when === 'all' || (r.when === '4' ? visit >= 4 : +r.when === visit))

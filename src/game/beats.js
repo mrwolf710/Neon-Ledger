@@ -21,14 +21,14 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
   const flag = (n) => caseFile.hasFlag(n);
   let locked = false, focus = null, lastStep = '', ending = false;
   const beatTimes = [0, 0, 0, 0, 0, 0, 0]; // seconds spent per beat (debug panel)
-  const STEP_BEAT = { down: 1, sable: 2, back: 3, examine: 3, echo: 4, teo: 5, alley: 5, kit: 5, kitecho: 5, capsule: 5, kitbreak: 5, board: 6, press: 6, chip: 7 };
+  const STEP_BEAT = { down: 1, sable: 2, back: 3, examine: 3, echo: 4, teo: 5, deduce: 5, teo2: 5, kit: 5, capsule: 5, alley: 5, kitecho: 5, kitbreak: 5, board2: 6, press: 6, chip: 7 };
   // Debug 'skip to beat N': the flags and case file entries a player would hold when beat N starts (cumulative), then jump there.
   const SKIP = {
     2: { flags: ['visited_street'], to: 'street' },
     3: { flags: ['visited_sable'], to: 'sable' },
     4: { flags: ['seen_backroom', 'ex_body', 'ex_port', 'ex_cups', 'ex_terminal', 'ex_lamp'], add: ['dex_body', 'burned_port', 'two_cups', 'door_log', 'smashed_lamp'], to: 'sable' },
     5: { add: ['teo_back_room', 'two_voices', 'echo_seam'], to: 'sable' },
-    6: { flags: ['teo_met', 'teo_cracked', 'ex_glove', 'kit_met', 'kit_paid', 'ex_capsule', 'kit_broken'], add: ['mamaTeo', 'door_unlocked', 'master_keys', 'grey_glove', 'alley_echo', 'gloved_hand', 'dex_chip', 'kit', 'kit_claim', 'kit_echo', 'kit_outside'], to: 'car' },
+    6: { flags: ['teo_met', 'teo_cracked', 'teo_pointed', 'key_deduced', 'teo_asked_door', 'ex_glove', 'kit_met', 'kit_paid', 'ex_capsule', 'kit_broken'], add: ['mamaTeo', 'door_unlocked', 'master_keys', 'someone_had_key', 'grey_glove', 'alley_echo', 'gloved_hand', 'dex_chip', 'kit', 'kit_claim', 'kit_echo', 'kit_outside'], to: 'car' },
     7: { flags: ['kit_deduced', 'kit_coat'], add: ['someone_else', 'override_used', 'kit_saw_them', 'bureau_coat'], to: 'car' },
   };
 
@@ -155,12 +155,15 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
       }, done: () => examined() >= sableTotal },
     { id: 'echo', text: 'Scan the room for an echo (F)', area: 'sable', pos: () => spotXZ('sable', 'echo'), done: () => caseFile.has('teo_back_room') },
     { id: 'teo', text: 'Question Mama Teo', area: 'sable', pos: () => spotXZ('sable', 'teo'), done: () => flag('teo_asked_door') },
-    { id: 'alley', text: 'Scan the alley behind the Sable (F)', area: 'alley', pos: () => spotXZ('alley', 'echo'), done: () => caseFile.has('alley_echo') },
+    // The board comes before the next lead: link the back-door clues, then tell Teo what they mean, and only then go to the hostel.
+    { id: 'deduce', text: 'Open the deduction board (B) and link the clues about the back door', get area() { return world.current.id; }, done: () => flag('key_deduced') },
+    { id: 'teo2', text: 'Tell Mama Teo what you worked out', area: 'sable', pos: () => spotXZ('sable', 'teo'), done: () => flag('teo_pointed') },
     { id: 'kit', text: 'Ask around the capsule hostel about Dex', area: 'hostel', pos: () => spotXZ('hostel', 'kit'), done: () => flag('kit_paid') },
     { id: 'capsule', text: "Search Dex's capsule, Room 3F", area: 'hostel', pos: () => spotXZ('hostel', 'capsule3f'), done: () => flag('ex_capsule') },
+    { id: 'alley', text: 'Scan the alley behind the Sable (F)', area: 'alley', pos: () => spotXZ('alley', 'echo'), done: () => caseFile.has('alley_echo') },
     { id: 'kitecho', text: "Scan the alley again for Kit's echo (F)", area: 'alley', pos: () => spotXZ('alley', 'echo'), done: () => caseFile.has('kit_echo') },
     { id: 'kitbreak', text: "Present Kit's alley echo to her", area: 'hostel', pos: () => spotXZ('hostel', 'kit'), done: () => flag('kit_broken') },
-    { id: 'board', text: 'Link the evidence on the board (B)', area: 'car', done: () => flag('kit_deduced') },
+    { id: 'board2', text: 'Link the evidence on the board (B)', get area() { return world.current.id; }, done: () => flag('kit_deduced') },
     { id: 'press', text: 'Press Kit about what she saw', area: 'hostel', pos: () => spotXZ('hostel', 'kit'), done: () => flag('kit_coat') },
     { id: 'chip', text: "Slot Dex's backup chip in your car", area: 'car', pos: () => spotXZ('car', 'seat'), done: () => ending },
   ];
