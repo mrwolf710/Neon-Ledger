@@ -137,7 +137,11 @@ body.echo #hud .right, body.echo #hud .banner, body.echo #hud .controls, body.ec
 #echo .echo-hint { position: absolute; left: calc(1.2rem + var(--safe-l)); top: calc(3rem + var(--safe-t)); max-width: 22rem; font-size: 0.95rem; line-height: 1.35; color: #fff; text-shadow: 0 0 0.4rem #000; }
 @keyframes tagpulse { 50% { box-shadow: 0 0 1.2rem var(--magenta); background: rgba(224, 33, 125, 0.6); } }
 @media (pointer: coarse) { #echo .echo-tag { padding: 0.9rem 2rem; font-size: 1.3rem; animation: tagpulse 0.9s infinite; } }
-@media (pointer: coarse) { #echo .echo-bar { right: calc(7.5rem + var(--safe-r)); } }
+@media (pointer: coarse) {
+  #echo .echo-bar { right: calc(116px + var(--safe-r)); } /* clear of the round ECHO button (76 px + 24 px margin) */
+  #echo .echo-caption { bottom: calc(11.5rem + var(--safe-b)); } /* above the bigger tag button */
+  body.echo #hud .toasts { bottom: auto; top: calc(1rem + var(--safe-t)); } /* not on top of the scrub bar */
+}
 #echo .echo-btn { width: 2.2rem; height: 2.2rem; flex: none; font: 700 1rem var(--display); color: var(--cyan); background: transparent; border: 1px solid var(--cyan); cursor: pointer; }
 #echo .echo-time { font: 600 1rem var(--display); letter-spacing: 0.06em; color: #fff; min-width: 2.6rem; text-align: center; flex: none; }
 #echo .echo-rail { position: relative; flex: 1; height: 0.7rem; background: rgba(255, 255, 255, 0.14); cursor: pointer; touch-action: none; }
@@ -167,6 +171,8 @@ body.echo #hud .right, body.echo #hud .banner, body.echo #hud .controls, body.ec
 #board .bd-status { margin-top: 0.15rem; font: 500 0.8rem/1 monospace; letter-spacing: 0.15em; color: var(--magenta); }
 #board .bd-close { width: max(2.2rem, 44px); height: max(2.2rem, 44px); font: 700 1rem var(--display); color: var(--cyan); background: transparent; border: 1px solid var(--cyan); cursor: pointer; }
 #board .bd-cards { position: relative; z-index: 1; flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 1.8rem 1.6rem; align-content: start; overflow: auto; padding: 0.6rem 0.4rem; }
+/* Touch: the cards take drags (to link), so keep a margin on the right and room below where a swipe scrolls the list. */
+@media (pointer: coarse) { #board .bd-cards { padding: 0.6rem 3.4rem 4rem 0.4rem; touch-action: pan-y; } }
 #board .bd-card { position: relative; padding: 1.7rem 1rem 0.7rem; cursor: grab; touch-action: none; user-select: none; color: var(--text);
   background: linear-gradient(160deg, rgba(20, 30, 60, 0.96), rgba(8, 10, 26, 0.96));
   clip-path: polygon(0 0, calc(100% - 0.9rem) 0, 100% 0.9rem, 100% 100%, 0.9rem 100%, 0 calc(100% - 0.9rem));

@@ -7,7 +7,7 @@ export const TUTORIALS = {
     lines: [
       'You have gathered enough clues to start connecting them. Every fact you find is saved in your Case File (Tab).',
       'Open the Investigation Board (B, or the BRD icon) to see your facts as cards.',
-      'Link two cards: drag one onto another, or select two with Space (arrow keys / D-pad move the cursor, tap works on touch).',
+      'Link two cards: drag one onto another, or select two with Space (arrow keys / D-pad move the cursor). On touch, tap one card then another, or drag; swipe in the margin at the right edge to scroll the cards.',
       'When two or three clues really fit together, the string locks and Juno draws a conclusion, which becomes a new cyan card. A wrong link costs nothing, and every few misses Juno hints at a clue she still needs.',
       'Conclusions point to who to question next. You can also present a clue to someone in conversation (Present evidence).',
     ],

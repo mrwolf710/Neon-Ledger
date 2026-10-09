@@ -52,6 +52,7 @@ const shot = async (name) => {
 };
 
 await send('Runtime.enable'); await send('Log.enable'); await send('Page.enable');
+if (process.env.MOBILE) { const [w, h] = process.env.MOBILE.split('x'); await send('Emulation.setDeviceMetricsOverride', { width: +w, height: +h, deviceScaleFactor: 2, mobile: true }); await send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 }); } // MOBILE=874x390: phone landscape (coarse pointer, touch UI)
 await send('Page.navigate', { url: `http://127.0.0.1:${PORT}/${process.env.QS ?? ''}` });
 // Wait until the game has built the world and shown the title (three canvases: the game plus the two title words), then click it.
 for (let i = 0; i < 300; i++) {
