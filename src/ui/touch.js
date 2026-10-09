@@ -67,7 +67,7 @@ export function createTouchUI(input) {
   return {
     // Call each frame after input.update().
     update() {
-      root.style.display = touchDevice || input.lastDevice === 'touch' ? 'block' : 'none';
+      root.style.display = (touchDevice || input.lastDevice === 'touch') && document.getElementById('hud')?.classList.contains('on') ? 'block' : 'none'; // not during the cold-open zoom
       const s = input.touchStick;
       ring.style.display = knob.style.display = s.active ? 'block' : 'none';
       if (!s.active) return;

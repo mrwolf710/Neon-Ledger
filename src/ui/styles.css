@@ -47,7 +47,8 @@ html { font-size: clamp(12px, 1.7vmin, 22px); }
 /* Right column: clock over minimap */
 #hud .right { position: absolute; right: calc(1rem + var(--safe-r)); top: calc(1rem + var(--safe-t)); width: 11rem;
   display: flex; flex-direction: column; gap: 0.7rem; }
-@media (pointer: coarse) { #hud .right { top: calc(4.6rem + var(--safe-t)); } }
+@media (pointer: coarse) { #hud .right { top: calc(72px + var(--safe-t)); width: 7.5rem; } /* below the touch buttons (46 px + 12 px margin) */
+  #hud:has(.dialogue.on) .right { display: none; } /* the chat box takes the bottom; the clock and map wait */ }
 #hud .clock { padding: 0.45rem 0.7rem 0.55rem; }
 #hud .clock .row { display: flex; align-items: center; justify-content: space-between; }
 #hud .clock .time { font: 700 1.6rem/1 var(--display); letter-spacing: 0.06em; color: #fff; }
@@ -220,3 +221,7 @@ body.echo #hud .objective { display: none !important; }
 .tutorial h2 { margin: 0 0 0.8rem; font: 700 1.4rem/1.1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--cyan); }
 .tutorial p { margin: 0 0 0.7rem; font: 400 1rem/1.5 var(--body); }
 .tutorial .tut-hint { margin-top: 1rem; font: 500 0.8rem var(--body); color: var(--pink); text-align: right; }
+
+/* A new objective shows large in the middle of the screen first, then glides to the corner. */
+#hud .objective { transform: translate(0, 0); transition: left 0.9s ease, top 0.9s ease, transform 0.9s ease; }
+#hud .objective.center { left: 50%; top: 40%; transform: translate(-50%, -50%) scale(1.6); }

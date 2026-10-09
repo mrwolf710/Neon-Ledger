@@ -19,8 +19,8 @@ const hex = (c) => `#${c.toString(16).padStart(6, '0')}`;
 function promptCanvas(verb, device, padType, glyph = 'interact') {
   const echo = glyph === 'echo';
   const C = INTERACT.colors, h = 11;
-  const label = device === 'keyboard' ? (echo ? 'F' : 'SPC') : '';
-  const gw = device === 'keyboard' ? measure(label) + 4 : 7;
+  const label = device === 'keyboard' ? (echo ? 'F' : 'SPC') : device === 'touch' ? 'TAP' : '';
+  const gw = label ? measure(label) + 4 : 7;
   const w = 3 + gw + 3 + measure(verb) + 3;
   const cv = Object.assign(document.createElement('canvas'), { width: w, height: h + 2 });
   const ctx = cv.getContext('2d');
@@ -28,7 +28,7 @@ function promptCanvas(verb, device, padType, glyph = 'interact') {
   ctx.fillStyle = hex(C.bubble); ctx.fillRect(1, 1, w - 2, h - 2);
   ctx.fillStyle = hex(C.border); ctx.fillRect((w >> 1) - 1, h, 3, 1); ctx.fillRect(w >> 1, h + 1, 1, 1); // tail
   const gx = 3, gy = 2;
-  if (device === 'keyboard') {
+  if (label) { // keyboard key cap, or TAP on touch screens
     ctx.fillStyle = hex(C.key); ctx.fillRect(gx, gy, gw, 7);
     drawText(ctx, label, gx + 2, gy + 1, hex(C.keyText));
   } else if (device === 'mouse') {
@@ -50,7 +50,8 @@ export function createInteractions(scene) {
   // Drawn as a screen overlay (not in 3D) so bloom and tilt-shift never blur it.
   let canvas = null;
   const el = document.createElement('div');
-  el.style.cssText = 'position:fixed;left:0;top:0;pointer-events:none;z-index:5;display:none';
+  el.style.cssText = 'position:fixed;left:0;top:0;pointer-events:none;z-index:5;display:none;padding:14px;margin:-14px'; // the padding is a bigger touch target
+  el.addEventListener('pointerdown', (e) => { if (!current) return; e.preventDefault(); e.stopPropagation(); current.onInteract?.(); }); // touch: tap the prompt to use it
   document.body.appendChild(el);
   let shownKey = '', current = null, area = 'street';
   const here = (it) => (it.area ?? 'street') === area;
@@ -93,11 +94,12 @@ export function createInteractions(scene) {
     update(pos, facing, device, padType, camera) {
       current = this.nearest(pos, facing);
       el.style.display = current ? 'block' : 'none';
+      el.style.pointerEvents = device === 'touch' ? 'auto' : 'none';
       if (!current) return;
       const key = `${current.verb}|${current.glyph}|${device}|${padType}`;
       if (key !== shownKey) {
         shownKey = key;
-        canvas = promptCanvas(current.verb, device === 'touch' ? 'mouse' : device, padType, current.glyph);
+        canvas = promptCanvas(current.verb, device, padType, current.glyph);
         const k = INTERACT.promptScale;
         canvas.style.cssText = `width:${canvas.width * k}px;height:${canvas.height * k}px;image-rendering:pixelated;display:block`;
         el.replaceChildren(canvas);
