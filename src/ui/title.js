@@ -21,25 +21,40 @@ export function createTitle(onStart, saved = false) {
     return cv;
   };
   const touch = matchMedia('(pointer: coarse)').matches;
-  const sub = word(touch ? 'TAP TO START' : 'CLICK OR PRESS ANY KEY', T.sub, Math.max(2, T.scale / 3));
+  const sub = word(touch ? 'TAP TO START' : 'CLICK OR PRESS ANY KEY OR BUTTON', T.sub, Math.max(2, T.scale / 3));
   el.append(word('NEON ECHOES', T.color, T.scale), sub);
-  if (saved) { const c = word(touch ? 'TAP HERE TO CONTINUE' : 'PRESS C TO CONTINUE YOUR SAVED GAME', T.color, Math.max(2, T.scale / 4)); c.dataset.cont = ''; el.append(c); }
+  if (saved) { const c = word(touch ? 'TAP HERE TO CONTINUE' : 'PRESS C (PAD: Y) TO CONTINUE YOUR SAVED GAME', T.color, Math.max(2, T.scale / 4)); c.dataset.cont = ''; el.append(c); }
   document.body.appendChild(el);
   const blink = setInterval(() => { sub.style.visibility = sub.style.visibility === 'hidden' ? 'visible' : 'hidden'; }, T.blinkMs);
 
   const state = { done: false, continuing: false };
   state.started = new Promise((resolve) => {
-    const go = (e) => {
-      e.preventDefault(); e.stopPropagation();
+    const go = (e, padContinue = false) => {
+      e?.preventDefault(); e?.stopPropagation();
       if (state.done) return;
       state.done = true;
-      state.continuing = !!saved && (e.key === 'c' || e.key === 'C' || e.target?.dataset?.cont !== undefined);
+      state.continuing = !!saved && (padContinue || e?.key === 'c' || e?.key === 'C' || e?.target?.dataset?.cont !== undefined);
       onStart?.();
-      clearInterval(blink);
+      clearInterval(blink); cancelAnimationFrame(padPoll);
       el.remove();
       window.removeEventListener('keydown', go, true);
       resolve();
     };
+    // Gamepad: any button starts a new game; Y / Triangle (button 3) continues a saved one. A pad press is not a browser gesture, so
+    // the music starts on the next key or click if the browser held the audio back (synth.js resumes then).
+    let padPoll = 0;
+    const held = new Set();
+    const poll = () => {
+      for (const p of navigator.getGamepads?.() ?? []) {
+        if (!p) continue;
+        p.buttons.forEach((b, i) => {
+          const k = `${p.index}:${i}`;
+          if (b.pressed && !held.has(k)) { held.add(k); go(null, i === 3 && !!saved); } else if (!b.pressed) held.delete(k);
+        });
+      }
+      if (!state.done) padPoll = requestAnimationFrame(poll);
+    };
+    padPoll = requestAnimationFrame(poll);
     el.addEventListener('pointerdown', go);
     window.addEventListener('keydown', go, true); // capture: the key doesn't also reach the game
   });
