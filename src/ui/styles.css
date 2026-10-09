@@ -240,3 +240,8 @@ body.echo #hud .objective { display: none !important; }
 /* A new objective shows large in the middle of the screen first, then glides to the corner. */
 #hud .objective { transform: translate(0, 0); transition: left 0.9s ease, top 0.9s ease, transform 0.9s ease; }
 #hud .objective.center { left: 50%; top: 40%; transform: translate(-50%, -50%) scale(1.6); }
+
+/* Barks: a short line above an NPC's head (game/barks.js). */
+.bark { position: fixed; z-index: 5; transform: translate(-50%, -100%); max-width: 16rem; padding: 0.3rem 0.7rem; pointer-events: none; opacity: 0; transition: opacity 0.3s;
+  font: 600 1rem/1.15 var(--display); letter-spacing: 0.06em; color: #fff; background: var(--panel); border: 1px solid var(--cyan); }
+.bark.on { opacity: 1; }

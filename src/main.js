@@ -28,6 +28,8 @@ import { createPlayer } from './game/player.js';
 import { createInteractions, INTERACT } from './game/interact.js';
 import { settings, TIERS } from './core/settings.js';
 import { createSaves } from './core/saves.js';
+import { createRailTrain } from './world/railtrain.js';
+import { createBarks } from './game/barks.js';
 import { createLights } from './render/lights.js';
 import { createPost, POST } from './render/post.js';
 import { createCrtFrame } from './ui/crtframe.js';
@@ -95,6 +97,7 @@ const sfx = createSfx(synth), music = createMusic(synth);
 const hud = createHud(world.current.collision);
 const menu = createMenu({ synth, saves, snapshot: () => snapshotGame(), onLoad: (d) => loadGame(d) });
 const tutorial = createTutorial(input);
+const railTrain = createRailTrain(world.areas.street.group, fog);
 const clock = createClock();
 const caseFile = createCaseFile(hud, clock);
 const dialogue = createDialogue({ hud, caseFile, clock });
@@ -104,6 +107,7 @@ for (const h of echo.hotspots.filter((q) => !q.hidden)) {
 }
 echo.onCue = (name) => { if (name === 'stinger') sfx.stinger(); };
 const board = createBoard({ caseFile, hud });
+const barks = createBarks({ cast, caseFile, player, camera: cam.camera });
 const beats = createBeats({ world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, echo,
   deadHour: () => { tod.setTimeOfDay('blackout', 0.5); lights.scale = 0.3; synth.tone({ freq: 55, type: 'sine', dur: 40, vol: 0.3, attack: 2.5, release: 4, bus: 'music' }); }, // beat 7: signs die, one low tone
 
@@ -323,7 +327,7 @@ renderer.setAnimationLoop((now) => {
   if (free) hud.setLocation(place.name, place.district);
   hud.update(dt, {
     player: { x: player.position.x, z: player.position.z, facing: player.facing }, yaw: cam.yaw,
-    people: cast.list.filter((b) => b.id !== 'juno' && b.root.visible).map((b) => ({ x: b.position.x, z: b.position.z })),
+    people: cast.list.filter((b) => b.id !== 'juno' && !b.ambient && b.root.visible).map((b) => ({ x: b.position.x, z: b.position.z })),
   });
   if (input.pressed('music')) { synth.setMusicOn(!synth.musicOn); hud.toast(synth.musicOn ? 'Music on' : 'Music off'); }
   music.setMood(beats.finale ? 'finale' : beats.ending ? 'silent' : echo.active ? 'echo' : board.isOpen ? 'board' : place.mood, beats.finale ? 0.4 : undefined);
@@ -339,6 +343,8 @@ renderer.setAnimationLoop((now) => {
   tod.update(dt);
   particles.update(dt, cam.target, cam.camera);
   cast.update(dt, cam.yaw, area.lights);
+  barks.update(dt, area.id, !modal);
+  railTrain.update(sfx.trainZ());
   if (modal) interactions.hide(); else interactions.update(player.position, player.facing, input.lastDevice, input.padType, cam.camera);
   fog.update(cam.camera, cam.target);
   const db = renderer.getDrawingBufferSize(bufSize);

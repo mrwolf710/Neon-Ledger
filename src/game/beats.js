@@ -136,7 +136,7 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
     interactions.add({ id: 'chip', area: 'car', position: new THREE.Vector3(seat.x, 0, seat.z), height: 1.0, verb: "Slot Dex's chip",
       onInteract: () => { if (locked) return; if (flag('kit_coat') && flag('ex_capsule')) cliffhanger(); else dialogue.start('chip_early'); } });
     for (const b of cast.list) {
-      if (b.id === 'juno' || b.id === 'dex') continue;       // Dex is examined, not spoken to
+      if (b.id === 'juno' || b.id === 'dex' || b.ambient) continue;       // Dex is examined, not spoken to
       interactions.add({
         id: b.id, get area() { return b.area; }, position: b.position, height: b.id === 'miso' ? 0.8 : 2, verb: b.id === 'miso' ? 'Pet' : 'Talk',
         onInteract: () => {

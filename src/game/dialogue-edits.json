@@ -211,6 +211,34 @@
       "id": "a2_2487_89358_178",
       "speaker": "hale",
       "text": "Juno, you copy?"
+    },
+    {
+      "conv": "hale_end",
+      "after": "a",
+      "id": "a_59645",
+      "speaker": "juno",
+      "text": "Some new evidence has come to my attention."
+    },
+    {
+      "conv": "hale_end",
+      "after": "b",
+      "id": "b_77730",
+      "speaker": "juno",
+      "text": "..."
+    },
+    {
+      "conv": "hale_end",
+      "after": "b",
+      "id": "b_91163",
+      "speaker": "hale",
+      "text": "Juno!"
+    },
+    {
+      "conv": "hale_end",
+      "after": "b_77730",
+      "id": "b_77730_31795",
+      "speaker": "hale",
+      "text": "Juno!"
     }
   ],
   "hale_open": {
@@ -233,6 +261,89 @@
   "2nd_Vendor": {
     "n1": {
       "speaker": "vendor"
+    }
+  },
+  "hale_end": {
+    "a_59645": {
+      "speaker": "hale"
+    },
+    "b_91163": {
+      "text": "...",
+      "speaker": "juno"
+    },
+    "b_77730": {
+      "text": "Juno, do you copy?",
+      "speaker": "hale"
+    }
+  },
+  "_graph": {
+    "hale_end": {
+      "start": "a",
+      "nodes": {
+        "a": {
+          "speaker": "hale",
+          "text": "Juno.",
+          "next": "a_59645"
+        },
+        "a_59645": {
+          "speaker": "hale",
+          "text": "Some new evidence has come to my attention.",
+          "next": "b"
+        },
+        "b": {
+          "speaker": "hale",
+          "text": "Where were you tonight between 23:10 and 23:57?",
+          "next": "b_91163"
+        },
+        "b_91163": {
+          "speaker": "juno",
+          "text": "...",
+          "next": "b_77730"
+        },
+        "b_77730": {
+          "speaker": "hale",
+          "text": "Juno, do you copy?",
+          "next": "b_77730_31795"
+        },
+        "b_77730_31795": {
+          "speaker": "hale",
+          "text": "Juno!",
+          "end": true
+        }
+      }
+    }
+  },
+  "_layout": {
+    "hale_end": {
+      "a": [
+        380,
+        20
+      ],
+      "a_59645": [
+        740,
+        20
+      ],
+      "b": [
+        1100,
+        20
+      ],
+      "b_91163": [
+        1460,
+        20
+      ],
+      "b_77730": [
+        1382,
+        255
+      ],
+      "_start": [
+        20,
+        20
+      ]
+    }
+  },
+  "log_open": {
+    "a": {
+      "text": "Forty-seven minutes. Missing."
     }
   }
 }

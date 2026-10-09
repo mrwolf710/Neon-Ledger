@@ -49,6 +49,15 @@ export const CHARACTERS = {
     name: 'Unknown figure', skin: 'grey1', iris: 'grey1', hair: { style: 'cropped', color: 'grey1' },
     top: 'grey1', legs: 'grey1', shoes: 'grey0', acc: [],
   },
+  // Background pedestrians (CAST ambient: true): generated, no owner art.
+  walkerA: { name: 'Passer-by', skin: 'rust2', iris: 'ink', hair: { style: 'bob', color: 'grey5' }, top: 'indigo', legs: 'grey1', shoes: 'ink',
+    outfit: { type: 'trench', color: 'grey3', collar: true }, acc: [{ type: 'bag', color: 'rust1' }] },
+  walkerB: { name: 'Passer-by', skin: 'bone', iris: 'ink', hair: { style: 'cropped', color: 'magenta' }, top: 'grey2', legs: 'night', shoes: 'ink',
+    outfit: { type: 'jacket', color: 'violet' }, acc: [{ type: 'stripe', color: 'cyanLight' }] },
+  walkerC: { name: 'Passer-by', skin: 'rust3', iris: 'ink', hair: { style: 'bun', color: 'grey6' }, top: 'teal', legs: 'grey1', shoes: 'rust0',
+    acc: [{ type: 'poncho', color: 'pink' }, { type: 'hood', color: 'magentaDeep' }] },
+  walkerD: { name: 'Passer-by', skin: 'rust2', iris: 'ink', hair: { style: 'short', color: 'ink' }, top: 'grey4', legs: 'indigo', shoes: 'ink',
+    outfit: { type: 'suit', color: 'grey1' }, acc: [{ type: 'tie', color: 'magenta' }] },
   vendor: {
     name: 'Street vendor', skin: 'rust3', iris: 'ink', hair: { style: 'short', color: 'ink' },
     top: 'grey2', legs: 'grey1', shoes: 'ink',

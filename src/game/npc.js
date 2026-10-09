@@ -184,7 +184,7 @@ export function createCast(scene, sheets, areas) {
       if (s && c.facing === undefined) facing = s.facing;
     } else [x, z] = c.at;
     const b = createBillboard(sheets[c.id], { x, z, facing, pose: c.pose, path: c.path, speed: c.speed, ghost: c.ghost });
-    b.id = c.id; b.area = c.area ?? 'street';
+    b.id = c.id; b.area = c.area ?? 'street'; b.ambient = !!c.ambient;
     scene.add(b.root);
     return b;
   });

@@ -28,6 +28,11 @@ export const CAST = [
   { id: 'vendor', area: 'street', at: [7.2, -4.2], facing: 0 }, // north sidewalk, camera side of the street is the south; she stays visible without rotating
   { id: 'preacher', area: 'street', at: [-9.5, -2.2], facing: Math.PI / 2, ghost: true },
   { id: 'kit', area: 'hostel', at: 'kit' },
+  // Ambient walkers: loop along the road edge, back and forth, at their own pace. ambient = no Talk prompt, no minimap dot.
+  { id: 'walkerA', ambient: true, area: 'street', at: [-18, 1.9], path: [[-18, 1.9], [19, 1.9]], speed: 1.3 },
+  { id: 'walkerB', ambient: true, area: 'street', at: [19, 0.7], path: [[19, 0.7], [-19, 0.7]], speed: 1.6 },
+  { id: 'walkerC', ambient: true, area: 'street', at: [0, -0.7], path: [[0, -0.7], [-19, -0.7], [19, -0.7]], speed: 1.0 },
+  { id: 'walkerD', ambient: true, area: 'street', at: [8, -1.8], path: [[8, -1.8], [19, -1.8], [-19, -1.8]], speed: 1.9 },
   { id: 'miso', area: 'street', at: [12.4, 2.4], facing: 2.2 }, // right at the foot of the station stairs (spawn 13.8, 1.3): the first character Juno sees
 ];
 

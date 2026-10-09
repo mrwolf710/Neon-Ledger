@@ -268,6 +268,8 @@ export function createSfx(synth) {
 
     // Leaving the platform ends the idling train's hum.
     trainStop() { if (synth.ready) stopMotor(); },
+    // The passing Line 9 train's z along the rail (null when none is passing), so the visible train matches the sound.
+    trainZ() { return train ? T.train.startZ + (T.train.endZ - T.train.startZ) * (train.t / T.train.duration) : null; },
 
     // Echo mode on / off: ambient sound fades away and a low rumble swells in.
     setEcho(on) { echoOn = on; },
