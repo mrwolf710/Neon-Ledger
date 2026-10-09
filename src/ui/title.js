@@ -4,7 +4,7 @@ import { drawText, measure } from '../gen/pixelfont.js';
 // (Stage 8 unlocks Web Audio on that gesture, which iOS requires).
 export const TITLE = {
   scale: 8,                 // screen pixels per title pixel
-  color: '#39ff14', sub: '#1fd6e8', bg: 'rgba(7,7,15,.6)',
+  color: '#ffffff', sub: '#1fd6e8', bg: 'rgba(7,7,15,.6)',
   blinkMs: 600,
 };
 
@@ -12,8 +12,8 @@ export const TITLE = {
 export function createTitle(onStart, saved = false) {
   const T = TITLE;
   const el = document.createElement('div');
-  el.style.cssText = `position:fixed;inset:0;z-index:15;display:flex;flex-direction:column;align-items:center;
-    justify-content:center;gap:28px;background:${T.bg};cursor:pointer;touch-action:none`;
+  el.style.cssText = `position:fixed;inset:0;z-index:15;display:flex;flex-direction:column;align-items:flex-start;
+    justify-content:flex-end;gap:28px;padding:0 4vw 5vh;background:${T.bg};cursor:pointer;touch-action:none`;
   const word = (text, color, scale) => {
     const cv = Object.assign(document.createElement('canvas'), { width: measure(text), height: 5 });
     drawText(cv.getContext('2d'), text, 0, 0, color);

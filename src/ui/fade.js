@@ -60,12 +60,15 @@ export function createFade() {
       const els = [];
       if (first.parts) {
         const row = document.createElement('div');
-        row.style.cssText = `position:fixed;left:50%;top:${FADE.cardY}%;transform:translate(-50%,-50%);display:flex;gap:${FADE.cardGap}vh;align-items:center`;
+        row.style.cssText = `display:flex;gap:${FADE.cardGap}vh;align-items:center`;
         row.append(...first.parts.map((t) => line(t, first.color ?? '#ffffff', first.scale ?? 6)));
         const below = document.createElement('div');
-        below.style.cssText = `position:fixed;left:0;right:0;top:calc(${FADE.cardY}% + 6vh);display:flex;flex-direction:column;align-items:center;gap:1.4rem`;
+        below.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:1.4rem';
         below.append(...rest.map((l) => line(l.text, l.color ?? '#ffffff', l.scale ?? 6)));
-        els.push(row, below);
+        const box = document.createElement('div'); // bottom-left corner: the words, then the subtitle underneath
+        box.style.cssText = 'position:fixed;left:4vw;bottom:5vh;display:flex;flex-direction:column;align-items:flex-start;gap:1.6rem';
+        box.append(row, below);
+        els.push(box);
       } else els.push(...lines.map((l) => line(l.text, l.color ?? '#ffffff', l.scale ?? 6)));
       card.replaceChildren(...els);
       card.style.opacity = '1';
