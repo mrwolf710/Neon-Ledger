@@ -223,6 +223,11 @@ function hostel(M) {
     b.box(M.metal, 2.3, 1.05, 1.2, x, 0.53, -2.85); b.box(M.litCool, 1.4, 0.55, 0.05, x, 0.55, -2.24); b.block(x, -2.85, 2.3, 1.2);
     b.box(M.metal, 2.3, 1.05, 1.2, x, 1.62, -2.85); b.box(M.litWarm, 1.4, 0.55, 0.05, x, 1.64, -2.24);
   }
+  // Room numbers above each hatch: the lower row 3E 3F 3G (Dex's is 3F, the middle one), the upper row 3H 3J 3K.
+  [-3.2, -0.6, 2.0].forEach((x, i) => {
+    b.box(signMat(['3E', '3F', '3G'][i], i === 1 ? P.amber : P.cyan), 0.8, 0.4, 0.03, x, 0.96, -2.21, 0, 0, false);
+    b.box(signMat(['3H', '3J', '3K'][i], P.cyan), 0.8, 0.4, 0.03, x, 2.05, -2.21, 0, 0, false);
+  });
   b.box(PM.wood, 2.6, 1.0, 0.8, 3.4, 0.5, 2.5); b.box(M.metal, 2.7, 0.06, 0.9, 3.4, 1.03, 2.5); b.block(3.4, 2.5, 2.6, 0.8); // reception desk
   b.box(PM.vendBody, 0.9, 1.8, 0.7, -4.2, 0.9, 1.0); b.box(PM.vendGlow, 0.6, 1.0, 0.02, -4.2, 1.15, 0.64); b.block(-4.2, 1.0, 0.9, 0.7);
   table(b, PM, -2.2, 1.2, 1.4, 0.8); stool(b, PM, -2.9, 1.9); stool(b, PM, -1.5, 1.9);
