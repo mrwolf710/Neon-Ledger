@@ -287,6 +287,8 @@ renderer.setAnimationLoop((now) => {
   player.update(dt, input, cam.yaw, !modal);
   const cfWasOpen = caseFile.isOpen, bdWasOpen = board.isOpen;
   const free = title.done && !beats.locked && !world.busy && !tutorial.isOpen && !tutWasOpen; // nothing scripted is running
+  // First time Juno is free to move on a touch screen: how to move.
+  if ((input.lastDevice === 'touch' || matchMedia('(pointer: coarse)').matches) && free && !dialogue.active && !menu.isOpen && !caseFile.hasFlag('tut_move')) { caseFile.setFlag('tut_move'); tutorial.open('move'); }
   board.update(input);
   if (!bdWasOpen && !board.isOpen && free && !dialogue.active && !echo.active && !caseFile.isOpen && input.pressed('board')) board.open();
   caseFile.update(input);

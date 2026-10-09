@@ -38,7 +38,7 @@ html { font-size: clamp(12px, 1.7vmin, 22px); }
 /* Location banner (top left) */
 #hud .banner { position: absolute; left: calc(1rem + var(--safe-l)); top: calc(1rem + var(--safe-t));
   padding: 0.5rem 1rem 0.5rem 0.8rem; display: flex; gap: 0.7rem; align-items: center;
-  transform: translateX(-120%); transition: transform 0.5s cubic-bezier(.2, .9, .3, 1); }
+  transform: translateX(calc(-100% - 2rem - var(--safe-l))); transition: transform 0.5s cubic-bezier(.2, .9, .3, 1); }
 #hud .banner.in { transform: none; }
 #hud .banner .compass { width: 1.6rem; height: 1.6rem; flex: none; }
 #hud .banner .name { font: 700 1.3rem/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; color: #fff; }

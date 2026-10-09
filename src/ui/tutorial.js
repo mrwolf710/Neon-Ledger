@@ -14,6 +14,16 @@ export const TUTORIALS = {
   },
 };
 
+TUTORIALS.move = {
+  title: 'How to move',
+  lines: [
+    'Touch and hold on the left half of the screen, then drag: Juno walks the way you drag. Drag further to move faster. You can also tap the ground to walk there.',
+    'Tap a person or object, or the TAP bubble that appears above it, to talk to it or use it.',
+    'Drag on the right half of the screen to turn the camera, and pinch with two fingers to zoom.',
+    'Top right: CASE (your clues), BRD (the deduction board), MAP (hide or show the clock and map) and pause. ECHO, bottom right, scans for echoes near you.',
+  ],
+};
+
 TUTORIALS.camera = {
   title: 'Look around',
   lines: [
