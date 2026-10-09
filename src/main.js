@@ -27,6 +27,7 @@ import { createTutorial } from './ui/tutorial.js';
 import { createPlayer } from './game/player.js';
 import { createInteractions, INTERACT } from './game/interact.js';
 import { settings, TIERS } from './core/settings.js';
+import { createSaves } from './core/saves.js';
 import { createLights } from './render/lights.js';
 import { createPost, POST } from './render/post.js';
 import { createCrtFrame } from './ui/crtframe.js';
@@ -88,12 +89,11 @@ const cast = createCast(scene, getSheets(), world.areas);
 const player = createPlayer(cast.byId.juno, world.current.collision);
 const interactions = createInteractions(scene);
 const touchUI = createTouchUI(input);
-const SAVE_KEY = 'nl.save';
-const readSave = () => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)); } catch { return null; } };
-const title = createTitle(() => synth.start(), !!readSave());
+const saves = createSaves();
+const title = createTitle(() => synth.start(), !!saves.latest());
 const sfx = createSfx(synth), music = createMusic(synth);
 const hud = createHud(world.current.collision);
-const menu = createMenu({ synth, onSave: () => saveGame(), onLoad: () => loadGame(readSave()), hasSave: () => !!readSave() });
+const menu = createMenu({ synth, saves, snapshot: () => snapshotGame(), onLoad: (d) => loadGame(d) });
 const tutorial = createTutorial(input);
 const clock = createClock();
 const caseFile = createCaseFile(hud, clock);
@@ -112,8 +112,8 @@ beats.setCamera(cam);
 beats.register();
 let phaseId = '', sunsetT = null, lastAreaId = null, cameFromSable = false;
 const startParam = new URLSearchParams(location.search).get('start'); // ?start=sable jumps straight to an area (testing)
-// One save slot in the browser: where Juno is, the case file, the board, the clock, who she has talked to and Miso.
-function saveGame() {
+// Save slots in the browser (core/saves.js), each: where Juno is, the case file, the board, the clock, who she has talked to and Miso.
+function snapshotGame() {
   const miso = cast.byId.miso, b = board.logic;
   const data = {
     v: 1, area: world.current.id, pos: [player.position.x, player.position.z], facing: cast.byId.juno.facing,
@@ -121,7 +121,7 @@ function saveGame() {
     board: { solved: [...b.solved], edges: [...b.edges], tries: [...b.tries] },
     miso: { follow: !!miso.follow, area: miso.area, pos: [miso.position.x, miso.position.z] },
   };
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); hud.toast('Game saved'); return true; } catch { hud.toast('Could not save'); return false; }
+  return data;
 }
 function loadGame(s) {
   const num = (n) => Number.isFinite(n);
@@ -145,7 +145,7 @@ function loadGame(s) {
   hud.toast('Game loaded');
 }
 title.started.then(() => {
-  if (title.continuing && readSave()) { beats.skipOpen(); loadGame(readSave()); return; }
+  if (title.continuing && saves.latest()) { beats.skipOpen(); loadGame(saves.latest().data); return; }
   if (startParam && world.areas[startParam]) {
     beats.skipOpen();
     world.jump(startParam, world.exits.find((x) => x.to === startParam)?.spawn ?? null);
@@ -191,7 +191,7 @@ tod.onFlicker = (i) => sfx.crackle(street.signs[i].light.position);
 
 // ?hooks exposes the game objects for the headless test driver (scripts/drive.mjs eval: steps).
 if (new URLSearchParams(location.search).has('hooks')) {
-  const nl = window.__nl = { fade, crtFrame, music, saveGame, loadGame, readSave, menu, sfx, synth, cam, world, player, beats, caseFile, dialogue, cast, echo, hud, clock, board, THREE };
+  const nl = window.__nl = { fade, crtFrame, music, input, tutorial, menu, title, snapshotGame, loadGame, saves, menu, sfx, synth, cam, world, player, beats, caseFile, dialogue, cast, echo, hud, clock, board, THREE };
   // Visual tour helpers: stand the player d units from a point (camera side) in any area, as in play, so the cutaway applies.
   nl.look = (areaId, x, z, d = 1.8) => {
     const b = world.areas[areaId].bounds, dx = (b.x0 + b.x1) / 2 - x, dz = (b.z0 + b.z1) / 2 - z, len = Math.hypot(dx, dz) || 1;
