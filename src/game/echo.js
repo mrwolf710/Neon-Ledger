@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ECHOES, HOTSPOTS, SPEAKERS } from './story.js';
+import { ECHOES, HOTSPOTS, speakerName } from './story.js';
 import { createBillboard } from './npc.js';
 import { frame } from '../ui/hud.js';
 
@@ -212,7 +212,7 @@ export function createEcho({ scene, sheets, post, caseFile, hud, cast, areas }) 
       rail.querySelectorAll('.seam').forEach((n) => n.classList.toggle('seen', A.seen.has(+n.dataset.t)));
       rail.querySelectorAll('.tagmark').forEach((n) => n.classList.toggle('done', A.tagged.has(n.dataset.f)));
       const v = D.voices?.find((q) => A.t >= q.t0 && A.t <= q.t1);
-      caption.textContent = v ? `${SPEAKERS[v.speaker]?.name ?? v.speaker}: “${v.text}”` : '';
+      caption.textContent = v ? `${speakerName(v.speaker, (f) => caseFile.hasFlag(f))}: “${v.text}”` : '';
       caption.style.visibility = v ? 'visible' : 'hidden';
       const g = tagNear();
       const hint = input.lastDevice === 'gamepad' ? (input.padType === 'playstation' ? '×' : 'A') : input.lastDevice === 'keyboard' ? 'Space' : '';

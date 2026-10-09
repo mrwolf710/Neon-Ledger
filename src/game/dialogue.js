@@ -1,4 +1,4 @@
-import { SPEAKERS, CONVERSATIONS, FALLBACK } from './story.js';
+import { SPEAKERS, speakerName, CONVERSATIONS, FALLBACK } from './story.js';
 
 export const DIALOGUE = { cps: 40 }; // typewriter characters per second
 
@@ -20,7 +20,7 @@ export function createDialogue({ hud, caseFile, clock }) {
     if (!node) { console.warn('dialogue: missing node', id); return api.end(); }
     apply(node.effects);
     const sp = SPEAKERS[node.speaker] ?? { name: node.speaker, color: '#fff' };
-    ui.show(sp.name, sp.color, node.speaker);
+    ui.show(speakerName(node.speaker, (f) => caseFile.hasFlag(f)), sp.color, node.speaker);
     shown = 0; typing = true; options = []; sel = 0; ui.setChoices([], 0);
     ui.setText('', false);
   }

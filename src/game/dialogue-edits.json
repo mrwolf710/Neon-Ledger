@@ -89,15 +89,29 @@
         },
         {
           "speaker": "kit",
-          "text": "Wow, it sure does.  By the way, now that I think about it a little harder, ya know, now that I'm no so burdened with my financial worries, I do seem to remember seeing a Dex Marrow around here.  His capsule was on the third floor.  Room 3F."
+          "text": "Wow, it sure does.  By the way, now that I think about it a little harder, ya know, now that I'm no so burdened with my financial worries, I do seem to remember seeing a Dex Marrow around here.  His capsule was on the third floor.  Capsule 3F."
         },
         {
           "speaker": "juno",
-          "text": "Thanks.  Think that room is open?"
+          "text": "Thanks.  Think that capsule is open?"
         },
         {
           "speaker": "kit",
-          "text": "Definitely.  I was just up there working on some stuff.  Room is still open.  I'm going to go put this 30 credits to the good of the community.  Hope no one wonders into that room while I'm gone."
+          "text": "Definitely.  I was just up there working on some stuff.  Capsule is still open.  I'm going to go put this 30 credits to the good of the community.  Hope no one wonders into that room while I'm gone."
+        }
+      ]
+    },
+    "2nd_Vendor": {
+      "with": "vendor",
+      "active": false,
+      "lines": [
+        {
+          "speaker": "juno",
+          "text": "Hey, you sure you didn't see anything tonight?"
+        },
+        {
+          "speaker": "mamaTeo",
+          "text": "No, man. I said I gotta go."
         }
       ]
     }
@@ -124,6 +138,13 @@
       "when": "all",
       "fact": "master_keys",
       "talked": "mamaTeo"
+    },
+    {
+      "conv": "2nd_Vendor",
+      "npc": "vendor",
+      "when": "2",
+      "fact": "master_keys",
+      "talked": "mamaTeo"
     }
   ],
   "Mama_Teo_Points_to_Capsule_Hotel": {
@@ -137,6 +158,15 @@
   "Capsule_after_Teo": {
     "n1": {
       "speaker": "kit"
+    },
+    "n10": {
+      "text": "Wow, it sure does.  By the way, now that I think about it a little harder, ya know, now that I'm no so burdened with my financial worries, I do seem to remember seeing a Dex Marrow around here.  His capsule was over there behind me.  Capsule 3F."
+    },
+    "n11": {
+      "text": "Thanks.  Think that capsule might be unlocked?"
+    },
+    "n12": {
+      "text": "Definitely.  I was just in there working on some stuff.  Capsule is still open.  I'm going to go put this 30 credits to the good of the community.  Hope no one messes with that capsule while I'm gone."
     }
   },
   "_insert": [
@@ -195,6 +225,14 @@
     },
     "c": {
       "text": "Everybody loses an hour on Line 9, Juno. Just get it done.  Hale, out."
+    },
+    "a2_2487_89358": {
+      "text": "Umm..."
+    }
+  },
+  "2nd_Vendor": {
+    "n1": {
+      "speaker": "vendor"
     }
   }
 }

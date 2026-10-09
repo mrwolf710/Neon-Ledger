@@ -6,7 +6,7 @@ import EDITS from './dialogue-edits.json' with { type: 'json' }; // made in /edi
 export const SPEAKERS = {
   juno: { name: 'Juno', color: '#1fd6e8' },
   mamaTeo: { name: 'Mama Teo', color: '#e0217d' },
-  kit: { name: 'Kit', color: '#f2a93b' },
+  kit: { name: 'Worker', alias: { flag: 'kit_named', name: 'Kit' }, color: '#f2a93b' }, // the hostel worker is just "Worker" until the board names him (flag kit_named)
   dex: { name: 'Dex', color: '#8a8a90' },
   vendor: { name: 'Vendor', color: '#2a6b72' },
   miso: { name: 'Miso', color: '#d9771c' },
@@ -31,23 +31,25 @@ export const ENTRIES = {
   master_keys: { kind: 'facts', title: 'City master keys', text: 'Every door on Lowmarket opens to a city master key held by crews, inspectors and the Bureau. It is written into the leases.', source: 'Mama Teo' },
   someone_had_key: { kind: 'facts', title: 'The visitor had a city key', text: 'A second person met Dex in the back room. They got in without knocking, with a city master key.', source: 'Deduction board' },
   dex_backup: { kind: 'echoes', title: "Dex's backup echo", text: 'The copy Dex hid in his jacket. Nine seconds, his own eyes, a visitor in his back room.', source: "Dex's backup chip" },
-  dex_chip: { kind: 'facts', title: "Dex hid a chip in his capsule", text: "Taped under the bunk in Room 3F: a data chip. His backup copy, the one the visitor wanted.", source: 'Capsule 3F' },
-  kit: { kind: 'people', title: 'Kit Lacroix', text: "A courier who lives in the capsule hostel. Nervous, talks too much. Says she was Dex's last client.", source: 'Capsule hostel' },
+  dex_chip: { kind: 'facts', title: 'Dex hid a chip in his capsule', text: "Taped under the bunk in Capsule 3F: a data chip. His backup copy, the one the visitor wanted.", source: 'Capsule 3F' },
+  kit: { kind: 'people', title: 'Kit Lacroix', text: 'The capsule hostel worker. Nervous, talks too much, and sells what he knows for credits.', source: 'Capsule hostel' },
   alley_echo: { kind: 'echoes', title: 'The alley: the back door', text: 'A residue echo in the alley. Someone in a grey glove lets themselves out of the Sable and shuts the door behind them.', source: 'The alley' },
-  kit_echo: { kind: 'echoes', title: "Kit's echo: the alley", text: "Eight seconds from Kit's implant, in the alley behind the Sable.", source: "Kit's implant" },
+  kit_echo: { kind: 'echoes', title: "The worker's echo: the alley", text: "Eight seconds from the hostel worker's implant, in the alley behind the Sable.", source: "The worker's implant" },
   gloved_hand: { kind: 'facts', title: 'A grey-gloved hand on the back door', text: "In the alley echo a hand in a grey Bureau glove pulls the Sable's back door shut. Same kind of glove as the one on the ground.", source: 'Echo: the alley, 02.0' },
-  kit_claim: { kind: 'facts', title: 'Kit says she left at 23:00', text: 'Kit swears she met Dex, got her delivery slip signed and went straight home to the hostel at eleven.', source: 'Kit' },
-  kit_outside: { kind: 'facts', title: 'Kit was in the alley at 23:40', text: "Kit's own echo puts her behind the Sable forty minutes after she says she left.", source: "Echo: Kit's alley, 02.5" },
+  kit_claim: { kind: 'facts', title: 'Kit says he left capsule 3F at 23:00', text: 'Kit swears he was fixing a pipe in capsule 3F until eleven, then went straight to his bunk.', source: 'Kit' },
+  kit_outside: { kind: 'facts', title: 'The hostel worker was in the alley at 23:40', text: "The worker's own echo puts him behind the Sable, right where the gloved visitor left. The implant ID on the echo is KIT LACROIX.", source: "Echo: the worker's alley, 02.0" },
   someone_else: { kind: 'facts', title: 'Someone else was in the room', text: 'Two cups, two voices. Dex was not alone.', source: 'Deduction board' },
   override_used: { kind: 'facts', title: 'The killer used an auditor override', text: 'A burned port with clean skin, a Bureau glove on the door. Only an auditor override burns an implant from outside.', source: 'Deduction board' },
-  kit_saw_them: { kind: 'facts', title: 'Kit saw them leave', text: 'Kit was in the alley when the gloved visitor came out of the back door.', source: 'Deduction board' },
-  bureau_coat: { kind: 'facts', title: 'The visitor wore a Bureau coat', text: "Kit, pressed: long grey coat, Bureau collar. She never saw the face.", source: 'Kit' },
+  kit_saw_them: { kind: 'facts', title: 'Kit Lacroix saw them leave', text: 'The worker at the capsule hostel is Kit Lacroix. His implant puts him in the alley when the gloved visitor came out of the back door.', source: 'Deduction board' },
+  bureau_coat: { kind: 'facts', title: 'The visitor wore a Bureau coat', text: "Kit, pressed: long grey coat, Bureau collar. He never saw the face.", source: 'Kit' },
   door_unlocked: { kind: 'facts', title: 'The back door was unlocked from outside', text: "Mama Teo locked Dex in the back room. Later she heard the back door, the only other way in, click open. No knock.", source: 'Mama Teo' },
 };
 
 // Which conversation each talkable thing starts. Missing ids fall back to FALLBACK.
 export const TALK = { mamaTeo: 'teo', vending: 'vending', miso: 'miso', vendor: 'vendor', preacher: 'preacher', kit: 'kit' };
 export const FALLBACK = 'nobody';
+// What a speaker is called right now: an alias replaces the name once its flag is set.
+export const speakerName = (id, flag) => { const s = SPEAKERS[id]; return !s ? id : s.alias && flag?.(s.alias.flag) ? s.alias.name : s.name; };
 // Rules from the editor: [{ conv, npc, when: 'all' | '1'..'4' (4 = the 4th visit on), fact?: a fact Juno must know, talked?: a person she must already have talked to }].
 // Ones with conditions are tried first; the first that fits wins, else the visit lists below, else the game's own TALK.
 export const RULES = EDITS._rules ?? [];
@@ -56,7 +58,7 @@ export const VISITS = EDITS._visits ?? {};
 // Flags set by the end of conversations made in the editor (matched by id; the last line of the conversation gets them).
 const DONE_EFFECTS = { Capsule_after_Teo: [{ setFlag: 'kit_paid' }], Mama_Teo_Points_to_Capsule_Hotel: [{ setFlag: 'teo_pointed' }, { setFlag: 'teo_cracked' }] };
 export function conversationFor(personId, visit, ctx = {}) {
-  if (personId === 'kit' && ctx.flag?.('kit_paid')) return 'kit'; // once she has been paid, Kit has the interview instead of the shake-down
+  if (personId === 'kit' && ctx.flag?.('kit_paid')) return ctx.flag('kit_deduced') ? 'kit' : 'kit_wait'; // once paid: a short line until the board names him, then the interview
   const fits = (r) => r.npc === personId && (r.when === 'all' || (r.when === '4' ? visit >= 4 : +r.when === visit))
     && (!r.fact || ctx.has?.(r.fact)) && (!r.talked || ctx.talked?.(r.talked));
   const hit = RULES.filter((r) => r.fact || r.talked).find(fits) ?? RULES.filter((r) => !r.fact && !r.talked).find(fits);
@@ -156,32 +158,34 @@ export const CONVERSATIONS = {
       after: { speaker: 'mamaTeo', text: "I've told you what I know. Find out who signed out a key tonight.", end: true },
     },
   },
-  // Kit: claims she left at 23:00 (fact kit_claim). Present kit_outside (her echo) to break the story; present kit_saw_them to press her for the coat.
+  // Kit (the hostel worker). Before the board names him he only says capsule 3F is open (kit_wait). After the deduction (flag kit_named) Juno calls him Kit,
+  // he claims he left capsule 3F at 23:00 (fact kit_claim); present kit_outside (his echo) to break the story, then kit_saw_them for the coat.
+  kit_wait: { start: 'a', nodes: { a: { speaker: 'kit', text: 'Capsule 3F is open, like I said. Come back when you know something worth another 30 credits.', end: true } } },
   kit: {
     start: [{ if: { flag: 'kit_coat' }, node: 'done' }, { if: { flag: 'kit_broken' }, node: 'after' }, { if: { flag: 'kit_met' }, node: 'again' }, { node: 'hello' }],
     nodes: {
-      hello: { speaker: 'kit', text: 'You again. Room 3F treat you well? Not that I would know.',
-        effects: [{ addPerson: 'kit' }, { setFlag: 'kit_met' }], choices: [{ text: 'Where were you tonight, Kit?', next: 'claim' }] },
-      claim: { speaker: 'kit', text: 'Up in 3F with a leaking pipe. Done by eleven, then straight to my bunk. Ask the building, it keeps better time than I do.',
-        effects: [{ addFact: 'kit_claim' }], next: 'claim2' },
-      claim2: { speaker: 'juno', text: "Eleven. Got it.", end: true },
+      hello: { speaker: 'juno', text: "Kit Lacroix. That is the name on the implant in the alley echo.", effects: [{ addPerson: 'kit' }, { setFlag: 'kit_met' }], next: 'hello2' },
+      hello2: { speaker: 'kit', text: 'Keep your voice down! I do not know what echo you mean. I was up in capsule 3F with a leaking pipe, done by eleven, then straight to my bunk.',
+        effects: [{ addFact: 'kit_claim' }], next: 'hello3' },
+      hello3: { speaker: 'juno', text: 'Eleven. Sure.', end: true },
       again: { speaker: 'kit', text: 'Still here, still innocent. What now?',
         present: { kit_claim: 'repeat', kit_outside: 'broken', kit_saw_them: 'coat' }, presentWrong: 'wrong',
         choices: [{ text: 'Nothing yet.', end: true }] },
       repeat: { speaker: 'kit', text: 'Eleven. I said eleven. Write it down.', end: true },
-      wrong: { speaker: 'kit', text: "I don't know what that is. Can I go back to pretending to sleep?", end: true },
+      wrong: { speaker: 'kit', text: "I do not know what that is. Can I go back to pretending to sleep?", end: true },
       broken: { speaker: 'kit', text: '...Okay. Okay! I was out back. Twenty to midnight, a smoke I am not supposed to have. Do not tell the manager.', effects: [{ setFlag: 'kit_broken' }], next: 'broken2' },
       broken2: { speaker: 'kit', text: 'I was behind the Sable. I did not see anything. Do not look at me like that.', end: true },
       after: { speaker: 'kit', text: "I told you I was out back. What else do you want from me?",
         present: { kit_saw_them: 'coat' }, presentWrong: 'wrong', choices: [{ text: 'Nothing yet.', end: true }] },
       coat: { speaker: 'kit', text: "Fine. Somebody came out of that door. Long grey coat, Bureau collar, gloves. Head down, in no hurry. Like they owned the street.", effects: [{ addFact: 'bureau_coat' }, { setFlag: 'kit_coat' }, { setFlag: 'kit_broken' }], next: 'coat2' },
-      coat2: { speaker: 'kit', text: "No face. I swear. The hood, the rain, the lamps going out... that's all I have.", end: true },
+      coat2: { speaker: 'kit', text: "No face. I swear. The hood, the rain, the lamps going out... that's all I have.", next: 'coat3' },
+      coat3: { speaker: 'juno', text: "(Dex's chip. I need to check it for more, and I can do that in my car.)", end: true },
       done: { speaker: 'kit', text: 'A Bureau coat. That is all I know. Go away, auditor.', end: true },
     },
   },
-  // Dex's capsule (Room 3F, hostel): Kit unlocks it for 30 credits (flag kit_paid, set by the editor conversation Capsule_after_Teo, see DONE_EFFECTS).
+  // Dex's capsule (capsule 3F, hostel): Kit unlocks it for 30 credits (flag kit_paid, set by the editor conversation Capsule_after_Teo, see DONE_EFFECTS).
   ex_capsule: { start: [{ if: { flag: 'ex_capsule' }, node: 'again' }, { if: { notFlag: 'kit_paid' }, node: 'locked' }, { node: 'a' }], nodes: {
-    a: { speaker: 'juno', text: 'Room 3F. A thin pillow, a dead plant, and a data chip taped under the bunk. Dex hid his backup well.', effects: [{ addFact: 'dex_chip' }, { setFlag: 'ex_capsule' }], end: true },
+    a: { speaker: 'juno', text: 'Capsule 3F. A thin pillow, a dead plant, and a data chip taped under the bunk. Dex hid his backup well.', effects: [{ addFact: 'dex_chip' }, { setFlag: 'ex_capsule' }], end: true },
     again: { speaker: 'juno', text: 'Nothing else in here. Dex travelled light.', end: true },
     locked: { speaker: 'juno', text: "Dex's capsule. The hatch is locked. Somebody here has the key.", end: true },
   } },
@@ -196,7 +200,7 @@ export const CONVERSATIONS = {
   } },
   // Beat 7: the cliffhanger lines (beats.js plays them in order).
   chip_open: { start: 'a', nodes: {
-    a: { speaker: 'juno', text: "Dex's backup chip, from under his bunk in 3F. The one echo he was afraid of.", next: 'b' },
+    a: { speaker: 'juno', text: "Dex's backup chip, from under his bunk in capsule 3F. The one echo he was afraid of.", next: 'b' },
     b: { speaker: 'juno', text: 'Fine. Let us see what scared him.', end: true },
   } },
   chip_early: { start: 'a', nodes: { a: { speaker: 'juno', text: 'Not yet. I need to find Dex backup and know who is lying to me first.', end: true } } },
@@ -311,7 +315,7 @@ export const ECHOES = {
   },
   // Kit, out behind the Sable at 23:40, watches the gloved visitor leave.
   kit_echo: {
-    title: "Kit's view", owner: 'kit', entry: 'kit_echo', duration: 8,
+    title: "The worker's view", owner: 'kit', entry: 'kit_echo', duration: 8,
     tracks: [
       { sprite: 'kit', keys: [
         { t: 0, x: 299.2, z: -1.5, facing: Math.PI, anim: 'idle' }, { t: 8, x: 299.2, z: -1.5, facing: Math.PI, anim: 'idle' },
@@ -320,9 +324,9 @@ export const ECHOES = {
         { t: 3.6, x: 300, z: -7.0, facing: 0, anim: 'walk' }, { t: 8, x: 300.6, z: 3.0, facing: 0, anim: 'walk' },
       ] },
     ],
-    voices: [{ t0: 1.0, t1: 3.2, speaker: 'kit', text: "23:40. Not my business. Keep walking, Kit." }],
+    voices: [{ t0: 1.0, t1: 3.2, speaker: 'kit', text: "23:40. Not my business. Keep walking." }],
     seams: [],
-    tags: [{ t: 2.0, window: 1.4, fact: 'kit_outside', label: 'Kit in the alley, 23:40' }],
+    tags: [{ t: 2.0, window: 1.4, fact: 'kit_outside', label: 'The worker in the alley, 23:40' }],
   },
 };
 
@@ -343,6 +347,6 @@ export const BOARD = {
     { id: 'override_used', needs: ['burned_port', 'gloved_hand'], result: 'override_used',
       line: 'A port burned from outside and a Bureau glove on the door. The killer used an auditor override.', effects: [{ addFact: 'override_used' }] },
     { id: 'kit_saw_them', needs: ['kit_outside', 'gloved_hand'], result: 'kit_saw_them',
-      line: 'Kit was in the alley when the gloved hand came out. She saw them leave, and she has been lying about it.', effects: [{ addFact: 'kit_saw_them' }, { setFlag: 'kit_deduced' }] },
+      line: 'The implant ID on that echo reads Kit Lacroix: the hostel worker. He was in the alley when the gloved hand came out. Kit saw them leave.', effects: [{ addFact: 'kit_saw_them' }, { setFlag: 'kit_deduced' }, { setFlag: 'kit_named' }] },
   ],
 };
