@@ -47,7 +47,7 @@ export function createTutorial(input) {
       const t = TUTORIALS[id];
       box.replaceChildren(Object.assign(document.createElement('h2'), { textContent: t.title }),
         ...t.lines.map((l) => Object.assign(document.createElement('p'), { textContent: l })),
-        Object.assign(document.createElement('div'), { className: 'tut-hint', textContent: 'Press Space or click to continue' }));
+        Object.assign(document.createElement('div'), { className: 'tut-hint', textContent: matchMedia('(pointer: coarse)').matches ? 'Tap to continue' : 'Press Space or click to continue' }));
       root.classList.add('on'); open = true; openedAt = performance.now();
     },
     close() { root.classList.remove('on'); open = false; },

@@ -106,7 +106,8 @@ body.talking #touch-ui .echo { display: none; }
 #casefile.on { display: flex; }
 #casefile .cf-box { width: min(60rem, 100%); max-height: 100%; display: flex; flex-direction: column; padding: 1rem 1.4rem; }
 #casefile .cf-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; }
-#casefile .cf-close { flex: none; width: 2.6rem; height: 2.6rem; margin-left: 0.8rem; font: 700 1.1rem var(--display); color: var(--cyan); background: transparent; border: 1px solid var(--cyan); cursor: pointer; }
+body.nomap #hud .right { display: none; }
+#casefile .cf-close { flex: none; width: max(2.6rem, 44px); height: max(2.6rem, 44px); margin-left: 0.8rem; font: 700 1.1rem var(--display); color: var(--cyan); background: transparent; border: 1px solid var(--cyan); cursor: pointer; }
 #casefile .cf-title { font-size: 1.3rem; color: #fff; }
 #casefile .cf-tabs { display: flex; gap: 0.5rem; }
 #casefile .cf-tab { font: 600 1rem var(--display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--text); background: transparent;
@@ -161,7 +162,7 @@ body.echo #hud .right, body.echo #hud .banner, body.echo #hud .controls, body.ec
   padding-bottom: 0.6rem; border-bottom: 1px solid rgba(31, 214, 232, 0.5); }
 #board .bd-title { font-size: 1.6rem; color: var(--cyan); text-shadow: 0 0 0.7rem var(--cyan); letter-spacing: 0.16em; }
 #board .bd-status { margin-top: 0.15rem; font: 500 0.8rem/1 monospace; letter-spacing: 0.15em; color: var(--magenta); }
-#board .bd-close { width: 2.2rem; height: 2.2rem; font: 700 1rem var(--display); color: var(--cyan); background: transparent; border: 1px solid var(--cyan); cursor: pointer; }
+#board .bd-close { width: max(2.2rem, 44px); height: max(2.2rem, 44px); font: 700 1rem var(--display); color: var(--cyan); background: transparent; border: 1px solid var(--cyan); cursor: pointer; }
 #board .bd-cards { position: relative; z-index: 1; flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 1.8rem 1.6rem; align-content: start; overflow: auto; padding: 0.6rem 0.4rem; }
 #board .bd-card { position: relative; padding: 1.7rem 1rem 0.7rem; cursor: grab; touch-action: none; user-select: none; color: var(--text);
   background: linear-gradient(160deg, rgba(20, 30, 60, 0.96), rgba(8, 10, 26, 0.96));

@@ -314,6 +314,7 @@ renderer.setAnimationLoop((now) => {
   if (clock.phase.id !== phaseId && !beats.ending) { phaseId = clock.phase.id; tod.setTimeOfDay(phaseId, 8); }
   hud.setClock(clock.text, clock.phase.label, clock.progress);
   if (input.pressed('hideControls')) hud.toggleControls();
+  if (input.pressed('map')) document.body.classList.toggle('nomap'); // N / the MAP button: hide or show the clock and minimap
   const place = world.placeAt(player.position.x, player.position.z);
   if (free) hud.setLocation(place.name, place.district);
   hud.update(dt, {
