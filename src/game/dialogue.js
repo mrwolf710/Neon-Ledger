@@ -7,7 +7,7 @@ export const DIALOGUE = { cps: 40 }; // typewriter characters per second
 export function createDialogue({ hud, caseFile, clock }) {
   const ui = hud.dialogue;
   let endResolve = null;
-  let conv = null, node = null, nodeId = '', shown = 0, typing = false, options = [], sel = 0, skipHold = false, clicked = false;
+  let conv = null, node = null, nodeId = '', shown = 0, typing = false, options = [], sel = 0, backTo = null, skipHold = false, clicked = false;
 
   const holds = (c) => !c
     || ((!c.flag || caseFile.hasFlag(c.flag)) && (!c.notFlag || !caseFile.hasFlag(c.notFlag))
@@ -39,12 +39,13 @@ export function createDialogue({ hud, caseFile, clock }) {
       ui.setChoices([], 0);
       caseFile.open({
         present: true,
-        onPick: (fact) => run(node.present[fact] ?? node.presentWrong ?? nodeId),
+        onPick: (fact) => { const hit = node.present[fact]; backTo = hit ? null : nodeId; run(hit ?? node.presentWrong ?? nodeId); }, // a wrong item answers, then returns to the question menu
         onCancel: () => buildOptions(),
       });
       return;
     }
     api.onUi?.('confirm');
+    backTo = null;
     apply(o.effects);
     if (o.next) run(o.next); else api.end();
   }
@@ -90,7 +91,7 @@ export function createDialogue({ hud, caseFile, clock }) {
         if (press) choose();
         return;
       }
-      if (press) { if (node.next) run(node.next); else api.end(); }
+      if (press) { const back = backTo; backTo = null; if (node.next) run(node.next); else if (back && !node.choices) run(back); else api.end(); }
     },
   };
   ui.onTextClick(() => { clicked = true; }); // clicking / tapping the text box acts like pressing interact
