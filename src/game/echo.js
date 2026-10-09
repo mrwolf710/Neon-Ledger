@@ -60,6 +60,8 @@ export function createEcho({ scene, sheets, post, caseFile, hud, cast, areas }) 
   const root = el('div', '', document.body); root.id = 'echo';
   const title = el('div', 'echo-title nameplate', root);
   const caption = el('div', 'echo-caption', root);
+  const touch = matchMedia('(pointer: coarse)').matches;
+  if (touch) el('div', 'echo-hint', root, 'Drag the bar to scrub. When a pink TAP TO TAG button appears, tap it to save the moment as a clue.');
   const tagBtn = frame(el('button', 'echo-tag', root));
   const tagTxt = el('span', '', tagBtn);
   const bar = frame(el('div', 'echo-bar', root));
@@ -214,7 +216,7 @@ export function createEcho({ scene, sheets, post, caseFile, hud, cast, areas }) 
       caption.style.visibility = v ? 'visible' : 'hidden';
       const g = tagNear();
       const hint = input.lastDevice === 'gamepad' ? (input.padType === 'playstation' ? '×' : 'A') : input.lastDevice === 'keyboard' ? 'Space' : '';
-      tagTxt.textContent = g ? `${hint ? `[${hint}] ` : ''}Tag: ${g.label}` : '';
+      tagTxt.textContent = g ? (touch ? `Tap to tag: ${g.label}` : `${hint ? `[${hint}] ` : ''}Tag: ${g.label}`) : '';
       tagBtn.style.display = g ? 'block' : 'none';
     },
   };

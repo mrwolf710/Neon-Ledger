@@ -134,6 +134,9 @@ body.echo #hud .right, body.echo #hud .banner, body.echo #hud .controls, body.ec
   border-color: var(--magenta); display: none; }
 #echo .echo-bar { position: absolute; left: calc(1.5rem + var(--safe-l)); right: calc(1.5rem + var(--safe-r)); bottom: calc(1.2rem + var(--safe-b)); pointer-events: auto;
   display: flex; align-items: center; gap: 0.8rem; padding: 0.7rem 1rem; }
+#echo .echo-hint { position: absolute; left: calc(1.2rem + var(--safe-l)); top: calc(3rem + var(--safe-t)); max-width: 22rem; font-size: 0.95rem; line-height: 1.35; color: #fff; text-shadow: 0 0 0.4rem #000; }
+@keyframes tagpulse { 50% { box-shadow: 0 0 1.2rem var(--magenta); background: rgba(224, 33, 125, 0.6); } }
+@media (pointer: coarse) { #echo .echo-tag { padding: 0.9rem 2rem; font-size: 1.3rem; animation: tagpulse 0.9s infinite; } }
 @media (pointer: coarse) { #echo .echo-bar { right: calc(7.5rem + var(--safe-r)); } }
 #echo .echo-btn { width: 2.2rem; height: 2.2rem; flex: none; font: 700 1rem var(--display); color: var(--cyan); background: transparent; border: 1px solid var(--cyan); cursor: pointer; }
 #echo .echo-time { font: 600 1rem var(--display); letter-spacing: 0.06em; color: #fff; min-width: 2.6rem; text-align: center; flex: none; }

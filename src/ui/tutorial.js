@@ -41,6 +41,13 @@ TUTORIALS.echo = {
     'A red tick on the bar marks a seam, a spot where the memory does not quite fit. Cross it and you will see the picture stutter.',
     'Press F, Backspace or Esc to leave the echo. You can come back to it any time.',
   ],
+  touchLines: [
+    'An echo is a memory left in a place. You are watching it play back, and the world is paused around it.',
+    'Tap the play / pause button, or drag the bar at the bottom, to scrub back and forth.',
+    'Watch for a moment that matters. A pink diamond under the bar marks it. While the playhead is on it, a pink TAP TO TAG button appears: tap it and the moment is saved to your Case File as a clue.',
+    'A red tick on the bar marks a seam, a spot where the memory does not quite fit. Cross it and you will see the picture stutter.',
+    'Tap the X at the right of the bar to leave the echo. You can come back to it any time.',
+  ],
 };
 
 export function createTutorial(input) {
@@ -56,7 +63,7 @@ export function createTutorial(input) {
     open(id) {
       const t = TUTORIALS[id];
       box.replaceChildren(Object.assign(document.createElement('h2'), { textContent: t.title }),
-        ...t.lines.map((l) => Object.assign(document.createElement('p'), { textContent: l })),
+        ...((matchMedia('(pointer: coarse)').matches && t.touchLines) || t.lines).map((l) => Object.assign(document.createElement('p'), { textContent: l })),
         Object.assign(document.createElement('div'), { className: 'tut-hint', textContent: matchMedia('(pointer: coarse)').matches ? 'Tap to continue' : 'Press Space or click to continue' }));
       root.classList.add('on'); open = true; openedAt = performance.now();
     },

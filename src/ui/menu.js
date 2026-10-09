@@ -41,7 +41,13 @@ export function createMenu({ synth, onSave = () => false, onLoad = () => {}, has
   ];
   const items = rows.filter((r) => !r.head);
 
+  // render() runs every frame while the menu is open; it only rebuilds the rows when something changed, otherwise a finger or mouse
+  // press would land on a row that was replaced before the release (no click) and scrolling would jump back.
+  let lastKey = '', lastSel = -1;
   function render() {
+    const key = `${sel}|${rows.map((r) => r.head ?? `${typeof r.label === 'function' ? r.label() : r.label}${r.val ? r.val() : ''}`).join('|')}`;
+    if (key === lastKey) return;
+    lastKey = key;
     box.querySelectorAll('.menurow, .menuhead').forEach((n) => n.remove());
     rows.forEach((r) => {
       if (r.head) { box.appendChild(Object.assign(document.createElement('div'), { className: 'menuhead', textContent: r.head })); return; }
@@ -62,12 +68,13 @@ export function createMenu({ synth, onSave = () => false, onLoad = () => {}, has
          sel = i; r.act?.(); render(); });
       box.appendChild(d);
     });
-    box.querySelector('.menurow.sel')?.scrollIntoView({ block: 'nearest' }); // pad / keys: keep the chosen row visible
+    if (sel !== lastSel) box.querySelector('.menurow.sel')?.scrollIntoView({ block: 'nearest' }); // pad / keys: keep the chosen row visible
+    lastSel = sel;
   }
 
   const api = {
     get isOpen() { return open; },
-    open() { open = true; sel = 0; pending = null; quality = settings.tier; root.classList.add('on'); render(); },
+    open() { open = true; sel = 0; pending = null; lastKey = ''; lastSel = -1; quality = settings.tier; root.classList.add('on'); render(); },
     close() { open = false; pending = null; root.classList.remove('on'); },
     // Call each frame while open.
     update(input) {
