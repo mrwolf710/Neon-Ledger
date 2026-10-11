@@ -31,12 +31,12 @@ const H = Math.PI / 2;
 //  events    [{ t, hit, mood }] things that happen t seconds into the shot
 const SHOTS = [
   { area: 'platform', juno: { at: [-3, -2], face: 0.5, walk: [-1.4, -0.9] }, dur: 3.2, from: { yaw: 35, pitch: 28, dist: 8 }, to: { yaw: 50, pitch: 34, dist: 20 }, ui: 'echoOn', mood: 'echo', riser: 3.2 },
-  { area: 'street', juno: { at: [-9, 1.4], face: H, walk: [5, 1.6] }, dur: 4, from: { yaw: 28, pitch: 30, dist: 22 }, to: { yaw: 60, pitch: 38, dist: 32 }, pan: [2, 0], hit: 'small',
+  { area: 'street', juno: { at: [-9, 1.3], face: H, walk: [5, 1.3] }, dur: 4, from: { yaw: 28, pitch: 32, dist: 34 }, to: { yaw: 60, pitch: 38, dist: 46 }, pan: [2, 0], hit: 'small',
     card: [{ text: 'LOWMARKET. 23:40.', color: TRAILER.cyan, scale: 5 }, { text: 'THE RAIN NEVER STOPS.', color: TRAILER.white, scale: 4 }] },
-  { area: 'street', subject: 'preacher', both: true, juno: { at: [-13, 1.0], face: H, walk: [-11, 0.4] }, dur: 2.8, from: { yaw: 40, pitch: 32, dist: 22 }, to: { yaw: 46, pitch: 30, dist: 16 }, hit: 'small',
+  { area: 'street', subject: 'preacher', both: true, juno: { at: [-13, 1.0], face: H, walk: [-11, 0.4] }, dur: 2.8, from: { yaw: 40, pitch: 33, dist: 34 }, to: { yaw: 46, pitch: 32, dist: 26 }, hit: 'small',
     card: [{ text: 'THE CITY IS WATCHING.', color: TRAILER.red, scale: 4 }] },
-  { area: 'street', subject: 'miso', both: true, juno: { at: [9, 1.0], face: H, walk: [11.2, 2.0] }, dur: 2.4, from: { yaw: 30, pitch: 32, dist: 22 }, to: { yaw: 45, pitch: 34, dist: 17 }, hit: 'small', riser: 2.4 },
-  { area: 'sable', subject: 'mamaTeo', both: true, juno: { at: [-4.6, 0], face: H, walk: [-3, -1.2] }, dur: 3, from: { yaw: 36, pitch: 50, dist: 18 }, to: { yaw: 46, pitch: 44, dist: 14 }, cut: 1.5, hit: 'big', mood: 'finale' },
+  { area: 'street', subject: 'miso', both: true, juno: { at: [9, 1.0], face: H, walk: [11.2, 2.0] }, dur: 2.4, from: { yaw: 30, pitch: 33, dist: 34 }, to: { yaw: 45, pitch: 34, dist: 27 }, hit: 'small', riser: 2.4 },
+  { area: 'sable', subject: 'mamaTeo', both: true, juno: { at: [-4.6, 0], face: H, walk: [-3, -1.2] }, dur: 3, from: { yaw: 36, pitch: 38, dist: 34 }, to: { yaw: 46, pitch: 36, dist: 28 }, cut: 1.5, hit: 'big', mood: 'finale' },
   { area: 'sable', subject: 'dex', both: true, juno: { at: [2.2, 0.2], face: H, walk: [3.2, 0.1] }, dur: 3, from: { yaw: 42, pitch: 42, dist: 14 }, to: { yaw: 44, pitch: 34, dist: 7.5 }, hit: 'small',
     card: [{ text: 'ONE DEAD CORPO.', color: TRAILER.white, scale: 4 }, { text: 'ONE MISSING MEMORY.', color: TRAILER.green, scale: 4 }] },
   { area: 'sable', juno: { at: [4.8, 1.6], face: 0.6 }, dur: 3, from: { yaw: 36, pitch: 34, dist: 7 }, to: { yaw: 52, pitch: 36, dist: 15 }, fx: 'echo', hit: 'small',
@@ -44,8 +44,8 @@ const SHOTS = [
   { area: 'alley', juno: { at: [0, -1.5], face: 0, walk: [0, 2.6] }, dur: 2.6, from: { yaw: 22, pitch: 36, dist: 12 }, to: { yaw: 38, pitch: 40, dist: 8 }, hit: 'small' },
   { area: 'hostel', subject: 'kit', both: true, juno: { at: [-1.4, -0.8], face: H, walk: [0, 0.2] }, dur: 2.4, from: { yaw: 48, pitch: 38, dist: 14 }, to: { yaw: 40, pitch: 34, dist: 10 }, hit: 'small', ui: 'glitch' },
   { area: 'car', juno: { at: [0.4, 0], face: H }, dur: 2.2, from: { yaw: 50, pitch: 36, dist: 9 }, to: { yaw: 38, pitch: 32, dist: 6 }, hit: 'small' },
-  { area: 'street', juno: { at: [-9, 1.4], face: H, walk: [2, 1.6] }, dur: 3, from: { yaw: 55, pitch: 26, dist: 18 }, to: { yaw: 30, pitch: 34, dist: 30 }, hit: 'small', riser: 3, events: [{ t: 1.6, mood: 'silent' }] },
-  { area: 'street', juno: { at: [-1, 1.8], face: H, walk: [3, 1.8] }, dur: 5.5, from: { yaw: 40, pitch: 32, dist: 26 }, to: { yaw: 60, pitch: 52, dist: 80 }, end: true, events: [{ t: 0.1, hit: 'big', mood: 'finale' }] },
+  { area: 'street', juno: { at: [-9, 1.3], face: H, walk: [0, 1.3] }, dur: 3, from: { yaw: 55, pitch: 28, dist: 30 }, to: { yaw: 30, pitch: 34, dist: 46 }, hit: 'small', riser: 3, events: [{ t: 1.6, mood: 'silent' }] },
+  { area: 'street', juno: { at: [0, 1.3], face: H, walk: [5, 1.3] }, dur: 5.5, from: { yaw: 40, pitch: 33, dist: 38 }, to: { yaw: 60, pitch: 52, dist: 90 }, end: true, events: [{ t: 0.1, hit: 'big', mood: 'finale' }] },
 ];
 
 export function createTrailer({ cam, world, player, post, fade, cast, sfx, synth, onStart }) {
