@@ -78,7 +78,7 @@ export const EXAMINABLES = [
   { id: 'terminal', area: 'sable', spot: 'terminal', verb: 'Read', conv: 'ex_terminal' },
   { id: 'lamp', area: 'sable', spot: 'lamp', verb: 'Examine', conv: 'ex_lamp' },
   { id: 'capsule', area: 'hostel', spot: 'capsule3f', verb: 'Search', conv: 'ex_capsule' },
-  { id: 'glove', area: 'alley', spot: 'glove', verb: 'Pick up', conv: 'ex_glove' },
+  { id: 'glove', area: 'alley', spot: 'glove', verb: 'Examine', conv: 'ex_glove' },
 ];
 
 // One-line examine conversation: Juno speaks, adds the fact and sets the flag ex_<id>; examining again gives a shorter line.
