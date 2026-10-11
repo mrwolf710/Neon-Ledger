@@ -337,13 +337,13 @@ export const BOARD = {
   hintLine: 'I keep coming back to “{fact}”.',
   conclusions: [
     { id: 'someone_had_key', needs: ['door_unlocked', 'two_voices'], result: 'someone_had_key',
-      line: 'Locked in, then the back door clicks open with no knock. City master keys open every door on this street, and the echo has two voices. Two cups on the table, one still warm, and the corner lamp smashed. Someone with city access sat down with Dex.',
+      line: "(Locked in, then the back door clicks open with no knock. City master keys, and two voices in the echo. Someone with city access sat down with Dex.)",
       effects: [{ addFact: 'someone_had_key' }, { setFlag: 'key_deduced' }] },
     { id: 'override_used', needs: ['burned_port', 'echo_seam'], result: 'override_used',
-      line: 'No wounds, no struggle, a port burned from outside with clean skin around it, and a memory somebody edited. Whoever did this can reach into an implant and rewrite what it saw. That is auditor override work, and Bureau grey is the colour they wear.', effects: [{ addFact: 'override_used' }] },
+      line: "(A port burned from outside, a memory someone edited. Whoever did this can rewrite what an implant saw. That's auditor override work. Bureau grey.)", effects: [{ addFact: 'override_used' }] },
     { id: 'log_faked', needs: ['door_log', 'gloved_hand'], result: 'log_faked',
-      line: 'The terminal says one in and none out, but a gloved hand just walked out of that back door. The log is lying. Someone made the Sable\'s own terminal cover for them.', effects: [{ addFact: 'log_faked' }] },
+      line: "(The log says nobody left. The gloved hand says otherwise. Somebody made it lie.)", effects: [{ addFact: 'log_faked' }] },
     { id: 'kit_saw_them', needs: ['kit_outside', 'gloved_hand'], result: 'kit_saw_them',
-      line: 'The implant ID on that echo reads Kit Lacroix: the hostel worker. He was in the alley when the gloved hand came out. He told me he was in his bunk by eleven. Kit saw them leave.', effects: [{ addFact: 'kit_saw_them' }, { setFlag: 'kit_deduced' }, { setFlag: 'kit_named' }] },
+      line: "(That implant ID is Kit Lacroix. He was in the alley when the gloved hand came out, and he told me he was in his bunk by eleven. Kit saw them leave.)", effects: [{ addFact: 'kit_saw_them' }, { setFlag: 'kit_deduced' }, { setFlag: 'kit_named' }] },
   ],
 };
