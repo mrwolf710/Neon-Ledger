@@ -280,7 +280,7 @@ renderer.setAnimationLoop((now) => {
   // First time Juno steps back out of the Sable: show how to spin the camera.
   if (!trailer.active && cameFromSable && !world.busy && !beats.locked && !dialogue.active && !tutorial.isOpen) { cameFromSable = false; if (!caseFile.hasFlag('tut_camera')) { caseFile.setFlag('tut_camera'); tutorial.open('camera'); } }
   // First time Juno holds 3 clues inside the Sable: explain the board.
-  if (!trailer.active && world.current.id === 'sable' && !dialogue.active && !tutorial.isOpen && !caseFile.hasFlag('tut_board') && caseFile.facts().length >= 3) { caseFile.setFlag('tut_board'); tutorial.open('board'); }
+  if (!trailer.active && world.current.id === 'sable' && !dialogue.active && !tutorial.isOpen && !caseFile.hasFlag('tut_board') && caseFile.facts().length >= 2) { caseFile.setFlag('tut_board'); tutorial.open('board'); }
   if (!trailer.active && echo.active && !tutorial.isOpen && !caseFile.hasFlag('tut_echo')) { caseFile.setFlag('tut_echo'); tutorial.open('echo'); } // first echo: explain it (the echo waits)
   const modal = trailer.active || tutorial.isOpen || tutWasOpen || !title.done || beats.locked || world.busy || dialogue.active || caseFile.isOpen || echo.active || board.isOpen || menu.isOpen || menuWasOpen;
   if (modal) { input.click = null; input.moveX = input.moveY = 0; }

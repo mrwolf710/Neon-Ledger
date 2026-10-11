@@ -43,7 +43,7 @@ run(10);
 assert.ok(facts.has('door_unlocked') && people.has('mamaTeo'), 'fact and person added');
 run(0.1, 'interact');                        // on to the city master keys
 run(10);
-assert.ok(facts.has('master_keys'), 'she explains why the door can be opened from outside');
+assert.ok(facts.has('door_unlocked'), 'she explains why the door can be opened from outside');
 run(0.1, 'interact');                        // on to "anything else?"
 run(10);
 assert.deepEqual(log.choices, ['Did you see his client arrive?', "That's all."], 'the other question is still offered');

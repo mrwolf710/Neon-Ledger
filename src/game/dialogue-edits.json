@@ -136,14 +136,14 @@
       "conv": "Capsule_after_Teo",
       "npc": "kit",
       "when": "all",
-      "fact": "master_keys",
+      "fact": "door_unlocked",
       "talked": "mamaTeo"
     },
     {
       "conv": "2nd_Vendor",
       "npc": "vendor",
       "when": "2",
-      "fact": "master_keys",
+      "fact": "door_unlocked",
       "talked": "mamaTeo"
     }
   ],
