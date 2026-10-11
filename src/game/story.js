@@ -301,15 +301,15 @@ export const ECHOES = {
     seams: [],
     tags: [{ t: 2.0, window: 0.8, fact: 'gloved_hand', label: 'Grey glove on the door' }],
   },
-  // Beat 7: Dex's hidden backup, from his eyes in Juno's car (origin x 600). A hooded stranger sits across from him, then leans into the light: it is Juno.
+  // Beat 7: Dex's hidden backup, from his eyes in the Sable's back room (origin x 150, beats.js jumps there to play it). A hooded stranger sits across the table from him, then leans into the light: it is Juno.
   dex_backup: {
     title: "Dex's backup", owner: 'dex', entry: 'dex_backup', duration: 9,
     tracks: [
-      { sprite: 'dexStanding', keys: [{ t: 0, x: 599.4, z: 0, facing: Math.PI / 2, anim: 'idle' }, { t: 1.6, x: 599.4, z: 0, facing: 0.63, anim: 'idle' }, { t: 3.0, x: 599.4, z: 0, facing: 1.41, anim: 'idle' }, { t: 9, x: 599.4, z: 0, facing: 1.41, anim: 'idle' }] }, // turns to follow the visitor as she walks in, then faces her seat
+      { sprite: 'dexStanding', keys: [{ t: 0, x: 153.2, z: 0.4, facing: Math.PI / 2, anim: 'idle' }, { t: 1.6, x: 153.2, z: 0.4, facing: 1.18, anim: 'idle' }, { t: 3.0, x: 153.2, z: 0.4, facing: Math.PI / 2, anim: 'idle' }, { t: 9, x: 153.2, z: 0.4, facing: Math.PI / 2, anim: 'idle' }] }, // turns to follow the visitor as she walks in, then faces her seat
       { redacted: true, sprite: 'figure', show: [1.6, 4.6], keys: [
-        { t: 1.6, x: 600.5, z: 1.5, facing: Math.PI, anim: 'walk' }, { t: 3.0, x: 601.3, z: 0.3, facing: -Math.PI / 2, anim: 'walk' }, { t: 3.2, x: 601.3, z: 0.3, facing: -Math.PI / 2, anim: 'idle' }, { t: 4.6, x: 601.3, z: 0.3, facing: -Math.PI / 2, anim: 'idle' },
+        { t: 1.6, x: 156.6, z: 1.8, facing: Math.PI, anim: 'walk' }, { t: 3.0, x: 156.0, z: 0.4, facing: -Math.PI / 2, anim: 'walk' }, { t: 3.2, x: 156.0, z: 0.4, facing: -Math.PI / 2, anim: 'idle' }, { t: 4.6, x: 156.0, z: 0.4, facing: -Math.PI / 2, anim: 'idle' },
       ] },
-      { sprite: 'juno', show: [4.6, 9], keys: [{ t: 4.6, x: 601.3, z: 0.3, facing: -Math.PI / 2, anim: 'idle' }, { t: 9, x: 601.3, z: 0.3, facing: -Math.PI / 2, anim: 'idle' }] },
+      { sprite: 'juno', show: [4.6, 9], keys: [{ t: 4.6, x: 156.0, z: 0.4, facing: -Math.PI / 2, anim: 'idle' }, { t: 9, x: 156.0, z: 0.4, facing: -Math.PI / 2, anim: 'idle' }] },
     ],
     voices: [
       { t0: 2.4, t1: 4.4, speaker: 'dex', text: 'You came yourself. Of course you did.' },
