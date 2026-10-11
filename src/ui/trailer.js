@@ -25,7 +25,7 @@ const H = Math.PI / 2;
 //  both      true = frame the subject and Juno together (focus on the midpoint)
 //  pan       [dx, dz] world units the focus drifts away from the subject over the shot
 //  from/to   camera yaw, pitch (degrees) and distance; the move eases between them
-//  cut       cutaway radius override (small = counters/walls in front of the subject stay solid)
+//  margin    cutaway depth margin override: only things this far nearer than the subject are cut (keeps a counter in front of her solid)
 //  card      pixel-font lines;  fx: 'echo' (seam glitch);  ui: sfx.ui kind
 //  mood      music mood at the cut (echo = heartbeat + tension, finale = fast and hard, silent = drop);  hit: boom at the cut;  riser: seconds of rising noise
 //  events    [{ t, hit, mood }] things that happen t seconds into the shot
@@ -36,7 +36,7 @@ const SHOTS = [
   { area: 'street', subject: 'preacher', both: true, juno: { at: [-13, 1.0], face: H, walk: [-11, 0.4] }, dur: 2.8, from: { yaw: 40, pitch: 33, dist: 34 }, to: { yaw: 46, pitch: 32, dist: 26 }, hit: 'small',
     card: [{ text: 'THE CITY IS WATCHING.', color: TRAILER.red, scale: 4 }] },
   { area: 'street', subject: 'miso', both: true, juno: { at: [9, 1.0], face: H, walk: [11.2, 2.0] }, dur: 2.4, from: { yaw: 30, pitch: 33, dist: 34 }, to: { yaw: 45, pitch: 34, dist: 27 }, hit: 'small', riser: 2.4 },
-  { area: 'sable', subject: 'mamaTeo', both: true, juno: { at: [-4.6, 0], face: H, walk: [-3, -1.2] }, dur: 3, from: { yaw: 36, pitch: 38, dist: 34 }, to: { yaw: 46, pitch: 36, dist: 28 }, cut: 1.5, hit: 'big', mood: 'finale' },
+  { area: 'sable', subject: 'mamaTeo', both: true, juno: { at: [-4.6, 0], face: H, walk: [-3, -1.2] }, dur: 3, from: { yaw: 40, pitch: 33, dist: 34 }, to: { yaw: 40, pitch: 32, dist: 28 }, margin: 2.2, hit: 'big', mood: 'finale' },
   { area: 'sable', subject: 'dex', both: true, juno: { at: [2.2, 0.2], face: H, walk: [3.2, 0.1] }, dur: 3, from: { yaw: 42, pitch: 42, dist: 14 }, to: { yaw: 44, pitch: 34, dist: 7.5 }, hit: 'small',
     card: [{ text: 'ONE DEAD CORPO.', color: TRAILER.white, scale: 4 }, { text: 'ONE MISSING MEMORY.', color: TRAILER.green, scale: 4 }] },
   { area: 'sable', juno: { at: [4.8, 1.6], face: 0.6 }, dur: 3, from: { yaw: 36, pitch: 34, dist: 7 }, to: { yaw: 52, pitch: 36, dist: 15 }, fx: 'echo', hit: 'small',
@@ -44,8 +44,8 @@ const SHOTS = [
   { area: 'alley', juno: { at: [0, -1.5], face: 0, walk: [0, 2.6] }, dur: 2.6, from: { yaw: 22, pitch: 36, dist: 12 }, to: { yaw: 38, pitch: 40, dist: 8 }, hit: 'small' },
   { area: 'hostel', subject: 'kit', both: true, juno: { at: [-1.4, -0.8], face: H, walk: [0, 0.2] }, dur: 2.4, from: { yaw: 48, pitch: 38, dist: 14 }, to: { yaw: 40, pitch: 34, dist: 10 }, hit: 'small', ui: 'glitch' },
   { area: 'car', juno: { at: [0.4, 0], face: H }, dur: 2.2, from: { yaw: 50, pitch: 36, dist: 9 }, to: { yaw: 38, pitch: 32, dist: 6 }, hit: 'small' },
-  { area: 'street', juno: { at: [-9, 1.3], face: H, walk: [0, 1.3] }, dur: 3, from: { yaw: 55, pitch: 28, dist: 30 }, to: { yaw: 30, pitch: 34, dist: 46 }, hit: 'small', riser: 3, events: [{ t: 1.6, mood: 'silent' }] },
-  { area: 'street', juno: { at: [0, 1.3], face: H, walk: [5, 1.3] }, dur: 5.5, from: { yaw: 40, pitch: 33, dist: 38 }, to: { yaw: 60, pitch: 52, dist: 90 }, end: true, events: [{ t: 0.1, hit: 'big', mood: 'finale' }] },
+  { area: 'street', juno: { at: [-9, 1.3], face: H, walk: [6, 1.3] }, dur: 8.5, from: { yaw: 55, pitch: 28, dist: 30 }, to: { yaw: 60, pitch: 52, dist: 90 }, end: true, hit: 'small', riser: 3,
+    events: [{ t: 1.6, mood: 'silent' }, { t: 3.1, hit: 'big', mood: 'finale' }] },
 ];
 
 export function createTrailer({ cam, world, player, post, fade, cast, sfx, synth, onStart }) {
@@ -103,7 +103,7 @@ export function createTrailer({ cam, world, player, post, fade, cast, sfx, synth
     Object.assign(CUTAWAY, { radius: TRAILER.cutRadius, margin: TRAILER.cutMargin });
     onStart?.();
     for (let i = first; i < SHOTS.length && !stop; i++) {
-      shot = SHOTS[i]; CUTAWAY.radius = shot.cut ?? TRAILER.cutRadius; for (const e of shot.events ?? []) e.done = false;
+      shot = SHOTS[i]; CUTAWAY.margin = shot.margin ?? TRAILER.cutMargin; for (const e of shot.events ?? []) e.done = false;
       const [ox, oz] = origin(shot.area), j = shot.juno;
       fade.black = true;
       world.jump(shot.area, [ox + j.at[0], oz + j.at[1], j.face ?? 0]);
@@ -118,7 +118,7 @@ export function createTrailer({ cam, world, player, post, fade, cast, sfx, synth
       if (shot.ui) sfx?.ui(shot.ui);
       fade.in(); // real-time fade, runs beside the shot
       if (shot.card) setTimeout(() => fade.card(shot.card, Math.max(0.8, shot.dur - 3.4), cardY()), 500);
-      if (shot.end) setTimeout(() => fade.card([{ text: TRAILER.title, color: TRAILER.green, scale: 8 }, { text: TRAILER.tagline, color: TRAILER.cyan, scale: 3 }], TRAILER.endHold), 3300); // once the camera is high and Juno is small
+      if (shot.end) setTimeout(() => fade.card([{ text: TRAILER.title, color: TRAILER.green, scale: 8 }, { text: TRAILER.tagline, color: TRAILER.cyan, scale: 3 }], TRAILER.endHold), (shot.dur - 2.2) * 1000); // once the camera is high and Juno is small
       await wait(shot.dur);
       if (!shot.end) { fade.out(); await wait(TRAILER.gap); }
     }
