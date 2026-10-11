@@ -39,6 +39,7 @@ export const HALE_ART = { base: 'sprites/hale', size: 48, pxPerUnit: 24, dirs: J
 export const WALKER1_ART = { base: 'sprites/walker1', size: 48, cell: 80, frames: 8, pxPerUnit: 24, walkFps: 7, dirs: JUNO_ART.dirs }; // the "sad walk"
 export const WALKER2_ART = { base: 'sprites/walker2', size: 48, cell: 64, frames: 6, pxPerUnit: 24, walkFps: 8, dirs: JUNO_ART.dirs }; // the businessman
 export const WALKER3_ART = { base: 'sprites/walker3', size: 48, cell: 80, frames: 6, pxPerUnit: 24, walkFps: 8, dirs: JUNO_ART.dirs }; // the woman in the red dress
+export const WALKER4_ART = { base: 'sprites/walker4', size: 48, cell: 80, frames: 6, pxPerUnit: 24, walkFps: 8, dirs: JUNO_ART.dirs }; // the cyberpunk lady
 const LEGS_Y = 38; // px row where the legs start (below the coat hem): walk/sneak frames swap only the part below it
 const FOOT_LIFT = 3; // px a stepping foot is raised (the left / right half of the legs alternate), so the feet visibly move
 const LOOP = 8;
