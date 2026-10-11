@@ -12,19 +12,21 @@ export const TRAILER = {
 const rad = THREE.MathUtils.degToRad;
 const ease = (t) => t * t * (3 - 2 * t);
 
-// Camera moves: from/to hold the focus point (x, z), yaw/pitch in degrees and distance. follow: look at Juno instead of a fixed point.
+// Camera moves: yaw/pitch in degrees and distance. Every shot follows Juno at near-gameplay angles (pitch 34+, yaw 40-52):
+// lower or wider angles let props in front hide her legs, because the see-through cutaway is tuned for the play camera.
+// (A shot may also give from/to x, z for a fixed focus point instead of follow.)
 // walk: [x, z] Juno walks to. spawn: [x, z, facing] where Juno appears when the shot starts.
 // card: [{ text, color, scale }] pixel-font lines shown over the shot.
 const SHOTS = [
-  { area: 'platform', spawn: [-1, -2, Math.PI], dur: 5, from: { x: -1, z: -2, yaw: 40, pitch: 22, dist: 34 }, to: { x: -1, z: -2, yaw: 52, pitch: 18, dist: 20 } },
-  { area: 'street', spawn: [13.8, 1.3, Math.PI * 1.5], walk: [-7, 1.6], dur: 8, follow: true, from: { yaw: 35, pitch: 16, dist: 18 }, to: { yaw: 70, pitch: 20, dist: 15 },
+  { area: 'platform', spawn: [-1, -2, Math.PI], dur: 5, follow: true, from: { yaw: 42, pitch: 36, dist: 32 }, to: { yaw: 48, pitch: 34, dist: 22 } },
+  { area: 'street', spawn: [13.8, 1.3, Math.PI * 1.5], walk: [-7, 1.6], dur: 8, follow: true, from: { yaw: 40, pitch: 34, dist: 26 }, to: { yaw: 52, pitch: 36, dist: 20 },
     card: [{ text: 'LOWMARKET. 23:40.', color: TRAILER.cyan, scale: 5 }, { text: 'THE RAIN NEVER STOPS.', color: TRAILER.white, scale: 4 }] },
-  { area: 'street', spawn: [-3, 1.6, Math.PI * 1.5], dur: 5, from: { x: -9.5, z: -2.2, yaw: 20, pitch: 10, dist: 16 }, to: { x: -9.5, z: -2.2, yaw: 5, pitch: 14, dist: 9 } },
-  { area: 'sable', spawn: [-1.0, 0.5, Math.PI / 2], walk: [3, 0.5], dur: 6, from: { x: 0, z: 0, yaw: 35, pitch: 28, dist: 18 }, to: { x: 4, z: 0.5, yaw: 50, pitch: 24, dist: 12 },
+  { area: 'street', spawn: [-3, 1.6, Math.PI * 1.5], walk: [-8, 1.0], dur: 5, follow: true, from: { yaw: 45, pitch: 36, dist: 20 }, to: { yaw: 50, pitch: 38, dist: 14 } },
+  { area: 'sable', spawn: [-1.0, 0.5, Math.PI / 2], walk: [3, 0.5], dur: 6, follow: true, from: { yaw: 40, pitch: 40, dist: 24 }, to: { yaw: 48, pitch: 40, dist: 17 },
     card: [{ text: 'EVERY MEMORY HAS A SEAM.', color: TRAILER.white, scale: 4 }] },
-  { area: 'sable', spawn: [2.6, 1.2, Math.PI / 2], echo: true, dur: 6, from: { x: 4.8, z: 1.0, yaw: 30, pitch: 18, dist: 13 }, to: { x: 4.8, z: 1.0, yaw: 40, pitch: 14, dist: 7 },
+  { area: 'sable', spawn: [3.4, 1.2, Math.PI / 2], walk: [5.0, 1.4], echo: true, dur: 6, follow: true, from: { yaw: 42, pitch: 40, dist: 18 }, to: { yaw: 46, pitch: 38, dist: 13 },
     card: [{ text: 'FIND IT.', color: TRAILER.green, scale: 6 }] },
-  { area: 'street', spawn: [0, 1.6, Math.PI], dur: 6, from: { x: 0, z: 0, yaw: 45, pitch: 30, dist: 28 }, to: { x: 0, z: 0, yaw: 65, pitch: 55, dist: 70 }, end: true },
+  { area: 'street', spawn: [0, 1.6, Math.PI], dur: 6, follow: true, from: { yaw: 45, pitch: 36, dist: 28 }, to: { yaw: 50, pitch: 50, dist: 60 }, end: true },
 ];
 
 export function createTrailer({ cam, world, player, post, fade, hud, onStart }) {
