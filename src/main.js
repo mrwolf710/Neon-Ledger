@@ -121,7 +121,7 @@ beats.setCamera(cam);
 beats.register();
 let phaseId = '', sunsetT = null, lastAreaId = null, cameFromSable = false;
 const trailerOn = new URLSearchParams(location.search).has('trailer'); // ?trailer plays a scripted teaser (src/ui/trailer.js)
-const trailer = createTrailer({ cam, world, player, post, fade, cast, sfx });
+const trailer = createTrailer({ cam, world, player, post, fade, cast, sfx, synth });
 const startParam = new URLSearchParams(location.search).get('start'); // ?start=sable jumps straight to an area (testing)
 // Save slots in the browser (core/saves.js), each: where Juno is, the case file, the board, the clock, who she has talked to and Miso.
 function snapshotGame() {
@@ -278,10 +278,10 @@ renderer.setAnimationLoop((now) => {
   if (area.id !== lastAreaId) { cameFromSable = lastAreaId === 'sable' && area.id === 'street'; lastAreaId = area.id; }
   tutorial.update();
   // First time Juno steps back out of the Sable: show how to spin the camera.
-  if (cameFromSable && !world.busy && !beats.locked && !dialogue.active && !tutorial.isOpen) { cameFromSable = false; if (!caseFile.hasFlag('tut_camera')) { caseFile.setFlag('tut_camera'); tutorial.open('camera'); } }
+  if (!trailer.active && cameFromSable && !world.busy && !beats.locked && !dialogue.active && !tutorial.isOpen) { cameFromSable = false; if (!caseFile.hasFlag('tut_camera')) { caseFile.setFlag('tut_camera'); tutorial.open('camera'); } }
   // First time Juno holds 3 clues inside the Sable: explain the board.
-  if (world.current.id === 'sable' && !dialogue.active && !tutorial.isOpen && !caseFile.hasFlag('tut_board') && caseFile.facts().length >= 3) { caseFile.setFlag('tut_board'); tutorial.open('board'); }
-  if (echo.active && !tutorial.isOpen && !caseFile.hasFlag('tut_echo')) { caseFile.setFlag('tut_echo'); tutorial.open('echo'); } // first echo: explain it (the echo waits)
+  if (!trailer.active && world.current.id === 'sable' && !dialogue.active && !tutorial.isOpen && !caseFile.hasFlag('tut_board') && caseFile.facts().length >= 3) { caseFile.setFlag('tut_board'); tutorial.open('board'); }
+  if (!trailer.active && echo.active && !tutorial.isOpen && !caseFile.hasFlag('tut_echo')) { caseFile.setFlag('tut_echo'); tutorial.open('echo'); } // first echo: explain it (the echo waits)
   const modal = trailer.active || tutorial.isOpen || tutWasOpen || !title.done || beats.locked || world.busy || dialogue.active || caseFile.isOpen || echo.active || board.isOpen || menu.isOpen || menuWasOpen;
   if (modal) { input.click = null; input.moveX = input.moveY = 0; }
   if (!trailer.active && !menuWasOpen && !tutorial.isOpen && !tutWasOpen && title.done && !beats.locked && !world.busy && !dialogue.active && !caseFile.isOpen && !echo.active && !board.isOpen && input.pressed('pause')) menu.open();
@@ -302,7 +302,7 @@ renderer.setAnimationLoop((now) => {
   const cfWasOpen = caseFile.isOpen, bdWasOpen = board.isOpen;
   const free = title.done && !beats.locked && !world.busy && !tutorial.isOpen && !tutWasOpen; // nothing scripted is running
   // First time Juno is free to move on a touch screen: how to move.
-  if ((input.lastDevice === 'touch' || matchMedia('(pointer: coarse)').matches) && free && !dialogue.active && !menu.isOpen && !caseFile.hasFlag('tut_move')) { caseFile.setFlag('tut_move'); tutorial.open('move'); }
+  if ((input.lastDevice === 'touch' || matchMedia('(pointer: coarse)').matches) && free && !trailer.active && !dialogue.active && !menu.isOpen && !caseFile.hasFlag('tut_move')) { caseFile.setFlag('tut_move'); tutorial.open('move'); }
   board.update(input);
   if (!bdWasOpen && !board.isOpen && free && !dialogue.active && !echo.active && !caseFile.isOpen && input.pressed('board')) board.open();
   caseFile.update(input);
@@ -339,7 +339,7 @@ renderer.setAnimationLoop((now) => {
     people: cast.list.filter((b) => b.id !== 'juno' && !b.ambient && b.root.visible).map((b) => ({ x: b.position.x, z: b.position.z })),
   });
   if (input.pressed('music')) { synth.setMusicOn(!synth.musicOn); hud.toast(synth.musicOn ? 'Music on' : 'Music off'); }
-  music.setMood(beats.finale ? 'finale' : beats.ending ? 'silent' : echo.active ? 'echo' : board.isOpen ? 'board' : place.mood, beats.finale ? 0.4 : undefined);
+  music.setMood(trailer.active ? trailer.mood : beats.finale ? 'finale' : beats.ending ? 'silent' : echo.active ? 'echo' : board.isOpen ? 'board' : place.mood, trailer.active ? 0.25 : beats.finale ? 0.4 : undefined);
   sfx.setEcho(echo.active);
   sfx.update(dt, {
     player: player.position, yaw: cam.yaw, signs: area.id === 'street' ? street.signs : [],
