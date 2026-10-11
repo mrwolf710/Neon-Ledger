@@ -6,6 +6,7 @@ import * as THREE from 'three';
 //            Only the legs are mirrored: mirroring the whole figure flipped her armband and hair side every step (flicker).
 //   sneak  = the same, crouched
 //   run, walk = the owner's Pixellab sheets (sprites/juno/run/sheet.png 4 frames, walk/sheet.png 6 frames: 80 px cells, rows 1-8 = one direction each), cropped to 48 px. Both optional: a missing walk sheet falls back to the pose-built walk above, a missing run sheet to walking.
+//   listening = standing still, taking a call (Hale on the platform): the pose, then 1 px lower
 //   tablet = tablet pose, then the opposite-side pose (mirrored) so the hands seem to tap
 //   idle   = standing pose, then the same pose 1 px lower (breathing)
 export const JUNO_ART = {
@@ -51,12 +52,13 @@ const FRAMES = {
   walk: [['walk', false, 1, [FOOT_LIFT, 0]], ['walk', false, 0], ['walk', 'legs', 1, [0, FOOT_LIFT]], ['walk', 'legs', 0]],
   sneak: [['sneak', false, 0, [1, 0]], ['sneak', false, 1], ['sneak', 'legs', 0, [0, 1]], ['sneak', 'legs', 1]],
   tablet: [['tablet', false, 0], ['tablet', true, 0]],
+  listening: [['listening', false, 0], ['listening', false, 1]],
 };
 
 const load = (url) => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error(`could not load ${url}`)); i.src = url; });
 
 // Returns a sheet in the same shape the billboard expects, with 8 directions per animation (sheet.dirs = 8).
-export const loadJunoSheet = () => loadSheet(JUNO_ART, FRAMES, ['idle', 'walk', 'sneak', 'tablet']);
+export const loadJunoSheet = () => loadSheet(JUNO_ART, FRAMES, ['idle', 'walk', 'sneak', 'tablet', 'listening']);
 export async function loadPriestSheet() {
   const S = PRIEST_ART.size, grid = await load(`${import.meta.env.BASE_URL}${PRIEST_ART.base}/sheet.png`), imgs = {};
   PRIEST_ART.dirs.forEach((d, i) => {
