@@ -231,7 +231,7 @@ function hostel(M) {
   b.box(PM.wood, 2.6, 1.0, 0.8, 3.4, 0.5, 2.5); b.box(M.metal, 2.7, 0.06, 0.9, 3.4, 1.03, 2.5); b.block(3.4, 2.5, 2.6, 0.8); // reception desk
   b.box(PM.vendBody, 0.9, 1.8, 0.7, -4.2, 0.9, 1.0); b.box(PM.vendGlow, 0.6, 1.0, 0.02, -4.2, 1.15, 0.64); b.block(-4.2, 1.0, 0.9, 0.7);
   table(b, PM, -2.2, 1.2, 1.4, 0.8); stool(b, PM, -2.9, 1.9); stool(b, PM, -1.5, 1.9);
-  b.box(signMat('CAPSULE', P.pink), 3.2, 0.8, 0.1, 0.5, 2.8, -2.0, 0, 0, false);       // hangs above the bunks, clear of every wall
+  b.box(signMat('CAPSULES', P.pink), 3.2, 0.8, 0.1, 0.5, 2.8, -2.0, 0, 0, false);       // hangs above the bunks, clear of every wall
   b.light(P.magenta, 12, 0, 2.5, -0.5); b.light(P.cyan, 9, 3.0, 2.2, 2.0); b.light(P.amberLight, 8, -3.5, 2.2, 1.0);
   b.spot('kit', 1.2, 0.6); b.spot('door', 0, 2.9); b.spot('capsule3f', -0.6, -1.9); // Dex's capsule: the middle stack
   return finish('hostel', b, [-5, -3.5, 5, 3.5]);
@@ -259,6 +259,7 @@ function streetExtras(M) {
   b.setTransform(0, 0, 0);
   b.box(signMat('SABLE', P.amber), 6, 1.2, 0.1, 0, 3.1, -4.82, 0, 0, false);          // covers the random shop sign on that building
   b.light(P.amberLight, 4.5, 0, 3.0, -4.2);
+  b.box(signMat('CAPSULE', P.pink), 3.4, 0.8, 0.1, 10.6, 3.0, 4.82, 0, 0, false);       // over the hostel entrance (the door is at x 10.6, z 4.15)
   b.box(PM.vendBody, 3.0, 0.6, 1.4, -13.5, 0.4, -1.9); b.box(M.glassDark, 1.6, 0.5, 1.3, -13.7, 0.95, -1.9); b.block(-13.5, -1.9, 3.0, 1.4);   // Juno's car
   b.box(M.litWarm, 0.12, 0.12, 0.3, -12.0, 0.45, -1.4); b.box(M.litWarm, 0.12, 0.12, 0.3, -12.0, 0.45, -2.4);
   b.light(P.cyan, 3, -13.5, 1.4, -1.9);
