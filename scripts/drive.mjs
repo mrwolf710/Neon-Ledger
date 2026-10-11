@@ -61,7 +61,7 @@ for (let i = 0; i < 300; i++) {
   if (n >= 3) break;
 }
 await sleep(800);
-await keyEv('keyDown', 'Space'); await sleep(80); await keyEv('keyUp', 'Space'); // dismisses the title
+if (!process.env.KEEPTITLE) { await keyEv('keyDown', 'Space'); await sleep(80); await keyEv('keyUp', 'Space'); } // dismisses the title (KEEPTITLE=1 leaves it for testing)
 await sleep(2000);
 
 for (const step of process.argv.slice(2)) {
