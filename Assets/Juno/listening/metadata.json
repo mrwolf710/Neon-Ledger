@@ -1,0 +1,36 @@
+{
+  "group_id": "fa127344-9861-4566-9546-543dc6826707",
+  "states": [
+    {
+      "character": {
+        "id": "4daaada7-4e7f-4b5f-8394-73f59758d419",
+        "name": "Character stands sti",
+        "prompt": "cyberpunk style private investigator.  Dark grey trech coat.  Female.  Dark short hair.  pale.  Sleek, cool.  Dark pallette.",
+        "size": {
+          "width": 48,
+          "height": 48
+        },
+        "template_id": "mannequin",
+        "directions": 8,
+        "view": "low top-down",
+        "created_at": "2026-10-11T03:55:08.468932+00:00"
+      },
+      "folder": "Character_stands_sti",
+      "frames": {
+        "rotations": {
+          "south": "Character_stands_sti/rotations/south.png",
+          "south-east": "Character_stands_sti/rotations/south-east.png",
+          "east": "Character_stands_sti/rotations/east.png",
+          "north-east": "Character_stands_sti/rotations/north-east.png",
+          "north": "Character_stands_sti/rotations/north.png",
+          "north-west": "Character_stands_sti/rotations/north-west.png",
+          "west": "Character_stands_sti/rotations/west.png",
+          "south-west": "Character_stands_sti/rotations/south-west.png"
+        },
+        "animations": {}
+      }
+    }
+  ],
+  "export_version": "3.1",
+  "export_date": "2026-10-11T04:00:19.097155"
+}

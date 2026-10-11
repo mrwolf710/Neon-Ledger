@@ -1,0 +1,45 @@
+{
+  "character": {
+    "id": "f49aeeee-e3d2-4ca5-a33b-9aa53a06cfc8",
+    "name": "Idle",
+    "prompt": "Business guy in suit.  Bowl cut haircut.  Holding a briefcase.",
+    "size": {
+      "width": 48,
+      "height": 48
+    },
+    "directions": 8,
+    "view": "low top-down"
+  },
+  "spritesheet": {
+    "path": "Business_guy_in_suit-Idle.png",
+    "cell_size": {
+      "width": 48,
+      "height": 48
+    },
+    "sheet_size": {
+      "width": 384,
+      "height": 48
+    },
+    "columns": 8,
+    "pivot": "cell-center",
+    "rows": [
+      {
+        "row": 0,
+        "type": "rotations",
+        "frame_count": 8,
+        "directions": [
+          "south",
+          "south-east",
+          "east",
+          "north-east",
+          "north",
+          "north-west",
+          "west",
+          "south-west"
+        ]
+      }
+    ]
+  },
+  "export_version": "1.0",
+  "export_date": "2026-10-11T03:05:46.544238+00:00"
+}

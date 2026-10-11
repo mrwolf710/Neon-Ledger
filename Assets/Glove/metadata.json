@@ -1,0 +1,22 @@
+{
+  "group_id": "3e1c8051-4f50-4d76-a135-d922946d7f82",
+  "objects": [
+    {
+      "id": "cba06332-c843-4a24-9c28-5a1cba6b3813",
+      "name": "base",
+      "prompt": "gray leather glove",
+      "size": {
+        "width": 32,
+        "height": 32
+      },
+      "directions": 1,
+      "view": "low top-down",
+      "rotations": {
+        "unknown": "rotations/gray_leather_glove.png"
+      },
+      "animations": {}
+    }
+  ],
+  "export_version": "1.1",
+  "export_date": "2026-10-06T21:55:17.614181"
+}

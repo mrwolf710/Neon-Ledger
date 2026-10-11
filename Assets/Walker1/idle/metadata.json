@@ -1,0 +1,119 @@
+{
+  "group_id": "da27c4f5-4e8a-4ed1-b128-9b9138b3d631",
+  "states": [
+    {
+      "character": {
+        "id": "0897d5d0-5647-44ad-bbc4-97d220806ac2",
+        "name": "Idle",
+        "prompt": "Crazy hacker cyberpunk, with headgear and a black leather jacket, black leather pants and black boots. And a red shirt.  Spiky black hair.  Very pale.",
+        "size": {
+          "width": 48,
+          "height": 48
+        },
+        "template_id": "mannequin",
+        "directions": 8,
+        "view": "low top-down",
+        "created_at": "2026-10-11T02:16:45.286197+00:00"
+      },
+      "folder": "Idle",
+      "frames": {
+        "rotations": {
+          "south": "Idle/rotations/south.png",
+          "south-east": "Idle/rotations/south-east.png",
+          "east": "Idle/rotations/east.png",
+          "north-east": "Idle/rotations/north-east.png",
+          "north": "Idle/rotations/north.png",
+          "north-west": "Idle/rotations/north-west.png",
+          "west": "Idle/rotations/west.png",
+          "south-west": "Idle/rotations/south-west.png"
+        },
+        "animations": {
+          "Sad_Walk": {
+            "north": [
+              "Idle/animations/Sad_Walk/north/frame_000.png",
+              "Idle/animations/Sad_Walk/north/frame_001.png",
+              "Idle/animations/Sad_Walk/north/frame_002.png",
+              "Idle/animations/Sad_Walk/north/frame_003.png",
+              "Idle/animations/Sad_Walk/north/frame_004.png",
+              "Idle/animations/Sad_Walk/north/frame_005.png",
+              "Idle/animations/Sad_Walk/north/frame_006.png",
+              "Idle/animations/Sad_Walk/north/frame_007.png"
+            ],
+            "south": [
+              "Idle/animations/Sad_Walk/south/frame_000.png",
+              "Idle/animations/Sad_Walk/south/frame_001.png",
+              "Idle/animations/Sad_Walk/south/frame_002.png",
+              "Idle/animations/Sad_Walk/south/frame_003.png",
+              "Idle/animations/Sad_Walk/south/frame_004.png",
+              "Idle/animations/Sad_Walk/south/frame_005.png",
+              "Idle/animations/Sad_Walk/south/frame_006.png",
+              "Idle/animations/Sad_Walk/south/frame_007.png"
+            ],
+            "east": [
+              "Idle/animations/Sad_Walk/east/frame_000.png",
+              "Idle/animations/Sad_Walk/east/frame_001.png",
+              "Idle/animations/Sad_Walk/east/frame_002.png",
+              "Idle/animations/Sad_Walk/east/frame_003.png",
+              "Idle/animations/Sad_Walk/east/frame_004.png",
+              "Idle/animations/Sad_Walk/east/frame_005.png",
+              "Idle/animations/Sad_Walk/east/frame_006.png",
+              "Idle/animations/Sad_Walk/east/frame_007.png"
+            ],
+            "south-west": [
+              "Idle/animations/Sad_Walk/south-west/frame_000.png",
+              "Idle/animations/Sad_Walk/south-west/frame_001.png",
+              "Idle/animations/Sad_Walk/south-west/frame_002.png",
+              "Idle/animations/Sad_Walk/south-west/frame_003.png",
+              "Idle/animations/Sad_Walk/south-west/frame_004.png",
+              "Idle/animations/Sad_Walk/south-west/frame_005.png",
+              "Idle/animations/Sad_Walk/south-west/frame_006.png",
+              "Idle/animations/Sad_Walk/south-west/frame_007.png"
+            ],
+            "south-east": [
+              "Idle/animations/Sad_Walk/south-east/frame_000.png",
+              "Idle/animations/Sad_Walk/south-east/frame_001.png",
+              "Idle/animations/Sad_Walk/south-east/frame_002.png",
+              "Idle/animations/Sad_Walk/south-east/frame_003.png",
+              "Idle/animations/Sad_Walk/south-east/frame_004.png",
+              "Idle/animations/Sad_Walk/south-east/frame_005.png",
+              "Idle/animations/Sad_Walk/south-east/frame_006.png",
+              "Idle/animations/Sad_Walk/south-east/frame_007.png"
+            ],
+            "north-east": [
+              "Idle/animations/Sad_Walk/north-east/frame_000.png",
+              "Idle/animations/Sad_Walk/north-east/frame_001.png",
+              "Idle/animations/Sad_Walk/north-east/frame_002.png",
+              "Idle/animations/Sad_Walk/north-east/frame_003.png",
+              "Idle/animations/Sad_Walk/north-east/frame_004.png",
+              "Idle/animations/Sad_Walk/north-east/frame_005.png",
+              "Idle/animations/Sad_Walk/north-east/frame_006.png",
+              "Idle/animations/Sad_Walk/north-east/frame_007.png"
+            ],
+            "north-west": [
+              "Idle/animations/Sad_Walk/north-west/frame_000.png",
+              "Idle/animations/Sad_Walk/north-west/frame_001.png",
+              "Idle/animations/Sad_Walk/north-west/frame_002.png",
+              "Idle/animations/Sad_Walk/north-west/frame_003.png",
+              "Idle/animations/Sad_Walk/north-west/frame_004.png",
+              "Idle/animations/Sad_Walk/north-west/frame_005.png",
+              "Idle/animations/Sad_Walk/north-west/frame_006.png",
+              "Idle/animations/Sad_Walk/north-west/frame_007.png"
+            ],
+            "west": [
+              "Idle/animations/Sad_Walk/west/frame_000.png",
+              "Idle/animations/Sad_Walk/west/frame_001.png",
+              "Idle/animations/Sad_Walk/west/frame_002.png",
+              "Idle/animations/Sad_Walk/west/frame_003.png",
+              "Idle/animations/Sad_Walk/west/frame_004.png",
+              "Idle/animations/Sad_Walk/west/frame_005.png",
+              "Idle/animations/Sad_Walk/west/frame_006.png",
+              "Idle/animations/Sad_Walk/west/frame_007.png"
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "export_version": "3.1",
+  "export_date": "2026-10-11T02:45:15.692129"
+}

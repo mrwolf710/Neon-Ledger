@@ -1,0 +1,45 @@
+{
+  "character": {
+    "id": "14e2d7ef-57f0-4bde-ab9e-b3cb458f4d39",
+    "name": "Idle",
+    "prompt": "Cyberpunk police captain.  Dark blue uniform.  Police office hat.  Headset with Mic.",
+    "size": {
+      "width": 48,
+      "height": 48
+    },
+    "directions": 8,
+    "view": "low top-down"
+  },
+  "spritesheet": {
+    "path": "Cyberpunk_police_captain-Idle.png",
+    "cell_size": {
+      "width": 48,
+      "height": 48
+    },
+    "sheet_size": {
+      "width": 384,
+      "height": 48
+    },
+    "columns": 8,
+    "pivot": "cell-center",
+    "rows": [
+      {
+        "row": 0,
+        "type": "rotations",
+        "frame_count": 8,
+        "directions": [
+          "south",
+          "south-east",
+          "east",
+          "north-east",
+          "north",
+          "north-west",
+          "west",
+          "south-west"
+        ]
+      }
+    ]
+  },
+  "export_version": "1.0",
+  "export_date": "2026-10-07T11:48:36.464786+00:00"
+}

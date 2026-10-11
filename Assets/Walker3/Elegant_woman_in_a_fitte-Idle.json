@@ -1,0 +1,109 @@
+{
+  "character": {
+    "id": "c29d6c18-2fb2-4989-947b-b30ffbf787a5",
+    "name": "Idle",
+    "prompt": "Elegant woman in a fitted red satin halter-neck dress, knee-length pencil silhouette with draped cowl neckline and bare shoulders, glossy fabric with soft highlights. Platinum blonde hair styled in retro 1940s pin curls, swept up and back. Red lipstick, confident poised expression. Walking pose, one foot forward, arms relaxed at sides. Classic Hollywood glamour, vibrant red against pale skin.",
+    "size": {
+      "width": 48,
+      "height": 48
+    },
+    "directions": 8,
+    "view": "low top-down"
+  },
+  "spritesheet": {
+    "path": "Elegant_woman_in_a_fitte-Idle.png",
+    "cell_size": {
+      "width": 80,
+      "height": 80
+    },
+    "sheet_size": {
+      "width": 640,
+      "height": 720
+    },
+    "columns": 8,
+    "pivot": "cell-center",
+    "rows": [
+      {
+        "row": 0,
+        "type": "rotations",
+        "frame_count": 8,
+        "directions": [
+          "south",
+          "south-east",
+          "east",
+          "north-east",
+          "north",
+          "north-west",
+          "west",
+          "south-west"
+        ]
+      },
+      {
+        "row": 1,
+        "type": "animation",
+        "frame_count": 6,
+        "animation": "Walking",
+        "animation_group_id": "c7be54c7-1d74-466c-9d63-334281892dc3",
+        "direction": "south"
+      },
+      {
+        "row": 2,
+        "type": "animation",
+        "frame_count": 6,
+        "animation": "Walking",
+        "animation_group_id": "c7be54c7-1d74-466c-9d63-334281892dc3",
+        "direction": "south-east"
+      },
+      {
+        "row": 3,
+        "type": "animation",
+        "frame_count": 6,
+        "animation": "Walking",
+        "animation_group_id": "c7be54c7-1d74-466c-9d63-334281892dc3",
+        "direction": "east"
+      },
+      {
+        "row": 4,
+        "type": "animation",
+        "frame_count": 6,
+        "animation": "Walking",
+        "animation_group_id": "c7be54c7-1d74-466c-9d63-334281892dc3",
+        "direction": "north-east"
+      },
+      {
+        "row": 5,
+        "type": "animation",
+        "frame_count": 6,
+        "animation": "Walking",
+        "animation_group_id": "c7be54c7-1d74-466c-9d63-334281892dc3",
+        "direction": "north"
+      },
+      {
+        "row": 6,
+        "type": "animation",
+        "frame_count": 6,
+        "animation": "Walking",
+        "animation_group_id": "c7be54c7-1d74-466c-9d63-334281892dc3",
+        "direction": "north-west"
+      },
+      {
+        "row": 7,
+        "type": "animation",
+        "frame_count": 6,
+        "animation": "Walking",
+        "animation_group_id": "c7be54c7-1d74-466c-9d63-334281892dc3",
+        "direction": "west"
+      },
+      {
+        "row": 8,
+        "type": "animation",
+        "frame_count": 6,
+        "animation": "Walking",
+        "animation_group_id": "c7be54c7-1d74-466c-9d63-334281892dc3",
+        "direction": "south-west"
+      }
+    ]
+  },
+  "export_version": "1.0",
+  "export_date": "2026-10-11T03:45:16.966855+00:00"
+}

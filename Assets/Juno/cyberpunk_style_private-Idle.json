@@ -1,0 +1,109 @@
+{
+  "character": {
+    "id": "6cdeddab-7d0c-46bc-aa28-819b1aa21c1c",
+    "name": "Idle",
+    "prompt": "cyberpunk style private investigator.  Dark grey trech coat.  Female.  Dark short hair.  pale.  Sleek, cool.  Dark pallette.",
+    "size": {
+      "width": 48,
+      "height": 48
+    },
+    "directions": 8,
+    "view": "low top-down"
+  },
+  "spritesheet": {
+    "path": "cyberpunk_style_private-Idle.png",
+    "cell_size": {
+      "width": 80,
+      "height": 80
+    },
+    "sheet_size": {
+      "width": 640,
+      "height": 720
+    },
+    "columns": 8,
+    "pivot": "cell-center",
+    "rows": [
+      {
+        "row": 0,
+        "type": "rotations",
+        "frame_count": 8,
+        "directions": [
+          "south",
+          "south-east",
+          "east",
+          "north-east",
+          "north",
+          "north-west",
+          "west",
+          "south-west"
+        ]
+      },
+      {
+        "row": 1,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "Running",
+        "animation_group_id": "3393fc48-1c6d-49f0-903d-0e998d5602de",
+        "direction": "south"
+      },
+      {
+        "row": 2,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "Running",
+        "animation_group_id": "3393fc48-1c6d-49f0-903d-0e998d5602de",
+        "direction": "south-east"
+      },
+      {
+        "row": 3,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "Running",
+        "animation_group_id": "3393fc48-1c6d-49f0-903d-0e998d5602de",
+        "direction": "east"
+      },
+      {
+        "row": 4,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "Running",
+        "animation_group_id": "3393fc48-1c6d-49f0-903d-0e998d5602de",
+        "direction": "north-east"
+      },
+      {
+        "row": 5,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "Running",
+        "animation_group_id": "3393fc48-1c6d-49f0-903d-0e998d5602de",
+        "direction": "north"
+      },
+      {
+        "row": 6,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "Running",
+        "animation_group_id": "3393fc48-1c6d-49f0-903d-0e998d5602de",
+        "direction": "north-west"
+      },
+      {
+        "row": 7,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "Running",
+        "animation_group_id": "3393fc48-1c6d-49f0-903d-0e998d5602de",
+        "direction": "west"
+      },
+      {
+        "row": 8,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "Running",
+        "animation_group_id": "3393fc48-1c6d-49f0-903d-0e998d5602de",
+        "direction": "south-west"
+      }
+    ]
+  },
+  "export_version": "1.0",
+  "export_date": "2026-10-07T12:10:34.247310+00:00"
+}

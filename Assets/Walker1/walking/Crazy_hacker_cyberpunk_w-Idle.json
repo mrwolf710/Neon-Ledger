@@ -1,0 +1,109 @@
+{
+  "character": {
+    "id": "0897d5d0-5647-44ad-bbc4-97d220806ac2",
+    "name": "Idle",
+    "prompt": "Crazy hacker cyberpunk, with headgear and a black leather jacket, black leather pants and black boots. And a red shirt.  Spiky black hair.  Very pale.",
+    "size": {
+      "width": 48,
+      "height": 48
+    },
+    "directions": 8,
+    "view": "low top-down"
+  },
+  "spritesheet": {
+    "path": "Crazy_hacker_cyberpunk_w-Idle.png",
+    "cell_size": {
+      "width": 80,
+      "height": 80
+    },
+    "sheet_size": {
+      "width": 640,
+      "height": 720
+    },
+    "columns": 8,
+    "pivot": "cell-center",
+    "rows": [
+      {
+        "row": 0,
+        "type": "rotations",
+        "frame_count": 8,
+        "directions": [
+          "south",
+          "south-east",
+          "east",
+          "north-east",
+          "north",
+          "north-west",
+          "west",
+          "south-west"
+        ]
+      },
+      {
+        "row": 1,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "Sad Walk",
+        "animation_group_id": "5fba1a4f-1bf0-4676-8699-7af7d2e7be45",
+        "direction": "south"
+      },
+      {
+        "row": 2,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "Sad Walk",
+        "animation_group_id": "5fba1a4f-1bf0-4676-8699-7af7d2e7be45",
+        "direction": "south-east"
+      },
+      {
+        "row": 3,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "Sad Walk",
+        "animation_group_id": "5fba1a4f-1bf0-4676-8699-7af7d2e7be45",
+        "direction": "east"
+      },
+      {
+        "row": 4,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "Sad Walk",
+        "animation_group_id": "5fba1a4f-1bf0-4676-8699-7af7d2e7be45",
+        "direction": "north-east"
+      },
+      {
+        "row": 5,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "Sad Walk",
+        "animation_group_id": "5fba1a4f-1bf0-4676-8699-7af7d2e7be45",
+        "direction": "north"
+      },
+      {
+        "row": 6,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "Sad Walk",
+        "animation_group_id": "5fba1a4f-1bf0-4676-8699-7af7d2e7be45",
+        "direction": "north-west"
+      },
+      {
+        "row": 7,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "Sad Walk",
+        "animation_group_id": "5fba1a4f-1bf0-4676-8699-7af7d2e7be45",
+        "direction": "west"
+      },
+      {
+        "row": 8,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "Sad Walk",
+        "animation_group_id": "5fba1a4f-1bf0-4676-8699-7af7d2e7be45",
+        "direction": "south-west"
+      }
+    ]
+  },
+  "export_version": "1.0",
+  "export_date": "2026-10-11T02:41:57.435391+00:00"
+}
