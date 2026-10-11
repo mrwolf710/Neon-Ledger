@@ -34,7 +34,7 @@ import { createBarks } from './game/barks.js';
 import { createLights } from './render/lights.js';
 import { createPost, POST } from './render/post.js';
 import { createCrtFrame } from './ui/crtframe.js';
-import { createHeightFog } from './render/fog.js';
+import { createHeightFog, CUTAWAY } from './render/fog.js';
 import { createParticles } from './world/particles.js';
 import { createTimeOfDay, TIME_OF_DAY, SUNSET } from './world/timeofday.js';
 
@@ -178,6 +178,7 @@ function onAreaEnter(area, spawn) {
   cast.setArea(area.id); interactions.setArea(area.id); echo.setArea(area.id);
   particles.active = area.meta.outdoor;
   tod.setIndoor(!area.meta.outdoor);
+  CUTAWAY.minY = area.meta.outdoor ? 0.3 : 1.15; // indoors, tables and the counter stay solid; only walls and signs above them are cut
   tod.setScene(area.id);
   if (area.id === 'hostel') cam.reset(true); // the default view looks at the back wall: Kit and the capsules, no spinning needed
   particles.center.x = area.meta.origin[0]; particles.center.z = area.meta.origin[1];
