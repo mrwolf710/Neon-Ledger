@@ -89,7 +89,11 @@ function textSign(text, color, bg = P.ink) {
   t.magFilter = t.minFilter = THREE.NearestFilter; t.generateMipmaps = false; t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
-const signMat = (text, color) => new THREE.MeshBasicMaterial({ map: textSign(text, color), color: new THREE.Color().setScalar(BUILDINGS.signGlow) });
+const signMat = (text, color, noCut = false) => { // noCut: the see-through circle around Juno never removes this sign
+  const m = new THREE.MeshBasicMaterial({ map: textSign(text, color), color: new THREE.Color().setScalar(BUILDINGS.signGlow) });
+  m.userData.noCut = noCut;
+  return m;
+};
 
 function begin(id) {
   const b = createBatch();
@@ -130,7 +134,7 @@ function platform(M) {
   for (let x = -12.5; x <= 12.5; x += 0.9) b.box(M.pipe, 0.25, 0.08, 2.2, x, -0.26, -4.6);
   // Back wall with a sign and two benches.
   wallX(b, M, 3 + T / 2, -10 - T, 10 + T, [], { h: 1.2, mat: M.walls[1] });
-  b.box(signMat('LINE 9 LOWMARKET', P.cyan), 7.2, 1.0, 0.12, -2, 1.9, 3.15, 0, 0, false);   // above the low wall; readable from both sides
+  b.box(signMat('LINE 9 LOWMARKET', P.cyan, true), 7.2, 1.0, 0.12, -2, 1.9, 3.15, 0, 0, false);   // above the low wall; readable from both sides
   b.light(P.cyan, 9, -2, 2.0, 2.6);
   for (const x of [-6, 3]) { b.box(PM.wood, 2.0, 0.08, 0.5, x, 0.5, 2.2); b.box(PM.pole, 0.08, 0.5, 0.4, x - 0.85, 0.25, 2.2); b.box(PM.pole, 0.08, 0.5, 0.4, x + 0.85, 0.25, 2.2); b.block(x, 2.2, 2.0, 0.5); }
   // Canopy posts with lamps.

@@ -37,6 +37,7 @@ const VERT = /* glsl */`
 
 const FRAG = /* glsl */`
 #ifdef USE_FOG
+  #ifndef NO_CUT
   {
     float cutD = length(gl_FragCoord.xy - cutCenter) / cutRadius;
     if (cutD < 1.0 && vFogDepth < cutDepth && vFogWorldY > ${CUTAWAY.minY.toFixed(2)}) {
@@ -46,13 +47,15 @@ const FRAG = /* glsl */`
       if (edgeT < (bayer[bp.y * 4 + bp.x] + 0.5) / 16.0) discard;
     }
   }
+  #endif
   float fogH = exp(-max(vFogWorldY, 0.0) * fogFalloff);
   float fogFactor = (1.0 - exp(-fogDensity * max(vFogDepth - fogStart, 0.0))) * mix(fogHigh, 1.0, fogH) + fogGround * fogH;
   gl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, clamp(fogFactor, 0.0, 1.0));
 #endif`;
 
-function onBeforeCompile(shader) {
+function onBeforeCompile(shader) { // material.userData.noCut = a sign or prop the see-through circle must never remove
   Object.assign(shader.uniforms, uniforms);
+  if (this.userData.noCut) shader.fragmentShader = '#define NO_CUT\n' + shader.fragmentShader;
   shader.vertexShader = shader.vertexShader
     .replace('#include <fog_pars_vertex>', '#include <fog_pars_vertex>\nvarying float vFogWorldY;')
     .replace('#include <fog_vertex>', VERT);
@@ -86,7 +89,8 @@ export function createHeightFog(scene) {
         if (!o.isMesh || !o.material.fog || done.has(o.material)) return;
         done.add(o.material);
         o.material.onBeforeCompile = onBeforeCompile;
-        o.material.customProgramCacheKey = () => 'heightFog';
+        const noCut = !!o.material.userData.noCut;
+        o.material.customProgramCacheKey = () => (noCut ? 'heightFogNoCut' : 'heightFog');
       });
     },
   };
