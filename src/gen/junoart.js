@@ -35,11 +35,9 @@ export const KIT_ART = { base: 'sprites/kit', cell: 68, pxPerUnit: 24, fps: 6, f
 export const VENDOR_ART = { base: 'sprites/vendor', cell: 64, pxPerUnit: 24, fps: 4, foot: 10, frames: 4, dirs: JUNO_ART.dirs };
 // Hale: eight 48 px rotation frames across one row; comms show the rear-left (north-west) view.
 export const HALE_ART = { base: 'sprites/hale', size: 48, pxPerUnit: 24, dirs: JUNO_ART.dirs, portraitDirection: 'north-west' };
-// Street walker 1 (CAST walkerA): one Pixellab sheet of 80 px cells: row 0 = 8 stills (idle), rows 1-8 = the 8-frame "sad walk" per direction. Cropped to the middle 48 px.
-export const WALKER1_ART = { base: 'sprites/walker1', size: 48, cell: 80, pxPerUnit: 24, walkFps: 7, dirs: JUNO_ART.dirs };
-// Street walker 2 (CAST walkerB), the businessman: eight 48 px stills across one row. No walk art yet, so walking is the still bobbing 1 px (replace with a sheet like WALKER1_ART when one exists).
-export const WALKER2_ART = { base: 'sprites/walker2', size: 48, pxPerUnit: 24, walkFps: 6, dirs: JUNO_ART.dirs };
-const WALKER2_FRAMES = { idle: [['', false, 0], ['', false, 1]], walk: [['', false, 1], ['', false, 0], ['', false, 1], ['', false, 0]] };
+// Street walkers (CAST walkerA, walkerB): one Pixellab sheet each: row 0 = 8 stills (idle), rows 1-8 = the walk per direction (`frames` long). `cell` px cells, cropped to the middle 48 px.
+export const WALKER1_ART = { base: 'sprites/walker1', size: 48, cell: 80, frames: 8, pxPerUnit: 24, walkFps: 7, dirs: JUNO_ART.dirs }; // the "sad walk"
+export const WALKER2_ART = { base: 'sprites/walker2', size: 48, cell: 64, frames: 6, pxPerUnit: 24, walkFps: 8, dirs: JUNO_ART.dirs }; // the businessman
 const LEGS_Y = 38; // px row where the legs start (below the coat hem): walk/sneak frames swap only the part below it
 const FOOT_LIFT = 3; // px a stepping foot is raised (the left / right half of the legs alternate), so the feet visibly move
 const LOOP = 8;
@@ -90,12 +88,12 @@ export async function loadKitSheet(A = KIT_ART) {
   return { texture, canvas, frameW: A.cell, frameH: A.cell, pxPerUnit: A.pxPerUnit, dirs: 8, rows: {}, animRows, anims: { idle: { start: 0, frames: A.frames ?? LOOP } }, fps: A.fps, footPx: A.foot };
 }
 export async function loadWalkerSheet(A = WALKER1_ART) {
-  const S = A.size, n = A.dirs.length, img = await load(`${import.meta.env.BASE_URL}${A.base}/sheet.png`), o = (A.cell - S) / 2;
-  const canvas = Object.assign(document.createElement('canvas'), { width: S * LOOP, height: S * n * 2 });
+  const S = A.size, n = A.dirs.length, N = A.frames, img = await load(`${import.meta.env.BASE_URL}${A.base}/sheet.png`), o = (A.cell - S) / 2;
+  const canvas = Object.assign(document.createElement('canvas'), { width: S * N, height: S * n * 2 });
   const ctx = canvas.getContext('2d');
   A.dirs.forEach((d, i) => {
     ctx.drawImage(img, i * A.cell + o, o, S, S, 0, i * S, S, S);                                              // idle: the still
-    for (let f = 0; f < LOOP; f++) ctx.drawImage(img, f * A.cell + o, (i + 1) * A.cell + o, S, S, f * S, (n + i) * S, S, S); // walk
+    for (let f = 0; f < N; f++) ctx.drawImage(img, f * A.cell + o, (i + 1) * A.cell + o, S, S, f * S, (n + i) * S, S, S); // walk
   });
   const texture = new THREE.CanvasTexture(canvas);
   texture.magFilter = texture.minFilter = THREE.NearestFilter;
@@ -103,16 +101,7 @@ export async function loadWalkerSheet(A = WALKER1_ART) {
   texture.colorSpace = THREE.SRGBColorSpace;
   const rows = (base) => Object.fromEntries(A.dirs.map((d, i) => [d, base + i]));
   return { texture, canvas, frameW: S, frameH: S, pxPerUnit: A.pxPerUnit, dirs: 8, rows: {}, animRows: { idle: rows(0), walk: rows(n) },
-    anims: { idle: { start: 0, frames: 1 }, walk: { start: 0, frames: LOOP } }, fps: 2, walkFps: A.walkFps };
-}
-export async function loadWalker2Sheet(A = WALKER2_ART) {
-  const grid = await load(`${import.meta.env.BASE_URL}${A.base}/sheet.png`), imgs = {};
-  A.dirs.forEach((dir, i) => {
-    const c = Object.assign(document.createElement('canvas'), { width: A.size, height: A.size });
-    c.getContext('2d').drawImage(grid, i * A.size, 0, A.size, A.size, 0, 0, A.size, A.size);
-    imgs[`/${dir}`] = c;
-  });
-  return { ...await loadSheet(A, WALKER2_FRAMES, [''], imgs), walkFps: A.walkFps };
+    anims: { idle: { start: 0, frames: 1 }, walk: { start: 0, frames: N } }, fps: 2, walkFps: A.walkFps };
 }
 export const loadCatSheet = () => loadLoopSheet(CAT_ART);
 export const loadDexStandSheet = () => loadLoopSheet(DEX_STAND_ART);
