@@ -112,4 +112,5 @@ const dialogueEditor = {
     });
   },
 };
-export default { build: { target: 'es2022' }, plugins: [dialogueEditor] };
+// base './': relative asset URLs so the built game also runs from a sub-folder (itch.io HTML5 upload).
+export default { base: './', build: { target: 'es2022' }, plugins: [dialogueEditor] };
