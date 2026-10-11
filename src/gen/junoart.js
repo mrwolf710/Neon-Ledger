@@ -37,6 +37,9 @@ export const VENDOR_ART = { base: 'sprites/vendor', cell: 64, pxPerUnit: 24, fps
 export const HALE_ART = { base: 'sprites/hale', size: 48, pxPerUnit: 24, dirs: JUNO_ART.dirs, portraitDirection: 'north-west' };
 // Street walker 1 (CAST walkerA): one Pixellab sheet of 80 px cells: row 0 = 8 stills (idle), rows 1-8 = the 8-frame "sad walk" per direction. Cropped to the middle 48 px.
 export const WALKER1_ART = { base: 'sprites/walker1', size: 48, cell: 80, pxPerUnit: 24, walkFps: 7, dirs: JUNO_ART.dirs };
+// Street walker 2 (CAST walkerB), the businessman: eight 48 px stills across one row. No walk art yet, so walking is the still bobbing 1 px (replace with a sheet like WALKER1_ART when one exists).
+export const WALKER2_ART = { base: 'sprites/walker2', size: 48, pxPerUnit: 24, walkFps: 6, dirs: JUNO_ART.dirs };
+const WALKER2_FRAMES = { idle: [['', false, 0], ['', false, 1]], walk: [['', false, 1], ['', false, 0], ['', false, 1], ['', false, 0]] };
 const LEGS_Y = 38; // px row where the legs start (below the coat hem): walk/sneak frames swap only the part below it
 const FOOT_LIFT = 3; // px a stepping foot is raised (the left / right half of the legs alternate), so the feet visibly move
 const LOOP = 8;
@@ -101,6 +104,15 @@ export async function loadWalkerSheet(A = WALKER1_ART) {
   const rows = (base) => Object.fromEntries(A.dirs.map((d, i) => [d, base + i]));
   return { texture, canvas, frameW: S, frameH: S, pxPerUnit: A.pxPerUnit, dirs: 8, rows: {}, animRows: { idle: rows(0), walk: rows(n) },
     anims: { idle: { start: 0, frames: 1 }, walk: { start: 0, frames: LOOP } }, fps: 2, walkFps: A.walkFps };
+}
+export async function loadWalker2Sheet(A = WALKER2_ART) {
+  const grid = await load(`${import.meta.env.BASE_URL}${A.base}/sheet.png`), imgs = {};
+  A.dirs.forEach((dir, i) => {
+    const c = Object.assign(document.createElement('canvas'), { width: A.size, height: A.size });
+    c.getContext('2d').drawImage(grid, i * A.size, 0, A.size, A.size, 0, 0, A.size, A.size);
+    imgs[`/${dir}`] = c;
+  });
+  return { ...await loadSheet(A, WALKER2_FRAMES, [''], imgs), walkFps: A.walkFps };
 }
 export const loadCatSheet = () => loadLoopSheet(CAT_ART);
 export const loadDexStandSheet = () => loadLoopSheet(DEX_STAND_ART);
