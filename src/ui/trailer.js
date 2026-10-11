@@ -8,6 +8,7 @@ export const TRAILER = {
   bars: 0.115,              // letterbox bar height as a fraction of screen height (0 = off)
   gap: 0.25,                // seconds of black between shots
   kick: 0.55,               // glitch burst at each hard cut (0 = off)
+  void: true,               // black sky and distance fog while the trailer plays, so the edges of the city fall away into darkness
   cutRadius: 8.5, cutMargin: 0.25, // see-through cutaway while the trailer plays: wider than in play so nothing hides a character
   green: '#39ff14', cyan: '#1fd6e8', white: '#ffffff', red: '#ff3b5c',
   title: 'NEON ECHOES', tagline: 'A DETECTIVE GAME', endHold: 3.2,
@@ -32,7 +33,7 @@ const H = Math.PI / 2;
 //  events    [{ t, hit, mood }] things that happen t seconds into the shot
 const SHOTS = [
   { area: 'platform', juno: { at: [-3, -2], face: 0.5, walk: [-1.4, -0.9] }, dur: 3.2, from: { yaw: 35, pitch: 28, dist: 8 }, to: { yaw: 50, pitch: 34, dist: 20 }, ui: 'echoOn', mood: 'echo', riser: 3.2 },
-  { area: 'street', juno: { at: [-9, 1.3], face: H, walk: [5, 1.3] }, dur: 4, from: { yaw: 28, pitch: 32, dist: 34 }, to: { yaw: 60, pitch: 38, dist: 46 }, pan: [2, 0], hit: 'small',
+  { area: 'street', juno: { at: [-9, 1.3], face: H, walk: [5, 1.3] }, dur: 4, from: { yaw: 28, pitch: 32, dist: 34 }, to: { yaw: 60, pitch: 38, dist: 38 }, pan: [2, 0], hit: 'small',
     card: [{ text: 'LOWMARKET. 23:40.', color: TRAILER.cyan, scale: 5 }, { text: 'THE RAIN NEVER STOPS.', color: TRAILER.white, scale: 4 }] },
   { area: 'street', subject: 'preacher', both: true, juno: { at: [-13, 1.0], face: H, walk: [-11, 0.4] }, dur: 2.8, from: { yaw: 40, pitch: 33, dist: 34 }, to: { yaw: 46, pitch: 32, dist: 26 }, hit: 'small',
     card: [{ text: 'THE CITY IS WATCHING.', color: TRAILER.red, scale: 4 }] },
@@ -45,7 +46,7 @@ const SHOTS = [
   { area: 'alley', juno: { at: [0, -1.5], face: 0, walk: [0, 2.6] }, dur: 2.6, from: { yaw: 22, pitch: 36, dist: 12 }, to: { yaw: 38, pitch: 40, dist: 8 }, hit: 'small' },
   { area: 'hostel', subject: 'kit', both: true, juno: { at: [-1.4, -0.8], face: H, walk: [0, 0.2] }, dur: 2.4, from: { yaw: 48, pitch: 38, dist: 14 }, to: { yaw: 40, pitch: 34, dist: 10 }, hit: 'small', ui: 'glitch' },
   { area: 'car', juno: { at: [0.4, 0], face: H }, dur: 2.2, from: { yaw: 50, pitch: 36, dist: 9 }, to: { yaw: 38, pitch: 32, dist: 6 }, hit: 'small' },
-  { area: 'street', juno: { at: [-9, 1.3], face: H, walk: [6, 1.3] }, dur: 8.5, from: { yaw: 55, pitch: 28, dist: 30 }, to: { yaw: 60, pitch: 52, dist: 90 }, end: true, hit: 'small', riser: 3,
+  { area: 'street', juno: { at: [-9, 1.3], face: H, walk: [6, 1.3] }, dur: 8.5, from: { yaw: 55, pitch: 28, dist: 28 }, to: { yaw: 60, pitch: 44, dist: 52 }, end: true, hit: 'small', riser: 3,
     events: [{ t: 1.6, mood: 'silent' }, { t: 3.1, hit: 'big', mood: 'finale' }] },
 ];
 

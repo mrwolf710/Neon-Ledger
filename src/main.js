@@ -21,7 +21,7 @@ import { synth } from './audio/synth.js';
 import { createSfx, surfaceAt } from './audio/sfx.js';
 import { createMusic } from './audio/music.js';
 import { createTitle } from './ui/title.js';
-import { createTrailer } from './ui/trailer.js';
+import { createTrailer, TRAILER } from './ui/trailer.js';
 import { createMenu } from './ui/menu.js';
 import { BEATS } from './game/beats.js';
 import { createTutorial } from './ui/tutorial.js';
@@ -350,6 +350,7 @@ renderer.setAnimationLoop((now) => {
   if (sunsetT !== null && !modal) sunsetT += dt;
   tod.sunset = sunsetT === null ? 0 : (1 - Math.min(1, sunsetT / tod.sunsetSeconds)) ** 1.5;
   tod.update(dt);
+  if (trailer.active && TRAILER.void) { scene.background.setRGB(0, 0, 0); scene.fog.color.setRGB(0, 0, 0); } // trailer: no lit haze around the street
   particles.update(dt, cam.target, cam.camera);
   cast.update(dt, cam.yaw, area.lights);
   barks.update(dt, area.id, !modal);
