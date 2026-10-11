@@ -38,7 +38,7 @@ const SHOTS = [
     card: [{ text: 'LOWMARKET. 23:40.', color: TRAILER.cyan, scale: 5 }, { text: 'THE RAIN NEVER STOPS.', color: TRAILER.white, scale: 4 }] },
   { area: 'street', subject: 'preacher', both: true, juno: { at: [-13, 1.0], face: H, walk: [-11, 0.4] }, dur: 2.8, from: { yaw: 40, pitch: 33, dist: 34 }, to: { yaw: 46, pitch: 32, dist: 26 }, hit: 'small',
     card: [{ text: 'THE CITY IS WATCHING.', color: TRAILER.red, scale: 4 }] },
-  { area: 'street', subject: 'miso', both: true, juno: { at: [9, 1.0], face: H, walk: [11.2, 2.0] }, pan: [7, 0], lift: 3.5, dur: 3.4, from: { yaw: 30, pitch: 33, dist: 36 }, to: { yaw: 45, pitch: 34, dist: 30 }, hit: 'small', riser: 3.4, train: 2.8 },
+  { area: 'street', subject: 'miso', both: true, juno: { at: [9, 1.0], face: H, walk: [11.2, 2.0] }, pan: [7, 0], lift: 3.5, dur: 3.4, from: { yaw: 30, pitch: 33, dist: 48 }, to: { yaw: 40, pitch: 34, dist: 44 }, hit: 'small', riser: 3.4, train: 2.8 },
   { area: 'sable', subject: 'mamaTeo', both: true, juno: { at: [-4.6, 0], face: H, walk: [-3, -1.2] }, dur: 3, from: { yaw: 40, pitch: 33, dist: 34 }, to: { yaw: 40, pitch: 32, dist: 28 }, margin: 2.2, hit: 'big', mood: 'finale' },
   { area: 'sable', subject: 'dex', both: true, juno: { at: [2.2, 0.2], face: H, walk: [3.2, 0.1] }, dur: 3, from: { yaw: 42, pitch: 42, dist: 14 }, to: { yaw: 44, pitch: 34, dist: 7.5 }, hit: 'small',
     card: [{ text: 'ONE DEAD CORPO.', color: TRAILER.white, scale: 4 }, { text: 'ONE MISSING MEMORY.', color: TRAILER.green, scale: 4 }] },
