@@ -27,10 +27,10 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
   const SKIP = {
     2: { flags: ['visited_street'], to: 'street' },
     3: { flags: ['visited_sable'], to: 'sable' },
-    4: { flags: ['seen_backroom', 'ex_body', 'ex_port', 'ex_cups', 'ex_terminal', 'ex_lamp'], add: ['burned_port'], to: 'sable' },
-    5: { add: ['teo_back_room', 'two_voices'], to: 'sable' },
+    4: { flags: ['seen_backroom', 'ex_body', 'ex_port', 'ex_cups', 'ex_terminal', 'ex_lamp'], add: ['burned_port', 'door_log'], to: 'sable' },
+    5: { add: ['teo_back_room', 'two_voices', 'echo_seam'], to: 'sable' },
     6: { flags: ['teo_met', 'teo_cracked', 'teo_pointed', 'key_deduced', 'teo_asked_door', 'ex_glove', 'kit_paid', 'ex_capsule'], add: ['mamaTeo', 'door_unlocked', 'someone_had_key', 'alley_echo', 'gloved_hand', 'kit_echo', 'kit_outside'], to: 'car' },
-    7: { flags: ['kit_deduced', 'kit_named', 'kit_met', 'kit_broken', 'kit_coat'], add: ['kit', 'override_used', 'kit_saw_them'], to: 'car' },
+    7: { flags: ['kit_deduced', 'kit_named', 'kit_met', 'kit_broken', 'kit_coat'], add: ['kit', 'override_used', 'log_faked', 'kit_saw_them'], to: 'car' },
   };
 
   // ---- tiny async helpers driven by update(dt) (so cutscenes pause with the game, not wall-clock) ----
