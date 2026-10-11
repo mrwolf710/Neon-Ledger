@@ -305,7 +305,7 @@ export const ECHOES = {
   dex_backup: {
     title: "Dex's backup", owner: 'dex', entry: 'dex_backup', duration: 9,
     tracks: [
-      { sprite: 'dexStanding', keys: [{ t: 0, x: 599.4, z: 0, facing: Math.PI / 2, anim: 'idle' }, { t: 9, x: 599.4, z: 0, facing: Math.PI / 2, anim: 'idle' }] },
+      { sprite: 'dexStanding', keys: [{ t: 0, x: 599.4, z: 0, facing: Math.PI / 2, anim: 'idle' }, { t: 1.6, x: 599.4, z: 0, facing: 0.63, anim: 'idle' }, { t: 3.0, x: 599.4, z: 0, facing: 1.41, anim: 'idle' }, { t: 9, x: 599.4, z: 0, facing: 1.41, anim: 'idle' }] }, // turns to follow the visitor as she walks in, then faces her seat
       { redacted: true, sprite: 'figure', show: [1.6, 4.6], keys: [
         { t: 1.6, x: 600.5, z: 1.5, facing: Math.PI, anim: 'walk' }, { t: 3.0, x: 601.3, z: 0.3, facing: -Math.PI / 2, anim: 'walk' }, { t: 3.2, x: 601.3, z: 0.3, facing: -Math.PI / 2, anim: 'idle' }, { t: 4.6, x: 601.3, z: 0.3, facing: -Math.PI / 2, anim: 'idle' },
       ] },

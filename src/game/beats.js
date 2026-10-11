@@ -12,6 +12,7 @@ export const BEATS = {
   cardHold: 2.4,          // title card hold, seconds
   mislaid: 0.6,           // pause before Juno steps out
   misoFollow: { dist: 1.5, speed: 2.6 },
+  reveal: { from: 3.2, seconds: 1.3, yaw: -Math.PI / 2 + 0.38, at: [601.3, 0.3] }, // Dex's backup: from echo second `from`, the camera swings round (over `seconds`) to Juno's front, ending just before the stinger at 4.6 s. yaw = her facing + a little, so Dex doesn't stand in front of her; at = where her ghost stands
   dark: { exposure: 0.06, lampsFrom: 0.3 }, // the opening starts almost black; station lamps fade up once the train is 30% of the way in
 };
 
@@ -93,7 +94,14 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
   async function cliffhanger() {
     locked = true;
     await dialogue.start('chip_open');
-    await new Promise((res) => echo.start('dex_backup', res));   // Dex's backup, from his eyes
+    const R = BEATS.reveal, yaw0 = cam.yaw, turn = Math.atan2(Math.sin(R.yaw - yaw0), Math.cos(R.yaw - yaw0)); // shortest way round
+    const played = new Promise((res) => echo.start('dex_backup', res));   // Dex's backup, from his eyes
+    wait(R.from).then(async () => {
+      focus = new THREE.Vector3(R.at[0], 0, R.at[1]);                 // frame the spot where Juno will appear
+      await tween(R.seconds, (u) => cam.set({ yaw: yaw0 + turn * u * u * (3 - 2 * u) }));
+    });
+    await played;
+    focus = null; cam.set({ yaw: yaw0 });                           // back to the player's view
     await wait(0.9);
     await fade.log();                                            // the red 47-minute gap
     await dialogue.start('log_open');
