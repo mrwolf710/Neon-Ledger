@@ -26,6 +26,7 @@ const H = Math.PI / 2;
 //  pan       [dx, dz] world units the focus drifts away from the subject over the shot
 //  from/to   camera yaw, pitch (degrees) and distance; the move eases between them
 //  margin    cutaway depth margin override: only things this far nearer than the subject are cut (keeps a counter in front of her solid)
+//  train     seconds into the Line 9 train's 8.5 s run to join the shot at (2.8 = it crosses the street, x 17, during the shot)
 //  card      pixel-font lines;  fx: 'echo' (seam glitch);  ui: sfx.ui kind
 //  mood      music mood at the cut (echo = heartbeat + tension, finale = fast and hard, silent = drop);  hit: boom at the cut;  riser: seconds of rising noise
 //  events    [{ t, hit, mood }] things that happen t seconds into the shot
@@ -35,7 +36,7 @@ const SHOTS = [
     card: [{ text: 'LOWMARKET. 23:40.', color: TRAILER.cyan, scale: 5 }, { text: 'THE RAIN NEVER STOPS.', color: TRAILER.white, scale: 4 }] },
   { area: 'street', subject: 'preacher', both: true, juno: { at: [-13, 1.0], face: H, walk: [-11, 0.4] }, dur: 2.8, from: { yaw: 40, pitch: 33, dist: 34 }, to: { yaw: 46, pitch: 32, dist: 26 }, hit: 'small',
     card: [{ text: 'THE CITY IS WATCHING.', color: TRAILER.red, scale: 4 }] },
-  { area: 'street', subject: 'miso', both: true, juno: { at: [9, 1.0], face: H, walk: [11.2, 2.0] }, dur: 2.4, from: { yaw: 30, pitch: 33, dist: 34 }, to: { yaw: 45, pitch: 34, dist: 27 }, hit: 'small', riser: 2.4 },
+  { area: 'street', subject: 'miso', both: true, juno: { at: [9, 1.0], face: H, walk: [11.2, 2.0] }, pan: [4, 0], dur: 3.4, from: { yaw: 30, pitch: 33, dist: 36 }, to: { yaw: 45, pitch: 34, dist: 30 }, hit: 'small', riser: 3.4, train: 2.8 },
   { area: 'sable', subject: 'mamaTeo', both: true, juno: { at: [-4.6, 0], face: H, walk: [-3, -1.2] }, dur: 3, from: { yaw: 40, pitch: 33, dist: 34 }, to: { yaw: 40, pitch: 32, dist: 28 }, margin: 2.2, hit: 'big', mood: 'finale' },
   { area: 'sable', subject: 'dex', both: true, juno: { at: [2.2, 0.2], face: H, walk: [3.2, 0.1] }, dur: 3, from: { yaw: 42, pitch: 42, dist: 14 }, to: { yaw: 44, pitch: 34, dist: 7.5 }, hit: 'small',
     card: [{ text: 'ONE DEAD CORPO.', color: TRAILER.white, scale: 4 }, { text: 'ONE MISSING MEMORY.', color: TRAILER.green, scale: 4 }] },
@@ -116,6 +117,7 @@ export function createTrailer({ cam, world, player, post, fade, cast, sfx, synth
       cam.follow(focus, true); cam.snap();
       post.setEcho(0); post.setGlitch(0);
       if (shot.ui) sfx?.ui(shot.ui);
+      if (shot.train != null) sfx?.trainNow(shot.train);
       fade.in(); // real-time fade, runs beside the shot
       if (shot.card) setTimeout(() => fade.card(shot.card, Math.max(0.8, shot.dur - 3.4), cardY()), 500);
       if (shot.end) setTimeout(() => fade.card([{ text: TRAILER.title, color: TRAILER.green, scale: 8 }, { text: TRAILER.tagline, color: TRAILER.cyan, scale: 3 }], TRAILER.endHold), (shot.dur - 2.2) * 1000); // once the camera is high and Juno is small
