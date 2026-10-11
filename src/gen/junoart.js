@@ -26,7 +26,9 @@ const DEX_FRAMES = { idle: [['', false, 0]] };
 // Animated idles (the owner's Pixellab exports): one south-facing loop of 8 frames (idle-0..7.png) plus a still per direction.
 // Other directions hold their still, so the loop only shows when the character faces the camera.
 export const CAT_ART = { base: 'sprites/cat', size: 48, pxPerUnit: 55, fps: 8, small: true, walk: 'walk', walkFps: 10, dirs: JUNO_ART.dirs }; // Miso: figure ~46 px tall facing the camera, so ~0.8 units
-export const DEX_STAND_ART = { base: 'sprites/corpo-stand', size: 48, pxPerUnit: 24, fps: 6, dirs: JUNO_ART.dirs }; // Dex standing, for his echo scenes
+// files: this set's diagonal pictures are named with north/south swapped (south-east.png shows his back), so each diagonal reads the other's file.
+export const DEX_STAND_ART = { base: 'sprites/corpo-stand', size: 48, pxPerUnit: 24, fps: 6, dirs: JUNO_ART.dirs,
+  files: { 'south-east': 'north-east', 'north-east': 'south-east', 'south-west': 'north-west', 'north-west': 'south-west' } }; // Dex standing, for his echo scenes
 // Kit (hostel): the owner's worker, one Pixellab sheet of 68 px cells: row 0 = 8 stills, rows 1-8 = the 8-frame idle loop per direction.
 export const KIT_ART = { base: 'sprites/kit', cell: 68, pxPerUnit: 24, fps: 6, foot: 11, dirs: JUNO_ART.dirs }; // foot = empty pixels under the shoes in each cell
 // The street vendor: same kind of sheet, 64 px cells, a 4-frame breathing loop.
@@ -87,7 +89,7 @@ export const loadDexStandSheet = () => loadLoopSheet(DEX_STAND_ART);
 
 async function loadLoopSheet(A) {
   const S = A.size, url = (n) => `${import.meta.env.BASE_URL}${A.base}/${n}.png`;
-  const stills = await Promise.all(A.dirs.map((d) => load(url(d))));
+  const stills = await Promise.all(A.dirs.map((d) => load(url(A.files?.[d] ?? d))));
   const loop = await Promise.all(Array.from({ length: LOOP }, (_, i) => load(url(`idle-${i}`))));
   const canvas = Object.assign(document.createElement('canvas'), { width: S * LOOP, height: S * A.dirs.length * (A.walk ? 2 : 1) });
   const ctx = canvas.getContext('2d');
