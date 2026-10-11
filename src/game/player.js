@@ -52,7 +52,7 @@ export function createPlayer(billboard, initialCollision) {
       const moving = v > PLAYER.moving;
       if (moving && !forced) { pose = null; idle = 0; } else if (!moving) idle += dt;
       if (!moving && idleOk && pose === null && idle > PLAYER.fidgetAfter) pose = 'tablet';
-      billboard.anim = moving ? (sneaking ? 'sneak' : 'walk') : (pose ?? 'idle');
+      billboard.anim = moving ? (sneaking ? 'sneak' : input.run && !goal ? 'run' : 'walk') : (pose ?? 'idle');
       billboard.fpsScale = moving ? (sneaking ? Math.min(1.2, Math.max(0.6, v / PLAYER.sneak)) : Math.min(PLAYER.runAnim, Math.max(0.6, v / PLAYER.walk))) : 1;
     },
   };

@@ -142,10 +142,10 @@ export function createBillboard(sheet, opts) {
         const eight = sheet.dirs === 8;
         const rel = THREE.MathUtils.euclideanModulo(facing - camYaw + (eight ? Math.PI / 8 : Math.PI / 4), Math.PI * 2);
         const dir = eight ? NAMES8[Math.floor(rel / (Math.PI / 4))] : ['down', 'right', 'up', 'left'][Math.floor(rel / (Math.PI / 2))];
-        const key = sheet.anims[anim] ? anim : 'idle';
+        const key = sheet.anims[anim] ? anim : anim === 'run' ? 'walk' : 'idle'; // sheets without run art walk
         const A = sheet.anims[key];
         const fps = (key === 'idle' && sheet.fps) || (key === 'walk' && sheet.walkFps) || (SPRITES.fps[key] ?? SPRITES.fps.idle);
-        const fi = Math.floor(time * fps) % A.frames, stepping = anim === 'walk' || anim === 'sneak';
+        const fi = Math.floor(time * fps) % A.frames, stepping = anim === 'walk' || anim === 'run' || anim === 'sneak';
         setFrame(sheet.animRows?.[key]?.[dir] ?? sheet.rows[dir], A.start + fi);
         if (stepping && fi !== lastStep) { lastStep = fi; if (fi % 2 === 0) api.onStep?.(fi, anim); } // footfall
         else if (!stepping) lastStep = -1;
