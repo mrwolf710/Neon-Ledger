@@ -5,13 +5,13 @@ import * as THREE from 'three';
 //   walk   = arm-swing pose (down), the same pose 1 px up, then the same upper body with the LEGS from the opposite-side pose (mirrored), down and up: no standing frames, so the stride never stops.
 //            Only the legs are mirrored: mirroring the whole figure flipped her armband and hair side every step (flicker).
 //   sneak  = the same, crouched
-//   run    = the owner's Pixellab running sheet (sprites/juno/run/sheet.png: 80 px cells, rows 1-8 = 4 frames per direction), cropped to 48 px; optional
+//   run, walk = the owner's Pixellab sheets (sprites/juno/run/sheet.png 4 frames, walk/sheet.png 6 frames: 80 px cells, rows 1-8 = one direction each), cropped to 48 px. Both optional: a missing walk sheet falls back to the pose-built walk above, a missing run sheet to walking.
 //   tablet = tablet pose, then the opposite-side pose (mirrored) so the hands seem to tap
 //   idle   = standing pose, then the same pose 1 px lower (breathing)
 export const JUNO_ART = {
   base: 'sprites/juno',
   size: 48,                  // frame size in px
-  run: 'run/sheet', runCell: 80, // run sheet path under base and its cell size
+  sheets: { run: { file: 'run/sheet', frames: 4 }, walk: { file: 'walk/sheet', frames: 6 } }, sheetCell: 80, walkFps: 8, // Pixellab animation sheets under base, and their cell size
   pxPerUnit: 22,             // her figure is ~40 px tall, so ~1.8 world units like the other characters
   dirs: ['south', 'south-east', 'east', 'north-east', 'north', 'north-west', 'west', 'south-west'], // clockwise as seen on screen, 0 = facing the camera
 };
@@ -131,9 +131,13 @@ async function loadSheet(A, FRAMES, states, preloaded) {
   const imgs = preloaded || {};
   if (!preloaded) await Promise.all(states.flatMap((st) => A.dirs.map(async (d) => { imgs[`${st}/${d}`] = await load(`${import.meta.env.BASE_URL}${A.base}/${st ? st + '/' : ''}${d}.png`); })));
 
-  const runImg = A.run ? await load(`${import.meta.env.BASE_URL}${A.base}/${A.run}.png`).catch(() => null) : null; // a missing run sheet just means she walks faster
-  const anims = Object.keys(FRAMES), cols = 4;
-  const canvas = Object.assign(document.createElement('canvas'), { width: S * cols, height: S * A.dirs.length * (anims.length + (runImg ? 1 : 0)) });
+  const extra = []; // owner animation sheets that loaded: { name, img, frames }
+  for (const [name, x] of Object.entries(A.sheets ?? {})) {
+    const img = await load(`${import.meta.env.BASE_URL}${A.base}/${x.file}.png`).catch(() => null);
+    if (img) extra.push({ name, img, frames: x.frames });
+  }
+  const anims = Object.keys(FRAMES).filter((a) => !extra.some((e) => e.name === a)), cols = Math.max(4, ...extra.map((e) => e.frames));
+  const canvas = Object.assign(document.createElement('canvas'), { width: S * cols, height: S * A.dirs.length * (anims.length + extra.length) });
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
   const animRows = {}, sheetAnims = {};
@@ -161,18 +165,18 @@ async function loadSheet(A, FRAMES, states, preloaded) {
       });
     });
   });
-  if (runImg) {
-    const o = (A.runCell - S) / 2;
-    animRows.run = {}; sheetAnims.run = { start: 0, frames: cols };
+  extra.forEach(({ name, img, frames }, ei) => {
+    const cell = A.sheetCell, o = (cell - S) / 2;
+    animRows[name] = {}; sheetAnims[name] = { start: 0, frames };
     A.dirs.forEach((dir, di) => {
-      const row = anims.length * A.dirs.length + di;
-      animRows.run[dir] = row;
-      for (let f = 0; f < cols; f++) ctx.drawImage(runImg, f * A.runCell + o, (di + 1) * A.runCell + o, S, S, f * S, row * S, S, S);
+      const row = (anims.length + ei) * A.dirs.length + di;
+      animRows[name][dir] = row;
+      for (let f = 0; f < frames; f++) ctx.drawImage(img, f * cell + o, (di + 1) * cell + o, S, S, f * S, row * S, S, S);
     });
-  }
+  });
   const texture = new THREE.CanvasTexture(canvas);
   texture.magFilter = texture.minFilter = THREE.NearestFilter;
   texture.generateMipmaps = false;
   texture.colorSpace = THREE.SRGBColorSpace;
-  return { texture, canvas, frameW: S, frameH: S, pxPerUnit: A.pxPerUnit, dirs: 8, rows: {}, animRows, anims: sheetAnims };
+  return { texture, canvas, frameW: S, frameH: S, pxPerUnit: A.pxPerUnit, dirs: 8, rows: {}, animRows, anims: sheetAnims, walkFps: A.walkFps };
 }

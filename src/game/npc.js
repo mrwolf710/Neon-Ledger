@@ -147,7 +147,7 @@ export function createBillboard(sheet, opts) {
         const fps = (key === 'idle' && sheet.fps) || (key === 'walk' && sheet.walkFps) || (SPRITES.fps[key] ?? SPRITES.fps.idle);
         const fi = Math.floor(time * fps) % A.frames, stepping = anim === 'walk' || anim === 'run' || anim === 'sneak';
         setFrame(sheet.animRows?.[key]?.[dir] ?? sheet.rows[dir], A.start + fi);
-        if (stepping && fi !== lastStep) { lastStep = fi; if (fi % 2 === 0) api.onStep?.(fi, anim); } // footfall
+        if (stepping && fi !== lastStep) { lastStep = fi; if (fi % (A.frames / 2) === 0) api.onStep?.(fi, anim); } // footfall
         else if (!stepping) lastStep = -1;
       }
 
