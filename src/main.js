@@ -354,7 +354,7 @@ renderer.setAnimationLoop((now) => {
   particles.update(dt, cam.target, cam.camera);
   cast.update(dt, cam.yaw, area.lights);
   barks.update(dt, area.id, !modal);
-  railTrain.update(sfx.trainZ());
+  railTrain.update(trailer.trainZ() ?? sfx.trainZ());
   if (modal) interactions.hide(); else interactions.update(player.position, player.facing, input.lastDevice, input.padType, cam.camera);
   fog.update(cam.camera, cam.target);
   const db = renderer.getDrawingBufferSize(bufSize);

@@ -25,6 +25,7 @@ const H = Math.PI / 2;
 //  subject   'juno' (default) or a cast id (mamaTeo, dex, kit, preacher, miso ...)
 //  both      true = frame the subject and Juno together (focus on the midpoint)
 //  pan       [dx, dz] world units the focus drifts away from the subject over the shot
+//  lift      world units the focus is raised (the elevated rail is 7 up, so the train shows)
 //  from/to   camera yaw, pitch (degrees) and distance; the move eases between them
 //  margin    cutaway depth margin override: only things this far nearer than the subject are cut (keeps a counter in front of her solid)
 //  train     seconds into the Line 9 train's 8.5 s run to join the shot at (2.8 = it crosses the street, x 17, during the shot)
@@ -37,7 +38,7 @@ const SHOTS = [
     card: [{ text: 'LOWMARKET. 23:40.', color: TRAILER.cyan, scale: 5 }, { text: 'THE RAIN NEVER STOPS.', color: TRAILER.white, scale: 4 }] },
   { area: 'street', subject: 'preacher', both: true, juno: { at: [-13, 1.0], face: H, walk: [-11, 0.4] }, dur: 2.8, from: { yaw: 40, pitch: 33, dist: 34 }, to: { yaw: 46, pitch: 32, dist: 26 }, hit: 'small',
     card: [{ text: 'THE CITY IS WATCHING.', color: TRAILER.red, scale: 4 }] },
-  { area: 'street', subject: 'miso', both: true, juno: { at: [9, 1.0], face: H, walk: [11.2, 2.0] }, pan: [4, 0], dur: 3.4, from: { yaw: 30, pitch: 33, dist: 36 }, to: { yaw: 45, pitch: 34, dist: 30 }, hit: 'small', riser: 3.4, train: 2.8 },
+  { area: 'street', subject: 'miso', both: true, juno: { at: [9, 1.0], face: H, walk: [11.2, 2.0] }, pan: [7, 0], lift: 3.5, dur: 3.4, from: { yaw: 30, pitch: 33, dist: 36 }, to: { yaw: 45, pitch: 34, dist: 30 }, hit: 'small', riser: 3.4, train: 2.8 },
   { area: 'sable', subject: 'mamaTeo', both: true, juno: { at: [-4.6, 0], face: H, walk: [-3, -1.2] }, dur: 3, from: { yaw: 40, pitch: 33, dist: 34 }, to: { yaw: 40, pitch: 32, dist: 28 }, margin: 2.2, hit: 'big', mood: 'finale' },
   { area: 'sable', subject: 'dex', both: true, juno: { at: [2.2, 0.2], face: H, walk: [3.2, 0.1] }, dur: 3, from: { yaw: 42, pitch: 42, dist: 14 }, to: { yaw: 44, pitch: 34, dist: 7.5 }, hit: 'small',
     card: [{ text: 'ONE DEAD CORPO.', color: TRAILER.white, scale: 4 }, { text: 'ONE MISSING MEMORY.', color: TRAILER.green, scale: 4 }] },
@@ -97,6 +98,7 @@ export function createTrailer({ cam, world, player, post, fade, cast, sfx, synth
     const [dx, dz] = shot.pan ?? [0, 0], p = player.position, m = shot.both ? 0.5 : 0;
     state.subject = subj;
     state.focus = focus.set(subj.x + (p.x - subj.x) * m + dx * k, subj.y, subj.z + (p.z - subj.z) * m + dz * k);
+    focus.y += shot.lift ?? 0;
     cam.set({ yaw: rad(a.yaw + (b.yaw - a.yaw) * k), pitch: rad(a.pitch + (b.pitch - a.pitch) * k), distance: a.dist + (b.dist - a.dist) * k });
   }
 
@@ -123,6 +125,7 @@ export function createTrailer({ cam, world, player, post, fade, cast, sfx, synth
       if (shot.card) setTimeout(() => fade.card(shot.card, Math.max(0.8, shot.dur - 3.4), cardY()), 500);
       if (shot.end) setTimeout(() => fade.card([{ text: TRAILER.title, color: TRAILER.green, scale: 8 }, { text: TRAILER.tagline, color: TRAILER.cyan, scale: 3 }], TRAILER.endHold), (shot.dur - 2.2) * 1000); // once the camera is high and Juno is small
       await wait(shot.dur);
+      if (shot.end) { await wait(TRAILER.endHold - 1.5); await fade.out(); } // end card, then fade to black: stop recording when the screen is black
       if (!shot.end) { fade.out(); await wait(TRAILER.gap); }
     }
     post.setEcho(0); post.setGlitch(0); Object.assign(CUTAWAY, saved);
@@ -133,6 +136,8 @@ export function createTrailer({ cam, world, player, post, fade, cast, sfx, synth
 
   return Object.assign(state, {
     start: run,
+    // Train z for the shots that ask for one (driven here, not by the sound, so it shows even if audio is off); undefined = let the game decide.
+    trainZ() { if (!state.active || shot?.train == null) return undefined; const u = (shot.train + t) / 8.5; return u < 1 ? -44 + 88 * u : null; },
     // Called each frame by main with the frame time.
     update(dt) {
       if (!state.active) return;
