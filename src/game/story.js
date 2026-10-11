@@ -31,8 +31,9 @@ export const ENTRIES = {
   alley_echo: { kind: 'echoes', title: 'The alley: the back door', text: 'A residue echo in the alley. Someone in a grey glove lets themselves out of the Sable and shuts the door behind them.', source: 'The alley' },
   kit_echo: { kind: 'echoes', title: "The worker's echo: the alley", text: "Eight seconds from the hostel worker's implant, in the alley behind the Sable.", source: "The worker's implant" },
   gloved_hand: { kind: 'facts', title: 'A grey-gloved hand on the back door', text: "In the alley echo a hand in a grey Bureau glove pulls the Sable's back door shut. Same kind of glove as the one on the ground.", source: 'Echo: the alley, 02.0' },
-  kit_outside: { kind: 'facts', title: 'The hostel worker was in the alley at 23:40', text: "The worker's own echo puts him behind the Sable, right where the gloved visitor left. The implant ID on the echo is KIT LACROIX.", source: "Echo: the worker's alley, 02.0" },
+  kit_outside: { kind: 'facts', title: 'The hostel worker was in the alley at 23:40', text: "The worker's own echo puts him behind the Sable, right where the gloved visitor left. The implant ID on the echo is scrambled; someone who knows the street might know him.", source: "Echo: the worker's alley, 02.0" },
   override_used: { kind: 'facts', title: 'The killer used an auditor override', text: 'A burned port with clean skin, a Bureau glove on the door. Only an auditor override burns an implant from outside.', source: 'Deduction board' },
+  kit_name: { kind: 'facts', title: 'The worker is Kit Lacroix', text: 'Mama Teo knows him: Kit Lacroix, night worker at the Capsule hostel. He sneaks smokes behind her kitchen.', source: 'Mama Teo' },
   kit_saw_them: { kind: 'facts', title: 'Kit Lacroix saw them leave', text: 'The worker at the capsule hostel is Kit Lacroix. His implant puts him in the alley when the gloved visitor came out of the back door.', source: 'Deduction board' },
   door_unlocked: { kind: 'facts', title: 'The back door was unlocked from outside', text: "Mama Teo locked Dex in. Later the back door, the only other way in, clicked open. No knock. City master keys open every door on Lowmarket; it is written into the leases.", source: 'Mama Teo' },
 };
@@ -50,6 +51,7 @@ export const VISITS = EDITS._visits ?? {};
 // Flags set by the end of conversations made in the editor (matched by id; the last line of the conversation gets them).
 const DONE_EFFECTS = { Capsule_after_Teo: [{ setFlag: 'kit_paid' }], Mama_Teo_Points_to_Capsule_Hotel: [{ setFlag: 'teo_pointed' }, { setFlag: 'teo_cracked' }] };
 export function conversationFor(personId, visit, ctx = {}) {
+  if (personId === 'mamaTeo' && ctx.has?.('kit_outside') && !ctx.has('kit_name')) return 'teo_worker'; // the worker's echo is in the case file: Teo names him
   if (personId === 'kit' && ctx.flag?.('kit_paid')) return ctx.flag('kit_deduced') ? 'kit' : 'kit_wait'; // once paid: a short line until the board names him, then the interview
   const fits = (r) => r.npc === personId && (r.when === 'all' || (r.when === '4' ? visit >= 4 : +r.when === visit))
     && (!r.fact || ctx.has?.(r.fact)) && (!r.talked || ctx.talked?.(r.talked));
@@ -153,10 +155,16 @@ export const CONVERSATIONS = {
   // Kit (the hostel worker). Before the board names him he only says capsule 3F is open (kit_wait). After the deduction (flag kit_named) Juno calls him Kit,
   // he claims he left capsule 3F at 23:00 ; present kit_outside (his echo) to break the story, then kit_saw_them for the coat.
   kit_wait: { start: 'a', nodes: { a: { speaker: 'kit', text: 'Capsule 3F is open, like I said. Come back when you know something worth another 30 credits.', end: true } } },
+  // Mama Teo names the worker from the alley echo (the only way Juno learns his name; sets kit_named so he is called Kit from here on).
+  teo_worker: { start: 'a', nodes: {
+    a: { speaker: 'juno', text: 'The worker at the capsule hostel was out in the alley behind your place at 23:40. Who is he?', next: 'b' },
+    b: { speaker: 'mamaTeo', text: "Kit. Kit Lacroix. Nights at the Capsule hostel since spring. He thinks I don't see him smoking behind my kitchen.", next: 'c' },
+    c: { speaker: 'mamaTeo', text: 'Talks too much, that boy. Go see him. He is easy to find, he never leaves the front desk.', effects: [{ addFact: 'kit_name' }, { setFlag: 'kit_named' }], end: true },
+  } },
   kit: {
     start: [{ if: { flag: 'kit_coat' }, node: 'done' }, { if: { flag: 'kit_broken' }, node: 'after' }, { if: { flag: 'kit_met' }, node: 'again' }, { node: 'hello' }],
     nodes: {
-      hello: { speaker: 'juno', text: "Kit Lacroix. That is the name on the implant in the alley echo.", effects: [{ addPerson: 'kit' }, { setFlag: 'kit_met' }], next: 'hello2' },
+      hello: { speaker: 'juno', text: "Kit Lacroix. Mama Teo says you were the one out behind her kitchen.", effects: [{ addPerson: 'kit' }, { setFlag: 'kit_met' }], next: 'hello2' },
       hello2: { speaker: 'kit', text: 'Keep your voice down! I do not know what echo you mean. I was up in capsule 3F with a leaking pipe, done by eleven, then straight to my bunk.',
         next: 'hello3' },
       hello3: { speaker: 'juno', text: 'Eleven. Sure.', end: true },
@@ -343,7 +351,7 @@ export const BOARD = {
       line: "(A port burned from outside, a memory someone edited. Whoever did this can rewrite what an implant saw. That's auditor override work. Bureau grey.)", effects: [{ addFact: 'override_used' }] },
     { id: 'log_faked', needs: ['door_log', 'gloved_hand'], result: 'log_faked',
       line: "(The log says nobody left. The gloved hand says otherwise. Somebody made it lie.)", effects: [{ addFact: 'log_faked' }] },
-    { id: 'kit_saw_them', needs: ['kit_outside', 'gloved_hand'], result: 'kit_saw_them',
-      line: "(That implant ID is Kit Lacroix. He was in the alley when the gloved hand came out, and he told me he was in his bunk by eleven. Kit saw them leave.)", effects: [{ addFact: 'kit_saw_them' }, { setFlag: 'kit_deduced' }, { setFlag: 'kit_named' }] },
+    { id: 'kit_saw_them', needs: ['kit_outside', 'gloved_hand', 'kit_name'], result: 'kit_saw_them',
+      line: "(The worker is Kit Lacroix, Mama Teo said so. He was in the alley when the gloved hand came out, and he told me he was in his bunk by eleven. Kit saw them leave.)", effects: [{ addFact: 'kit_saw_them' }, { setFlag: 'kit_deduced' }, { setFlag: 'kit_named' }] },
   ],
 };

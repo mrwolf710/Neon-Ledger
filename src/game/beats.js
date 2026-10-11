@@ -22,14 +22,14 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
   const flag = (n) => caseFile.hasFlag(n);
   let locked = false, focus = null, lastStep = '', ending = false, finale = false;
   const beatTimes = [0, 0, 0, 0, 0, 0, 0]; // seconds spent per beat (debug panel)
-  const STEP_BEAT = { down: 1, sable: 2, back: 3, examine: 3, echo: 4, teo: 5, deduce: 5, teo2: 5, kit: 5, capsule: 5, alley: 5, kitecho: 5, board2: 6, kit2: 6, kitbreak: 6, press: 6, chip: 7 };
+  const STEP_BEAT = { down: 1, sable: 2, back: 3, examine: 3, echo: 4, teo: 5, deduce: 5, teo2: 5, kit: 5, capsule: 5, alley: 5, kitecho: 5, teo3: 5, board2: 6, kit2: 6, kitbreak: 6, press: 6, chip: 7 };
   // Debug 'skip to beat N': the flags and case file entries a player would hold when beat N starts (cumulative), then jump there.
   const SKIP = {
     2: { flags: ['visited_street'], to: 'street' },
     3: { flags: ['visited_sable'], to: 'sable' },
     4: { flags: ['seen_backroom', 'ex_body', 'ex_port', 'ex_cups', 'ex_terminal', 'ex_lamp'], add: ['burned_port', 'door_log'], to: 'sable' },
     5: { add: ['teo_back_room', 'two_voices', 'echo_seam'], to: 'sable' },
-    6: { flags: ['teo_met', 'teo_cracked', 'teo_pointed', 'key_deduced', 'teo_asked_door', 'ex_glove', 'kit_paid', 'ex_capsule'], add: ['mamaTeo', 'door_unlocked', 'someone_had_key', 'alley_echo', 'gloved_hand', 'kit_echo', 'kit_outside'], to: 'car' },
+    6: { flags: ['teo_met', 'teo_cracked', 'teo_pointed', 'key_deduced', 'teo_asked_door', 'ex_glove', 'kit_paid', 'ex_capsule', 'kit_named'], add: ['mamaTeo', 'door_unlocked', 'someone_had_key', 'alley_echo', 'gloved_hand', 'kit_echo', 'kit_outside', 'kit_name'], to: 'car' },
     7: { flags: ['kit_deduced', 'kit_named', 'kit_met', 'kit_broken', 'kit_coat'], add: ['kit', 'override_used', 'log_faked', 'kit_saw_them'], to: 'car' },
   };
 
@@ -186,6 +186,7 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
     { id: 'capsule', text: "Search Dex's capsule (3F)", area: 'hostel', pos: () => spotXZ('hostel', 'capsule3f'), done: () => flag('ex_capsule') },
     { id: 'alley', text: 'Scan the alley behind the Sable (F)', area: 'alley', pos: () => spotXZ('alley', 'echo'), done: () => caseFile.has('alley_echo') },
     { id: 'kitecho', text: "Scan the alley again for the worker's echo (F)", area: 'alley', pos: () => spotXZ('alley', 'echo'), done: () => caseFile.has('kit_echo') },
+    { id: 'teo3', text: 'Ask Mama Teo who the worker in the alley is', area: 'sable', pos: () => spotXZ('sable', 'teo'), done: () => caseFile.has('kit_name') },
     { id: 'board2', text: 'Link the evidence on the board (B): who was in the alley?', get area() { return world.current.id; }, done: () => flag('kit_deduced') },
     { id: 'kit2', text: 'Go back to the capsule hostel and talk to the worker', area: 'hostel', pos: () => spotXZ('hostel', 'kit'), done: () => flag('kit_met') },
     { id: 'kitbreak', text: 'Present the alley echo to Kit', area: 'hostel', pos: () => spotXZ('hostel', 'kit'), done: () => flag('kit_broken') },
