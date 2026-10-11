@@ -4,7 +4,7 @@ import { input } from './core/input.js';
 import { createCamera, CAMERA } from './render/camera.js';
 import { createDebugPanel, showSprites } from './debug/panel.js';
 import { getSheets } from './gen/sprites.js';
-import { loadJunoSheet, loadTeoSheet, loadPriestSheet, loadDexSheet, loadCatSheet, loadDexStandSheet, loadKitSheet, loadVendorSheet, loadWalkerSheet, WALKER2_ART, loadHaleSheet } from './gen/junoart.js';
+import { loadJunoSheet, loadTeoSheet, loadPriestSheet, loadDexSheet, loadCatSheet, loadDexStandSheet, loadKitSheet, loadVendorSheet, loadWalkerSheet, WALKER2_ART, WALKER3_ART, loadHaleSheet } from './gen/junoart.js';
 import { createCast } from './game/npc.js';
 import './ui/styles.css';
 import { createTouchUI } from './ui/touch.js';
@@ -70,6 +70,7 @@ try { getSheets().dex = await loadDexSheet(); } catch (e) { console.warn('Dex ar
 try { getSheets().vendor = await loadVendorSheet(); } catch (e) { console.warn('Vendor art not loaded, using the generated sprite:', e.message); }
 try { getSheets().walkerA = await loadWalkerSheet(); } catch (e) { console.warn('Walker art not loaded, using the generated sprite:', e.message); }
 try { getSheets().walkerB = await loadWalkerSheet(WALKER2_ART); } catch (e) { console.warn('Walker 2 art not loaded, using the generated sprite:', e.message); }
+try { getSheets().walkerC = await loadWalkerSheet(WALKER3_ART); } catch (e) { console.warn('Walker 3 art not loaded, using the generated sprite:', e.message); }
 try { getSheets().kit = await loadKitSheet(); } catch (e) { console.warn('Kit art not loaded, using the generated sprite:', e.message); }
 try { getSheets().miso = await loadCatSheet(); } catch (e) { console.warn('Cat art not loaded, using the generated sprite:', e.message); }
 try { getSheets().dexStanding = await loadDexStandSheet(); } catch (e) { console.warn('Standing Dex art not loaded, using the seated sprite:', e.message); }
