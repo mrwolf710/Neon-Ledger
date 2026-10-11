@@ -55,7 +55,9 @@ export function createFade() {
       p.remove();
     },
     // lines: [{ text, color, scale }]. Fades in, holds, fades out; resolves when gone.
-    async card(lines, hold = 3) {
+    async card(lines, hold = 3, bottom = 0) {
+      // bottom > 0: park the card at the bottom of the screen (px above the edge) so it never covers the action (trailer)
+      card.style.justifyContent = bottom ? 'flex-end' : 'center'; card.style.paddingBottom = bottom ? `${bottom}px` : '0';
       // A line with parts: [a, b] is a row of two words with a clear gap in the middle, centred on cardY (Juno shows through it); other lines stack below.
       const [first, ...rest] = lines;
       const els = [];

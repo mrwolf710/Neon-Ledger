@@ -121,7 +121,7 @@ beats.setCamera(cam);
 beats.register();
 let phaseId = '', sunsetT = null, lastAreaId = null, cameFromSable = false;
 const trailerOn = new URLSearchParams(location.search).has('trailer'); // ?trailer plays a scripted teaser (src/ui/trailer.js)
-const trailer = createTrailer({ cam, world, player, post, fade, hud });
+const trailer = createTrailer({ cam, world, player, post, fade, cast, sfx });
 const startParam = new URLSearchParams(location.search).get('start'); // ?start=sable jumps straight to an area (testing)
 // Save slots in the browser (core/saves.js), each: where Juno is, the case file, the board, the clock, who she has talked to and Miso.
 function snapshotGame() {
@@ -156,7 +156,7 @@ function loadGame(s) {
   hud.toast('Game loaded');
 }
 title.started.then(() => {
-  if (trailerOn) { beats.skipOpen(); trailer.start(); return; }
+  if (trailerOn) { beats.skipOpen(); trailer.start(Math.max(0, (parseInt(new URLSearchParams(location.search).get('trailer')) || 1) - 1)); return; }
   if (title.continuing && saves.latest()) { beats.skipOpen(); loadGame(saves.latest().data); return; }
   if (startParam && world.areas[startParam]) {
     beats.skipOpen();
@@ -357,7 +357,7 @@ renderer.setAnimationLoop((now) => {
   if (modal) interactions.hide(); else interactions.update(player.position, player.facing, input.lastDevice, input.padType, cam.camera);
   fog.update(cam.camera, cam.target);
   const db = renderer.getDrawingBufferSize(bufSize);
-  fog.cutaway(cam.camera, player.position, db.x, db.y);
+  fog.cutaway(cam.camera, trailer.subject ?? player.position, db.x, db.y); // the trailer centres it on whoever it is filming
   lights.focus(cam.target);
   lights.update(dt, cam.target);
   renderer.info.reset();
