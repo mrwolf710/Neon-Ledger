@@ -156,7 +156,7 @@ function loadGame(s) {
   hud.toast('Game loaded');
 }
 title.started.then(() => {
-  if (trailerOn) { beats.skipOpen(); trailer.start(Math.max(0, (parseInt(new URLSearchParams(location.search).get('trailer')) || 1) - 1)); return; }
+  if (trailerOn) { beats.skipOpen(); const q = new URLSearchParams(location.search); setTimeout(() => trailer.start(Math.max(0, (parseInt(q.get('trailer')) || 1) - 1)), (parseFloat(q.get('delay')) || 8) * 1000); return; } // 8 s head start (press a key, then start recording); ?delay=N changes it
   if (title.continuing && saves.latest()) { beats.skipOpen(); loadGame(saves.latest().data); return; }
   if (startParam && world.areas[startParam]) {
     beats.skipOpen();
