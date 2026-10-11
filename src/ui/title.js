@@ -23,7 +23,7 @@ export function createTitle(onStart, saved = false) {
   };
   const sub = word(touch ? 'TAP TO START' : 'CLICK OR PRESS ANY KEY OR BUTTON', T.sub, Math.max(2, T.scale / 3));
   el.append(word('NEON ECHOES', T.color, T.scale), sub);
-  if (saved) { const c = word(touch ? 'TAP HERE TO CONTINUE' : 'PRESS C (PAD: Y) TO CONTINUE YOUR SAVED GAME', T.color, Math.max(2, T.scale / (touch ? 3 : 4))); c.dataset.cont = '';
+  if (saved) { const c = word(touch ? 'TAP HERE TO CONTINUE' : 'PRESS C OR PAD Y TO CONTINUE YOUR SAVED GAME', T.color, Math.max(2, T.scale / (touch ? 3 : 4))); c.dataset.cont = '';
     if (touch) c.style.cssText += ';padding:18px 24px;margin:-18px -24px;border:1px solid rgba(255,255,255,.5)'; // a big, boxed tap target
     el.append(c); }
   document.body.appendChild(el);
