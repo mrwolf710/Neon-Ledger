@@ -28,7 +28,7 @@ const H = Math.PI / 2;
 //  lift      world units the focus is raised (the elevated rail is 7 up, so the train shows)
 //  from/to   camera yaw, pitch (degrees) and distance; the move eases between them
 //  margin    cutaway depth margin override: only things this far nearer than the subject are cut (keeps a counter in front of her solid)
-//  train     seconds into the Line 9 train's 8.5 s run to join the shot at (2.8 = it crosses the street, x 17, during the shot)
+//  train     seconds into the Line 9 train's 8.5 s run to join the shot at (0 = from the start; it crosses the street at x 17 about 4 s in, during the final zoom-out)
 //  card      pixel-font lines;  fx: 'echo' (seam glitch);  ui: sfx.ui kind
 //  mood      music mood at the cut (echo = heartbeat + tension, finale = fast and hard, silent = drop);  hit: boom at the cut;  riser: seconds of rising noise
 //  events    [{ t, hit, mood }] things that happen t seconds into the shot
@@ -38,7 +38,7 @@ const SHOTS = [
     card: [{ text: 'LOWMARKET. 23:40.', color: TRAILER.cyan, scale: 5 }, { text: 'THE RAIN NEVER STOPS.', color: TRAILER.white, scale: 4 }] },
   { area: 'street', subject: 'preacher', both: true, juno: { at: [-13, 1.0], face: H, walk: [-11, 0.4] }, dur: 2.8, from: { yaw: 40, pitch: 33, dist: 34 }, to: { yaw: 46, pitch: 32, dist: 26 }, hit: 'small',
     card: [{ text: 'THE CITY IS WATCHING.', color: TRAILER.red, scale: 4 }] },
-  { area: 'street', subject: 'miso', both: true, juno: { at: [9, 1.0], face: H, walk: [11.2, 2.0] }, pan: [7, 0], lift: 3.5, dur: 3.4, from: { yaw: 30, pitch: 33, dist: 48 }, to: { yaw: 40, pitch: 34, dist: 44 }, hit: 'small', riser: 3.4, train: 2.8 },
+  { area: 'street', subject: 'miso', both: true, juno: { at: [9, 1.0], face: H, walk: [11.2, 2.0] }, dur: 2.4, from: { yaw: 30, pitch: 33, dist: 34 }, to: { yaw: 45, pitch: 34, dist: 27 }, hit: 'small', riser: 2.4 },
   { area: 'sable', subject: 'mamaTeo', both: true, juno: { at: [-4.6, 0], face: H, walk: [-3, -1.2] }, dur: 3, from: { yaw: 40, pitch: 33, dist: 34 }, to: { yaw: 40, pitch: 32, dist: 28 }, margin: 2.2, hit: 'big', mood: 'finale' },
   { area: 'sable', subject: 'dex', both: true, juno: { at: [2.2, 0.2], face: H, walk: [3.2, 0.1] }, dur: 3, from: { yaw: 42, pitch: 42, dist: 14 }, to: { yaw: 44, pitch: 34, dist: 7.5 }, hit: 'small',
     card: [{ text: 'ONE DEAD CORPO.', color: TRAILER.white, scale: 4 }, { text: 'ONE MISSING MEMORY.', color: TRAILER.green, scale: 4 }] },
@@ -47,7 +47,7 @@ const SHOTS = [
   { area: 'alley', juno: { at: [0, -1.5], face: 0, walk: [0, 2.6] }, dur: 2.6, from: { yaw: 22, pitch: 36, dist: 12 }, to: { yaw: 38, pitch: 40, dist: 8 }, hit: 'small' },
   { area: 'hostel', subject: 'kit', both: true, juno: { at: [-1.4, -0.8], face: H, walk: [0, 0.2] }, dur: 2.4, from: { yaw: 48, pitch: 38, dist: 14 }, to: { yaw: 40, pitch: 34, dist: 10 }, hit: 'small', ui: 'glitch' },
   { area: 'car', juno: { at: [0.4, 0], face: H }, dur: 2.2, from: { yaw: 50, pitch: 36, dist: 9 }, to: { yaw: 38, pitch: 32, dist: 6 }, hit: 'small' },
-  { area: 'street', juno: { at: [-9, 1.3], face: H, walk: [6, 1.3] }, dur: 8.5, from: { yaw: 55, pitch: 28, dist: 28 }, to: { yaw: 60, pitch: 44, dist: 52 }, end: true, hit: 'small', riser: 3,
+  { area: 'street', juno: { at: [-9, 1.3], face: H, walk: [6, 1.3] }, dur: 8.5, from: { yaw: 55, pitch: 28, dist: 28 }, to: { yaw: 60, pitch: 44, dist: 52 }, end: true, train: 0, hit: 'small', riser: 3,
     events: [{ t: 1.6, mood: 'silent' }, { t: 3.1, hit: 'big', mood: 'finale' }] },
 ];
 
