@@ -50,6 +50,9 @@ export function createCamera(aspect) {
       goal.target.set(p.x, p.y + CAMERA.followHeight, p.z);
       if (snap) target.copy(goal.target);
     },
+    // Scripted shots (trailer): set the view goals directly (radians); snap() makes the view jump there.
+    set({ yaw, pitch, distance }) { goal.yaw = yaw; goal.pitch = pitch; goal.distance = distance; },
+    snap() { target.copy(goal.target); yaw = goal.yaw; pitch = goal.pitch; distance = goal.distance; },
     // dir: -1 / +1 per second (Q/E held).
     rotate(dir, dt) { goal.yaw += dir * d2r(CAMERA.rotateSpeed) * dt; },
     // dir -1 looks up (flatter), +1 looks down (steeper).

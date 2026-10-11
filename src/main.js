@@ -21,6 +21,7 @@ import { synth } from './audio/synth.js';
 import { createSfx, surfaceAt } from './audio/sfx.js';
 import { createMusic } from './audio/music.js';
 import { createTitle } from './ui/title.js';
+import { createTrailer } from './ui/trailer.js';
 import { createMenu } from './ui/menu.js';
 import { BEATS } from './game/beats.js';
 import { createTutorial } from './ui/tutorial.js';
@@ -115,6 +116,8 @@ const beats = createBeats({ world, cast, caseFile, dialogue, hud, interactions, 
 beats.setCamera(cam);
 beats.register();
 let phaseId = '', sunsetT = null, lastAreaId = null, cameFromSable = false;
+const trailerOn = new URLSearchParams(location.search).has('trailer'); // ?trailer plays a scripted teaser (src/ui/trailer.js)
+const trailer = createTrailer({ cam, world, player, post, fade, hud });
 const startParam = new URLSearchParams(location.search).get('start'); // ?start=sable jumps straight to an area (testing)
 // Save slots in the browser (core/saves.js), each: where Juno is, the case file, the board, the clock, who she has talked to and Miso.
 function snapshotGame() {
@@ -149,6 +152,7 @@ function loadGame(s) {
   hud.toast('Game loaded');
 }
 title.started.then(() => {
+  if (trailerOn) { beats.skipOpen(); trailer.start(); return; }
   if (title.continuing && saves.latest()) { beats.skipOpen(); loadGame(saves.latest().data); return; }
   if (startParam && world.areas[startParam]) {
     beats.skipOpen();
@@ -274,9 +278,9 @@ renderer.setAnimationLoop((now) => {
   // First time Juno holds 3 clues inside the Sable: explain the board.
   if (world.current.id === 'sable' && !dialogue.active && !tutorial.isOpen && !caseFile.hasFlag('tut_board') && caseFile.facts().length >= 3) { caseFile.setFlag('tut_board'); tutorial.open('board'); }
   if (echo.active && !tutorial.isOpen && !caseFile.hasFlag('tut_echo')) { caseFile.setFlag('tut_echo'); tutorial.open('echo'); } // first echo: explain it (the echo waits)
-  const modal = tutorial.isOpen || tutWasOpen || !title.done || beats.locked || world.busy || dialogue.active || caseFile.isOpen || echo.active || board.isOpen || menu.isOpen || menuWasOpen;
+  const modal = trailer.active || tutorial.isOpen || tutWasOpen || !title.done || beats.locked || world.busy || dialogue.active || caseFile.isOpen || echo.active || board.isOpen || menu.isOpen || menuWasOpen;
   if (modal) { input.click = null; input.moveX = input.moveY = 0; }
-  if (!menuWasOpen && !tutorial.isOpen && !tutWasOpen && title.done && !beats.locked && !world.busy && !dialogue.active && !caseFile.isOpen && !echo.active && !board.isOpen && input.pressed('pause')) menu.open();
+  if (!trailer.active && !menuWasOpen && !tutorial.isOpen && !tutWasOpen && title.done && !beats.locked && !world.busy && !dialogue.active && !caseFile.isOpen && !echo.active && !board.isOpen && input.pressed('pause')) menu.open();
   cam.tilt((input.held('tiltDown') ? 1 : 0) - (input.held('tiltUp') ? 1 : 0), dt);
 
   // Click: a person/object walks there then interacts; the ground walks there.
@@ -308,7 +312,8 @@ renderer.setAnimationLoop((now) => {
   }
   if (!echoWas && !echo.active) echo.update(dt, input, cam.yaw, area.lights, 0, player.position); // markers + fade-out while idle
   beats.update(dt);
-  const focus = beats.focus ?? player.position; // cutscenes can point the camera elsewhere
+  trailer.update(dt);
+  const focus = trailer.focus ?? beats.focus ?? player.position; // cutscenes can point the camera elsewhere
   cam.follow(focus);
   cam.update(dt);
 
