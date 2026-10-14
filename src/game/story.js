@@ -323,7 +323,14 @@ export const CONVERSATIONS = {
       { text: "It's not for sale.", next: 'no', effects: [{ setFlag: 'refused_deal' }] }, { text: "I'll think about it.", next: 'maybe' }] },
     no: { speaker: 'juno', text: "It's the only true thing I have. It stays with me.", next: 'g' },
     maybe: { speaker: 'juno', text: 'Give me a minute.', next: 'g' },
-    g: { speaker: 'fixer', text: "You don't have one. Three Bureau auditors are waiting outside. Hand it over, and I can make them go away.", end: true },
+    g: { speaker: 'fixer', text: "You don't have one. Three Bureau auditors are waiting outside. Hand it over, and I can make them go away.", next: 'h' },
+    h: { speaker: 'fixer', text: "I'll be nearby, Ms. Vale. Walk out that door and you will see I was not lying. Then you will know who your friends are.", end: true },
+  } },
+  // After the fixer has gone: Juno to herself, then she makes up her mind about Hale.
+  after_fixer: { start: 'a', nodes: {
+    a: { speaker: 'juno', text: '(Calm, polite, and he knew exactly where I would be. He has been a step ahead of me all night.)', next: 'b' },
+    b: { speaker: 'juno', text: "(He wants this echo as badly as the Bureau does. Which means I can't trust either of them.)", next: 'c' },
+    c: { speaker: 'juno', text: "Enough running. Hale, I'm ready to talk.", end: true },
   } },
   auditors: { start: 'a', nodes: {
     a: { speaker: 'aud1', text: 'Juno Vale. Bureau Audit Division. You are coming with us.', next: 'b' },
@@ -331,7 +338,8 @@ export const CONVERSATIONS = {
     c: { speaker: 'aud1', text: "Director Hale's. She said you'd ask.", next: 'd' },
     d: { speaker: 'aud2', text: 'The echo. And your badge. Now.', next: 'e' },
     e: { speaker: 'juno', text: '(Three auditors in front, a suit behind me, and a hole in my memory where the truth should be.)', next: 'f' },
-    f: { speaker: 'aud1', text: 'Quietly, Vale. Please.', end: true },
+    f: { speaker: 'aud1', text: 'Quietly, Vale. Please.', next: 'g' },
+    g: { speaker: 'juno', text: "This is what she wanted. Fine. Let's go.", end: true },   // Juno has the last word
   } },
   dealer_locked: { start: 'a', nodes: { a: { speaker: 'juno', text: "(Shuttered. Whatever is in there, I don't know enough to knock yet.)", end: true } } },
   dealer_next: { start: 'a', nodes: { a: { speaker: 'juno', text: "(The dealer's shop. Dex's echo is in there. Whoever else wants it is closing in.)", end: true } } },

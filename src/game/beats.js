@@ -4,6 +4,7 @@ import { EXAMINABLES, TALK, FALLBACK, ENTRIES, BOARD, conversationFor } from './
 // The beat manager: the cold open cutscene, the objective line / minimap mark, and the things you can interact with.
 // Beats 1-3 live here (Stage 9A); later beats add steps to STEPS and conversations to story.js.
 export const BEATS = {
+  fixerLeave: 2.0,     // seconds the fixer takes to walk out of the shop
   driveSeconds: 6.5,   // chapter 1 ending: how long the drive to the Exchange sounds (the CHAPTER 2 card is held to match)
   overrideSeconds: 2.4, // the red 'System override' banner before Hale's forced call at the end of chapter 1
   finaleSeconds: 10, finaleGuard: 1.5, // end of chapter 1: how long the fast music plays before it moves on by itself; seconds before a tap can skip it
@@ -181,15 +182,31 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     j.facing = Math.atan2(fixer.position.x - player.position.x, fixer.position.z - player.position.z);
     await wait(0.8);
     await dialogue.start('fixer_deal');
+    // He has said his piece: he walks out through the door and is gone, and Juno talks to herself about him and says she is ready for Hale.
+    const door = world.spot('dealer', 'door');
+    fixer.anim = 'walk'; fixer.facing = Math.atan2(door.x - fixer.position.x, door.z - fixer.position.z);
+    const f0 = { x: fixer.position.x, z: fixer.position.z };
+    await tween(BEATS.fixerLeave, (u) => { fixer.position.x = f0.x + (door.x - f0.x) * u; fixer.position.z = f0.z + (door.z - f0.z) * u; });
+    fixer.anim = 'idle'; fixer.away = true; cast.apply();
+    await wait(0.6);
+    await dialogue.start('after_fixer');
+    caseFile.setFlag('fixer_done');
+    locked = false;                                              // the player walks out of the shop; the dealer-out door runs outsideScene
+  }
+
+  // Back outside the shop: the auditors are waiting. The serious music (the one from the end of chapter 1) plays from here on.
+  async function outsideScene() {
+    locked = true;
     await fade.out();
-    fixer.away = true;
-    const sp = world.spot('exchange', 'start'), door = world.exits.find((e) => e.id === 'dealer-out').spawn;
-    world.jump('exchange', door);                                // out of the shop, while the screen is black
+    finale = true;
+    const out = world.exits.find((e) => e.id === 'dealer-out').spawn;
+    world.jump('exchange', out);                                 // out of the shop, while the screen is black
     for (const id of ['aud1', 'aud2', 'aud3']) cast.byId[id].away = false;
     cast.apply();
     await fade.in();
     await wait(0.8);
     await dialogue.start('auditors');
+    caseFile.setFlag('auditors_done');
     await fade.out();
     finale = true;                                               // the end of the chapter: fast, hard music, a card that waits for the player
     fade.card([{ text: 'END OF CHAPTER 2', color: '#ffffff', scale: 5 }, { text: 'CHAPTER 3: THE BUREAU - COMING SOON', color: '#ff8a1f', scale: 3 }, { text: 'TAP OR PRESS ANY BUTTON', color: '#8a8aa8', scale: 2 }], Infinity);
@@ -202,7 +219,7 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
   function register() {
     for (const e of world.exits) {
       interactions.add({ id: e.id, area: e.area, position: new THREE.Vector3(e.at[0], 0, e.at[1]), height: 1.2, verb: e.verb,
-        onInteract: () => { if (e.id === 'dealer-door' && !flag('dealer_open')) dialogue.start('dealer_locked'); else world.enter(e.to, e.spawn); } }); // the dealer's door stays shut until the locker deduction
+        onInteract: () => { if (e.id === 'dealer-door' && !flag('dealer_open')) dialogue.start('dealer_locked'); else if (e.id === 'dealer-out' && flag('fixer_done') && !flag('auditors_done')) { if (!locked) outsideScene(); } else world.enter(e.to, e.spawn); } }); // the dealer's door stays shut until the locker deduction
     }
     for (const id of ['fixer', 'aud1', 'aud2', 'aud3']) cast.byId[id].away = true; // scripted people appear only in dealerScene
     for (const x of EXAMINABLES) {
@@ -283,6 +300,7 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     { id: 'exchange', text: "Ask around the Echo Exchange about Dex's echo", area: 'exchange', done: () => flag('dealer_open') },
     { id: 'dealer', text: "Go into the implant dealer's shop", area: 'exchange', pos: () => spotXZ('exchange', 'dealerDoor'), done: () => flag('visited_dealer') },
     { id: 'locker', text: "Show the dealer Dex's receipt, then open Locker 9", area: 'dealer', pos: () => spotXZ('dealer', flag('locker_ok') ? 'locker' : 'dealer'), done: () => flag('locker_done') },
+    { id: 'out', text: 'Leave the shop', area: 'dealer', pos: () => spotXZ('dealer', 'door'), done: () => flag('auditors_done') },
   ];
   function markFor(step) {
     const here = world.current.id;
@@ -302,7 +320,7 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     get beatNo() { return STEP_BEAT[STEPS.find((s) => !s.done())?.id] ?? 7; },
     beatTimes,
     cliffhanger, // also for the ?hooks test driver
-    dealerScene, // debug panel: play the chapter 2 ending
+    dealerScene, outsideScene, // debug panel: play the chapter 2 ending
     // Debug. n = 2-7: start of chapter 1 beat n, with every clue Juno would hold by then. 8: Chapter 2 start (all chapter 1 clues). 9: Exchange with all six vendor clues.
     // 10: Exchange with every chapter 2 deduction done (dealer door open).
     skipTo(n) {
