@@ -33,8 +33,41 @@ Brush-off booths (suggestions): noodle cart, cheap jewellery, fake-ID printer, s
 ## Finale
 Three auditors take Juno in. Cut to Bureau HQ and Hale.
 
+
+## Clue logic (agreed with the owner)
+Rules: every vendor gives their clue the first time you talk to them (no flags, no prerequisites, any order); each clue is used in exactly one ring pair (the ring spends clues); every conclusion follows from its two inputs alone; vendors never speak as if they know what another vendor said and do not point to each other (the owner chose: let the player explore).
+
+| Clue | Vendor | Text |
+|---|---|---|
+| F1 | Echo broker | Dex came to sell an echo; refused as "too hot", Dex took it back. |
+| F2 | Hot-sauce cook | Dex dropped a receipt here: "Locker 9, paid through the month", stamped with the implant dealer's mark. |
+| F3 | Fortune-teller | A man in a dark suit pays well for anything about Dex's visitors tonight, "especially Bureau". |
+| F4 | Cable seller | Dex shouted at the man in the dark suit: "You're too late. It's somewhere you can't buy it." |
+| F5 | Parts scrapper | The implant dealer rents lockers: spare implants kept in the shop, readable only on the dealer's reader. |
+| F6 | Umbrella seller | A woman with a Bureau badge went into the Sable about 23:10 and left about 23:57. |
+
+Deduction ring (pairs; 6 clues + 4 conclusions = 10 cards):
+- F1 + F4 -> **C1 Dex hid the echo before he died.**
+- F2 + F5 -> **C3 Dex rented a locker at the implant dealer's.**
+- C1 + C3 -> **C4 The echo is in a locker at the dealer's shop.** (required; unlocks the dealer's door, Juno says "The dealer.")
+- F3 + F6 -> **C5 The fixer is hunting the Bureau woman, and that is me.** (optional; the fixer in the store then says he knows it was her)
+
+Required: C1, C3, C4 (broker, cook, cable seller, scrapper). Optional: C5. The dealer's door is locked until C4.
+
+## Car transition (scripted scene, owner approved the approach)
+Chapter 1 ends on Hale's question. Chapter 2 opens in the car:
+- Hale (comms): "Juno. Where were you tonight between 23:10 and 23:57?"
+- Juno (thought): "(That was me in that room. I don't remember a minute of it.)"
+- Juno, to Hale: "Still working it. I'll bring you something real."
+- Hale: "Come in. Now. Bring the chip."
+- Juno: "Not yet. If I walk into the Bureau with a dead broker and a hole in my head, I won't walk out. I need to know what Dex was carrying first."
+- Hale: "Juno--" (she cuts the call)
+- Juno (thought): "(Brokers all end up in one place. The Echo Exchange. Somebody there knows what he was selling.)" Cut to the square.
+
+## Layout
+Booths are deliberately uneven (widths, angles, three styles: awning, kiosk, cart; no grid). See EXCHANGE in `src/world/areas.js`.
+
 ## Open questions
-- Does the fixer know she is the woman the umbrella seller described?
-- What is the deduction ring used for in this chapter (which pairs)?
+- Does the fixer know she is the woman? (He says so in the store if she made C5; otherwise he implies it.)
 - Vendor names, voices and sprite list; dealer name.
 - Does Juno take the deal, refuse, or is it interrupted by the auditors?
