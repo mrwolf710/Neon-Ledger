@@ -256,27 +256,27 @@ function hostel(M) {
 }
 
 // ---------- Chapter 2: the implant dealer's shop (the only interior of the Exchange). Locker 9 is Dex's. Spots: door, dealer (behind the counter), locker (in front of Locker 9 and its reader), fixer (where the suit steps in). ----------
-const DEALER = { lockerCols: 6, lockerRows: 3, lockerStep: 1.4, dexLocker: 9 }; // locker n counts left to right, bottom row first
+const DEALER = { numbers: [7, 8, 9, 10, 11], dexLocker: 9, step: 1.75 }; // five lockers along the back wall, each numbered above it; Locker 9 (Dex's) is the middle one
 function dealer(M) {
   const b = begin('dealer'), PM = propMats(M);
   floor(b, M.walls[1], -5, -3.5, 5, 3.5);
   wallX(b, M, -3.5 - T / 2, -5 - T, 5 + T); wallX(b, M, 3.5 + T / 2, -5 - T, 5 + T, [[-0.9, 0.9]]);
   wallZ(b, M, -5 - T / 2, -3.5, 3.5); wallZ(b, M, 5 + T / 2, -3.5, 3.5);
   doorMat(b, M, 0, 3.1, 1.4, 0.6);
-  // The locker wall: three rows of six steel doors; Locker 9 glows amber and carries its number.
-  for (let r = 0; r < DEALER.lockerRows; r++) for (let c = 0; c < DEALER.lockerCols; c++) {
-    const n = r * DEALER.lockerCols + c + 1, x = (c - (DEALER.lockerCols - 1) / 2) * DEALER.lockerStep, y = 0.5 + r * 0.9, mine = n === DEALER.dexLocker;
-    b.box(M.metal, 1.2, 0.8, 0.4, x, y, -3.25); b.box(mine ? M.litWarm : M.frame, 0.9, 0.06, 0.03, x, y + 0.25, -3.04);
-    if (mine) b.box(signMat(String(n), P.amber), 0.4, 0.28, 0.03, x, y, -3.04, 0, 0, false);
-  }
-  b.block(0, -3.25, 9.6, 0.4);
+  // The locker wall: five tall steel doors, each with its number on a plate above it; Locker 9 glows amber.
+  DEALER.numbers.forEach((n, i) => {
+    const x = (i - (DEALER.numbers.length - 1) / 2) * DEALER.step, mine = n === DEALER.dexLocker;
+    b.box(M.metal, 1.5, 1.5, 0.45, x, 0.75, -3.25); b.box(mine ? M.litWarm : M.frame, 1.0, 0.07, 0.03, x, 1.2, -3.02); b.box(M.frame, 0.1, 0.3, 0.04, x + 0.5, 0.7, -3.02); // door, a status strip, a handle
+    b.box(signMat(String(n), mine ? P.amber : P.cyan), 0.75, 0.4, 0.04, x, 1.85, -3.02, 0, 0, false);                                                           // the number above it
+  });
+  b.block(0, -3.25, 9.6, 0.45);
   b.box(PM.wood, 3.0, 1.0, 0.9, -2.9, 0.5, 0.4); b.box(M.metal, 3.1, 0.06, 1.0, -2.9, 1.03, 0.4); b.block(-2.9, 0.4, 3.0, 0.9); // the dealer's counter
   b.box(M.litCool, 0.8, 0.03, 0.5, -2.2, 1.08, 0.4);                                                                             // the counter's reader pad
-  b.box(PM.vendBody, 0.5, 1.1, 0.4, 0.6, 0.55, -2.55); b.box(PM.vendGlow, 0.36, 0.5, 0.02, 0.6, 0.8, -2.33); b.block(0.6, -2.55, 0.5, 0.4); // the locker reader, beside Locker 9's column
+  b.box(PM.vendBody, 0.5, 1.1, 0.4, 1.0, 0.55, -2.55); b.box(PM.vendGlow, 0.36, 0.5, 0.02, 1.0, 0.8, -2.33); b.block(1.0, -2.55, 0.5, 0.4); // the locker reader, beside Locker 9's column
   table(b, PM, 3.2, 0.4, 1.3, 0.8); stool(b, PM, 2.6, 1.2); stool(b, PM, 3.8, 1.2);
-  b.box(signMat('IMPLANTS', 0xff3b2f), 3.2, 0.8, 0.1, 0.5, 2.8, -1.2, 0, 0, false);
+  b.box(signMat('IMPLANTS', 0xff3b2f), 3.2, 0.8, 0.1, -2.9, 2.8, -0.2, 0, 0, false); // over the counter, clear of the lockers and their numbers
   b.light(0xff3b2f, 16, 0, 2.5, -0.5); b.light(0xffa23a, 13, 3.0, 2.2, 2.0); b.light(0xffd23a, 12, -3.5, 2.2, 1.0); b.light(0xff6a1f, 10, 0.5, 2.0, -2.0);
-  b.spot('door', 0, 2.9); b.spot('dealer', -2.9, -0.7); b.spot('locker', -0.7, -2.3); b.spot('fixer', 2.6, 1.8);
+  b.spot('door', 0, 2.9); b.spot('dealer', -2.9, -0.7); b.spot('locker', 0, -2.3); b.spot('fixer', 2.6, 1.8);
   return finish('dealer', b, [-5, -3.5, 5, 3.5]);
 }
 
