@@ -117,9 +117,9 @@ echo.onCue = (name) => { if (name === 'stinger') sfx.stinger(); };
 const board = createBoard({ caseFile, hud });
 const barks = createBarks({ cast, caseFile, player, camera: cam.camera });
 // The platform train stops: from then on, for as long as Juno is on the platform, little bursts of steam (each with a hiss) come out of its rear section. particles.steamOn draws steam on the (indoor) platform.
-const STEAM = { first: 0.4, every: [1.8, 3.6], puffs: 8, scale: 1.7, back: 6.1, z: [1.45, 2.0], y: [0.5, 2.6] }; // seconds before the first burst and between bursts (min, max); puffs per burst; how much bigger than a street vent's; where on the train's rear end they come out (back = distance behind its centre, z = distance out from its centre line, on the platform side, y = height; they drift along its rear car)
+const STEAM = { hisses: 2, first: 0.4, every: [1.8, 3.6], puffs: 8, scale: 1.7, back: 6.1, z: [1.45, 2.0], y: [0.5, 2.6] }; // hisses = how many of the first bursts make a sound (later ones are silent); seconds before the first burst and between bursts (min, max); puffs per burst; how much bigger than a street vent's; where on the train's rear end they come out (back = distance behind its centre, z = distance out from its centre line, on the platform side, y = height; they drift along its rear car)
 const steamRng = rng.fork('trainsteam');
-let steamNext = -1; // seconds to the next burst; -1 = the train has not stopped yet
+let steamNext = -1, steamBursts = 0; // seconds to the next burst (-1 = the train has not stopped yet); bursts so far
 function trainSteam() { steamNext = STEAM.first; }
 function platformSteam(dt, areaId) {
   const on = steamNext >= 0 && areaId === 'platform';
@@ -129,7 +129,7 @@ function platformSteam(dt, areaId) {
   if (steamNext > 0) return;
   steamNext = steamRng.range(STEAM.every[0], STEAM.every[1]);
   const [sx, sz] = world.areas.platform.trainStop;
-  sfx.steamHiss();
+  if (steamBursts++ < STEAM.hisses) sfx.steamHiss(); // only the first couple of bursts hiss, when the train has just pulled in
   for (let j = 0; j < STEAM.puffs; j++) setTimeout(() => particles.puff(sx - STEAM.back + steamRng.range(-0.8, 0.8), steamRng.range(STEAM.y[0], STEAM.y[1]), sz + steamRng.range(STEAM.z[0], STEAM.z[1]), STEAM.scale, steamRng.range(-0.5, 0.05)), j * 110); // out of the rear section, on the platform side where the camera sees it
 }
 let deadTone = null; // the low tone held under the cliffhanger
