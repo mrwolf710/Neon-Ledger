@@ -14,7 +14,7 @@ export const TUNING = {
   },
   hum: { voices: 3, vol: 0.055, base: 50, lowpass: 520, ref: 4, update: 0.5, buzz: 0.18 },
   crackle: { vol: 0.12, hp: 3200, bursts: 3 },
-  train: { minGap: 38, maxGap: 75, first: 14, duration: 8.5, startZ: -44, endZ: 44, x: DISTRICT.rail.x, y: DISTRICT.rail.height,
+  train: { minGap: 19, maxGap: 37, first: 7, duration: 8.5, startZ: -44, endZ: 44, x: DISTRICT.rail.x, y: DISTRICT.rail.height,
     speed: 60, c: 343, vol: 0.5, rumbleFreq: 150, clack: 0.19 },
   echo: { ambientLevel: 0.05, fadeOut: 0.35, fadeIn: 0.5,   // ambient bus level during an echo, and fade time constants (s)
     rumble: { vol: 0.55, lowpass: 95, sub: 41, subVol: 0.5, wobble: 0.17, in: 0.7 } },
