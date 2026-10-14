@@ -22,7 +22,7 @@ export const CUTAWAY = {
 // scale it by world height so it pools near the ground. Unpatched materials get plain (faint) exp2 fog.
 const uniforms = {
   fogFalloff: { value: FOG.falloff }, fogHigh: { value: FOG.high }, fogGround: { value: FOG.ground }, fogStart: { value: 0 },
-  cutCenter: { value: new THREE.Vector2(-1e4, -1e4) }, cutRadius: { value: 0 }, cutDepth: { value: 0 },
+  cutCenter: { value: new THREE.Vector2(-1e4, -1e4) }, cutRadius: { value: 0 }, cutDepth: { value: 0 }, cutMinY: { value: CUTAWAY.minY },
 };
 
 const VERT = /* glsl */`
@@ -40,7 +40,7 @@ const FRAG = /* glsl */`
   #ifndef NO_CUT
   {
     float cutD = length(gl_FragCoord.xy - cutCenter) / cutRadius;
-    if (cutD < 1.0 && vFogDepth < cutDepth && vFogWorldY > ${CUTAWAY.minY.toFixed(2)}) {
+    if (cutD < 1.0 && vFogDepth < cutDepth && vFogWorldY > cutMinY) {
       const float bayer[16] = float[16](0., 8., 2., 10., 12., 4., 14., 6., 3., 11., 1., 9., 15., 7., 13., 5.);
       ivec2 bp = ivec2(mod(gl_FragCoord.xy, 4.0));
       float edgeT = (cutD - (1.0 - ${CUTAWAY.edge.toFixed(2)})) / ${CUTAWAY.edge.toFixed(2)};
@@ -60,7 +60,7 @@ function onBeforeCompile(shader) { // material.userData.noCut = a sign or prop t
     .replace('#include <fog_pars_vertex>', '#include <fog_pars_vertex>\nvarying float vFogWorldY;')
     .replace('#include <fog_vertex>', VERT);
   shader.fragmentShader = shader.fragmentShader
-    .replace('#include <fog_pars_fragment>', '#include <fog_pars_fragment>\nvarying float vFogWorldY;\nuniform float fogFalloff, fogHigh, fogGround, fogStart, cutRadius, cutDepth;\nuniform vec2 cutCenter;')
+    .replace('#include <fog_pars_fragment>', '#include <fog_pars_fragment>\nvarying float vFogWorldY;\nuniform float cutMinY, fogFalloff, fogHigh, fogGround, fogStart, cutRadius, cutDepth;\nuniform vec2 cutCenter;')
     .replace('#include <fog_fragment>', FRAG);
 }
 
@@ -79,6 +79,7 @@ export function createHeightFog(scene) {
       v.copy(playerPos).setY(playerPos.y + 1).applyMatrix4(camera.matrixWorldInverse);
       const depth = -v.z;
       uniforms.cutDepth.value = depth - CUTAWAY.margin;
+      uniforms.cutMinY.value = CUTAWAY.minY; // main.js changes it per area (indoors tables and counters stay solid)
       uniforms.cutRadius.value = (CUTAWAY.radius / (2 * depth * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2))) * bufferH;
       v.copy(playerPos).setY(playerPos.y + 1).project(camera);
       uniforms.cutCenter.value.set((v.x + 1) / 2 * bufferW, (v.y + 1) / 2 * bufferH);
