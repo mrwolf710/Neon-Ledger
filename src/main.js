@@ -128,6 +128,7 @@ const trailer = createTrailer({ cam, world, player, post, fade, cast, sfx, synth
 const startParam = new URLSearchParams(location.search).get('start'); // ?start=sable jumps straight to an area (testing)
 // Save slots in the browser (core/saves.js), each: where Juno is, the case file, the board, the clock, who she has talked to and Miso.
 function snapshotGame() {
+  if (beats.locked || dialogue.active) { hud.toast("Can't save during a scene"); return null; } // the menu also opens during cutscenes and conversations now
   const miso = cast.byId.miso, b = board.logic;
   const data = {
     v: 1, area: world.current.id, pos: [player.position.x, player.position.z], facing: cast.byId.juno.facing,
@@ -138,6 +139,7 @@ function snapshotGame() {
   return data;
 }
 function loadGame(s) {
+  if (beats.locked || dialogue.active) { hud.toast("Can't load during a scene"); return; }
   const num = (n) => Number.isFinite(n);
   if (!s || s.v !== 1 || !world.areas[s.area] || !Array.isArray(s.pos) || !s.pos.every(num) || !num(s.minutes) || !num(s.facing)
     || !s.board || !Array.isArray(s.board.solved) || !Array.isArray(s.board.edges) || !Array.isArray(s.board.tries)
@@ -299,10 +301,11 @@ renderer.setAnimationLoop((now) => {
   // First time Juno holds 3 clues inside the Sable: explain the board.
   if (!trailer.active && world.current.id === 'sable' && !dialogue.active && !tutorial.isOpen && !caseFile.hasFlag('tut_board') && caseFile.facts().length >= 2) { caseFile.setFlag('tut_board'); tutorial.open('board'); }
   if (!trailer.active && echo.active && !tutorial.isOpen && !caseFile.hasFlag('tut_echo')) { caseFile.setFlag('tut_echo'); tutorial.open('echo'); } // first echo: explain it (the echo waits)
+  const paused = menu.isOpen || menuWasOpen; // the menu freezes cutscenes and conversations too (it opens during both)
   const modal = trailer.active || tutorial.isOpen || tutWasOpen || !title.done || beats.locked || world.busy || dialogue.active || caseFile.isOpen || echo.active || board.isOpen || menu.isOpen || menuWasOpen;
-  if (input.click && beats.calling) beats.answerCall(); // a click or tap answers Hale's call (it is locked, so the click would otherwise be thrown away below)
+  if (input.click && beats.calling && !paused) beats.answerCall(); // a click or tap answers Hale's call (it is locked, so the click would otherwise be thrown away below)
   if (modal) { input.click = null; input.moveX = input.moveY = 0; }
-  if (!trailer.active && !menuWasOpen && !tutorial.isOpen && !tutWasOpen && title.done && !beats.locked && !world.busy && !dialogue.active && !caseFile.isOpen && !echo.active && !board.isOpen && input.pressed('pause')) menu.open();
+  if (!trailer.active && !menuWasOpen && !tutorial.isOpen && !tutWasOpen && title.done && !world.busy && !caseFile.isOpen && !echo.active && !board.isOpen && input.pressed('pause')) menu.open();
   cam.tilt((input.held('tiltDown') ? 1 : 0) - (input.held('tiltUp') ? 1 : 0), dt);
 
   // Click: a person/object walks there then interacts; the ground walks there.
@@ -326,14 +329,15 @@ renderer.setAnimationLoop((now) => {
   caseFile.update(input);
   if (!cfWasOpen && !caseFile.isOpen && !dialogue.active && !echo.active && !board.isOpen && free && input.pressed('caseFile')) caseFile.open();
   const echoWas = echo.active;
-  if (echoWas && !tutorial.isOpen && !tutWasOpen) echo.update(dt, input, cam.yaw, area.lights, scrubAxis, player.position);
+  if (paused) { /* frozen */ }
+  else if (echoWas && !tutorial.isOpen && !tutWasOpen) echo.update(dt, input, cam.yaw, area.lights, scrubAxis, player.position);
   else if (dialogue.active) { if (!cfWasOpen) dialogue.update(dt, input); }
   else if (!cfWasOpen && !bdWasOpen && !board.isOpen && free) {
     if (input.pressed('echo')) echo.tryStart(player.position);
     else if (input.pressed('interact')) interactions.current?.onInteract();
   }
-  if (!echoWas && !echo.active) echo.update(dt, input, cam.yaw, area.lights, 0, player.position); // markers + fade-out while idle
-  beats.update(dt);
+  if (!paused && !echoWas && !echo.active) echo.update(dt, input, cam.yaw, area.lights, 0, player.position); // markers + fade-out while idle
+  if (!paused) beats.update(dt);
   trailer.update(dt);
   const focus = trailer.focus ?? beats.focus ?? player.position; // cutscenes can point the camera elsewhere
   cam.follow(focus);
@@ -345,7 +349,7 @@ renderer.setAnimationLoop((now) => {
   post.applyUniforms();
 
   // Clock: runs once the title is dismissed; the phase picks the time-of-day mood.
-  if (free && !echo.active) clock.update(dt);
+  if (free && !echo.active && !paused) clock.update(dt);
   if (clock.phase.id !== phaseId && !beats.ending) { phaseId = clock.phase.id; tod.setTimeOfDay(phaseId, 8); }
   hud.setClock(clock.text, clock.phase.label, clock.progress);
   if (input.pressed('hideControls')) hud.toggleControls();
