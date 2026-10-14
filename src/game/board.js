@@ -119,7 +119,7 @@ export function createBoard({ caseFile, hud }) {
       svg.appendChild(l);
     };
     const cls = ring.dataset.state === 'bad' ? 'wrong' : 'locked';
-    if (slots[0] && slots[1] && !['ok', 'merge'].includes(ring.dataset.state)) { const [x1, y1] = center(slotEls[0]), [x2, y2] = center(slotEls[1]); line(x1, y1, x2, y2, cls); }
+    if (slots[0] && slots[1] && !['ok', 'merge'].includes(ring.dataset.state)) { const [x1, y1] = center(slotEls[0]), [x2, y2] = center(slotEls[1]), hw = slotEls[0].offsetWidth / 2; line(x1 + hw, y1, x2 - hw, y2, cls); // edge to edge, never across the text }
     const A = temp && cardEl(temp.from);
     if (A) { const [x1, y1] = center(A), b = box.getBoundingClientRect(); line(x1, y1, temp.x - b.left, temp.y - b.top, 'temp'); }
   }
@@ -131,6 +131,8 @@ export function createBoard({ caseFile, hud }) {
     lineTimer = setTimeout(() => lineEl.classList.remove('on'), BOARDUI.lineSeconds * 1000);
   }
 
+  // Long titles get a smaller font so they always fit the slot (size in cqw of the ring).
+  const fit = (node, text) => { node.textContent = text; node.style.fontSize = `${Math.max(2.2, Math.min(4.4, Math.sqrt(560 / Math.max(1, text.length))))}cqw`; };
   const clearSlots = () => {
     slots[0] = slots[1] = null; ring.dataset.state = ''; busy = false;
     for (const n of [...slotEls, fused]) { n.getAnimations().forEach((a) => a.cancel()); n.style.visibility = ''; }
@@ -182,7 +184,7 @@ export function createBoard({ caseFile, hud }) {
       if (r.kind === 'solved') {
         ring.dataset.state = 'merge'; say(r.line);
         caseFile.apply(r.conclusion.effects);
-        fused.textContent = title(r.conclusion.result) ?? '';
+        fit(fused, title(r.conclusion.result) ?? '');
         misses = 0; hintCount.clear(); hinted.clear();
         newId = arriving = r.conclusion.result;
         api.onLock?.(r.conclusion);
@@ -240,7 +242,7 @@ export function createBoard({ caseFile, hud }) {
     slotEls.forEach((s, i) => {
       s.replaceChildren(); s.classList.toggle('full', !!slots[i]);
       s.onclick = () => { if (!busy && slots[i]) { slots[i] = null; render(); } }; // click a slot to take the card back
-      el('div', 't', s, slots[i] ? title(slots[i]) : i ? 'CLUE B' : 'CLUE A');
+      fit(el('div', 't', s), slots[i] ? title(slots[i]) : i ? 'CLUE B' : 'CLUE A');
     });
     const ready = !!(slots[0] && slots[1]);
     ring.classList.toggle('ready', ready); goBtn.disabled = !ready || busy;
