@@ -17,7 +17,7 @@ export const TUNING = {
   train: { minGap: 19, maxGap: 37, first: 7, duration: 8.5, startZ: -44, endZ: 44, x: DISTRICT.rail.x, y: DISTRICT.rail.height,
     speed: 60, c: 343, vol: 0.9, slow: 0.45,                         // slow: how far the pitch falls as the train brakes (0.45: down to 55%)
     hiss: { freq: 1500, vol: 0.5 },                                  // the broad rushing layer, like the rain's hiss but lower
-    body: { freq: 260, vol: 0.9, drive: 7, grit: 22 },               // the deep layer, pushed through a distortion (drive = gain into it, grit = how hard it clips)
+    body: { freq: 260, vol: 0.9, drive: 4, grit: 11 },               // the deep layer, pushed through a distortion (drive = gain into it, grit = how hard it clips)
     screech: { freq: 3300, q: 7, vol: 0.05 },                        // faint steel-on-steel squeal at the pass
     bogie: [0.11, 0.3], clackVol: 0.35 },                            // wheel clacks come in pairs
   steam: { vol: 0.09, dur: 0.8, hp: 3500 },                 // a short pressure hiss for each puff of steam
@@ -26,7 +26,7 @@ export const TUNING = {
   // Electric train motor for the cold open: a growl and a rising whine that swell as the train closes in, then settle to a quiet idle hum.
   // The train pulling into the platform (cold open): the filters sweep from fast to slow so the pitch falls as it brakes; then a quiet low idle.
   motor: { start: 0.05, swellAt: 0.4, stopLevel: 0.35, idleGain: 0.07, idleAfter: 0.4, idleTime: 0.9,
-    body: { fast: 480, slow: 140, idle: 90, vol: 0.9, drive: 7, grit: 22 }, hiss: { fast: 2400, slow: 520, idle: 300, vol: 0.45 },
+    body: { fast: 480, slow: 140, idle: 90, vol: 0.9, drive: 4, grit: 11 }, hiss: { fast: 2400, slow: 520, idle: 300, vol: 0.45 },
     squeal: { from: 3400, to: 1100, vol: 0.06, dur: 1.9 }, airVol: 0.09 },
   ui: { vol: 0.16 },
   stinger: { vol: 0.4, sub: 46, chord: [220, 233.1, 329.6], dur: 2.6 }, // the big reveal: a sub thud, a dissonant chord and a falling shriek
