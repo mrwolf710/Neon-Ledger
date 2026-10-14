@@ -257,10 +257,10 @@ body.echo #hud .objective { display: none !important; }
 /* Ring: a true circle (size --s); slots, fused result and the DEDUCE button are placed inside it by percentage. */
 #board .bd-ring { --s: min(44vh, 34vw); container-type: size; position: relative; align-self: center; width: var(--s); height: var(--s); border-radius: 50%;
   border: 2px solid var(--cyan); box-shadow: 0 0 1.2rem rgba(31, 214, 232, 0.5), inset 0 0 1.4rem rgba(31, 214, 232, 0.25); background: rgba(6, 12, 30, 0.7); transition: border-color 0.15s, box-shadow 0.15s; }
-#board .bd-slot, #board .bd-fused { position: absolute; top: 22%; width: 24%; height: 38%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; text-align: center; padding: 0.2rem; }
-#board .bd-slot { left: 7%; cursor: pointer; overflow-wrap: anywhere; border: 1px dashed rgba(31, 214, 232, 0.6); color: var(--dim); font: 600 4.4cqw/1.2 monospace; letter-spacing: 0.04em; text-transform: uppercase; }
-#board .bd-slot:nth-child(2) { left: auto; right: 7%; }
-#board .bd-fused { display: none; left: 34%; width: 32%; overflow-wrap: anywhere; font: 700 4.2cqw/1.15 var(--display); letter-spacing: 0.02em; text-transform: uppercase; color: #fff; background: rgba(20, 80, 96, 0.97); box-shadow: 0 0 1rem #39ff88, inset 0 0 0 2px #39ff88; animation: bd-new 0.5s steps(6); }
+#board .bd-slot, #board .bd-fused { position: absolute; top: 26%; width: 22%; height: 34%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; text-align: center; padding: 0.2rem; }
+#board .bd-slot { left: 13%; cursor: pointer; overflow-wrap: anywhere; border: 1px dashed rgba(31, 214, 232, 0.6); color: var(--dim); font: 600 4.4cqw/1.2 monospace; letter-spacing: 0.04em; text-transform: uppercase; }
+#board .bd-slot:nth-child(2) { left: auto; right: 13%; }
+#board .bd-fused { display: none; left: 36%; width: 28%; overflow-wrap: anywhere; font: 700 4.2cqw/1.15 var(--display); letter-spacing: 0.02em; text-transform: uppercase; color: #fff; background: rgba(20, 80, 96, 0.97); box-shadow: 0 0 1rem #39ff88, inset 0 0 0 2px #39ff88; animation: bd-new 0.5s steps(6); }
 #board .bd-go { position: absolute; left: 37%; bottom: 8%; width: 26%; height: 26%; padding: 0; border-radius: 50%; font: 700 4.6cqw var(--display); letter-spacing: 0.04em; color: var(--dim); background: rgba(10, 18, 40, 0.9); border: 2px solid var(--dim); cursor: default; }
 /* Compact cards: title only (full text in the tooltip); the highlighted card opens up. */
 #board .bd-card { padding: 1.4rem 0.8rem 0.5rem; flex: none; }
