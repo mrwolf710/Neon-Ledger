@@ -70,17 +70,21 @@ export function createParticles(scene, rng, rainCount, steamVents) {
     x: rng.range(-1, 1), y: rng.range(0, 1), z: rng.range(-1, 1), p: rng.range(0, 6.28),
   }));
   let nextSplash = 0, nextPuff = 0, steamAcc = 0, time = 0;
-  const api = { rainScale: 1, active: true, motes: true, center: { x: 0, z: 0 } }; // center: the outdoor area the shower covers // 0..1 fraction of drops shown (time of day can lighten the rain)
+  const api = { rainScale: 1, active: true, steamOn: false, motes: true, center: { x: 0, z: 0 } }; // center: the outdoor area the shower covers // 0..1 fraction of drops shown (time of day can lighten the rain)
 
+  // One extra puff on demand (the platform train): scale k times a vent's puff.
+  api.puff = (x, y, z, k = 1, dx = rng.range(-0.3, 0.3)) => { Object.assign(puffs[nextPuff], { t: 0, x, y, z, dx, k }); nextPuff = (nextPuff + 1) % St.max; };
   api.update = (dt, focus, camera) => {
-    for (const mesh of [rain, splash, steam, motes]) mesh.visible = api.active;
+    for (const mesh of [rain, splash, motes]) mesh.visible = api.active;
+    steam.visible = api.active || api.steamOn;
     motes.visible = api.active && api.motes;
-    if (!api.active) return;
+    if (!api.active && !api.steamOn) return;
+    const full = api.active; // rain, splashes and motes only where it is outdoors
     time += dt;
     const cx = api.center.x, cz = api.center.z;
     // Rain: drops live in a fixed box over the district and wrap at its edges, so the shower stays put when the camera moves.
     const shown = Math.floor(rainCount * api.rainScale);
-    for (let i = 0; i < rainCount; i++) {
+    for (let i = 0; i < (full ? rainCount : 0); i++) {
       const d = drops[i];
       d.x += fall.x * dt; d.y += fall.y * dt; d.z += fall.z * dt;
       const wx = cx + THREE.MathUtils.euclideanModulo(d.x - cx + ax / 2, ax) - ax / 2;
@@ -99,7 +103,7 @@ export function createParticles(scene, rng, rainCount, steamVents) {
     }
 
     // Splashes: ring grows and fades.
-    splashes.forEach((p, i) => {
+    if (full) splashes.forEach((p, i) => {
       p.t = Math.min(1, p.t + dt / S.life);
       const k = S.size * (0.3 + p.t);
       m.compose(v.set(p.x, p.y, p.z), q.identity(), s.set(k, 1, k));
@@ -113,20 +117,20 @@ export function createParticles(scene, rng, rainCount, steamVents) {
     while (near.length && steamAcc >= 1) {
       steamAcc -= 1;
       const e = rng.pick(near);
-      Object.assign(puffs[nextPuff], { t: 0, x: e.x + rng.range(-0.1, 0.1), y: e.y, z: e.z + rng.range(-0.1, 0.1), dx: rng.range(-0.2, 0.2) });
+      Object.assign(puffs[nextPuff], { t: 0, x: e.x + rng.range(-0.1, 0.1), y: e.y, z: e.z + rng.range(-0.1, 0.1), dx: rng.range(-0.2, 0.2), k: 1 });
       nextPuff = (nextPuff + 1) % St.max;
     }
     puffs.forEach((p, i) => {
       p.t = Math.min(1, p.t + dt / St.life);
       p.y += St.rise * dt; p.x += p.dx * dt;
-      const k = p.t >= 1 ? 0 : THREE.MathUtils.lerp(St.size[0], St.size[1], p.t);
+      const k = p.t >= 1 ? 0 : THREE.MathUtils.lerp(St.size[0], St.size[1], p.t) * (p.k ?? 1);
       m.compose(v.set(p.x, p.y, p.z), camera.quaternion, s.setScalar(k));
       steam.setMatrixAt(i, m);
       steam.setColorAt(i, c.setScalar(Math.sin(p.t * Math.PI)));
     });
 
     // Motes: slow sine drift in a box around the focus.
-    moteList.forEach((p, i) => {
+    if (full) moteList.forEach((p, i) => {
       const x = focus.x + p.x * Mo.area[0] / 2 + Math.sin(time * Mo.drift + p.p) * 0.6;
       const y = 0.5 + p.y * Mo.area[1] + Math.sin(time * Mo.drift * 1.3 + p.p * 2) * 0.4;
       const z = focus.z + p.z * Mo.area[2] / 2 + Math.cos(time * Mo.drift + p.p) * 0.6;

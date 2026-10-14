@@ -22,7 +22,7 @@ export const BEATS = {
   dark: { exposure: 0.06, lampsFrom: 0.3 }, // the opening starts almost black; station lamps fade up once the train is 30% of the way in
 };
 
-export function createBeats({ input, world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, echo, deadHour = () => {}, endDeadHour = () => {}, setExposure = () => {}, setVhs = () => {}, setCrt = () => {} }) {
+export function createBeats({ input, world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, echo, deadHour = () => {}, endDeadHour = () => {}, trainSteam = () => {}, setExposure = () => {}, setVhs = () => {}, setCrt = () => {} }) {
   const timers = [], tweens = [];
   let ringing = null, answerWait = null, callHint = 0;                          // the intro phone: ring loop + the pending answer
   const callEl = document.createElement('div'); callEl.className = 'callprompt'; document.body.appendChild(callEl);
@@ -72,6 +72,7 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
       const lamp = smooth((u - BEATS.dark.lampsFrom) / (1 - BEATS.dark.lampsFrom));
       platform.lights.forEach((l) => { l.intensity = l.base * lamp; });
     });
+    trainSteam();                                              // the train has stopped: puffs of steam from its back end
     setExposure(1); glowTo(1);
     platform.lights.forEach((l) => { l.intensity = l.base; });
     await wait(BEATS.mislaid);

@@ -116,8 +116,20 @@ for (const h of echo.hotspots.filter((q) => !q.hidden)) {
 echo.onCue = (name) => { if (name === 'stinger') sfx.stinger(); };
 const board = createBoard({ caseFile, hud });
 const barks = createBarks({ cast, caseFile, player, camera: cam.camera });
+// The platform train stops: three little bursts of steam from its rear (west) end, each with a hiss. particles.steamOn draws steam on the (indoor) platform.
+const STEAM = { bursts: 3, every: 1.7, puffs: 5, scale: 1.7 }; // puffs per burst, and how much bigger than a street vent's
+const steamRng = rng.fork('trainsteam');
+function trainSteam() {
+  const [sx, sz] = world.areas.platform.trainStop;
+  particles.steamOn = true;
+  for (let k = 0; k < STEAM.bursts; k++) setTimeout(() => {
+    sfx.steamHiss();
+    for (let j = 0; j < STEAM.puffs; j++) setTimeout(() => particles.puff(sx - 7.6 + steamRng.range(-0.4, 0.4), 0.5 + steamRng.range(0, 0.4), sz + steamRng.range(-0.8, 0.8), STEAM.scale, steamRng.range(-0.5, 0.1)), j * 130);
+    if (k === STEAM.bursts - 1) setTimeout(() => { particles.steamOn = false; }, 4500);
+  }, 400 + k * STEAM.every * 1000);
+}
 let deadTone = null; // the low tone held under the cliffhanger
-const beats = createBeats({ input, world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, echo,
+const beats = createBeats({ trainSteam, input, world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, echo,
   deadHour: () => { tod.setTimeOfDay('blackout', 0.5); lights.scale = 0.3; deadTone = synth.tone({ freq: 55, type: 'sine', dur: 40, vol: 0.3, attack: 2.5, release: 4, bus: 'music' }); }, // beat 7: signs die
   endDeadHour: () => { tod.setTimeOfDay('night', 1.5); lights.scale = 1; deadTone?.gain.gain.setTargetAtTime(0.0001, synth.now, 0.5); deadTone?.osc.stop(synth.now + 3); deadTone = null; }, // chapter 2: she decides to go, the signs and music return, one low tone
 
@@ -211,7 +223,7 @@ tod.onFlicker = (i) => sfx.crackle(street.signs[i].light.position);
 
 // ?hooks exposes the game objects for the headless test driver (scripts/drive.mjs eval: steps).
 if (new URLSearchParams(location.search).has('hooks')) {
-  const nl = window.__nl = { CUTAWAY, fade, crtFrame, music, input, tutorial, menu, title, snapshotGame, loadGame, saves, menu, sfx, synth, cam, world, player, beats, caseFile, dialogue, cast, echo, hud, clock, board, THREE };
+  const nl = window.__nl = { trainSteam, CUTAWAY, fade, crtFrame, music, input, tutorial, menu, title, snapshotGame, loadGame, saves, menu, sfx, synth, cam, world, player, beats, caseFile, dialogue, cast, echo, hud, clock, board, THREE };
   // Visual tour helpers: stand the player d units from a point (camera side) in any area, as in play, so the cutaway applies.
   nl.look = (areaId, x, z, d = 1.8) => {
     const b = world.areas[areaId].bounds, dx = (b.x0 + b.x1) / 2 - x, dz = (b.z0 + b.z1) / 2 - z, len = Math.hypot(dx, dz) || 1;
