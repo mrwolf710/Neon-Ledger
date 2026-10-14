@@ -15,10 +15,11 @@ export const TUNING = {
   hum: { voices: 3, vol: 0.055, base: 50, lowpass: 520, ref: 4, update: 0.5, buzz: 0.18 },
   crackle: { vol: 0.12, hp: 3200, bursts: 3 },
   train: { minGap: 19, maxGap: 37, first: 7, duration: 8.5, startZ: -44, endZ: 44, x: DISTRICT.rail.x, y: DISTRICT.rail.height,
-    speed: 60, c: 343, vol: 0.55, rumbleFreq: 220, clack: 0.19,
-    roar: { freq: 300, q: 0.4, vol: 0.9, drive: 7, grit: 22 }, slow: 0.45, rattle: { hz: 13, depth: 0 }, // depth 0: any steady chopping of the roar sounds like helicopter blades // roar = deep rain-like noise pushed through a distortion (drive = gain into it, grit = how hard it clips); slow = how far the pitch falls as the train brakes (0.45: down to 55%)
- screech: { freq: 3300, q: 7, vol: 0.07 }, whine: { freq: 520, vol: 0.025 }, // wind / wheel roar, steel-on-steel squeal, traction motor whine
-    bogie: [0.11, 0.3], thump: { freq: 85, vol: 0.25 } },   // wheel-joint clacks come in pairs (the two axles of a bogie), each with a low thump
+    speed: 60, c: 343, vol: 0.9, slow: 0.45,                         // slow: how far the pitch falls as the train brakes (0.45: down to 55%)
+    hiss: { freq: 1500, vol: 0.5 },                                  // the broad rushing layer, like the rain's hiss but lower
+    body: { freq: 260, vol: 0.9, drive: 7, grit: 22 },               // the deep layer, pushed through a distortion (drive = gain into it, grit = how hard it clips)
+    screech: { freq: 3300, q: 7, vol: 0.05 },                        // faint steel-on-steel squeal at the pass
+    bogie: [0.11, 0.3], clackVol: 0.35 },                            // wheel clacks come in pairs
   steam: { vol: 0.09, dur: 0.8, hp: 3500 },                 // a short pressure hiss for each puff of steam
   echo: { ambientLevel: 0.05, fadeOut: 0.35, fadeIn: 0.5,   // ambient bus level during an echo, and fade time constants (s)
     rumble: { vol: 0.55, lowpass: 95, sub: 41, subVol: 0.5, wobble: 0.17, in: 0.7 } },
@@ -141,17 +142,14 @@ export function createSfx(synth) {
   function startTrain() {
     const Tr = T.train, ctx = synth.ctx;
     const g = ctx.createGain(); g.gain.value = 0;
-    const rumble = synth.noiseLoop(), lp = synth.filter('lowpass', Tr.rumbleFreq, 0.8);
-    rumble.connect(lp); lp.connect(g);
+    // Built like the rain (which reads as a subway): broad lowpassed noise layers, here lower, with the deep one pushed through a distortion. Nothing pulses or chops.
+    const hiss = synth.noiseLoop(5.3), hf = synth.filter('lowpass', Tr.hiss.freq, 0.4), hg = ctx.createGain(); hg.gain.value = Tr.hiss.vol; hiss.connect(hf); hf.connect(hg); hg.connect(g);
+    const body = synth.noiseLoop(4.1), bf = synth.filter('lowpass', Tr.body.freq, 0.6), pre = ctx.createGain(), ws = ctx.createWaveShaper(), bg = ctx.createGain();
+    pre.gain.value = Tr.body.drive; ws.curve = distortion(Tr.body.grit); ws.oversample = '2x'; bg.gain.value = Tr.body.vol; body.connect(bf); bf.connect(pre); pre.connect(ws); ws.connect(bg); bg.connect(g);
+    const screech = synth.noiseLoop(6.7), sf = synth.filter('bandpass', Tr.screech.freq, Tr.screech.q), sg = ctx.createGain(); sg.gain.value = 0; screech.connect(sf); sf.connect(sg); sg.connect(g);
     const p = synth.panner(Tr.x, Tr.y, Tr.startZ, { ref: 10, rolloff: 0.8, max: 120, to: ambient });
     g.connect(p);
-    const roar = synth.noiseLoop(), rf = synth.filter('bandpass', Tr.roar.freq, Tr.roar.q), rg = ctx.createGain(); rg.gain.value = Tr.roar.vol * (1 - Tr.rattle.depth);
-    const pre = ctx.createGain(), ws = ctx.createWaveShaper(); pre.gain.value = Tr.roar.drive; ws.curve = distortion(Tr.roar.grit); ws.oversample = '2x';
-    roar.connect(rf); rf.connect(pre); pre.connect(ws); ws.connect(rg); rg.connect(g);
-    const lfo = ctx.createOscillator(), lg = ctx.createGain(); lfo.frequency.value = Tr.rattle.hz; lg.gain.value = Tr.roar.vol * Tr.rattle.depth; lfo.connect(lg); lg.connect(rg.gain); lfo.start(); // the roar is chopped at the wheel rhythm: the rattle of cars over rail joints, no pitched buzz
-    const screech = synth.noiseLoop(), sf = synth.filter('bandpass', Tr.screech.freq, Tr.screech.q), sg = ctx.createGain(); sg.gain.value = 0; screech.connect(sf); sf.connect(sg); sg.connect(g);
-    const whine = ctx.createOscillator(), whine2 = ctx.createOscillator(), wg = ctx.createGain(), wg2 = ctx.createGain(); whine.type = whine2.type = 'sine'; whine.frequency.value = Tr.whine.freq; whine2.frequency.value = Tr.whine.freq * 2.02; wg.gain.value = Tr.whine.vol; wg2.gain.value = Tr.whine.vol * 0.4; whine.connect(wg); whine2.connect(wg2); wg.connect(g); wg2.connect(g); whine.start(); whine2.start(); // traction motor: a quiet rising whistle
-    train = { g, lp, rumble, p, t: 0, clack: 0, roar, rf, lfo, screech, sf, sg, whine, whine2, beat: 0 };
+    train = { g, p, t: 0, clack: 0, hiss, hf, body, bf, screech, sf, sg, beat: 0 };
   }
   function updateTrain(dt) {
     const Tr = T.train;
@@ -163,24 +161,21 @@ export function createSfx(synth) {
     const dx = Tr.x - lastPlayer.x, dz = z - lastPlayer.z, d = Math.hypot(dx, dz, Tr.y) || 1;
     const vz = Math.sign(Tr.endZ - Tr.startZ) * Tr.speed, vr = -(dz * vz) / d; // speed toward the listener (+ = approaching)
     const ratio = Tr.c / (Tr.c - Math.max(-Tr.c * 0.5, Math.min(Tr.c * 0.5, vr)));
-    const t = synth.now, k = 1 - Tr.slow * u * u; // the train brakes as it passes: everything falls in pitch and the clacks spread out
-    train.lp.frequency.setTargetAtTime(Tr.rumbleFreq * ratio * k, t, 0.05);
+    const t = synth.now, k = 1 - Tr.slow * u * u; // the train brakes as it passes: the whole sound falls in pitch and the clacks spread out
     const env = Math.sin(Math.min(1, Math.max(0, u)) * Math.PI);
-    train.g.gain.setTargetAtTime(Tr.vol * env ** 0.6, t, 0.1);
-    // The roar swells with the pass; the squeal and the motor whine ride the doppler and peak as the cars go by; wheel clacks come in axle pairs, each with a thump.
-    train.rf.frequency.setTargetAtTime(Tr.roar.freq * ratio * k * (0.7 + 0.6 * env), t, 0.1);
-    train.sf.frequency.setTargetAtTime(Tr.screech.freq * ratio * (0.95 + 0.1 * Math.sin(train.t * 3.1)), t, 0.1);
+    train.hf.frequency.setTargetAtTime(Tr.hiss.freq * ratio * k * (0.55 + 0.9 * env), t, 0.1);
+    train.bf.frequency.setTargetAtTime(Tr.body.freq * ratio * k, t, 0.1);
+    train.sf.frequency.setTargetAtTime(Tr.screech.freq * ratio * k * (0.95 + 0.1 * Math.sin(train.t * 3.1)), t, 0.15);
     train.sg.gain.setTargetAtTime(Tr.screech.vol * env ** 2.5, t, 0.15);
-    train.whine.frequency.setTargetAtTime(Tr.whine.freq * ratio * k * (1.1 - 0.3 * u), t, 0.1); train.whine2.frequency.setTargetAtTime(Tr.whine.freq * 2.02 * ratio * k * (1.1 - 0.3 * u), t, 0.1);
-    train.lfo.frequency.setTargetAtTime(Tr.rattle.hz * ratio * k, t, 0.1);
+    train.g.gain.setTargetAtTime(Tr.vol * env ** 0.6, t, 0.1);
+    // Wheel clacks over the rail joints: paired (two axles), uneven, never a steady beat.
     train.clack -= dt;
     if (train.clack <= 0 && env > 0.12) {
-      train.clack = Tr.bogie[train.beat++ % 2] * (1.2 - 0.4 * env) / k * (0.7 + 0.6 * synth.rand()); // uneven, like real rail joints, never a steady beat
-      synth.noise({ dur: 0.05, vol: 0.5 * env, filter: { type: 'bandpass', freq: 1100 * ratio, q: 1.2 }, to: train.g });
-      synth.tone({ freq: Tr.thump.freq * ratio * k, type: 'sine', dur: 0.1, vol: Tr.thump.vol * env, slide: 45, attack: 0.002, release: 0.07, to: train.g });
+      train.clack = Tr.bogie[train.beat++ % 2] * (1.2 - 0.4 * env) / k * (0.7 + 0.6 * synth.rand());
+      synth.noise({ dur: 0.05, vol: Tr.clackVol * env, filter: { type: 'bandpass', freq: 1100 * ratio * k, q: 1.2 }, to: train.g });
     }
     if (u >= 1) {
-      train.rumble.stop(); train.roar.stop(); train.lfo.stop(); train.screech.stop(); train.whine.stop(); train.whine2.stop(); train.p.disconnect(); train = null;
+      train.hiss.stop(); train.body.stop(); train.screech.stop(); train.p.disconnect(); train = null;
     }
   }
 
