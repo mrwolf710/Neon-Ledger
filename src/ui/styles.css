@@ -275,3 +275,5 @@ body.echo #hud .objective { display: none !important; }
 .callprompt.on { display: block; }
 /* Holo-preacher's GIF portrait: cyan wash + scanlines, to match his hologram in the world (the canvas portraits do this in drawPortrait). */
 #hud .dialogue img.portrait.holo { filter: grayscale(1) contrast(1.1) brightness(1.2) sepia(1) hue-rotate(150deg) saturate(3.2); -webkit-mask-image: repeating-linear-gradient(to bottom, #000 0 calc(6.5rem / 32), rgba(0, 0, 0, 0.6) calc(6.5rem / 32) calc(6.5rem / 16)); mask-image: repeating-linear-gradient(to bottom, #000 0 calc(6.5rem / 32), rgba(0, 0, 0, 0.6) calc(6.5rem / 32) calc(6.5rem / 16)); }
+
+#board .bd-card.ghost { visibility: hidden; pointer-events: none; }

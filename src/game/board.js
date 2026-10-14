@@ -206,8 +206,10 @@ export function createBoard({ caseFile, hud }) {
     cards = facts.filter((f) => !isResult(f) && !spent.has(f.id) && !slots.includes(f.id)).map((f) => f.id);
     cursor = Math.max(0, Math.min(cursor, cards.length - 1));
     const side = [[], []];
-    facts.filter((f) => !spent.has(f.id) && !slots.includes(f.id)).forEach((f, i) => {
+    // A card sitting in a ring slot leaves an invisible placeholder behind, so every other card keeps its place and a failed pair puts it back exactly where it was.
+    facts.filter((f) => !spent.has(f.id)).forEach((f, i) => {
       const d = el('div', 'bd-card', null), live = cards.includes(f.id);
+      if (slots.includes(f.id)) d.classList.add('ghost');
       d.dataset.id = f.id;
       d.title = f.text;
       if (live && cards[cursor] === f.id) d.classList.add('cursor');
