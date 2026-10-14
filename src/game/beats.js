@@ -78,10 +78,12 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
     const card = fade.card([{ text: 'CASE 01  LOWMARKET', color: '#1fd6e8', scale: 2, corner: 'glass' }], BEATS.cardHold);
     await wait(BEATS.zoomDelay);                                // the zoom starts while the title words are still on screen
     let uiOn = false;
+    sfx.phoneRing?.();                                          // Hale is calling while the picture zooms out
     await tween(BEATS.zoomSeconds, (u) => { // the monitor frame zooms out to the full game and the tape noise fades; the UI only fades in as the zoom nears its end
       const k = 1 - smooth(u); fade.cardZoom(u); setCrt(k); setVhs(k);
       if (!uiOn && u >= BEATS.uiAt) { uiOn = true; hud.show(); }
     });
+    sfx.phoneAnswer?.();                                        // Juno picks up
     await card;
     hud.show();
     await dialogue.start('hale_open');                          // Hale on comms

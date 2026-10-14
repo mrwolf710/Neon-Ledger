@@ -22,6 +22,7 @@ export const TUNING = {
   motor: { base: 70, peak: 180, idle: 85, whineMult: 6, lowpass: 2200, start: 0.05, swell: 0.55, idleGain: 0.03, idleAfter: 0.4, idleTime: 0.9 },
   ui: { vol: 0.16 },
   stinger: { vol: 0.4, sub: 46, chord: [220, 233.1, 329.6], dur: 2.6 }, // the big reveal: a sub thud, a dissonant chord and a falling shriek
+  ring: { vol: 0.07, freqs: [440, 480], rings: 2, pulses: 18, pulseGap: 0.045, pulseDur: 0.035, period: 1.35 }, // intro: Juno's phone rings (Hale calling), each ring = a quick trill
   comms: { vol: 0.12, freqs: [880, 1175], gap: 0.13 },                 // Hale's incoming call: two soft beeps
   voice: { vol: 0.09, dur: 0.06, every: 2 },
   voices: { // per speaker: base Hz and waveform
@@ -319,6 +320,17 @@ export function createSfx(synth) {
       for (const f of S.chord) synth.tone({ freq: f, type: 'sawtooth', dur: S.dur * 0.8, vol: S.vol * 0.3, attack: 0.03, release: 1.4, filter: { type: 'lowpass', freq: 1100, q: 1 } });
       synth.tone({ freq: 2400, type: 'triangle', dur: 1.2, vol: S.vol * 0.25, slide: 260, attack: 0.01, release: 0.4 });
       synth.noise({ dur: 0.5, vol: S.vol * 0.5, attack: 0.005, release: 0.4, filter: { type: 'lowpass', freq: 3000, sweepTo: 200 } });
+    },
+    // The phone ringing while the intro zooms in, then Juno picking up.
+    phoneRing() {
+      if (!synth.ready) return;
+      const R = T.ring, t = synth.ctx.currentTime;
+      for (let r = 0; r < R.rings; r++) for (let k = 0; k < R.pulses; k++) for (const f of R.freqs) synth.tone({ freq: f, type: 'triangle', t: t + r * R.period + k * R.pulseGap, dur: R.pulseDur, vol: R.vol, release: 0.01 });
+    },
+    phoneAnswer() {
+      if (!synth.ready) return;
+      synth.noise({ dur: 0.04, vol: 0.1, attack: 0.002, release: 0.03, filter: { type: 'highpass', freq: 1500 } });
+      synth.tone({ freq: 700, type: 'sine', dur: 0.06, vol: 0.06, release: 0.04 });
     },
     // Hale on comms.
     comms() {
