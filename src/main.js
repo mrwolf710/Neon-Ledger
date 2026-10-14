@@ -113,8 +113,10 @@ for (const h of echo.hotspots.filter((q) => !q.hidden)) {
 echo.onCue = (name) => { if (name === 'stinger') sfx.stinger(); };
 const board = createBoard({ caseFile, hud });
 const barks = createBarks({ cast, caseFile, player, camera: cam.camera });
+let deadTone = null; // the low tone held under the cliffhanger
 const beats = createBeats({ input, world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, echo,
-  deadHour: () => { tod.setTimeOfDay('blackout', 0.5); lights.scale = 0.3; synth.tone({ freq: 55, type: 'sine', dur: 40, vol: 0.3, attack: 2.5, release: 4, bus: 'music' }); }, // beat 7: signs die, one low tone
+  deadHour: () => { tod.setTimeOfDay('blackout', 0.5); lights.scale = 0.3; deadTone = synth.tone({ freq: 55, type: 'sine', dur: 40, vol: 0.3, attack: 2.5, release: 4, bus: 'music' }); }, // beat 7: signs die
+  endDeadHour: () => { tod.setTimeOfDay('night', 1.5); lights.scale = 1; deadTone?.gain.gain.setTargetAtTime(0.0001, synth.now, 0.5); deadTone?.osc.stop(synth.now + 3); deadTone = null; }, // chapter 2: she decides to go, the signs and music return, one low tone
 
   setExposure: (v) => { renderer.toneMappingExposure = MAIN.exposure * v; }, setVhs: (a) => post.setVhs(a), setCrt: (a) => { post.setCrt(a); crtFrame.set(a); fade.cardScale(crtFrame.ratio); } });
 beats.setCamera(cam);

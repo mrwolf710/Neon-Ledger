@@ -64,6 +64,9 @@ Chapter 1 ends on Hale's question. Chapter 2 opens in the car:
 - Hale: "Juno--" (she cuts the call)
 - Juno (thought): "(Brokers all end up in one place. The Echo Exchange. Somebody there knows what he was selling.)" Cut to the square.
 
+## Car scene: built
+Hale's question -> car_reply -> car_decide -> Dead Hour ends (signs and music return) -> black -> "CHAPTER 2 / THE ECHO EXCHANGE" card -> Juno on the square's west side. The old end card ("CASE 01 CONTINUES", tap, reload) is gone; chapter 2 is always on.
+
 ## Layout
 Booths are deliberately uneven (widths, angles, three styles: awning, kiosk, cart; no grid). See EXCHANGE in `src/world/areas.js`.
 

@@ -221,6 +221,16 @@ export const CONVERSATIONS = {
     a: { speaker: 'hale', text: 'Juno.', next: 'b' },
     b: { speaker: 'hale', text: 'Where were you tonight between 23:10 and 23:57?', end: true },
   } },
+  // After Hale's question (chapter 1 -> 2): Juno will not go in yet, and picks where to look next. See docs/chapter-2.md.
+  car_reply: { start: 'a', nodes: {
+    a: { speaker: 'juno', text: "Still working it, Hale. I'll bring you something real.", next: 'b' },
+    b: { speaker: 'hale', text: 'Come in. Now. And bring the chip.', next: 'c' },
+    c: { speaker: 'juno', text: "Not yet. If I walk into the Bureau with a dead broker and a hole in my head, I won't walk out. I need to know what Dex was carrying first.", next: 'd' },
+    d: { speaker: 'hale', text: 'Juno\u2014', end: true },
+  } },
+  car_decide: { start: 'a', nodes: {
+    a: { speaker: 'juno', text: '(Brokers all end up in one place. The Echo Exchange. Somebody there knows what he was selling.)', end: true },
+  } },
   nobody: { start: 'a', nodes: { a: { speaker: 'juno', text: 'Nothing to say yet.', end: true } } },
 };
 

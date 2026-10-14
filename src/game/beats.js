@@ -19,13 +19,13 @@ export const BEATS = {
   dark: { exposure: 0.06, lampsFrom: 0.3 }, // the opening starts almost black; station lamps fade up once the train is 30% of the way in
 };
 
-export function createBeats({ input, world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, echo, deadHour = () => {}, setExposure = () => {}, setVhs = () => {}, setCrt = () => {} }) {
+export function createBeats({ input, world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, echo, deadHour = () => {}, endDeadHour = () => {}, setExposure = () => {}, setVhs = () => {}, setCrt = () => {} }) {
   const timers = [], tweens = [];
   let ringing = null, answerWait = null;                          // the intro phone: ring loop + the pending answer
   const callEl = document.createElement('div'); callEl.className = 'callprompt'; document.body.appendChild(callEl);
   const visits = {}; // how many times Juno has talked to each person (picks the conversation, see story.js VISITS)
   const flag = (n) => caseFile.hasFlag(n);
-  let locked = false, focus = null, lastStep = '', ending = false, finale = false;
+  let locked = false, focus = null, lastStep = '', ending = false, finale = false, chapter1Done = false;
   const beatTimes = [0, 0, 0, 0, 0, 0, 0]; // seconds spent per beat (debug panel)
   const STEP_BEAT = { down: 1, sable: 2, back: 3, examine: 3, echo: 4, teo: 5, deduce: 5, teo2: 5, kit: 5, capsule: 5, alley: 5, kitecho: 5, teo3: 5, board2: 6, kit2: 6, kitbreak: 6, press: 6, chip: 7 };
   // Debug 'skip to beat N': the flags and case file entries a player would hold when beat N starts (cumulative), then jump there.
@@ -126,18 +126,18 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     sfx.comms?.();                                               // Hale calls
     await wait(0.9);
     await dialogue.start('hale_end');
-    await wait(1.2);
+    await dialogue.start('car_reply');                           // Juno answers Hale: not coming in yet, Hale cuts in
+    await wait(0.5);
+    await dialogue.start('car_decide');                          // and decides: the Echo Exchange
+    endDeadHour(); ending = false; chapter1Done = true;          // the signs and the music come back as she decides
+    caseFile.setFlag('chapter1_done');
+    await wait(0.9);
     await fade.out();
-    finale = true;                                               // the end card: fast, hard music
-    fade.card([{ text: 'NEON ECHOES', color: '#ffffff', scale: 6 }, { text: 'CASE 01 CONTINUES', color: '#1fd6e8', scale: 3 }, { text: 'TAP OR PRESS ANY BUTTON', color: '#8a8aa8', scale: 2 }], 3600); // stays up
-    await wait(2.5);                                             // a moment, so a stray tap does not skip it
-    await new Promise((res) => {                                 // any tap, key or pad button
-      let raf = 0;
-      const done = () => { window.removeEventListener('pointerdown', done, true); window.removeEventListener('keydown', done, true); cancelAnimationFrame(raf); res(); };
-      const poll = () => { if ([...(navigator.getGamepads?.() ?? [])].some((p) => p?.buttons.some((b) => b.pressed))) return done(); raf = requestAnimationFrame(poll); };
-      window.addEventListener('pointerdown', done, true); window.addEventListener('keydown', done, true); poll();
-    });
-    location.reload();                                           // back to the title screen
+    const sp = world.spot('exchange', 'start');
+    world.jump('exchange', [sp.x, sp.z, Math.PI / 2]);           // while the screen is black
+    await fade.card([{ text: 'CHAPTER 2', color: '#ff8a1f', scale: 6 }, { text: 'THE ECHO EXCHANGE', color: '#ffd23a', scale: 3 }], 1.4);
+    await fade.in();
+    locked = false;
   }
 
   // ---- Interactables: doors, clues, people ----
@@ -213,7 +213,8 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     { id: 'kit2', text: 'Go back to the capsule hostel and talk to the worker', area: 'hostel', pos: () => spotXZ('hostel', 'kit'), done: () => flag('kit_met') },
     { id: 'kitbreak', text: 'Present the alley echo to Kit', area: 'hostel', pos: () => spotXZ('hostel', 'kit'), done: () => flag('kit_broken') },
     { id: 'press', text: 'Press Kit about what he saw', area: 'hostel', pos: () => spotXZ('hostel', 'kit'), done: () => flag('kit_coat') },
-    { id: 'chip', text: "Slot Dex's backup chip in your car", area: 'car', pos: () => spotXZ('car', 'seat'), done: () => ending },
+    { id: 'chip', text: "Slot Dex's backup chip in your car", area: 'car', pos: () => spotXZ('car', 'seat'), done: () => chapter1Done },
+    { id: 'exchange', text: "Find out what Dex was carrying (Echo Exchange)", area: 'exchange', done: () => false },
   ];
   function markFor(step) {
     const here = world.current.id;
