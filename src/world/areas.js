@@ -284,7 +284,7 @@ function exchange(M, rng) {
   EXCHANGE.booths.forEach(([id, text, x, z, side, w, rot, style], i) => {
     const yaw = rot + (side === 1 ? Math.PI : 0), c = Math.cos(yaw), sn = Math.sin(yaw), mat = cycle[i % 3];
     // part in the booth's own frame: lx along the counter, lz toward the customer (+z), rotated into the world with the booth.
-    const part = (m, sx, sy, sz, lx, ly, lz, ry = 0) => b.box(m, sx, sy, sz, x + lx * c + lz * sn, ly, z - lx * sn + lz * c, 0, yaw + ry);
+    const part = (m, sx, sy, sz, lx, ly, lz, ry = 0, uv = true) => b.box(m, sx, sy, sz, x + lx * c + lz * sn, ly, z - lx * sn + lz * c, 0, yaw + ry, uv); // uv false = the texture fills each face (sign text)
     const cd = style === 'cart' ? 0.8 : 0.9, ch = style === 'cart' ? 0.85 : 1.0, cz = 0.9;               // counter depth, height, distance from the vendor
     part(PM.wood, w, ch, cd, 0, ch / 2, cz); part(mat, w, 0.05, 0.06, 0, ch + 0.02, cz + cd / 2);          // counter + thin neon edge on the customer side
     const hw = Math.abs(c) * w / 2 + Math.abs(sn) * cd / 2, hd = Math.abs(sn) * w / 2 + Math.abs(c) * cd / 2; // axis-aligned bounds of the rotated counter
@@ -292,14 +292,14 @@ function exchange(M, rng) {
     if (style === 'awning') {
       for (const sx of [-1, 1]) part(PM.pole, 0.08, 2.3, 0.08, sx * (w / 2 - 0.05), 1.15, cz);
       part(mat, w, 0.08, 0.08, 0, 2.3, cz);
-      part(signMat(text, tint[i % 3]), w - 0.3, 0.55, 0.06, 0, 2.75, -0.2);
+      part(signMat(text, tint[i % 3]), w - 0.3, 0.55, 0.06, 0, 2.75, -0.2, 0, false);
     } else if (style === 'kiosk') {
       for (const sx of [-1, 1]) for (const lz of [-0.4, cz + 0.3]) part(PM.pole, 0.08, 2.2, 0.08, sx * (w / 2 - 0.05), 1.1, lz);
       part(PM.wood, w + 0.3, 0.08, cz + 1.0, 0, 2.24, cz / 2 - 0.05); part(mat, w + 0.3, 0.05, 0.05, 0, 2.2, cz + 0.45);
-      part(signMat(text, tint[i % 3]), w - 0.4, 0.5, 0.06, 0, 2.7, -0.05);
+      part(signMat(text, tint[i % 3]), w - 0.4, 0.5, 0.06, 0, 2.7, -0.05, 0, false);
     } else { // cart: low, with two wheels and a tall sign on a pole
       for (const sx of [-1, 1]) b.add(PM.pole, new THREE.CylinderGeometry(0.22, 0.22, 0.08, 10).rotateZ(Math.PI / 2).rotateY(yaw).translate(x + sx * (w / 2) * c + cz * sn, 0.22, z - sx * (w / 2) * sn + cz * c));
-      part(PM.pole, 0.07, 2.0, 0.07, w / 2 - 0.1, 1.0, cz - 0.1); part(signMat(text, tint[i % 3]), 1.5, 0.5, 0.06, w / 2 - 0.7, 2.1, cz - 0.1);
+      part(PM.pole, 0.07, 2.0, 0.07, w / 2 - 0.1, 1.0, cz - 0.1); part(signMat(text, tint[i % 3]), 1.5, 0.5, 0.06, w / 2 - 0.7, 2.1, cz - 0.1, 0, false);
     }
     part(PM.crates[i % PM.crates.length], 0.6, 0.6, 0.6, -w / 2 + 0.4, 0.3, -0.5);
     b.spot(`v_${id}`, x + 0.3 * c, z - 0.3 * sn);
