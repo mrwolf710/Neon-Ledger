@@ -160,7 +160,7 @@ title.started.then(() => {
   if (title.continuing && saves.latest()) { beats.skipOpen(); loadGame(saves.latest().data); return; }
   if (startParam && world.areas[startParam]) {
     beats.skipOpen();
-    world.jump(startParam, world.exits.find((x) => x.to === startParam)?.spawn ?? null);
+    const sp = world.spot(startParam, 'start'); world.jump(startParam, world.exits.find((x) => x.to === startParam)?.spawn ?? (sp ? [sp.x, sp.z, Math.PI / 2] : null)); // areas with no door in (the Exchange) use their 'start' spot
   } else beats.coldOpen();
 });
 const ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), ray = new THREE.Raycaster(), ndc = new THREE.Vector2();

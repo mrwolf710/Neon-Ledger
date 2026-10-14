@@ -9,5 +9,25 @@
   },
   "alley": {
     "sunset": 0.25
+  },
+  "exchange": {
+    "sunset": 0,
+    "sky": "#140806",
+    "fog": "#4a1a0a",
+    "fogDensity": 0.025,
+    "moonColor": "#ff8a4a",
+    "hemi": 0.7,
+    "saturation": 1.2,
+    "lift": [
+      0.03,
+      0.01,
+      0
+    ],
+    "gain": [
+      1.1,
+      0.97,
+      0.8
+    ],
+    "lightScale": 1.5
   }
 }

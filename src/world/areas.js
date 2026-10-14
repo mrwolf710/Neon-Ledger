@@ -17,6 +17,7 @@ export const AREAS = {
   alley:    { origin: [300, 0],  name: 'Alley behind the Sable', district: 'Lowmarket', outdoor: true,  mood: 'scene',  surface: 'asphalt' },
   hostel:   { origin: [450, 0],  name: "Capsule Hostel",   district: 'Lowmarket', outdoor: false, mood: 'street', surface: 'tile' },
   car:      { origin: [600, 0],  name: "Juno's Car",             district: 'Lowmarket', outdoor: false, mood: 'scene',  surface: 'tile' },
+  exchange: { origin: [750, 0],  name: 'The Echo Exchange',      district: 'Undercity', outdoor: true,  mood: 'street', surface: 'asphalt' }, // chapter 2 hub (docs/chapter-2.md)
 };
 const at = (id, x, z) => [AREAS[id].origin[0] + x, AREAS[id].origin[1] + z];
 const H = Math.PI / 2;
@@ -257,6 +258,49 @@ function car(M) {
   return finish('car', b, [-3, -1.6, 3, 1.6]);
 }
 
+// ---------- Chapter 2 hub: the Echo Exchange (open market square; docs/chapter-2.md) ----------
+// The implant dealer's shopfront sits in the north-middle gap. First pass: placeholder booths with sign text, lights and collision. Vendors are cast later (spots 'v_<id>', each facing its counter's customer side).
+export const EXCHANGE = {
+  half: [15, 10.5],                 // square half-size (x, z)
+  booth: { w: 3.2, counterD: 0.9, counterH: 1.0, postH: 2.3, signH: 0.55 },
+  neon: { red: 0xff3b2f, orange: 0xff8a1f, yellow: 0xffd23a },        // the palette of the whole square: reds, oranges, yellows
+  // id, sign text, x, z, side: -1 vendor stands north of the counter (customers come from +z), +1 south of it (customers from -z). Placeholder stock; the cast list is in docs/chapter-2.md.
+  booths: [
+    ['echoes', 'ECHOES', -9, -8.6, -1], ['sauce', 'HOT SAUCE', -3, -8.6, -1], ['noodles', 'NOODLES', 3, -8.6, -1], ['tarot', 'TAROT', 9, -8.6, -1],
+    ['parts', 'PARTS', -9, 8.6, 1], ['jewels', 'JEWELS', -3, 8.6, 1], ['umbrellas', 'UMBRELLAS', 3, 8.6, 1], ['idprint', 'ID PRINT', 9, 8.6, 1],
+    ['cables', 'CABLES', -3.6, -2.8, -1], ['stim', 'STIM', 3.6, -2.8, -1], ['drones', 'DRONES', -3.6, 2.8, -1], ['flowers', 'FLOWERS', 3.6, 2.8, -1],
+  ],
+};
+function exchange(M) {
+  const b = begin('exchange'), PM = propMats(M), [hx, hz] = EXCHANGE.half, B = EXCHANGE.booth, glow = BUILDINGS.windowGlow;
+  const neon = Object.fromEntries(Object.entries(EXCHANGE.neon).map(([k, c]) => [k, new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(glow) })]));
+  const cycle = [neon.red, neon.orange, neon.yellow], tint = [EXCHANGE.neon.red, EXCHANGE.neon.orange, EXCHANGE.neon.yellow];
+  floor(b, M.sidewalk, -hx, -hz, hx, hz);
+  for (const z of [-hz - T / 2, hz + T / 2]) wallX(b, M, z, -hx - T, hx + T, [], { h: 1.2, mat: M.walls[0] });
+  wallZ(b, M, -hx - T / 2, -hz, hz, [[-1.2, 1.2]], { h: 1.2, mat: M.walls[0] });                   // west: the way in (from the car)
+  b.box(neon.orange, 0.04, 0.04, 14, -3, 0.02, 0); b.box(neon.red, 14, 0.04, 0.04, 0, 0.02, 0);     // glowing floor lines crossing the square
+  EXCHANGE.booths.forEach(([id, text, x, z, side], i) => {
+    const front = z - side * 0.7;                                                                       // the counter sits on the customer side
+    b.box(PM.wood, B.w, B.counterH, B.counterD, x, B.counterH / 2, front); b.block(x, front, B.w, B.counterD);
+    b.box(cycle[i % 3], B.w, 0.05, 0.06, x, B.counterH + 0.02, front - side * -0.0 + (B.counterD / 2) * (side === 1 ? -1 : 1));      // thin neon edge along the customer side of the counter
+    for (const sx of [-1, 1]) b.box(PM.pole, 0.08, B.postH, 0.08, x + sx * (B.w / 2 - 0.05), B.postH / 2, front);
+    b.box(cycle[i % 3], B.w, 0.08, 0.08, x, B.postH, front);                                            // neon bar between the posts
+    b.box(signMat(text, tint[i % 3]), B.w - 0.3, B.signH, 0.06, x, B.postH + 0.45, z - side * 0.2, 0, 0, false); // sign above the vendor
+    b.box(PM.crates[i % PM.crates.length], 0.6, 0.6, 0.6, x - B.w / 2 + 0.4, 0.3, z + side * 0.5); b.block(x - B.w / 2 + 0.4, z + side * 0.5, 0.6, 0.6); // stock behind the counter
+    b.spot(`v_${id}`, x + 0.4, z + side * 0.2);
+  });
+  // The implant dealer: a shopfront in the gap between the two middle north booths (faces +z, toward the camera; the interior is added later, the door is a glowing mat for now).
+  b.box(M.walls[1], 2.6, 3.4, 1.0, 0, 1.7, -hz + 0.5); b.block(0, -hz + 0.5, 2.6, 1.0);
+  b.box(neon.red, 1.1, 2.0, 0.06, 0, 1.0, -hz + 1.03);
+  b.box(signMat('IMPLANTS', EXCHANGE.neon.red), 2.4, 0.6, 0.06, 0, 3.7, -hz + 1.0, 0, 0, false);
+  b.box(M.litCool, 1.4, 0.03, 0.8, 0, 0.02, -hz + 1.6);
+  b.light(0xff3b2f, 14, 0, 2.6, -8); b.light(0xffa23a, 16, -8, 3.2, -4); b.light(0xff6a1f, 16, 8, 3.2, 4); b.light(0xffd23a, 14, 0, 3.4, 0);
+  b.light(0xff6a1f, 12, -8, 3.2, 5); b.light(0xff3b2f, 12, 8, 3.2, -4); b.light(0xffd23a, 10, -13, 2.6, 0);
+  b.steam(-6, 0, -5.2); b.steam(6, 0, 5.2);
+  b.spot('start', -12.5, 0); b.spot('dealerDoor', 0, -hz + 1.7);
+  return finish('exchange', b, [-hx, -hz, hx, hz]);
+}
+
 // ---------- Street extras: the Sable's sign, the car, and a glowing mat at each door ----------
 function streetExtras(M) {
   const b = createBatch(), PM = propMats(M);
@@ -283,7 +327,7 @@ export function buildAreas(rng) {
     blocks: [...d.userData.blocks, ...ex.blocks], spots: d.userData.spots, lights: [...d.userData.lights, ...ex.lights],
     signs: d.userData.signs, steam: d.userData.steam, bounds: streetBounds(), road: [-3, 3],
   };
-  const areas = { street, platform: platform(M), sable: sable(M), alley: alley(M), hostel: hostel(M), car: car(M) };
+  const areas = { street, platform: platform(M), sable: sable(M), alley: alley(M), hostel: hostel(M), car: car(M), exchange: exchange(M) };
   // The train is a child of the platform group so it shows and hides with it.
   areas.platform.group.add(areas.platform.train);
   for (const e of EXIT_DEFS) (areas[e.area].exits ??= []).push(e);
