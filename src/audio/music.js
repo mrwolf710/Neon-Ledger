@@ -38,11 +38,15 @@ export const TUNING = {
     kick: { vol: 0.55, start: 170, end: 36 }, snare: { vol: 0.22, body: 0.14 }, hat: { vol: 0.07 },
     bass: { vol: 0.2, cutoff: 700 }, stab: { vol: 0.07, cutoff: 2600 }, riser: { vol: 0.12 },
   },
-  // The Echo Exchange: a hot, rhythmic market tune. D phrygian dominant (flat 2, major 3), 104 bpm, kick on 1 and 3, shaker, congas, plucked arpeggio.
+  // The Echo Exchange: slow and silly, a wobbly little marimba tune over an oom-pah bass, almost no percussion. 8 bars of chords, 7 melody bars that are mixed up
+  // so the tune takes a long time to repeat. mel: eighth-note slots, numbers = steps up a pentatonic scale (-1 = rest).
   bazaar: {
-    bpm: 104, roots: [38, 38, 41, 40], scale: [0, 1, 4, 5, 7, 8, 10, 12], arp: [0, 2, 4, 2, 3, 5, 4, 2, 0, 2, 4, 6, 7, 6, 4, 2],
-    pad: { vol: 0.035, cutoff: 1100, detune: 8, attack: 0.8, release: 1.2 },
-    kick: { vol: 0.3, start: 140 }, clap: { vol: 0.1 }, shaker: { vol: 0.045 }, conga: { vol: 0.09 }, bass: { vol: 0.16, cutoff: 600 }, pluck: { vol: 0.05, cutoff: 2400 },
+    bpm: 82,
+    chords: [[48, 'maj'], [45, 'min'], [53, 'maj'], [55, 'maj'], [48, 'maj'], [52, 'maj'], [45, 'min'], [55, 'maj']],
+    mel: [[0, -1, 2, -1, 4, 2, -1, -1], [4, -1, 3, 2, -1, 0, -1, -1], [2, 2, -1, 4, -1, 5, 4, -1], [-1, 0, 1, 2, -1, -1, 4, -1], [5, -1, 4, -1, 2, -1, 0, -1], [0, 2, 4, 2, -1, -1, -1, -1], [7, -1, 5, 4, 2, -1, -1, -1]],
+    pad: { vol: 0.018, cutoff: 800, detune: 6, attack: 1.2, release: 1.5 },
+    lead: { vol: 0.07, cutoff: 3000, restChance: 0.15 }, bass: { vol: 0.15, cutoff: 500 }, stab: { vol: 0.035 },
+    tick: { vol: 0.03 }, kick: { vol: 0.16, start: 120 }, boing: { vol: 0.05, chance: 0.12 },
   },
   board: {
     bpm: 96, tick: { vol: 0.04 }, pulse: { freq: 55, vol: 0.13 },
@@ -159,14 +163,26 @@ export function createMusic(synth) {
     bazaar: {
       bpm: T.bazaar.bpm,
       step(m, i, t) {
-        const S = T.bazaar, sd = stepDur(S.bpm), root = S.roots[Math.floor(i / 16) % S.roots.length], s = i % 16;
-        if (s === 0) pad(m.out, [root + 12, root + 16, root + 19, root + 24], t, sd * 16, S.pad);
-        if (s === 0 || s === 8) kick(m.out, t, S.kick.vol, S.kick.start);
-        if (s === 4 || s === 12) synth.noise({ t, dur: 0.1, vol: S.clap.vol, filter: { type: 'bandpass', freq: 1500, q: 0.9 }, to: m.out });
-        if (i % 2 === 1) synth.noise({ t, dur: 0.03, vol: S.shaker.vol * (s % 4 === 3 ? 1.5 : 1), filter: { type: 'highpass', freq: 7000 }, to: m.out });
-        if (s === 6 || s === 10 || s === 11 || s === 14) synth.tone({ freq: s === 11 ? 330 : 250, type: 'sine', t, dur: 0.14, vol: S.conga.vol, slide: 170, attack: 0.002, release: 0.08, to: m.out });
-        if (s % 4 === 0 || s === 6 || s === 14) synth.tone({ freq: midiToFreq(root + (s === 6 ? 1 : s === 14 ? 7 : 0)), type: 'sawtooth', t, dur: sd * 2.2, vol: S.bass.vol, attack: 0.004, release: 0.08, filter: { type: 'lowpass', freq: S.bass.cutoff, q: 1.1 }, to: m.out });
-        if (i % 2 === 0) synth.tone({ freq: midiToFreq(root + 24 + S.scale[S.arp[(i / 2) % S.arp.length]]), type: 'triangle', t, dur: sd * 1.6, vol: S.pluck.vol, attack: 0.003, release: 0.12, filter: { type: 'lowpass', freq: S.pluck.cutoff }, to: m.out });
+        const S = T.bazaar, sd = stepDur(S.bpm), bar = Math.floor(i / 16), s = i % 16, [root, q] = S.chords[bar % S.chords.length];
+        const notes = q === 'min' ? [0, 3, 7] : [0, 4, 7], pent = q === 'min' ? [0, 3, 5, 7, 10] : [0, 2, 4, 7, 9];
+        if (s === 0) pad(m.out, notes.map((n) => root + n), t, sd * 16, S.pad);
+        // oom-pah: bass on 1 and 3 (root, then fifth), short chord stabs on 2 and 4
+        if (s === 0 || s === 8) synth.tone({ freq: midiToFreq(root - 12 + (s ? 7 : 0)), type: 'triangle', t, dur: sd * 3, vol: S.bass.vol, attack: 0.005, release: 0.12, filter: { type: 'lowpass', freq: S.bass.cutoff }, to: m.out });
+        if (s === 4 || s === 12) for (const n of notes) synth.tone({ freq: midiToFreq(root + n), type: 'square', t, dur: sd * 1.2, vol: S.stab.vol, attack: 0.003, release: 0.06, filter: { type: 'lowpass', freq: 1400 }, to: m.out });
+        // the only percussion: a woodblock tick on 3 and a soft kick every fourth bar
+        if (s === 8) synth.noise({ t, dur: 0.02, vol: S.tick.vol, filter: { type: 'bandpass', freq: 2600, q: 3 }, to: m.out });
+        if (s === 0 && bar % 4 === 0) kick(m.out, t, S.kick.vol, S.kick.start);
+        // melody: marimba-ish plucks; the pattern for each bar is picked so the order shifts every pass
+        if (s % 2 === 0) {
+          const idx = S.mel[(bar * 3 + (bar >> 3)) % S.mel.length][s / 2];
+          if (idx >= 0 && synth.rand() > S.lead.restChance) {
+            const n = root + 12 + pent[idx % 5] + 12 * Math.floor(idx / 5) + (bar % 16 >= 8 ? 12 : 0);
+            synth.tone({ freq: midiToFreq(n), type: 'triangle', t, dur: sd * 1.5, vol: S.lead.vol, attack: 0.003, release: 0.25, filter: { type: 'lowpass', freq: S.lead.cutoff }, to: m.out });
+            synth.tone({ freq: midiToFreq(n + 12), type: 'sine', t, dur: sd, vol: S.lead.vol * 0.35, attack: 0.002, release: 0.1, to: m.out });
+          }
+        }
+        // now and then a silly slide-whistle boing at the end of a bar
+        if (s === 13 && synth.rand() < S.boing.chance) synth.tone({ freq: midiToFreq(root + 24), type: 'sine', t, dur: 0.3, vol: S.boing.vol, slide: midiToFreq(root + 36), attack: 0.01, release: 0.1, to: m.out });
       },
     },
     board: {
