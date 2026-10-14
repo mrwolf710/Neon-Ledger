@@ -27,7 +27,7 @@ export function createBoardLogic(data, hasFact) {
     // Returns { kind: 'same' | 'wrong' | 'partial' | 'solved', conclusion?, line?, hint? }.
     link(a, b) {
       if (a === b) return { kind: 'same' };
-      const open = data.conclusions.filter((c) => !solved.has(c.id));
+      const open = data.conclusions.filter((c) => !solved.has(c.id) && (c.requires ?? []).every(hasFact));
       const match = open.find((c) => c.needs.includes(a) && c.needs.includes(b));
       if (match) {
         const list = edges.get(match.id) ?? [];
@@ -56,7 +56,8 @@ const el = (tag, cls, parent, text) => {
   return e;
 };
 
-// Deduction board: fact data cards on a holographic grid; drag a card onto another (or select two) to propose a link.
+// Deduction board: clue cards sit either side of a central ring. Put two cards in its slots (click/tap, drag, or Space) and press DEDUCE.
+// Spent clues (used in a solved conclusion) fade into the archive row; conclusion cards stay on the sides, display only.
 export function createBoard({ caseFile, hud }) {
   const logic = createBoardLogic(BOARD, (id) => caseFile.has(id));
   const root = el('div', '', document.body); root.id = 'board';
@@ -69,17 +70,24 @@ export function createBoard({ caseFile, hud }) {
   const solveBtn = el('button', 'bd-tool', right, 'Solve'); solveBtn.style.display = 'none'; // appears after BOARDUI.solveAfter misses
   const hintBtn = el('button', 'bd-tool', right, 'Hint');
   const closeBtn = el('button', 'bd-close', right, '✕');
-  const cardsEl = el('div', 'bd-cards', box);
+  const main = el('div', 'bd-main', box);
+  const leftEl = el('div', 'bd-cards', main);
+  const ring = el('div', 'bd-ring', main);
+  const slotEls = [el('div', 'bd-slot', ring), el('div', 'bd-slot', ring)];
+  const goBtn = el('button', 'bd-go', ring, 'DEDUCE'); // DOM order puts it last; CSS grid puts it between the slots
+  const rightEl = el('div', 'bd-cards', main);
+  const archiveEl = el('div', 'bd-archive', box);
   const svgNS = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(svgNS, 'svg'); svg.setAttribute('class', 'bd-strings'); box.appendChild(svg);
   const lineEl = frame(el('div', 'bd-line', box));
   el('span', 'who nameplate', lineEl, 'Juno');
   const lineTxt = el('span', '', lineEl);
   const foot = el('div', 'bd-foot', box);
-  foot.innerHTML = '<span class="keycap">Drag</span>card onto card <span class="keycap">Arrows</span><span class="keycap">Space</span>pick two <span class="keycap">H</span><span class="keycap">Y</span>hint <span class="keycap">RT</span>solve <span class="keycap">Esc</span>close';
+  foot.innerHTML = '<span class="keycap">Click</span><span class="keycap">Drag</span>card into the ring <span class="keycap">Arrows</span><span class="keycap">Space</span>pick / deduce <span class="keycap">H</span><span class="keycap">Y</span>hint <span class="keycap">RT</span>solve <span class="keycap">Esc</span>clear / close';
 
-  let isOpen = false, cursor = 0, first = null, drag = null, temp = null, flash = null, lineTimer = 0, cards = [], newId = null, jumpToNew = false;
-  let misses = 0, hinted = new Set(), hintTimer = 0, solving = false;
+  let isOpen = false, cursor = 0, drag = null, temp = null, lineTimer = 0, cards = [], newId = null;
+  let misses = 0, hinted = new Set(), hintTimer = 0, solving = false, busy = false;
+  const slots = [null, null], failed = new Set(); // failed: "a|b" pairs already tried
   const hintCount = new Map();
   const api = {
     get isOpen() { return isOpen; },
@@ -93,34 +101,21 @@ export function createBoard({ caseFile, hud }) {
     const b = box.getBoundingClientRect(), r = node.getBoundingClientRect();
     return [r.left - b.left + r.width / 2, r.top - b.top + r.height / 2];
   };
-  const cardEl = (id) => cardsEl.querySelector(`[data-id="${id}"]`);
+  const cardEl = (id) => main.querySelector(`.bd-card[data-id="${id}"]`);
+  const title = (id) => caseFile.facts().find((f) => f.id === id)?.title;
 
+  // Threads from each filled slot to the DEDUCE button, plus the line trailing a dragged card.
   function drawStrings() {
     svg.replaceChildren();
-    const add = (a, b, cls) => {
-      const A = cardEl(a), B = cardEl(b);
-      if (!A || !B) return;
-      const [x1, y1] = center(A), [x2, y2] = center(B);
+    const line = (x1, y1, x2, y2, cls) => {
       const l = document.createElementNS(svgNS, 'line');
       for (const [k, v] of Object.entries({ x1, y1, x2, y2, class: cls })) l.setAttribute(k, v);
       svg.appendChild(l);
-      for (const [cx, cy] of [[x1, y1], [x2, y2]]) { // node dots where the string meets the card
-        const dot = document.createElementNS(svgNS, 'circle');
-        for (const [k, v] of Object.entries({ cx, cy, r: 5, class: `dot ${cls}` })) dot.setAttribute(k, v);
-        svg.appendChild(dot);
-      }
     };
-    for (const [id, list] of logic.edges) for (const [a, b] of list) add(a, b, logic.solved.has(id) ? 'locked' : 'partial');
-    if (flash) add(flash[0], flash[1], 'wrong');
-    if (temp) {
-      const A = cardEl(temp.from);
-      if (A) {
-        const [x1, y1] = center(A), b = box.getBoundingClientRect();
-        const l = document.createElementNS(svgNS, 'line');
-        for (const [k, v] of Object.entries({ x1, y1, x2: temp.x - b.left, y2: temp.y - b.top, class: 'temp' })) l.setAttribute(k, v);
-        svg.appendChild(l);
-      }
-    }
+    const [gx, gy] = center(goBtn), cls = ring.dataset.state === 'bad' ? 'wrong' : 'locked';
+    slots.forEach((id, i) => { if (id) { const [x, y] = center(slotEls[i]); line(x, y, gx, gy, cls); } });
+    const A = temp && cardEl(temp.from);
+    if (A) { const [x1, y1] = center(A), b = box.getBoundingClientRect(); line(x1, y1, temp.x - b.left, temp.y - b.top, 'temp'); }
   }
 
   function say(text) {
@@ -130,76 +125,98 @@ export function createBoard({ caseFile, hud }) {
     lineTimer = setTimeout(() => lineEl.classList.remove('on'), BOARDUI.lineSeconds * 1000);
   }
 
-  function propose(a, b) {
-    first = null;
-    const r = logic.link(a, b);
-    if (r.kind === 'same') { render(); return; }
-    if (r.kind === 'wrong') {
-      flash = [a, b]; api.onWrong?.(); misses++;
-      const title = (id) => caseFile.facts().find((f) => f.id === id)?.title;
-      say(r.hint ? `${r.line} ${BOARD.hintLine.replace('{fact}', title(r.hint) ?? '…')}` : r.line);
-      setTimeout(() => { flash = null; drawStrings(); }, BOARDUI.snapMs);
-    } else {
-      say(r.line);
+  const clearSlots = () => { slots[0] = slots[1] = null; ring.dataset.state = ''; busy = false; render(); };
+
+  function place(id) {
+    if (busy || slots.includes(id)) return;
+    const i = slots.indexOf(null);
+    if (i < 0) return;
+    slots[i] = id; api.onUi?.('move'); render();
+  }
+
+  function deduce() {
+    const [a, b] = slots;
+    if (!a || !b || busy) return;
+    busy = true;
+    const key = [a, b].sort().join('|');
+    if (failed.has(key)) { ring.dataset.state = 'bad'; say(`⚠ Already tried those two. ${BOARD.wrongLines[0]}`); api.onWrong?.(); }
+    else {
+      const r = logic.link(a, b);
       if (r.kind === 'solved') {
+        ring.dataset.state = 'ok'; say(r.line);
         caseFile.apply(r.conclusion.effects);
         misses = 0; hintCount.clear(); hinted.clear();
-        newId = r.conclusion.result; jumpToNew = true; // the next render scrolls to the new conclusion card
+        newId = r.conclusion.result;
         api.onLock?.(r.conclusion);
+      } else {
+        failed.add(key); misses++; ring.dataset.state = 'bad'; api.onWrong?.();
+        say(r.hint ? `${r.line} ${BOARD.hintLine.replace('{fact}', title(r.hint) ?? '…')}` : r.line);
       }
     }
     render();
+    setTimeout(clearSlots, BOARDUI.snapMs);
   }
 
+  const isResult = (f) => f.source === 'Deduction board';
   function render() {
     const facts = caseFile.facts();
-    const jump = jumpToNew; jumpToNew = false;
-    if (jump) { const k = facts.findIndex((f) => f.id === newId); if (k >= 0) cursor = k; }
-    cursor = Math.min(cursor, Math.max(0, facts.length - 1));
-    cardsEl.replaceChildren(...facts.map((f, i) => {
-      const d = el('div', 'bd-card', null);
+    const spent = new Set();
+    for (const c of BOARD.conclusions) if (logic.solved.has(c.id)) c.needs.forEach((n) => spent.add(n));
+    cards = facts.filter((f) => !isResult(f) && !spent.has(f.id) && !slots.includes(f.id)).map((f) => f.id);
+    cursor = Math.max(0, Math.min(cursor, cards.length - 1));
+    const side = [[], []];
+    facts.filter((f) => !spent.has(f.id) && !slots.includes(f.id)).forEach((f, i) => {
+      const d = el('div', 'bd-card', null), live = cards.includes(f.id);
       d.dataset.id = f.id;
-      if (i === cursor) d.classList.add('cursor');
-      if (f.id === first) d.classList.add('sel');
-      if (f.source === 'Deduction board') d.classList.add('result');
+      if (live && cards[cursor] === f.id) d.classList.add('cursor');
+      if (isResult(f)) d.classList.add('result');
       if (f.id === newId) d.classList.add('new');
       if (hinted.has(f.id)) d.classList.add('hinted');
-      el('div', 'tag', d, f.source === 'Deduction board' ? 'CONCLUSION' : `FACT-${String(i + 1).padStart(2, '0')}`);
+      el('div', 'tag', d, isResult(f) ? 'CONCLUSION' : `FACT-${String(facts.indexOf(f) + 1).padStart(2, '0')}`);
       el('div', 't', d, f.title); el('div', 'x', d, f.text);
       el('div', 'src', d, f.source);
-      d.addEventListener('pointerdown', (e) => {
-        e.preventDefault(); d.setPointerCapture(e.pointerId);
-        drag = { from: f.id, x0: e.clientX, y0: e.clientY, moved: false };
-      });
-      d.addEventListener('pointermove', (e) => {
-        if (!drag || drag.from !== f.id) return;
-        if (!drag.moved && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > BOARDUI.dragStart) drag.moved = true;
-        if (drag.moved) { temp = { from: f.id, x: e.clientX, y: e.clientY }; drawStrings(); }
-      });
-      d.addEventListener('pointerup', (e) => {
-        if (!drag || drag.from !== f.id) return;
-        const dr = drag; drag = null; temp = null;
-        if (dr.moved) {
-          const target = document.elementFromPoint(e.clientX, e.clientY)?.closest('.bd-card');
+      if (live) {
+        d.addEventListener('pointerdown', (e) => {
+          e.preventDefault(); d.setPointerCapture(e.pointerId);
+          drag = { from: f.id, x0: e.clientX, y0: e.clientY, moved: false };
+        });
+        d.addEventListener('pointermove', (e) => {
+          if (!drag || drag.from !== f.id) return;
+          if (!drag.moved && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > BOARDUI.dragStart) drag.moved = true;
+          if (drag.moved) { temp = { from: f.id, x: e.clientX, y: e.clientY }; drawStrings(); }
+        });
+        d.addEventListener('pointerup', (e) => {
+          if (!drag || drag.from !== f.id) return;
+          const dr = drag; drag = null; temp = null;
+          const onRing = dr.moved ? document.elementFromPoint(e.clientX, e.clientY)?.closest('.bd-ring') : true; // a plain click goes to the next free slot
           drawStrings();
-          if (target && target.dataset.id !== f.id) propose(f.id, target.dataset.id);
-        } else { cursor = i; pick(f.id); }
-      });
-      return d;
-    }));
-    if (!facts.length) cardsEl.innerHTML = '<div class="bd-empty">&gt; NO DATA. TALK TO PEOPLE. SCAN ECHOES.</div>';
+          if (onRing) place(f.id);
+        });
+      }
+      side[i % 2].push(d);
+    });
+    leftEl.replaceChildren(...side[0]); rightEl.replaceChildren(...side[1]);
+    slotEls.forEach((s, i) => {
+      s.replaceChildren(); s.classList.toggle('full', !!slots[i]);
+      s.onclick = () => { if (!busy && slots[i]) { slots[i] = null; render(); } }; // click a slot to take the card back
+      el('div', 't', s, slots[i] ? title(slots[i]) : i ? 'CLUE B' : 'CLUE A');
+    });
+    const ready = !!(slots[0] && slots[1]);
+    ring.classList.toggle('ready', ready); goBtn.disabled = !ready || busy;
+    archiveEl.replaceChildren(...facts.filter((f) => spent.has(f.id)).map((f) => el('div', 'bd-spent', null, f.title)));
+    archiveEl.style.display = spent.size ? '' : 'none';
+    if (!facts.length) leftEl.innerHTML = '<div class="bd-empty">&gt; NO DATA. TALK TO PEOPLE. SCAN ECHOES.</div>';
     status.textContent = `FACTS ${facts.length} · LINKS ${logic.solved.size}/${BOARD.conclusions.length}`;
-    cards = facts.map((f) => f.id);
     solveBtn.style.display = misses >= BOARDUI.solveAfter && nextOpen() ? '' : 'none';
-    cardsEl.querySelector('.cursor')?.scrollIntoView({ block: jump ? 'center' : 'nearest' }); // pad / keys moving the cursor scroll the grid
+    main.querySelector('.cursor')?.scrollIntoView({ block: 'nearest' }); // pad / keys moving the cursor scroll the columns
     requestAnimationFrame(drawStrings);
   }
 
   // The next conclusion Juno could draw: the first unsolved one whose facts she holds.
-  const nextOpen = () => BOARD.conclusions.find((c) => !logic.solved.has(c.id) && c.needs.every((f) => caseFile.has(f)));
-  const factTitle = (id) => caseFile.facts().find((f) => f.id === id)?.title ?? '…';
+  const nextOpen = () => BOARD.conclusions.find((c) => !logic.solved.has(c.id) && [...c.needs, ...(c.requires ?? [])].every((f) => caseFile.has(f)));
+  const factTitle = (id) => title(id) ?? '…';
 
-  // Hint: each press on the same conclusion says more (one clue, then the pair, then all of them) and makes those cards glow.
+  // Hint: first press names one clue, the next the pair; those cards glow.
   function hint() {
     const c = nextOpen();
     if (!c) { say('Nothing more to connect with what I have. I need more evidence.'); return; }
@@ -214,29 +231,19 @@ export function createBoard({ caseFile, hud }) {
     render();
   }
 
-  // Solve: Juno picks the right cards herself, one link at a time.
+  // Solve: Juno fills the ring with the right pair and presses DEDUCE herself.
   function solve() {
     const c = nextOpen();
-    if (!c || solving) return;
-    solving = true;
-    const [a, b, d] = c.needs, seq = [[a, b]];
-    if (d) seq.push([b, d]);
-    const had = (x, y) => (logic.edges.get(c.id) ?? []).some(([p, q]) => (p === x && q === y) || (p === y && q === x));
-    const todo = seq.filter(([x, y]) => !had(x, y));
-    todo.forEach(([x, y], i) => {
-      setTimeout(() => { first = x; const k = cards.indexOf(x); if (k >= 0) cursor = k; render(); }, i * BOARDUI.solveStepMs);
-      setTimeout(() => { const k = cards.indexOf(y); if (k >= 0) cursor = k; propose(x, y); if (i === todo.length - 1) solving = false; }, i * BOARDUI.solveStepMs + BOARDUI.solveStepMs / 2);
-    });
-    if (!todo.length) solving = false;
-  }
-
-  // Select a card; the second selection proposes the link.
-  function pick(id) {
-    if (first === null) { first = id; render(); } else if (first === id) { first = null; render(); } else propose(first, id);
+    if (!c || solving || busy) return;
+    solving = true; slots[0] = slots[1] = null;
+    const [a, b] = c.needs, step = BOARDUI.solveStepMs / 2;
+    setTimeout(() => place(a), 0);
+    setTimeout(() => place(b), step);
+    setTimeout(() => { deduce(); solving = false; }, step * 2);
   }
 
   function moveCursor(dx, dy) {
-    const nodes = [...cardsEl.querySelectorAll('.bd-card')];
+    const nodes = cards.map(cardEl).filter(Boolean);
     if (nodes.length < 2) return;
     const [cx, cy] = center(nodes[cursor]);
     let best = -1, bestScore = Infinity;
@@ -250,21 +257,22 @@ export function createBoard({ caseFile, hud }) {
     if (best >= 0) { cursor = best; render(); }
   }
 
-  cardsEl.addEventListener('scroll', () => drawStrings()); // strings follow the cards when the grid scrolls
+  for (const c of [leftEl, rightEl]) c.addEventListener('scroll', () => drawStrings());
   closeBtn.addEventListener('click', () => api.close());
   hintBtn.addEventListener('click', () => hint());
   solveBtn.addEventListener('click', () => solve());
+  goBtn.addEventListener('click', () => deduce());
   window.addEventListener('resize', () => { if (isOpen) drawStrings(); });
 
   Object.assign(api, {
-    open() { isOpen = true; first = null; newId = null; hinted.clear(); root.classList.add('on'); render(); api.onUi?.('confirm'); },
+    open() { isOpen = true; slots[0] = slots[1] = null; busy = false; ring.dataset.state = ''; newId = null; hinted.clear(); root.classList.add('on'); render(); api.onUi?.('confirm'); },
     close() { isOpen = false; drag = temp = null; root.classList.remove('on'); api.onUi?.('back'); },
     toggle() { if (isOpen) api.close(); else api.open(); },
     // Every frame while open.
     update(input) {
       if (!isOpen) return;
       const p = (a) => input.pressed(a);
-      if (p('back') || p('pause')) { if (first !== null) { first = null; render(); } else api.close(); return; }
+      if (p('back') || p('pause')) { if (slots[0] || slots[1]) { if (!busy) { slots[0] = slots[1] = null; render(); } } else api.close(); return; }
       if (p('board')) { api.close(); return; }
       if (p('left') || p('menuLeft')) moveCursor(-1, 0);
       if (p('right') || p('menuRight')) moveCursor(1, 0);
@@ -272,7 +280,7 @@ export function createBoard({ caseFile, hud }) {
       if (p('down') || p('menuDown')) moveCursor(0, 1);
       if (p('hideControls') || (p('caseFile') && input.lastDevice === 'gamepad')) hint(); // H on the keyboard, Y / Triangle on a pad (the case file button, unused while the board is open)
       if (p('solve') && solveBtn.style.display !== 'none') solve(); // right trigger, once the Solve button has appeared
-      if (p('interact') && cards[cursor]) pick(cards[cursor]);
+      if (p('interact')) { if (slots[0] && slots[1]) deduce(); else if (cards[cursor]) place(cards[cursor]); }
     },
   });
   return api;

@@ -337,7 +337,7 @@ export const ECHOES = {
 
 // Deduction board: each conclusion needs a pair (or trio) of fact ids linked together on the board.
 //  { id, needs: [factId, ...], result: ENTRIES fact id shown as the conclusion card, line: Juno's line when it locks in, effects }.
-//  A pair locks on one link; a trio needs links that connect all three. Wrong links snap back with a line from wrongLines;
+//  Optional requires: [factId] = facts Juno must also hold before the pair is offered. A pair locks on one link; a trio needs links that connect all three. Wrong links snap back with a line from wrongLines;
 //  every 3rd wrong link that touches a conclusion's facts makes Juno hint at one it still needs ({fact} = its title).
 export const BOARD = {
   wrongLines: ["That doesn't connect.", 'No. Those two have nothing to do with each other.', 'Close, maybe. But no.', "Not like that."],
@@ -351,7 +351,7 @@ export const BOARD = {
       line: "(A port burned from outside, a memory someone edited. Whoever did this can rewrite what an implant saw. That's auditor override work. Bureau grey.)", effects: [{ addFact: 'override_used' }] },
     { id: 'log_faked', needs: ['door_log', 'gloved_hand'], result: 'log_faked',
       line: "(The log says nobody left. The gloved hand says otherwise. Somebody made it lie.)", effects: [{ addFact: 'log_faked' }] },
-    { id: 'kit_saw_them', needs: ['kit_outside', 'gloved_hand', 'kit_name'], result: 'kit_saw_them',
+    { id: 'kit_saw_them', needs: ['kit_outside', 'gloved_hand'], requires: ['kit_name'], result: 'kit_saw_them',
       line: "(The worker is Kit Lacroix, Mama Teo said so. He was in the alley when the gloved hand came out, and he told me he was in his bunk by eleven. Kit saw them leave.)", effects: [{ addFact: 'kit_saw_them' }, { setFlag: 'kit_deduced' }, { setFlag: 'kit_named' }] },
   ],
 };
