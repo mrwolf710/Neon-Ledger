@@ -74,7 +74,8 @@ export function createBoard({ caseFile, hud }) {
   const leftEl = el('div', 'bd-cards', main);
   const ring = el('div', 'bd-ring', main);
   const slotEls = [el('div', 'bd-slot', ring), el('div', 'bd-slot', ring)];
-  const goBtn = el('button', 'bd-go', ring, 'DEDUCE'); // DOM order puts it last; CSS grid puts it between the slots
+  const fused = el('div', 'bd-fused', ring); // the new conclusion appears between the slots on a match
+  const goBtn = el('button', 'bd-go', ring, 'DEDUCE'); // under the slots
   const rightEl = el('div', 'bd-cards', main);
   const archiveEl = el('div', 'bd-archive', box);
   const svgNS = 'http://www.w3.org/2000/svg';
@@ -112,8 +113,8 @@ export function createBoard({ caseFile, hud }) {
       for (const [k, v] of Object.entries({ x1, y1, x2, y2, class: cls })) l.setAttribute(k, v);
       svg.appendChild(l);
     };
-    const [gx, gy] = center(goBtn), cls = ring.dataset.state === 'bad' ? 'wrong' : 'locked';
-    slots.forEach((id, i) => { if (id) { const [x, y] = center(slotEls[i]); line(x, y, gx, gy, cls); } });
+    const cls = ring.dataset.state === 'bad' ? 'wrong' : 'locked';
+    if (slots[0] && slots[1] && ring.dataset.state !== 'ok') { const [x1, y1] = center(slotEls[0]), [x2, y2] = center(slotEls[1]); line(x1, y1, x2, y2, cls); }
     const A = temp && cardEl(temp.from);
     if (A) { const [x1, y1] = center(A), b = box.getBoundingClientRect(); line(x1, y1, temp.x - b.left, temp.y - b.top, 'temp'); }
   }
@@ -145,6 +146,7 @@ export function createBoard({ caseFile, hud }) {
       if (r.kind === 'solved') {
         ring.dataset.state = 'ok'; say(r.line);
         caseFile.apply(r.conclusion.effects);
+        fused.textContent = title(r.conclusion.result) ?? '';
         misses = 0; hintCount.clear(); hinted.clear();
         newId = r.conclusion.result;
         api.onLock?.(r.conclusion);
@@ -159,7 +161,7 @@ export function createBoard({ caseFile, hud }) {
 
   const isResult = (f) => f.source === 'Deduction board';
   function render() {
-    const facts = caseFile.facts();
+    const all = caseFile.facts(), facts = [...all].reverse(); // newest first: the latest clue sits at the top
     const spent = new Set();
     for (const c of BOARD.conclusions) if (logic.solved.has(c.id)) c.needs.forEach((n) => spent.add(n));
     cards = facts.filter((f) => !isResult(f) && !spent.has(f.id) && !slots.includes(f.id)).map((f) => f.id);
@@ -168,11 +170,12 @@ export function createBoard({ caseFile, hud }) {
     facts.filter((f) => !spent.has(f.id) && !slots.includes(f.id)).forEach((f, i) => {
       const d = el('div', 'bd-card', null), live = cards.includes(f.id);
       d.dataset.id = f.id;
+      d.title = f.text;
       if (live && cards[cursor] === f.id) d.classList.add('cursor');
       if (isResult(f)) d.classList.add('result');
       if (f.id === newId) d.classList.add('new');
       if (hinted.has(f.id)) d.classList.add('hinted');
-      el('div', 'tag', d, isResult(f) ? 'CONCLUSION' : `FACT-${String(facts.indexOf(f) + 1).padStart(2, '0')}`);
+      el('div', 'tag', d, isResult(f) ? 'CONCLUSION' : `FACT-${String(all.indexOf(f) + 1).padStart(2, '0')}`);
       el('div', 't', d, f.title); el('div', 'x', d, f.text);
       el('div', 'src', d, f.source);
       if (live) {
