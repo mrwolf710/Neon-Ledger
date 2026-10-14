@@ -262,33 +262,48 @@ function car(M) {
 // The implant dealer's shopfront sits in the north-middle gap. First pass: placeholder booths with sign text, lights and collision. Vendors are cast later (spots 'v_<id>', each facing its counter's customer side).
 export const EXCHANGE = {
   half: [15, 10.5],                 // square half-size (x, z)
-  booth: { w: 3.2, counterD: 0.9, counterH: 1.0, postH: 2.3, signH: 0.55 },
   neon: { red: 0xff3b2f, orange: 0xff8a1f, yellow: 0xffd23a },        // the palette of the whole square: reds, oranges, yellows
-  // id, sign text, x, z, side: -1 vendor stands north of the counter (customers come from +z), +1 south of it (customers from -z). Placeholder stock; the cast list is in docs/chapter-2.md.
+  // id, sign text, x, z (the vendor's spot), side (-1: customers come from +z, +1: from -z), width, yaw offset (radians), style (awning | kiosk | cart).
+  // Deliberately uneven: no two booths share a width, angle or style for long, and none sit on a grid. Placeholder stock; the cast list is in docs/chapter-2.md.
   booths: [
-    ['echoes', 'ECHOES', -9, -8.6, -1], ['sauce', 'HOT SAUCE', -3, -8.6, -1], ['noodles', 'NOODLES', 3, -8.6, -1], ['tarot', 'TAROT', 9, -8.6, -1],
-    ['parts', 'PARTS', -9, 8.6, 1], ['jewels', 'JEWELS', -3, 8.6, 1], ['umbrellas', 'UMBRELLAS', 3, 8.6, 1], ['idprint', 'ID PRINT', 9, 8.6, 1],
-    ['cables', 'CABLES', -3.6, -2.8, -1], ['stim', 'STIM', 3.6, -2.8, -1], ['drones', 'DRONES', -3.6, 2.8, -1], ['flowers', 'FLOWERS', 3.6, 2.8, -1],
+    ['echoes', 'ECHOES', -10.4, -8.9, -1, 3.6, 0.10, 'kiosk'], ['sauce', 'HOT SAUCE', -4.2, -8.2, -1, 2.6, -0.14, 'cart'], ['noodles', 'NOODLES', 3.4, -9.1, -1, 3.0, 0.08, 'awning'], ['tarot', 'TAROT', 10.1, -8.4, -1, 3.8, -0.12, 'kiosk'],
+    ['parts', 'PARTS', -9.4, 8.7, 1, 3.4, -0.16, 'awning'], ['jewels', 'JEWELS', -2.6, 8.2, 1, 2.4, 0.2, 'cart'], ['umbrellas', 'UMBRELLAS', 4.6, 8.9, 1, 3.8, 0.09, 'kiosk'], ['idprint', 'ID PRINT', 11.2, 8.0, 1, 2.8, -0.22, 'awning'],
+    ['cables', 'CABLES', -4.6, -2.9, -1, 3.0, 0.42, 'awning'], ['stim', 'STIM', 4.0, -2.0, -1, 2.5, -0.34, 'cart'], ['drones', 'DRONES', -3.4, 3.4, -1, 3.5, -0.22, 'kiosk'], ['flowers', 'FLOWERS', 5.2, 3.2, -1, 2.8, 0.5, 'cart'],
   ],
+  scatter: [[-12.4, -4.5, 3], [-12.6, 5.4, 2], [12.8, -3.6, 2], [13.2, 3.8, 3], [0.6, 5.7, 1], [-0.8, -5.6, 2], [8.2, 0.6, 1]],   // loose crate stacks: x, z, height in crates
 };
 function exchange(M) {
-  const b = begin('exchange'), PM = propMats(M), [hx, hz] = EXCHANGE.half, B = EXCHANGE.booth, glow = BUILDINGS.windowGlow;
+  const b = begin('exchange'), PM = propMats(M), [hx, hz] = EXCHANGE.half, glow = BUILDINGS.windowGlow;
   const neon = Object.fromEntries(Object.entries(EXCHANGE.neon).map(([k, c]) => [k, new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(glow) })]));
   const cycle = [neon.red, neon.orange, neon.yellow], tint = [EXCHANGE.neon.red, EXCHANGE.neon.orange, EXCHANGE.neon.yellow];
   floor(b, M.sidewalk, -hx, -hz, hx, hz);
   for (const z of [-hz - T / 2, hz + T / 2]) wallX(b, M, z, -hx - T, hx + T, [], { h: 1.2, mat: M.walls[0] });
   wallZ(b, M, -hx - T / 2, -hz, hz, [[-1.2, 1.2]], { h: 1.2, mat: M.walls[0] });                   // west: the way in (from the car)
-  b.box(neon.orange, 0.04, 0.04, 14, -3, 0.02, 0); b.box(neon.red, 14, 0.04, 0.04, 0, 0.02, 0);     // glowing floor lines crossing the square
-  EXCHANGE.booths.forEach(([id, text, x, z, side], i) => {
-    const front = z - side * 0.7;                                                                       // the counter sits on the customer side
-    b.box(PM.wood, B.w, B.counterH, B.counterD, x, B.counterH / 2, front); b.block(x, front, B.w, B.counterD);
-    b.box(cycle[i % 3], B.w, 0.05, 0.06, x, B.counterH + 0.02, front - side * -0.0 + (B.counterD / 2) * (side === 1 ? -1 : 1));      // thin neon edge along the customer side of the counter
-    for (const sx of [-1, 1]) b.box(PM.pole, 0.08, B.postH, 0.08, x + sx * (B.w / 2 - 0.05), B.postH / 2, front);
-    b.box(cycle[i % 3], B.w, 0.08, 0.08, x, B.postH, front);                                            // neon bar between the posts
-    b.box(signMat(text, tint[i % 3]), B.w - 0.3, B.signH, 0.06, x, B.postH + 0.45, z - side * 0.2, 0, 0, false); // sign above the vendor
-    b.box(PM.crates[i % PM.crates.length], 0.6, 0.6, 0.6, x - B.w / 2 + 0.4, 0.3, z + side * 0.5); b.block(x - B.w / 2 + 0.4, z + side * 0.5, 0.6, 0.6); // stock behind the counter
-    b.spot(`v_${id}`, x + 0.4, z + side * 0.2);
+  for (const [x, z, ry, len] of [[-6, 1, 0.5, 6], [3, -5.5, -0.35, 5], [7, 6, 0.8, 4]]) b.box(neon.orange, len, 0.04, 0.05, x, 0.02, z, 0, ry); // a few glowing floor strips at odd angles
+  EXCHANGE.booths.forEach(([id, text, x, z, side, w, rot, style], i) => {
+    const yaw = rot + (side === 1 ? Math.PI : 0), c = Math.cos(yaw), sn = Math.sin(yaw), mat = cycle[i % 3];
+    // part in the booth's own frame: lx along the counter, lz toward the customer (+z), rotated into the world with the booth.
+    const part = (m, sx, sy, sz, lx, ly, lz, ry = 0) => b.box(m, sx, sy, sz, x + lx * c + lz * sn, ly, z - lx * sn + lz * c, 0, yaw + ry);
+    const cd = style === 'cart' ? 0.8 : 0.9, ch = style === 'cart' ? 0.85 : 1.0, cz = 0.9;               // counter depth, height, distance from the vendor
+    part(PM.wood, w, ch, cd, 0, ch / 2, cz); part(mat, w, 0.05, 0.06, 0, ch + 0.02, cz + cd / 2);          // counter + thin neon edge on the customer side
+    const hw = Math.abs(c) * w / 2 + Math.abs(sn) * cd / 2, hd = Math.abs(sn) * w / 2 + Math.abs(c) * cd / 2; // axis-aligned bounds of the rotated counter
+    b.block(x + cz * sn, z + cz * c, hw * 2, hd * 2);
+    if (style === 'awning') {
+      for (const sx of [-1, 1]) part(PM.pole, 0.08, 2.3, 0.08, sx * (w / 2 - 0.05), 1.15, cz);
+      part(mat, w, 0.08, 0.08, 0, 2.3, cz);
+      part(signMat(text, tint[i % 3]), w - 0.3, 0.55, 0.06, 0, 2.75, -0.2);
+    } else if (style === 'kiosk') {
+      for (const sx of [-1, 1]) for (const lz of [-0.4, cz + 0.3]) part(PM.pole, 0.08, 2.2, 0.08, sx * (w / 2 - 0.05), 1.1, lz);
+      part(PM.wood, w + 0.3, 0.08, cz + 1.0, 0, 2.24, cz / 2 - 0.05); part(mat, w + 0.3, 0.05, 0.05, 0, 2.2, cz + 0.45);
+      part(signMat(text, tint[i % 3]), w - 0.4, 0.5, 0.06, 0, 2.7, -0.05);
+    } else { // cart: low, with two wheels and a tall sign on a pole
+      for (const sx of [-1, 1]) b.add(PM.pole, new THREE.CylinderGeometry(0.22, 0.22, 0.08, 10).rotateZ(Math.PI / 2).rotateY(yaw).translate(x + sx * (w / 2) * c + cz * sn, 0.22, z - sx * (w / 2) * sn + cz * c));
+      part(PM.pole, 0.07, 2.0, 0.07, w / 2 - 0.1, 1.0, cz - 0.1); part(signMat(text, tint[i % 3]), 1.5, 0.5, 0.06, w / 2 - 0.7, 2.1, cz - 0.1);
+    }
+    part(PM.crates[i % PM.crates.length], 0.6, 0.6, 0.6, -w / 2 + 0.4, 0.3, -0.5);
+    b.spot(`v_${id}`, x + 0.3 * c, z - 0.3 * sn);
   });
+  for (const [x, z, n] of EXCHANGE.scatter) crates(b, PM, x, z, n);
   // The implant dealer: a shopfront in the gap between the two middle north booths (faces +z, toward the camera; the interior is added later, the door is a glowing mat for now).
   b.box(M.walls[1], 2.6, 3.4, 1.0, 0, 1.7, -hz + 0.5); b.block(0, -hz + 0.5, 2.6, 1.0);
   b.box(neon.red, 1.1, 2.0, 0.06, 0, 1.0, -hz + 1.03);
