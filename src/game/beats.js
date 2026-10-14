@@ -4,6 +4,7 @@ import { EXAMINABLES, TALK, FALLBACK, ENTRIES, BOARD, conversationFor } from './
 // The beat manager: the cold open cutscene, the objective line / minimap mark, and the things you can interact with.
 // Beats 1-3 live here (Stage 9A); later beats add steps to STEPS and conversations to story.js.
 export const BEATS = {
+  overrideSeconds: 2.4, // the red 'System override' banner before Hale's forced call at the end of chapter 1
   finaleSeconds: 10, finaleGuard: 1.5, // end of chapter 1: how long the fast music plays before it moves on by itself; seconds before a tap can skip it
   trainSeconds: 6.5,      // the train rolling into the platform
   uiAt: 0.9,              // fraction of the zoom after which the UI fades in (quickly, see #hud.on in styles.css)
@@ -127,8 +128,11 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     await wait(2.5);
     await dialogue.start('self_doubt');                          // Juno to herself
     await wait(1.2);
-    sfx.comms?.();                                               // Hale calls
-    await wait(0.9);
+    // Hale forces the call through: no answering this time, a red override banner and urgent beeps, then her voice.
+    callEl.textContent = '⚠ SYSTEM OVERRIDE - INCOMING COMMUNICATION'; callEl.classList.add('on', 'override');
+    for (let k = 0; k < 3; k++) { sfx.comms?.(); await wait(BEATS.overrideSeconds / 3); }
+    callEl.classList.remove('on', 'override');
+    await wait(0.3);
     await dialogue.start('hale_end');
     await dialogue.start('car_reply');                           // Juno answers Hale: not coming in yet, Hale cuts in
     await wait(0.4);                                             // Hale's "Juno—" is cut off: straight to black
