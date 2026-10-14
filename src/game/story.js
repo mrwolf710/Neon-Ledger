@@ -53,6 +53,7 @@ const TEO_POINTS = 'Mama_Teo_Points_to_Capsule_Hotel';
 const DONE_EFFECTS = { Capsule_after_Teo: [{ setFlag: 'kit_paid' }], Mama_Teo_Points_to_Capsule_Hotel: [{ setFlag: 'teo_pointed' }, { setFlag: 'teo_cracked' }] };
 export function conversationFor(personId, visit, ctx = {}) {
   if (personId === 'mamaTeo' && ctx.has?.('kit_outside') && !ctx.has('kit_name')) return 'teo_worker'; // the worker's echo is in the case file: Teo names him
+  if (personId === 'vendor' && ctx.flag?.('teo_pointed') && !ctx.flag('kit_paid') && !ctx.flag('vendor_kit_done')) return 'vendor_kit'; // once, between Teo's pointer and talking to the worker: someone who saw him go back
   if (personId === 'kit' && ctx.flag?.('kit_paid')) return ctx.flag('kit_deduced') ? 'kit' : 'kit_wait'; // once paid: a short line until the board names him, then the interview
   const fits = (r) => r.npc === personId && (r.when === 'all' || (r.when === '4' ? visit >= 4 : +r.when === visit))
     && (!r.fact || ctx.has?.(r.fact)) && (!r.talked || ctx.talked?.(r.talked));
@@ -112,6 +113,12 @@ export const CONVERSATIONS = {
     a: { speaker: 'vendor', text: "You smell like rain and Bureau paperwork. The Sable is up the street on the left, under the red awning. They found a broker in the back.", next: 'b' },
     b: { speaker: 'juno', text: 'Did anyone go in or out tonight?', next: 'c' },
     c: { speaker: 'vendor', text: 'Everyone and no one. Lowmarket stops looking at faces after ten.', end: true },
+  } },
+  // The street vendor saw the hostel worker go back across the street (gives the "ask around the hostel" lead a face).
+  vendor_kit: { start: 'a', nodes: {
+    a: { speaker: 'juno', text: 'Did you see anyone from the Capsule hostel tonight? The night desk?', next: 'b' },
+    b: { speaker: 'vendor', text: "The skinny kid with the nervous hands? Saw him cut back across the street toward the hostel a while ago. He'll be on the front desk by now.", next: 'c' },
+    c: { speaker: 'juno', text: 'Thanks.', effects: [{ setFlag: 'vendor_kit_done' }], end: true },
   } },
   preacher: { start: 'a', nodes: {
     a: { speaker: 'preacher', text: 'They copy your memories and call it a record. Listen, child: what is remembered is what is owned.', next: 'b' },
