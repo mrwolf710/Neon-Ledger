@@ -70,10 +70,11 @@ export function createParticles(scene, rng, rainCount, steamVents) {
     x: rng.range(-1, 1), y: rng.range(0, 1), z: rng.range(-1, 1), p: rng.range(0, 6.28),
   }));
   let nextSplash = 0, nextPuff = 0, steamAcc = 0, time = 0;
-  const api = { rainScale: 1, active: true, center: { x: 0, z: 0 } }; // center: the outdoor area the shower covers // 0..1 fraction of drops shown (time of day can lighten the rain)
+  const api = { rainScale: 1, active: true, motes: true, center: { x: 0, z: 0 } }; // center: the outdoor area the shower covers // 0..1 fraction of drops shown (time of day can lighten the rain)
 
   api.update = (dt, focus, camera) => {
     for (const mesh of [rain, splash, steam, motes]) mesh.visible = api.active;
+    motes.visible = api.active && api.motes;
     if (!api.active) return;
     time += dt;
     const cx = api.center.x, cz = api.center.z;

@@ -178,7 +178,7 @@ function onAreaEnter(area, spawn) {
   if (area.id !== 'platform') sfx.trainStop(); // the train's idle hum ends when Juno leaves the station
   cast.byId.juno.area = area.id; // the player always belongs to the current area (else she vanishes when you change area)
   cast.setArea(area.id); interactions.setArea(area.id); echo.setArea(area.id);
-  particles.active = area.meta.outdoor;
+  particles.active = area.meta.outdoor; particles.motes = area.id !== 'exchange'; // no floating motes in the market
   tod.setIndoor(!area.meta.outdoor);
   CUTAWAY.minY = area.meta.outdoor ? 0.3 : 1.15; // indoors, tables and the counter stay solid; only walls and signs above them are cut
   tod.setScene(area.id);
