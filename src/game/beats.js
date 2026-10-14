@@ -131,10 +131,7 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     await wait(0.9);
     await dialogue.start('hale_end');
     await dialogue.start('car_reply');                           // Juno answers Hale: not coming in yet, Hale cuts in
-    await wait(0.5);
-    await dialogue.start('car_decide');                          // and decides: the Echo Exchange
-    chapter1Done = true; caseFile.setFlag('chapter1_done');
-    await wait(0.9);
+    await wait(0.4);                                             // Hale's "Juno—" is cut off: straight to black
     await fade.out();
     endDeadHour(); ending = false; finale = true;                // cut to black: the low tone ends, the fast hard music starts
     fade.card([{ text: 'NEON ECHOES', color: '#ffffff', scale: 6 }, { text: 'CASE 01 CONTINUES', color: '#1fd6e8', scale: 3 }, { text: 'TAP OR PRESS ANY BUTTON', color: '#8a8aa8', scale: 2 }], Infinity);
@@ -146,7 +143,12 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
       window.addEventListener('pointerdown', skip, true); window.addEventListener('keydown', skip, true); poll(); tm = setTimeout(done, BEATS.finaleSeconds * 1000);
     });
     await fade.hideCard(0.4);                                    // quick fade to black
-    finale = false;                                              // the Exchange's own tune takes over
+    finale = false;                                              // the car's own quiet music comes back; she is still in the car
+    await fade.in();
+    await dialogue.start('car_decide');                          // she decides: the Echo Exchange
+    chapter1Done = true; caseFile.setFlag('chapter1_done');
+    await wait(0.6);
+    await fade.out();
     const sp = world.spot('exchange', 'start');
     world.jump('exchange', [sp.x, sp.z, Math.PI / 2]);           // while the screen is black
     await fade.card([{ text: 'CHAPTER 2', color: '#ff8a1f', scale: 6 }, { text: 'THE ECHO EXCHANGE', color: '#ffd23a', scale: 3 }], 1.4);
