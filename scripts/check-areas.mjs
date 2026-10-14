@@ -37,8 +37,9 @@ function reach(id, start) {
   }
   return (x, z, r = 1.4) => pts.some(([px, pz]) => Math.hypot(px - x, pz - z) <= r);
 }
-const START = { street: [-0.3, -3.3], platform: null, sable: null, alley: null, hostel: null, car: null };
+const START = { street: [-0.3, -3.3], platform: null, sable: null, alley: null, hostel: null, car: null, exchange: null };
 for (const e of EXITS) if (!START[e.to]) START[e.to] = e.spawn;
+for (const id of ['exchange']) { const st = areas[id].spots.find((q) => q.name === 'start'); START[id] = [st.x, st.z]; } // areas with no door in start from their 'start' spot
 START.platform = areas.platform.spots.find((s) => s.name === 'start') ? [areas.platform.spots.find((s) => s.name === 'start').x, areas.platform.spots.find((s) => s.name === 'start').z] : START.platform;
 for (const [id, a] of Object.entries(areas)) {
   const can = reach(id, START[id]);
