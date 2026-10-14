@@ -16,7 +16,7 @@ export const CUTAWAY = {
   minY: 0.3,      // never cut below this height (street, sidewalks, curbs)
   margin: 0.8,    // only cut things at least this much closer to the camera than the player
   edge: 0.3,      // dithered fraction of the radius
-  mode: 'circle', // 'circle' = the see-through circle around the player; 'roof' = a slot along the line of sight: anything above the sight line (and above roofFloor) is removed
+  mode: 'roof', // 'circle' = the see-through circle around the player; 'roof' = a slot along the line of sight: anything above the sight line (and above roofFloor) is removed
   roofReach: 3.2, // roof mode: half-width of the slot around the line from the camera to the player (world units)
   roofFloor: 2.4, // roof mode: never cut below this height (a bit over Juno's head)
   roofClear: 0.6, // roof mode: cut this far under the sight line so her whole body is clear
@@ -48,10 +48,17 @@ const FRAG = /* glsl */`
     vec2 a = roofSeg.xy, ab = roofSeg.zw - a;
     float rt = clamp(dot(vFogWorldXZ - a, ab) / max(dot(ab, ab), 1e-4), 0.0, 1.0);
     float rd = length(vFogWorldXZ - (a + ab * rt)) / roofP.x;
-    if (rt < roofP.w && rd < 1.0 && vFogWorldY > max(roofP.y, mix(roofRay.x, roofRay.y, rt) - roofP.z)) {
-      const float bayer2[16] = float[16](0., 8., 2., 10., 12., 4., 14., 6., 3., 11., 1., 9., 15., 7., 13., 5.);
-      ivec2 bq = ivec2(mod(gl_FragCoord.xy, 4.0));
-      if ((rd - 0.7) / 0.3 < (bayer2[bq.y * 4 + bq.x] + 0.5) / 16.0) discard;
+    // Above Juno on screen the slot cuts the roofs; below her the cut is the lower half of the old circle, so the near wall ends in a curve instead of a straight line.
+    float cd = length(gl_FragCoord.xy - cutCenter) / cutRadius;
+    const float bayer2[16] = float[16](0., 8., 2., 10., 12., 4., 14., 6., 3., 11., 1., 9., 15., 7., 13., 5.);
+    ivec2 bq = ivec2(mod(gl_FragCoord.xy, 4.0));
+    float bay = (bayer2[bq.y * 4 + bq.x] + 0.5) / 16.0;
+    bool lower = clamp((cutCenter.y - gl_FragCoord.y) / (cutRadius * 0.5) + 0.5, 0.0, 1.0) > bay; // dithered blend across Juno's middle, so the two rules meet without a straight seam
+    bool hit = lower ? (cd < 1.0 && vFogDepth < cutDepth && vFogWorldY > cutMinY)
+                     : (rt < roofP.w && rd < 1.0 && vFogWorldY > max(roofP.y, mix(roofRay.x, roofRay.y, rt) - roofP.z));
+    if (hit) {
+      float e = lower ? (cd - 0.7) / 0.3 : (rd - 0.7) / 0.3;
+      if (e < bay) discard;
     }
   } else {
     float cutD = length(gl_FragCoord.xy - cutCenter) / cutRadius;
