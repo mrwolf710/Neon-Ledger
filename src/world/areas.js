@@ -270,9 +270,10 @@ export const EXCHANGE = {
     ['parts', 'PARTS', -9.4, 8.7, 1, 3.4, -0.16, 'awning'], ['jewels', 'JEWELS', -2.6, 8.2, 1, 2.4, 0.2, 'cart'], ['umbrellas', 'UMBRELLAS', 4.6, 8.9, 1, 3.8, 0.09, 'kiosk'], ['idprint', 'ID PRINT', 11.2, 8.0, 1, 2.8, -0.22, 'awning'],
     ['cables', 'CABLES', -4.6, -2.9, -1, 3.0, 0.42, 'awning'], ['stim', 'STIM', 4.0, -2.0, -1, 2.5, -0.34, 'cart'], ['drones', 'DRONES', -3.4, 3.4, -1, 3.5, -0.22, 'kiosk'], ['flowers', 'FLOWERS', 5.2, 3.2, -1, 2.8, 0.5, 'cart'],
   ],
+  junk: { small: 90, large: 14, seedLabel: 'junk' },            // how much loose clutter litters the square (placed with the seeded rng, so it is the same every run)
   scatter: [[-12.4, -4.5, 3], [-12.6, 5.4, 2], [12.8, -3.6, 2], [13.2, 3.8, 3], [0.6, 5.7, 1], [-0.8, -5.6, 2], [8.2, 0.6, 1]],   // loose crate stacks: x, z, height in crates
 };
-function exchange(M) {
+function exchange(M, rng) {
   const b = begin('exchange'), PM = propMats(M), [hx, hz] = EXCHANGE.half, glow = BUILDINGS.windowGlow;
   const neon = Object.fromEntries(Object.entries(EXCHANGE.neon).map(([k, c]) => [k, new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(glow) })]));
   const cycle = [neon.red, neon.orange, neon.yellow], tint = [EXCHANGE.neon.red, EXCHANGE.neon.orange, EXCHANGE.neon.yellow];
@@ -304,6 +305,36 @@ function exchange(M) {
     b.spot(`v_${id}`, x + 0.3 * c, z - 0.3 * sn);
   });
   for (const [x, z, n] of EXCHANGE.scatter) crates(b, PM, x, z, n);
+  // Random junk: the square should feel chaotic. Clutter keeps out of the booths, the entrance and the dealer's doorway; small pieces never block, large ones do.
+  const jr = rng.fork(EXCHANGE.junk.seedLabel), jstd = (color, rough = 0.8) => new THREE.MeshStandardMaterial({ color, roughness: rough });
+  const JM = { tarp: [jstd(P.rust2), jstd(P.sodium0), jstd(P.rust1), jstd(P.magentaDeep)], barrel: jstd(P.rust1, 0.6), drum: jstd(P.sodium0, 0.5), can: jstd(P.grey3, 0.4) };
+  const booths = EXCHANGE.booths.map(([, , x, z, , w]) => [x, z, w / 2 + 1.5]);
+  const free = (x, z, r) => Math.abs(x) < hx - 0.7 && Math.abs(z) < hz - 0.7 && !(x < -11 && Math.abs(z) < 3) && !(Math.abs(x) < 3.2 && z < -hz + 3.4)
+    && booths.every(([bx, bz, br]) => Math.hypot(x - bx, z - bz) > br + r);
+  const spot = (r) => { for (let t = 0; t < 40; t++) { const x = jr.range(-hx + 0.8, hx - 0.8), z = jr.range(-hz + 0.8, hz - 0.8); if (free(x, z, r)) return [x, z]; } return null; };
+  const bigAt = [];
+  for (let i = 0; i < EXCHANGE.junk.large; i++) {
+    const p = spot(0.9); if (!p || bigAt.some(([qx, qz]) => Math.hypot(p[0] - qx, p[1] - qz) < 2.2)) continue;
+    bigAt.push(p);
+    const kind = jr.pick(['crates', 'barrel', 'barrels', 'pallet']);
+    if (kind === 'crates') crates(b, PM, p[0], p[1], jr.int(1, 3));
+    else if (kind === 'pallet') { b.box(PM.wood, 1.3, 0.14, 1.0, p[0], 0.07, p[1], 0, jr.range(0, 3)); b.box(PM.crates[jr.int(0, 2)], 0.8, 0.5, 0.7, p[0], 0.39, p[1], 0, jr.range(0, 3)); b.block(p[0], p[1], 1.3, 1.3); }
+    else for (let k = 0; k < (kind === 'barrels' ? 3 : 1); k++) {
+      const bx = p[0] + k * 0.55 - (kind === 'barrels' ? 0.55 : 0), bz = p[1] + (k % 2) * 0.3;
+      b.add(jr.rand() < 0.5 ? JM.barrel : JM.drum, new THREE.CylinderGeometry(0.28, 0.28, 0.9, 10).translate(bx, 0.45, bz)); b.block(bx, bz, 0.58, 0.58);
+    }
+  }
+  for (let i = 0; i < EXCHANGE.junk.small; i++) {
+    const p = spot(0.3); if (!p) continue;
+    const [x, z] = p, ry = jr.range(0, Math.PI * 2), kind = jr.weighted({ bag: 3, box: 3, tarp: 3, pipe: 2, coil: 2, can: 2, shard: 2 });
+    if (kind === 'bag') b.box(PM.bag, jr.range(0.35, 0.6), jr.range(0.25, 0.4), jr.range(0.3, 0.5), x, 0.15, z, 0, ry);
+    else if (kind === 'box') { const w = jr.range(0.3, 0.6); b.box(PM.crates[jr.int(0, 2)], w, jr.range(0.2, 0.4), w * jr.range(0.7, 1.1), x, 0.15, z, 0, ry); }
+    else if (kind === 'tarp') b.box(jr.pick(JM.tarp), jr.range(0.9, 1.7), 0.04, jr.range(0.6, 1.2), x, 0.03, z, 0, ry);
+    else if (kind === 'pipe') b.box(M.pipe, jr.range(0.8, 1.6), 0.1, 0.1, x, 0.07, z, 0, ry);
+    else if (kind === 'coil') b.add(JM.can, new THREE.CylinderGeometry(0.24, 0.24, 0.12, 8).translate(x, 0.06, z));
+    else if (kind === 'can') b.add(jr.rand() < 0.5 ? JM.can : JM.drum, new THREE.CylinderGeometry(0.1, 0.1, 0.22, 7).translate(x, 0.11, z));
+    else b.box(jr.pick(cycle), jr.range(0.15, 0.3), 0.05, jr.range(0.06, 0.12), x, 0.04, z, 0, ry); // a glowing shard of broken neon
+  }
   // The implant dealer: a shopfront in the gap between the two middle north booths (faces +z, toward the camera; the interior is added later, the door is a glowing mat for now).
   b.box(M.walls[1], 2.6, 3.4, 1.0, 0, 1.7, -hz + 0.5); b.block(0, -hz + 0.5, 2.6, 1.0);
   b.box(neon.red, 1.1, 2.0, 0.06, 0, 1.0, -hz + 1.03);
@@ -342,7 +373,7 @@ export function buildAreas(rng) {
     blocks: [...d.userData.blocks, ...ex.blocks], spots: d.userData.spots, lights: [...d.userData.lights, ...ex.lights],
     signs: d.userData.signs, steam: d.userData.steam, bounds: streetBounds(), road: [-3, 3],
   };
-  const areas = { street, platform: platform(M), sable: sable(M), alley: alley(M), hostel: hostel(M), car: car(M), exchange: exchange(M) };
+  const areas = { street, platform: platform(M), sable: sable(M), alley: alley(M), hostel: hostel(M), car: car(M), exchange: exchange(M, rng.fork('exchange')) };
   // The train is a child of the platform group so it shows and hides with it.
   areas.platform.group.add(areas.platform.train);
   for (const e of EXIT_DEFS) (areas[e.area].exits ??= []).push(e);
