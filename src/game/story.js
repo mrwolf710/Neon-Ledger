@@ -58,6 +58,7 @@ export const ENTRIES = {
 export const TALK = { mamaTeo: 'teo', vending: 'vending', miso: 'miso', vendor: 'vendor', preacher: 'preacher', kit: 'kit',
   vesper: 'vend_vesper', mari: 'vend_mari', lux: 'vend_lux', tobbo: 'vend_tobbo', gutter: 'vend_gutter', pim: 'vend_pim', oyo: 'vend_oyo', ruth: 'vend_ruth', slate: 'vend_slate', jinx: 'vend_jinx', bolt: 'vend_bolt', petra: 'vend_petra' };
 export const FALLBACK = 'nobody';
+export const ALARM_CONVS = new Set(['hale_end', 'car_reply']); // Hale's forced call at the end of chapter 1: the dialogue and portrait boxes turn red
 // What a speaker is called right now: an alias replaces the name once its flag is set.
 export const speakerName = (id, flag) => { const s = SPEAKERS[id]; return !s ? id : s.alias && flag?.(s.alias.flag) ? s.alias.name : s.name; };
 // Rules from the editor: [{ conv, npc, when: 'all' | '1'..'4' (4 = the 4th visit on), fact?: a fact Juno must know, talked?: a person she must already have talked to }].

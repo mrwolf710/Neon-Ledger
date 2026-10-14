@@ -1,4 +1,4 @@
-import { SPEAKERS, speakerName, CONVERSATIONS, FALLBACK } from './story.js';
+import { SPEAKERS, speakerName, CONVERSATIONS, FALLBACK, ALARM_CONVS } from './story.js';
 
 export const DIALOGUE = { cps: 40 }; // typewriter characters per second
 
@@ -58,14 +58,14 @@ export function createDialogue({ hud, caseFile, clock }) {
       const done = new Promise((res) => { endResolve = res; });
       conv = CONVERSATIONS[id] ?? CONVERSATIONS[FALLBACK];
       const first = Array.isArray(conv.start) ? conv.start.find((s) => holds(s.if)).node : conv.start;
-      document.body.classList.add('talking');
+      document.body.classList.add('talking'); document.body.classList.toggle('alarm', ALARM_CONVS.has(id));
       skipHold = true; // the press that opened the conversation must not also skip its first line
       run(first);
       return done;
     },
     end() {
       conv = node = null; ui.hide();
-      document.body.classList.remove('talking');
+      document.body.classList.remove('talking', 'alarm');
       endResolve?.(); endResolve = null;
     },
     // Call each frame while active. Interact: finish the line, then advance / pick.

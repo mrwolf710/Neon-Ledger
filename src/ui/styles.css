@@ -280,3 +280,6 @@ body.echo #hud .objective { display: none !important; }
 
 #board .bd-card.ghost { visibility: hidden; pointer-events: none; }
 #board .bd-ring[data-state="ok"], #board .bd-ring[data-state="merge"] { z-index: 3; } /* the new deduction flies over the clue cards so it can be read */
+/* Hale's forced call (story.js ALARM_CONVS): red frames on the dialogue box and the portrait box. */
+body.alarm #hud .dialogue .dtext, body.alarm #hud .dialogue .portrait { border-color: #ff2a3a !important; box-shadow: 0 0 0.9rem rgba(255, 42, 58, 0.55); }
+body.alarm #hud .dialogue .dtext::before, body.alarm #hud .dialogue .dtext::after, body.alarm #hud .dialogue .dtext > .dia { background: #ff2a3a; }
