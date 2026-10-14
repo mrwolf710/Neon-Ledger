@@ -44,22 +44,18 @@ const VERT = /* glsl */`
 const FRAG = /* glsl */`
 #ifdef USE_FOG
   #ifndef NO_CUT
-  if (cutMode > 0.5) { // roof mode: a slot along the camera-to-player line, everything above the sight line (and above the floor height) goes
+  if (cutMode > 0.5) { // roof mode: above Juno on screen a slot along the camera-to-player line loses everything above the sight line (and above the floor height); below her it blends into the lower half of the old circle, which cuts deeper
     vec2 a = roofSeg.xy, ab = roofSeg.zw - a;
     float rt = clamp(dot(vFogWorldXZ - a, ab) / max(dot(ab, ab), 1e-4), 0.0, 1.0);
     float rd = length(vFogWorldXZ - (a + ab * rt)) / roofP.x;
-    // Above Juno on screen the slot cuts the roofs; below her the cut is the lower half of the old circle, so the near wall ends in a curve instead of a straight line.
     float cd = length(gl_FragCoord.xy - cutCenter) / cutRadius;
+    float lowerT = smoothstep(0.0, 1.0, clamp((cutCenter.y - gl_FragCoord.y) / (cutRadius * 0.7) + 0.5, 0.0, 1.0));   // 0 above Juno's middle, 1 well below it
+    float slotCov = (rt < roofP.w ? 1.0 : 0.0) * clamp(1.0 - (rd - 0.7) / 0.3, 0.0, 1.0);
+    float circCov = (vFogDepth < cutDepth ? 1.0 : 0.0) * clamp(1.0 - (cd - 0.7) / 0.3, 0.0, 1.0);
+    float cutY = mix(max(roofP.y, mix(roofRay.x, roofRay.y, rt) - roofP.z), cutMinY, lowerT);   // one height that slides from the roof cut down to the circle's, so there is no step between the two
     const float bayer2[16] = float[16](0., 8., 2., 10., 12., 4., 14., 6., 3., 11., 1., 9., 15., 7., 13., 5.);
     ivec2 bq = ivec2(mod(gl_FragCoord.xy, 4.0));
-    float bay = (bayer2[bq.y * 4 + bq.x] + 0.5) / 16.0;
-    bool lower = clamp((cutCenter.y - gl_FragCoord.y) / (cutRadius * 0.5) + 0.5, 0.0, 1.0) > bay; // dithered blend across Juno's middle, so the two rules meet without a straight seam
-    bool hit = lower ? (cd < 1.0 && vFogDepth < cutDepth && vFogWorldY > cutMinY)
-                     : (rt < roofP.w && rd < 1.0 && vFogWorldY > max(roofP.y, mix(roofRay.x, roofRay.y, rt) - roofP.z));
-    if (hit) {
-      float e = lower ? (cd - 0.7) / 0.3 : (rd - 0.7) / 0.3;
-      if (e < bay) discard;
-    }
+    if (vFogWorldY > cutY && mix(slotCov, circCov, lowerT) > (bayer2[bq.y * 4 + bq.x] + 0.5) / 16.0) discard;
   } else {
     float cutD = length(gl_FragCoord.xy - cutCenter) / cutRadius;
     if (cutD < 1.0 && vFogDepth < cutDepth && vFogWorldY > cutMinY) {
