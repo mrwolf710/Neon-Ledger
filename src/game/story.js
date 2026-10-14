@@ -58,7 +58,6 @@ export function conversationFor(personId, visit, ctx = {}) {
     && (!r.fact || ctx.has?.(r.fact)) && (!r.talked || ctx.talked?.(r.talked));
   const rules = RULES.filter((r) => !(r.conv === TEO_POINTS && ctx.flag?.('teo_pointed'))); // Teo points to the hostel once, not on every visit
   const hit = rules.filter((r) => r.fact || r.talked).find(fits) ?? rules.filter((r) => !r.fact && !r.talked).find(fits);
-  if (hit?.conv === TEO_POINTS && ctx.has?.('kit_name')) return 'teo_points_known'; // she already sent Juno to the hostel when she named Kit
   if (hit) return hit.conv;
   const list = VISITS[personId];
   return (list && list[Math.min(visit, list.length) - 1]) || TALK[personId] || FALLBACK;
@@ -159,16 +158,12 @@ export const CONVERSATIONS = {
   // he claims he left capsule 3F at 23:00 ; present kit_outside (his echo) to break the story, then kit_saw_them for the coat.
   kit_wait: { start: 'a', nodes: { a: { speaker: 'kit', text: 'Capsule 3F is open, like I said. Come back when you know something worth another 30 credits.', end: true } } },
   // Mama Teo names the worker from the alley echo (the only way Juno learns his name; sets kit_named so he is called Kit from here on).
-  // Same flags as the editor's Mama_Teo_Points_to_Capsule_Hotel, for when Teo already named Kit and sent Juno to the hostel.
-  teo_points_known: { start: 'a', nodes: {
-    a: { speaker: 'mamaTeo', text: "A key opened my back door, you worked that out yourself. You know where to find the boy who knows more than he says.", effects: [{ setFlag: 'teo_pointed' }, { setFlag: 'teo_cracked' }], end: true },
-  } },
   teo_worker: { start: [{ if: { flag: 'teo_pointed' }, node: 'a2' }, { node: 'a' }], nodes: {
     a2: { speaker: 'juno', text: 'The worker at the capsule hostel was out in the alley behind your place at 23:40. Who is he?', next: 'b2' },
-    b2: { speaker: 'mamaTeo', text: "Kit. Kit Lacroix, the boy at the desk you've already been sent to. He thinks I don't see him smoking behind my kitchen.", effects: [{ addFact: 'kit_name' }, { setFlag: 'kit_named' }], end: true },
+    b2: { speaker: 'mamaTeo', text: "Kit. Kit Lacroix, the boy at the desk you've already been sent to. He thinks I don't see him smoking behind my kitchen.", effects: [{ addFact: 'kit_name' }, { setFlag: 'kit_named' }, { setFlag: 'teo_pointed' }, { setFlag: 'teo_cracked' }], end: true },
     a: { speaker: 'juno', text: 'The worker at the capsule hostel was out in the alley behind your place at 23:40. Who is he?', next: 'b' },
     b: { speaker: 'mamaTeo', text: "Kit. Kit Lacroix. Nights at the Capsule hostel since spring. He thinks I don't see him smoking behind my kitchen.", next: 'c' },
-    c: { speaker: 'mamaTeo', text: 'Talks too much, that boy. Go see him. He is easy to find, he never leaves the front desk.', effects: [{ addFact: 'kit_name' }, { setFlag: 'kit_named' }], end: true },
+    c: { speaker: 'mamaTeo', text: 'Talks too much, that boy. Go see him. He is easy to find, he never leaves the front desk.', effects: [{ addFact: 'kit_name' }, { setFlag: 'kit_named' }, { setFlag: 'teo_pointed' }, { setFlag: 'teo_cracked' }], end: true },
   } },
   kit: {
     start: [{ if: { flag: 'kit_coat' }, node: 'done' }, { if: { flag: 'kit_broken' }, node: 'after' }, { if: { flag: 'kit_met' }, node: 'again' }, { node: 'hello' }],
