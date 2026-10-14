@@ -272,7 +272,7 @@ debug.heading('Music track');
 let musicForce = '';
 debug.select('play track', { '': 'auto (by area)', street: 'street', station: 'station', scene: 'scene', echo: 'echo', board: 'board', finale: 'finale (ch1 ending)', bazaar: 'bazaar (Exchange)', dealer: 'dealer (implant shop)', silent: 'silent' }, '', (v) => { musicForce = v; if (v) music.setMood(v, 0.4); });
 debug.heading('Sound effects');
-debug.select('play sfx', { '': '-', phoneRing: 'phone ring', trainNow: 'street train pass', comms: 'Hale comms', override: 'Hale override alarm', stinger: 'reveal stinger', move: 'ui move', confirm: 'ui confirm', back: 'ui back', case: 'ui case', linkOk: 'link ok', linkWrong: 'link wrong', echoOn: 'echo on', echoOff: 'echo off', glitch: 'glitch' }, '', (v) => { if (!v) return; if (sfx[v]) sfx[v](); else sfx.ui(v); });
+debug.select('play sfx', { '': '-', phoneRing: 'phone ring', trainNow: 'street train pass', trainArrive: 'platform train arriving', comms: 'Hale comms', override: 'Hale override alarm', stinger: 'reveal stinger', move: 'ui move', confirm: 'ui confirm', back: 'ui back', case: 'ui case', linkOk: 'link ok', linkWrong: 'link wrong', echoOn: 'echo on', echoOff: 'echo off', glitch: 'glitch' }, '', (v) => { if (!v) return; if (sfx[v]) sfx[v](); else sfx.ui(v); });
 
 debug.tab('Graphics');
 const pu = () => post.applyUniforms();

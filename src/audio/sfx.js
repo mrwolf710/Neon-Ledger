@@ -24,7 +24,10 @@ export const TUNING = {
   echo: { ambientLevel: 0.05, fadeOut: 0.35, fadeIn: 0.5,   // ambient bus level during an echo, and fade time constants (s)
     rumble: { vol: 0.55, lowpass: 95, sub: 41, subVol: 0.5, wobble: 0.17, in: 0.7 } },
   // Electric train motor for the cold open: a growl and a rising whine that swell as the train closes in, then settle to a quiet idle hum.
-  motor: { base: 70, peak: 180, idle: 85, whineMult: 6, lowpass: 2200, start: 0.05, swell: 0.55, idleGain: 0.03, idleAfter: 0.4, idleTime: 0.9 },
+  // The train pulling into the platform (cold open): the filters sweep from fast to slow so the pitch falls as it brakes; then a quiet low idle.
+  motor: { start: 0.05, swellAt: 0.4, stopLevel: 0.35, idleGain: 0.07, idleAfter: 0.4, idleTime: 0.9,
+    body: { fast: 480, slow: 140, idle: 90, vol: 0.9, drive: 7, grit: 22 }, hiss: { fast: 2400, slow: 520, idle: 300, vol: 0.45 },
+    squeal: { from: 3400, to: 1100, vol: 0.06, dur: 1.9 }, airVol: 0.09 },
   ui: { vol: 0.16 },
   stinger: { vol: 0.4, sub: 46, chord: [220, 233.1, 329.6], dur: 2.6 }, // the big reveal: a sub thud, a dissonant chord and a falling shriek
   ring: { vol: 0.07, freqs: [440, 480], rings: 2, pulses: 18, pulseGap: 0.045, pulseDur: 0.035, period: 1.35 }, // intro: Juno's phone rings (Hale calling), each ring = a quick trill
@@ -75,24 +78,25 @@ export function createSfx(synth) {
     rain = { hiss, body, patter, awning: 0 };
   }
 
-  // ---------- Train motor (cold open) ----------
+  // ---------- Train arriving (cold open) ----------
+  // Built like the street train and the rain: broad noise layers (a distorted deep one and a rushing one) whose filters sweep DOWN as the train brakes, so the whole sound falls in pitch
+  // and settles into a low idle. No pitched tone or buzz.
   function startMotor(seconds) {
     stopMotor(0.1);
     const ctx = synth.ctx, t = synth.now, M = T.motor;
     const out = ctx.createGain(); out.gain.setValueAtTime(M.start, t); out.connect(synth.buses.sfx);
-    const lp = synth.filter('lowpass', M.lowpass, 0.8); lp.connect(out);
-    const oscs = [['sawtooth', 1, 0.5], ['square', 2, 0.16], ['sine', M.whineMult, 0.22]].map(([type, mult, v]) => {
-      const o = ctx.createOscillator(), g = ctx.createGain();
-      o.type = type; g.gain.value = v; o.connect(g); g.connect(lp);
-      o.frequency.setValueAtTime(M.base * mult, t);
-      o.frequency.linearRampToValueAtTime(M.peak * mult, t + seconds * 0.7);   // pitch climbs as it nears...
-      o.frequency.linearRampToValueAtTime(M.idle * mult, t + seconds);          // ...and drops as it brakes
-      o.start(t);
-      return o;
-    });
-    out.gain.exponentialRampToValueAtTime(M.swell, t + seconds * 0.85);         // swells as it gets closer
-    out.gain.setTargetAtTime(M.idleGain, t + seconds + M.idleAfter, M.idleTime); // then turned right down while Juno is on the platform
-    motor = { out, oscs };
+    const body = synth.noiseLoop(4.1), bf = synth.filter('lowpass', M.body.fast, 0.6), pre = ctx.createGain(), ws = ctx.createWaveShaper(), bg = ctx.createGain();
+    pre.gain.value = M.body.drive; ws.curve = distortion(M.body.grit); ws.oversample = '2x'; bg.gain.value = M.body.vol; body.connect(bf); bf.connect(pre); pre.connect(ws); ws.connect(bg); bg.connect(out);
+    const hiss = synth.noiseLoop(5.3), hf = synth.filter('lowpass', M.hiss.fast, 0.4), hg = ctx.createGain(); hg.gain.value = M.hiss.vol; hiss.connect(hf); hf.connect(hg); hg.connect(out);
+    for (const [f, fast, slow] of [[bf, M.body.fast, M.body.slow], [hf, M.hiss.fast, M.hiss.slow]]) { // the pitch falls as the train slows
+      f.frequency.setValueAtTime(fast, t); f.frequency.exponentialRampToValueAtTime(slow, t + seconds);
+    }
+    out.gain.exponentialRampToValueAtTime(1, t + seconds * M.swellAt);          // swells as it comes in...
+    out.gain.linearRampToValueAtTime(M.stopLevel, t + seconds);                 // ...and eases off as it brakes
+    out.gain.setTargetAtTime(M.idleGain, t + seconds + M.idleAfter, M.idleTime); // then turned right down while Juno is on the platform (the idling train)
+    bf.frequency.setTargetAtTime(M.body.idle, t + seconds, 0.6);
+    hf.frequency.setTargetAtTime(M.hiss.idle, t + seconds, 0.6);
+    motor = { out, nodes: [body, hiss] };
   }
   function stopMotor(fade = 0.6) {
     if (!motor) return;
@@ -100,7 +104,7 @@ export function createSfx(synth) {
     motor = null;
     m.out.gain.cancelScheduledValues(t);
     m.out.gain.setTargetAtTime(0.0001, t, fade / 3);
-    for (const o of m.oscs) o.stop(t + fade * 2 + 0.2);
+    for (const o of m.nodes) o.stop(t + fade * 2 + 0.2);
   }
 
   // ---------- Echo rumble: very low filtered noise + a sub sine, slowly breathing ----------
@@ -270,14 +274,13 @@ export function createSfx(synth) {
       if (!synth.ready) return;
       startMotor(seconds);
       const t = synth.now;
-      synth.noise({ t, dur: seconds, vol: 0.45, attack: seconds * 0.5, release: 1.2, filter: { type: 'lowpass', freq: 700, sweepTo: 250 } });
-      synth.noise({ t, dur: seconds, vol: 0.2, attack: seconds * 0.7, release: 1, filter: { type: 'bandpass', freq: 500, sweepTo: 1800, q: 0.8 } }); // the rush of air as it nears
-      synth.tone({ freq: 80, t, dur: seconds, vol: 0.22, attack: seconds * 0.5, release: 1.2, type: 'sawtooth', filter: { type: 'lowpass', freq: 160 } });
-      for (let i = 0; i < seconds * 4; i++) {
+      for (let i = 0; i < seconds * 4; i++) { // wheel clacks over the rail joints: they spread out as the train slows
         const k = 1 - i / (seconds * 4);
-        synth.noise({ t: t + i * 0.25 * (1 + (1 - k) * 0.6), dur: 0.04, vol: 0.18 * (0.3 + k), filter: { type: 'bandpass', freq: 900, q: 1.3 } });
+        synth.noise({ t: t + i * 0.25 * (1 + (1 - k) * 0.6) * (0.85 + 0.3 * synth.rand()), dur: 0.04, vol: 0.14 * (0.3 + k), filter: { type: 'bandpass', freq: 900 * (0.6 + 0.4 * k), q: 1.3 } });
       }
-      synth.tone({ freq: 2100, t: t + seconds - 1.8, dur: 1.6, type: 'sawtooth', vol: 0.04, slide: 600, release: 0.3, filter: { type: 'bandpass', freq: 1500, q: 2 } });
+      const sq = T.motor.squeal; // brake squeal: steel on steel, falling in pitch as the wheels grip
+      synth.noise({ t: t + seconds - sq.dur, dur: sq.dur, vol: sq.vol, attack: 0.3, release: 0.5, filter: { type: 'bandpass', freq: sq.from, sweepTo: sq.to, q: 8 } });
+      synth.noise({ t: t + seconds, dur: 1.6, vol: T.motor.airVol, attack: 0.05, release: 1.2, filter: { type: 'highpass', freq: 3200 } }); // the air brake lets go as it stops
     },
 
     // Leaving the platform ends the idling train's hum.
@@ -360,8 +363,6 @@ export function createSfx(synth) {
         synth.tone({ freq: f * 1.5, type: 'sawtooth', t: t + 0.1 + k * gap, dur: gap * 0.85, vol: O.vol * 0.5, attack: 0.002, release: 0.02, detune: 25, filter: { type: 'lowpass', freq: 3200, q: 2 } });
       }
     },
-    // Debug: send a street train through now.
-    trainNow() { if (!train) trainTimer = 0; },
     // One puff of steam from the platform train: a short hiss.
     steamHiss() {
       if (!synth.ready) return;
