@@ -304,7 +304,7 @@ renderer.setAnimationLoop((now) => {
   if (input.pressed('resetView')) cam.reset();
   cam.rotate((input.held('rotateR') ? 1 : 0) - (input.held('rotateL') ? 1 : 0) + input.lookX, dt);
   cam.orbit(input.orbitDX, input.orbitDY);
-  if (input.pressed('debug')) debug.toggle();
+  if (import.meta.env.MODE !== 'itch' && input.pressed('debug')) debug.toggle(); // the itch.io build (npm run itch) has no debug menu
   cam.zoom(CAMERA.wheelZoom ** input.zoomSteps * CAMERA.keyZoom ** (input.zoom * dt) * input.zoomFactor);
   touchUI.update();
   const scrubAxis = input.moveX; // echo mode scrubs with the move axis

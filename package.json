@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "itch": "powershell -ExecutionPolicy Bypass -File scripts/make-itch.ps1"
   },
   "devDependencies": {
     "vite": "^8.3.2"
