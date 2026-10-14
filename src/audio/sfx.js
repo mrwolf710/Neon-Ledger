@@ -210,7 +210,7 @@ export function createSfx(synth) {
       if (!rain) buildRain();
       if (!hum) buildHum();
       // Rain: brighter hiss in the open, drumming patter under awnings.
-      rainLevel = 0.3 + 0.7 * (s.rainScale ?? 1);
+      rainLevel = s.noRain ? 0 : 0.3 + 0.7 * (s.rainScale ?? 1); // noRain: a place with no rain sound at all (the platform)
       const under = Math.abs(s.player.z) > T.awningZ && Math.abs(s.player.z) < DISTRICT.roadWidth / 2 + DISTRICT.sidewalkWidth ? 1 : 0;
       rain.awning += (under - rain.awning) * Math.min(1, dt * 3);
       const k = R.smooth;
@@ -219,7 +219,7 @@ export function createSfx(synth) {
       rain.patter.g.gain.setTargetAtTime(R.patter * rainLevel * rain.awning * 0.5, t, k);
       // Droplet clicks.
       droplet -= dt;
-      if (droplet <= 0) {
+      if (droplet <= 0 && rainLevel > 0) {
         const rate = R.droplets.perSecond + (R.droplets.awningPerSecond - R.droplets.perSecond) * rain.awning;
         droplet = (0.5 + synth.rand()) / (rate * rainLevel + 0.1);
         const [lo, hi] = R.droplets.freq, p = (synth.rand() * 2 - 1) * 0.8;

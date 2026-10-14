@@ -401,7 +401,7 @@ renderer.setAnimationLoop((now) => {
   sfx.setEcho(echo.active);
   sfx.update(dt, {
     player: player.position, yaw: cam.yaw, signs: area.id === 'street' ? street.signs : [],
-    rainScale: particles.rainScale * (area.meta.outdoor ? 1 : MAIN.indoorRain),
+    rainScale: particles.rainScale * (area.meta.outdoor ? 1 : MAIN.indoorRain), noRain: area.id === 'platform',
   });
   // Sunset: starts when Juno first reaches the street, fades to the night mood over SUNSET.seconds.
   if (area.id === 'street' && sunsetT === null) sunsetT = 0;
