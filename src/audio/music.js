@@ -48,6 +48,13 @@ export const TUNING = {
     lead: { vol: 0.07, cutoff: 3000, restChance: 0.15 }, bass: { vol: 0.15, cutoff: 500 }, stab: { vol: 0.035 },
     tick: { vol: 0.03 }, kick: { vol: 0.16, start: 120 }, boing: { vol: 0.05, chance: 0.12 },
   },
+  // The implant dealer's shop: slow, low and ominous. A sub drone, a cluster (minor second + tritone) that swells and sinks, a muffled double heartbeat, rare cold bells and metal scrapes, a faint reader beep.
+  dealer: {
+    bpm: 50, roots: [33, 33, 32, 31],                                    // A, A, Ab, G: a slow chromatic slide down
+    drone: { vol: 0.16 }, cluster: { vol: 0.03, cutoff: 650, detune: 10, swell: 4.5, offsets: [12, 13, 18, 19] },
+    heart: { vol: 0.2, freq: 62 }, bell: { vol: 0.035, chance: 0.14, octave: 36, offsets: [0, 1, 6, 7] },
+    scrape: { vol: 0.03, chance: 0.1 }, beep: { vol: 0.012, chance: 0.15, freq: 1900 },
+  },
   board: {
     bpm: 96, tick: { vol: 0.04 }, pulse: { freq: 55, vol: 0.13 },
     ladder: [57, 60, 64, 67, 69, 72, 76], noteVol: 0.06, dingVol: 0.12,
@@ -183,6 +190,26 @@ export function createMusic(synth) {
         }
         // now and then a silly slide-whistle boing at the end of a bar
         if (s === 13 && synth.rand() < S.boing.chance) synth.tone({ freq: midiToFreq(root + 24), type: 'sine', t, dur: 0.3, vol: S.boing.vol, slide: midiToFreq(root + 36), attack: 0.01, release: 0.1, to: m.out });
+      },
+    },
+    dealer: {
+      bpm: T.dealer.bpm,
+      step(m, i, t) {
+        const S = T.dealer, sd = stepDur(S.bpm), bar = Math.floor(i / 16), root = S.roots[Math.floor(bar / 2) % S.roots.length];
+        if (i % 32 === 0) { // two bars: the drone and a swelling cluster
+          synth.tone({ freq: midiToFreq(root), type: 'sine', t, dur: sd * 34, vol: S.drone.vol, attack: 3, release: 4, to: m.out });
+          synth.tone({ freq: midiToFreq(root + 12), type: 'sawtooth', t, dur: sd * 34, vol: S.drone.vol * 0.25, attack: 4, release: 4, filter: { type: 'lowpass', freq: 240, q: 1 }, to: m.out });
+          for (const o of S.cluster.offsets) for (const d of [-S.cluster.detune, S.cluster.detune]) {
+            synth.tone({ freq: midiToFreq(root + o), type: 'sawtooth', t, dur: S.cluster.swell * 2, vol: S.cluster.vol, attack: S.cluster.swell, release: S.cluster.swell, detune: d, filter: { type: 'lowpass', freq: S.cluster.cutoff, q: 2 }, to: m.out });
+          }
+        }
+        if (i % 16 === 0) { kick(m.out, t, S.heart.vol, S.heart.freq); kick(m.out, t + 0.3, S.heart.vol * 0.6, S.heart.freq * 0.9); } // a muffled lub-dub every bar
+        if (i % 8 === 4 && synth.rand() < S.bell.chance) {
+          const o = S.bell.offsets[Math.floor(synth.rand() * S.bell.offsets.length)];
+          synth.tone({ freq: midiToFreq(root + S.bell.octave + o), type: 'sine', t, dur: 0.2, vol: S.bell.vol, release: 3.5, to: m.out });
+        }
+        if (i % 16 === 10 && synth.rand() < S.scrape.chance) synth.noise({ t, dur: 2.2, vol: S.scrape.vol, attack: 0.8, release: 1.2, filter: { type: 'bandpass', freq: 500, q: 6, sweepTo: 2600 }, to: m.out });
+        if (i % 4 === 2 && synth.rand() < S.beep.chance * 0.25) synth.tone({ freq: S.beep.freq, type: 'sine', t, dur: 0.05, vol: S.beep.vol, release: 0.04, to: m.out });
       },
     },
     board: {
