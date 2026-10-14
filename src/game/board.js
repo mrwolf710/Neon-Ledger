@@ -119,7 +119,7 @@ export function createBoard({ caseFile, hud }) {
       svg.appendChild(l);
     };
     const cls = ring.dataset.state === 'bad' ? 'wrong' : 'locked';
-    if (slots[0] && slots[1] && !['ok', 'merge'].includes(ring.dataset.state)) { const [x1, y1] = center(slotEls[0]), [x2, y2] = center(slotEls[1]), hw = slotEls[0].offsetWidth / 2; line(x1 + hw, y1, x2 - hw, y2, cls); // edge to edge, never across the text }
+    if (slots[0] && slots[1] && !['ok', 'merge'].includes(ring.dataset.state)) { const [x1, y1] = center(slotEls[0]), [x2, y2] = center(slotEls[1]), hw = slotEls[0].offsetWidth / 2; line(x1 + hw, y1, x2 - hw, y2, cls); /* edge to edge, never across the text */ }
     const A = temp && cardEl(temp.from);
     if (A) { const [x1, y1] = center(A), b = box.getBoundingClientRect(); line(x1, y1, temp.x - b.left, temp.y - b.top, 'temp'); }
   }
