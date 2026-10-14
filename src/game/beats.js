@@ -9,6 +9,7 @@ export const BEATS = {
   zoomDelay: 2,           // seconds after the title card starts before the zoom begins
   zoomSeconds: 3,         // after the title card: the CRT frame zooms away and the VHS noise fades out
   settle: 1.5,            // seconds Juno stands still before the title card, so the camera is centred on her
+  kitStreet: { x: 4.6, z: -4.2, facing: 0 }, // where the worker stands on the street until Teo names him (then he is at the hostel desk)
   ringEvery: 4,           // seconds between rings while Juno's phone waits to be answered
   cardHold: 2.4,          // title card hold, seconds
   mislaid: 0.6,           // pause before Juno steps out
@@ -166,6 +167,17 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
       });
     }
   }
+  // The worker stands on the street until Teo names him, then he is at the hostel desk.
+  let kitPlace = null;
+  function placeKit() {
+    const b = cast.byId.kit, at = flag('kit_named') ? 'hostel' : 'street';
+    if (!b || kitPlace === at) return;
+    kitPlace = at;
+    const h = at === 'hostel' ? world.spot('hostel', 'kit') : BEATS.kitStreet;
+    if (!h) return;
+    b.area = at; b.position.set(h.x, b.position.y, h.z); b.facing = h.facing ?? 0;
+    cast.apply();
+  }
   function afterTalk(b) {
     if (b.id === 'miso' && flag('miso_joined') && !b.follow) {   // Beat 2: Miso joins and trails Juno
       b.follow = { target: cast.byId.juno, ...BEATS.misoFollow };
@@ -191,7 +203,7 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     // The board comes before the next lead: link the back-door clues, then tell Teo what they mean, and only then go to the hostel.
     { id: 'deduce', text: 'Open the deduction board (B) and link the clues about the back door', get area() { return world.current.id; }, done: () => flag('key_deduced') },
     { id: 'teo2', text: 'Tell Mama Teo what you worked out', area: 'sable', pos: () => spotXZ('sable', 'teo'), done: () => flag('teo_pointed') },
-    { id: 'kit', text: 'Ask around the capsule hostel about Dex', area: 'hostel', pos: () => spotXZ('hostel', 'kit'), done: () => flag('kit_paid') },
+    { id: 'kit', text: 'Check the capsule hostel: Dex was staying there', area: 'hostel', pos: () => spotXZ('hostel', 'door'), done: () => flag('visited_hostel') },
     { id: 'capsule', text: "Search Dex's capsule (3F)", area: 'hostel', pos: () => spotXZ('hostel', 'capsule3f'), done: () => flag('ex_capsule') },
     { id: 'alley', text: 'Scan the alley behind the Sable (F)', area: 'alley', pos: () => spotXZ('alley', 'echo'), done: () => caseFile.has('alley_echo') },
     { id: 'kitecho', text: "Scan the alley again for the worker's echo (F)", area: 'alley', pos: () => spotXZ('alley', 'echo'), done: () => caseFile.has('kit_echo') },
@@ -235,6 +247,7 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
       if (area.id === 'street' && !flag('toasted_street')) { caseFile.setFlag('toasted_street'); hud.toast('Lowmarket Street'); }
     },
     update(dt) {
+      placeKit();
       if (ringing && (ringing.t += dt) >= BEATS.ringEvery) { ringing.t = 0; sfx.phoneRing?.(); }
       if (answerWait && (input.pressed('interact') || input.click)) { answerWait(); answerWait = null; }
       if (!locked) beatTimes[api.beatNo - 1] += dt;

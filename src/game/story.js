@@ -53,8 +53,7 @@ const TEO_POINTS = 'Mama_Teo_Points_to_Capsule_Hotel';
 const DONE_EFFECTS = { Capsule_after_Teo: [{ setFlag: 'kit_paid' }], Mama_Teo_Points_to_Capsule_Hotel: [{ setFlag: 'teo_pointed' }, { setFlag: 'teo_cracked' }] };
 export function conversationFor(personId, visit, ctx = {}) {
   if (personId === 'mamaTeo' && ctx.has?.('kit_outside') && !ctx.has('kit_name')) return 'teo_worker'; // the worker's echo is in the case file: Teo names him
-  if (personId === 'vendor' && ctx.flag?.('teo_pointed') && !ctx.flag('kit_paid') && !ctx.flag('vendor_kit_done')) return 'vendor_kit'; // once, between Teo's pointer and talking to the worker: someone who saw him go back
-  if (personId === 'kit' && ctx.flag?.('kit_paid')) return ctx.flag('kit_deduced') ? 'kit' : 'kit_wait'; // once paid: a short line until the board names him, then the interview
+  if (personId === 'kit') return ctx.flag?.('kit_deduced') ? 'kit' : 'kit_hey'; // until the board puts him in the alley he only says hello
   const fits = (r) => r.npc === personId && (r.when === 'all' || (r.when === '4' ? visit >= 4 : +r.when === visit))
     && (!r.fact || ctx.has?.(r.fact)) && (!r.talked || ctx.talked?.(r.talked));
   const rules = RULES.filter((r) => !(r.conv === TEO_POINTS && ctx.flag?.('teo_pointed'))); // Teo points to the hostel once, not on every visit
@@ -114,12 +113,6 @@ export const CONVERSATIONS = {
     b: { speaker: 'juno', text: 'Did anyone go in or out tonight?', next: 'c' },
     c: { speaker: 'vendor', text: 'Everyone and no one. Lowmarket stops looking at faces after ten.', end: true },
   } },
-  // The street vendor saw the hostel worker go back across the street (gives the "ask around the hostel" lead a face).
-  vendor_kit: { start: 'a', nodes: {
-    a: { speaker: 'juno', text: 'Did you see anyone from the Capsule hostel tonight? The night desk?', next: 'b' },
-    b: { speaker: 'vendor', text: "The skinny kid with the nervous hands? Saw him cut back across the street toward the hostel a while ago. He'll be on the front desk by now.", next: 'c' },
-    c: { speaker: 'juno', text: 'Thanks.', effects: [{ setFlag: 'vendor_kit_done' }], end: true },
-  } },
   preacher: { start: 'a', nodes: {
     a: { speaker: 'preacher', text: 'They copy your memories and call it a record. Listen, child: what is remembered is what is owned.', next: 'b' },
     b: { speaker: 'juno', text: 'Is that a sermon or a complaint?', next: 'c' },
@@ -161,9 +154,9 @@ export const CONVERSATIONS = {
       after: { speaker: 'mamaTeo', text: "I've told you what I know. Find out who signed out a key tonight.", end: true },
     },
   },
-  // Kit (the hostel worker). Before the board names him he only says capsule 3F is open (kit_wait). After the deduction (flag kit_named) Juno calls him Kit,
+  // Kit (the hostel worker). Until the board puts him in the alley (flag kit_deduced) he only says hello (kit_hey). After the deduction (flag kit_named) Juno calls him Kit,
   // he claims he left capsule 3F at 23:00 ; present kit_outside (his echo) to break the story, then kit_saw_them for the coat.
-  kit_wait: { start: 'a', nodes: { a: { speaker: 'kit', text: 'Capsule 3F is open, like I said. Come back when you know something worth another 30 credits.', end: true } } },
+  kit_hey: { start: 'a', nodes: { a: { speaker: 'kit', text: "Hey, what's up?", end: true } } },
   // Mama Teo names the worker from the alley echo (the only way Juno learns his name; sets kit_named so he is called Kit from here on).
   teo_worker: { start: [{ if: { flag: 'teo_pointed' }, node: 'a2' }, { node: 'a' }], nodes: {
     a2: { speaker: 'juno', text: 'The worker at the capsule hostel was out in the alley behind your place at 23:40. Who is he?', next: 'b2' },
@@ -194,10 +187,10 @@ export const CONVERSATIONS = {
     },
   },
   // Dex's capsule (capsule 3F, hostel): Kit unlocks it for 30 credits (flag kit_paid, set by the editor conversation Capsule_after_Teo, see DONE_EFFECTS).
-  ex_capsule: { start: [{ if: { flag: 'ex_capsule' }, node: 'again' }, { if: { notFlag: 'kit_paid' }, node: 'locked' }, { node: 'a' }], nodes: {
+  ex_capsule: { start: [{ if: { flag: 'ex_capsule' }, node: 'again' }, { if: { notFlag: 'teo_pointed' }, node: 'locked' }, { node: 'a' }], nodes: {
     a: { speaker: 'juno', text: 'Capsule 3F. A thin pillow, a dead plant, and a data chip taped under the bunk. Dex hid his backup well.', effects: [{ setFlag: 'ex_capsule' }], end: true },
     again: { speaker: 'juno', text: 'Nothing else in here. Dex travelled light.', end: true },
-    locked: { speaker: 'juno', text: "Dex's capsule. The hatch is locked. Somebody here has the key.", end: true },
+    locked: { speaker: 'juno', text: "Dex's capsule. The hatch is sealed and I have no reason to force it yet.", end: true },
   } },
   vending: { start: 'a', nodes: { a: { speaker: 'juno', text: 'Out of order. Naturally.', end: true } } },
   miso: { start: [{ if: { flag: 'miso_joined' }, node: 'again' }, { node: 'a' }], nodes: {
