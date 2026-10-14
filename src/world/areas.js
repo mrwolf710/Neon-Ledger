@@ -17,6 +17,7 @@ export const AREAS = {
   alley:    { origin: [300, 0],  name: 'Alley behind the Sable', district: 'Lowmarket', outdoor: true,  mood: 'scene',  surface: 'asphalt' },
   hostel:   { origin: [450, 0],  name: "Capsule Hostel",   district: 'Lowmarket', outdoor: false, mood: 'street', surface: 'tile' },
   car:      { origin: [600, 0],  name: "Juno's Car",             district: 'Lowmarket', outdoor: false, mood: 'scene',  surface: 'tile' },
+  dealer:   { origin: [900, 0],  name: 'Implants',               district: 'Undercity', outdoor: false, mood: 'scene',  surface: 'tile' }, // chapter 2: the implant dealer's shop (docs/chapter-2.md)
   exchange: { origin: [750, 0],  name: 'The Echo Exchange',      district: 'Undercity', outdoor: true,  mood: 'bazaar', surface: 'asphalt' }, // chapter 2 hub (docs/chapter-2.md)
 };
 const at = (id, x, z) => [AREAS[id].origin[0] + x, AREAS[id].origin[1] + z];
@@ -33,6 +34,8 @@ const EXIT_DEFS = [
   { id: 'hostel-door', area: 'street', at: [10.6, 4.15], to: 'hostel', spawn: [...at('hostel', 0, 2.0), Math.PI], verb: "Enter the capsule hostel" },
   { id: 'hostel-out', area: 'hostel', at: at('hostel', 0, 2.9), to: 'street', spawn: [11.3, 3.5, Math.PI], verb: 'Leave' },
   { id: 'car-door', area: 'street', at: [-13.5, -0.1], to: 'car', spawn: [...at('car', 0.4, 0), H], verb: 'Get in the car' },
+  { id: 'dealer-door', area: 'exchange', at: at('exchange', 0, -8.8), to: 'dealer', spawn: [...at('dealer', 0, 2.0), Math.PI], verb: 'Go into the implant shop' },
+  { id: 'dealer-out', area: 'dealer', at: at('dealer', 0, 2.9), to: 'exchange', spawn: [...at('exchange', 0, -7.6), 0], verb: 'Leave' },
   { id: 'car-out', area: 'car', at: at('car', 0.5, 1.3), to: 'street', spawn: [-13.5, 0.7, 0], verb: 'Get out' },
 ];
 export const EXITS = EXIT_DEFS;
@@ -242,6 +245,31 @@ function hostel(M) {
   return finish('hostel', b, [-5, -3.5, 5, 3.5]);
 }
 
+// ---------- Chapter 2: the implant dealer's shop (the only interior of the Exchange). Locker 9 is Dex's. Spots: door, dealer (behind the counter), locker (in front of Locker 9 and its reader), fixer (where the suit steps in). ----------
+const DEALER = { lockerCols: 6, lockerRows: 3, lockerStep: 1.4, dexLocker: 9 }; // locker n counts left to right, bottom row first
+function dealer(M) {
+  const b = begin('dealer'), PM = propMats(M);
+  floor(b, M.walls[1], -5, -3.5, 5, 3.5);
+  wallX(b, M, -3.5 - T / 2, -5 - T, 5 + T); wallX(b, M, 3.5 + T / 2, -5 - T, 5 + T, [[-0.9, 0.9]]);
+  wallZ(b, M, -5 - T / 2, -3.5, 3.5); wallZ(b, M, 5 + T / 2, -3.5, 3.5);
+  doorMat(b, M, 0, 3.1, 1.4, 0.6);
+  // The locker wall: three rows of six steel doors; Locker 9 glows amber and carries its number.
+  for (let r = 0; r < DEALER.lockerRows; r++) for (let c = 0; c < DEALER.lockerCols; c++) {
+    const n = r * DEALER.lockerCols + c + 1, x = (c - (DEALER.lockerCols - 1) / 2) * DEALER.lockerStep, y = 0.5 + r * 0.9, mine = n === DEALER.dexLocker;
+    b.box(M.metal, 1.2, 0.8, 0.4, x, y, -3.25); b.box(mine ? M.litWarm : M.frame, 0.9, 0.06, 0.03, x, y + 0.25, -3.04);
+    if (mine) b.box(signMat(String(n), P.amber), 0.4, 0.28, 0.03, x, y, -3.04, 0, 0, false);
+  }
+  b.block(0, -3.25, 9.6, 0.4);
+  b.box(PM.wood, 3.0, 1.0, 0.9, -2.9, 0.5, 0.4); b.box(M.metal, 3.1, 0.06, 1.0, -2.9, 1.03, 0.4); b.block(-2.9, 0.4, 3.0, 0.9); // the dealer's counter
+  b.box(M.litCool, 0.8, 0.03, 0.5, -2.2, 1.08, 0.4);                                                                             // the counter's reader pad
+  b.box(PM.vendBody, 0.5, 1.1, 0.4, 0.6, 0.55, -2.55); b.box(PM.vendGlow, 0.36, 0.5, 0.02, 0.6, 0.8, -2.33); b.block(0.6, -2.55, 0.5, 0.4); // the locker reader, beside Locker 9's column
+  table(b, PM, 3.2, 0.4, 1.3, 0.8); stool(b, PM, 2.6, 1.2); stool(b, PM, 3.8, 1.2);
+  b.box(signMat('IMPLANTS', 0xff3b2f), 3.2, 0.8, 0.1, 0.5, 2.8, -1.2, 0, 0, false);
+  b.light(0xff3b2f, 16, 0, 2.5, -0.5); b.light(0xffa23a, 13, 3.0, 2.2, 2.0); b.light(0xffd23a, 12, -3.5, 2.2, 1.0); b.light(0xff6a1f, 10, 0.5, 2.0, -2.0);
+  b.spot('door', 0, 2.9); b.spot('dealer', -2.9, -0.7); b.spot('locker', -0.7, -2.3); b.spot('fixer', 2.6, 1.8);
+  return finish('dealer', b, [-5, -3.5, 5, 3.5]);
+}
+
 // ---------- Juno's car (the board lives here) ----------
 function car(M) {
   const b = begin('car'), PM = propMats(M);
@@ -373,7 +401,7 @@ export function buildAreas(rng) {
     blocks: [...d.userData.blocks, ...ex.blocks], spots: d.userData.spots, lights: [...d.userData.lights, ...ex.lights],
     signs: d.userData.signs, steam: d.userData.steam, bounds: streetBounds(), road: [-3, 3],
   };
-  const areas = { street, platform: platform(M), sable: sable(M), alley: alley(M), hostel: hostel(M), car: car(M), exchange: exchange(M, rng.fork('exchange')) };
+  const areas = { street, platform: platform(M), sable: sable(M), alley: alley(M), hostel: hostel(M), car: car(M), dealer: dealer(M), exchange: exchange(M, rng.fork('exchange')) };
   // The train is a child of the platform group so it shows and hides with it.
   areas.platform.group.add(areas.platform.train);
   for (const e of EXIT_DEFS) (areas[e.area].exits ??= []).push(e);

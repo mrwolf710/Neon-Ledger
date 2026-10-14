@@ -185,7 +185,7 @@ function onAreaEnter(area, spawn) {
   tod.setIndoor(!area.meta.outdoor);
   CUTAWAY.minY = area.id === 'exchange' ? 1e3 : area.meta.outdoor ? 0.3 : 1.15; // exchange: never cut, the booths must always be visible; // indoors, tables and the counter stay solid; only walls and signs above them are cut
   tod.setScene(area.id);
-  if (area.id === 'hostel') cam.reset(true); // the default view looks at the back wall: Kit and the capsules, no spinning needed
+  if (area.id === 'hostel' || area.id === 'dealer') cam.reset(true); // the default view looks at the back wall: Kit and the capsules, no spinning needed
   particles.center.x = area.meta.origin[0]; particles.center.z = area.meta.origin[1];
   if (spawn) {
     player.position.set(spawn[0], 0, spawn[1]);
@@ -250,6 +250,7 @@ const solveHeld = () => { for (const c of BOARD.conclusions) if (caseFile.has(c.
 debug.select('jump (with clues)', { '': '-', ...STORY_JUMPS }, '', (n) => { if (n) { beats.skipTo(+n); solveHeld(); } });
 debug.button('play chapter 1 ending (jumps to car first)', () => { beats.skipTo(7); solveHeld(); beats.cliffhanger(); });
 debug.button('give every clue (ch1 + ch2)', () => { for (const id of Object.keys(ENTRIES)) caseFile.add(id); solveHeld(); });
+debug.button('ch2: into the dealer shop, receipt shown (then open Locker 9)', () => { beats.skipTo(10); solveHeld(); caseFile.setFlag('locker_ok'); const s = world.exits.find((e) => e.id === 'dealer-door').spawn; world.jump('dealer', s); });
 debug.button('unlock the dealer door', () => caseFile.setFlag('dealer_open'));
 debug.heading('music');
 let musicForce = '';

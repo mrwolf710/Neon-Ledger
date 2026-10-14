@@ -46,6 +46,12 @@ export const CAST = [
   { id: 'jinx', area: 'exchange', at: 'v_stim', sheet: 'walkerB', facing: 0, booth: true },
   { id: 'bolt', area: 'exchange', at: 'v_drones', sheet: 'walkerA', facing: 0, booth: true },
   { id: 'petra', area: 'exchange', at: 'v_flowers', sheet: 'vendor', facing: 0, booth: true },
+  // The implant dealer's shop and the scripted people of the chapter 2 ending (beats.dealerScene): borrowed sheets until the owner draws them. ambient = no Talk prompt.
+  { id: 'dealer', area: 'dealer', at: 'dealer', sheet: 'walkerC', facing: 0, booth: true },
+  { id: 'fixer', area: 'dealer', at: 'fixer', sheet: 'walkerB', facing: -Math.PI / 4, ambient: true },
+  { id: 'aud1', area: 'exchange', at: [748.3, -6.0], sheet: 'walkerA', facing: Math.PI, ambient: true },
+  { id: 'aud2', area: 'exchange', at: [751.7, -6.0], sheet: 'walkerD', facing: Math.PI, ambient: true },
+  { id: 'aud3', area: 'exchange', at: [750, -4.8], sheet: 'walkerC', facing: Math.PI, ambient: true },
   { id: 'miso', area: 'street', at: [12.4, 2.4], facing: 2.2 }, // right at the foot of the station stairs (spawn 13.8, 1.3): the first character Juno sees
 ];
 

@@ -19,6 +19,8 @@ export const SPEAKERS = {
   tobbo: { name: 'Tobbo', color: '#ff7a2a' }, gutter: { name: 'Gutter', color: '#e8a030' }, pim: { name: 'Pim', color: '#ff6a4a' },
   oyo: { name: 'Oyo', color: '#ffb347' }, ruth: { name: 'Ruth', color: '#ff9a3c' }, slate: { name: 'Slate', color: '#ff4a2c' },
   jinx: { name: 'Jinx', color: '#ffc83a' }, bolt: { name: 'Bolt', color: '#ff8030' }, petra: { name: 'Petra', color: '#ff5a50' },
+  // The implant dealer's shop and the chapter 2 ending (names are placeholders until the owner picks them).
+  dealer: { name: 'Dealer', color: '#ff5a3c' }, fixer: { name: 'Fixer', color: '#ffb347' }, aud1: { name: 'Auditor', color: '#c8d0e8' }, aud2: { name: 'Auditor', color: '#c8d0e8' },
 };
 
 // Case file entries. kind decides the tab: people | facts | echoes. source = where Juno learned it.
@@ -32,6 +34,7 @@ export const ENTRIES = {
   someone_had_key: { kind: 'facts', title: 'The visitor had a city key', text: 'A second person met Dex in the back room. They got in without knocking, with a city master key.', source: 'Deduction board' },
   log_faked: { kind: 'facts', title: 'The door log was faked', text: "The terminal says nobody left, but someone walked out of the back door. Whoever it was could make the Sable's own log lie.", source: 'Deduction board' },
   dex_backup: { kind: 'echoes', title: "Dex's backup echo", text: 'The copy Dex hid in his jacket. Nine seconds, his own eyes, a visitor in his back room.', source: "Dex's backup chip" },
+  dex_secret: { kind: 'echoes', title: "Dex's hidden echo", text: 'From Locker 9: a woman in a grey coat reaches for the implant of a dying man. The memory is cut off. The woman is me.', source: "Dex's locker" },
   kit: { kind: 'people', title: 'Kit Lacroix', text: 'The capsule hostel worker. Nervous, talks too much, and sells what he knows for credits.', source: 'Capsule hostel' },
   alley_echo: { kind: 'echoes', title: 'The alley: the back door', text: 'A residue echo in the alley. Someone in a grey glove lets themselves out of the Sable and shuts the door behind them.', source: 'The alley' },
   kit_echo: { kind: 'echoes', title: "The worker's echo: the alley", text: "Eight seconds from the hostel worker's implant, in the alley behind the Sable.", source: "The worker's implant" },
@@ -55,7 +58,7 @@ export const ENTRIES = {
 };
 
 // Which conversation each talkable thing starts. Missing ids fall back to FALLBACK.
-export const TALK = { mamaTeo: 'teo', vending: 'vending', miso: 'miso', vendor: 'vendor', preacher: 'preacher', kit: 'kit',
+export const TALK = { dealer: 'dealer_talk', mamaTeo: 'teo', vending: 'vending', miso: 'miso', vendor: 'vendor', preacher: 'preacher', kit: 'kit',
   vesper: 'vend_vesper', mari: 'vend_mari', lux: 'vend_lux', tobbo: 'vend_tobbo', gutter: 'vend_gutter', pim: 'vend_pim', oyo: 'vend_oyo', ruth: 'vend_ruth', slate: 'vend_slate', jinx: 'vend_jinx', bolt: 'vend_bolt', petra: 'vend_petra' };
 export const FALLBACK = 'nobody';
 export const ALARM_CONVS = new Set(['hale_end', 'car_reply']); // Hale's forced call at the end of chapter 1: the dialogue and portrait boxes turn red
@@ -289,6 +292,41 @@ export const CONVERSATIONS = {
     a: { speaker: 'juno', text: '(Brokers all end up in one place. The Echo Exchange. Somebody there knows what he was selling.)', end: true },
   } },
   // ---- Chapter 2: the Echo Exchange (docs/chapter-2.md). Each clue vendor gives their clue on the first talk, in any order; later talks give a short repeat line. ----
+  // The implant dealer: show him the receipt for Locker 9, then Juno can open it (beats.dealerScene).
+  dealer_talk: { start: [{ if: { flag: 'locker_ok' }, node: 'again' }, { node: 'a' }], nodes: {
+    a: { speaker: 'dealer', text: "Spare implants, secondhand ports, secrets kept safe. You're not a buyer. That coat says Bureau.", next: 'b' },
+    b: { speaker: 'juno', text: 'Dex Morrow rented a locker here. Locker 9.', next: 'c' },
+    c: { speaker: 'dealer', text: "Lockers are private. The renter and my reader, nobody else. Unless you can prove it's yours to open.", present: { locker_receipt: 'ok' }, presentWrong: 'wrong', choices: [{ text: 'Never mind.', end: true }] },
+    wrong: { speaker: 'dealer', text: "That's not my stamp on anything.", next: 'c' },
+    ok: { speaker: 'dealer', text: "That's my stamp. Paid through the month, and the renter's dead, so the month is nobody's problem. The reader's by the locker wall. I didn't see you.", effects: [{ setFlag: 'locker_ok' }], end: true },
+    again: { speaker: 'dealer', text: "Reader's by the locker wall. Whatever you do in there, I'm looking the other way.", end: true },
+  } },
+  locker_shut: { start: 'a', nodes: { a: { speaker: 'juno', text: "(Locker 9. Sealed. The reader won't open it for me, not until the dealer says so.)", end: true } } },
+  locker_open: { start: 'a', nodes: {
+    a: { speaker: 'juno', text: "(Locker 9. A spare implant in a foam cradle, Dex's tag on it, still warm.)", next: 'b' },
+    b: { speaker: 'juno', text: '(Into the reader.)', end: true },
+  } },
+  // The fixer steps in once Dex's echo has played. Takes the faster route if Juno worked out he was hunting her (flag fixer_knows).
+  fixer_deal: { start: [{ if: { flag: 'fixer_knows' }, node: 'a2' }, { node: 'a' }], nodes: {
+    a: { speaker: 'fixer', text: "Don't be alarmed, Ms. Vale. If I wanted you hurt, the door would already be shut.", next: 'b' },
+    a2: { speaker: 'fixer', text: "You worked out I was looking for you. Good, it saves time. Yes, I know it was you at the Sable, 23:10.", next: 'b' },
+    b: { speaker: 'juno', text: '(A dark suit. The man buying gossip about every visitor Dex had tonight.)', next: 'd' },
+    d: { speaker: 'fixer', text: 'That echo proves what the Bureau does to its own auditors after an off-book job. I want it. In return your forty-seven minutes never happened, and the case closes on a burglar.', next: 'e' },
+    e: { speaker: 'juno', text: 'And Dex?', next: 'f' },
+    f: { speaker: 'fixer', text: "Dex sold his memory to the wrong people. Don't make his mistake. Well?", choices: [
+      { text: "It's not for sale.", next: 'no', effects: [{ setFlag: 'refused_deal' }] }, { text: "I'll think about it.", next: 'maybe' }] },
+    no: { speaker: 'juno', text: "It's the only true thing I have. It stays with me.", next: 'g' },
+    maybe: { speaker: 'juno', text: 'Give me a minute.', next: 'g' },
+    g: { speaker: 'fixer', text: "You don't have one. Three Bureau auditors are waiting outside. Hand it over, and I can make them go away.", end: true },
+  } },
+  auditors: { start: 'a', nodes: {
+    a: { speaker: 'aud1', text: 'Juno Vale. Bureau Audit Division. You are coming with us.', next: 'b' },
+    b: { speaker: 'juno', text: 'On whose authority?', next: 'c' },
+    c: { speaker: 'aud1', text: "Director Hale's. She said you'd ask.", next: 'd' },
+    d: { speaker: 'aud2', text: 'The echo. And your badge. Now.', next: 'e' },
+    e: { speaker: 'juno', text: '(Three auditors in front, a suit behind me, and a hole in my own head where the truth should be.)', next: 'f' },
+    f: { speaker: 'aud1', text: 'Quietly, Vale. Please.', end: true },
+  } },
   dealer_locked: { start: 'a', nodes: { a: { speaker: 'juno', text: "(Shuttered. Whatever is in there, I don't know enough to knock yet.)", end: true } } },
   dealer_next: { start: 'a', nodes: { a: { speaker: 'juno', text: "(The dealer's shop. Dex's echo is in there. Whoever else wants it is closing in.)", end: true } } },
   ...Object.fromEntries(Object.entries(VENDOR_TALK).map(([id, v]) => [`vend_${id}`, vendorTalk(id, v.lines, v.again)])),
@@ -336,6 +374,7 @@ export const HOTSPOTS = [
   { id: 'teo_back_room', area: 'sable', echo: 'teo_back_room', at: { spot: 'echo' }, radius: 2.6 },
   { id: 'alley_echo', area: 'alley', echo: 'alley_echo', at: { spot: 'echo', dx: 0, dz: 0 }, radius: 2.4 },
   { id: 'dex_backup', area: 'car', echo: 'dex_backup', at: { spot: 'seat' }, radius: 1, hidden: true }, // beat 7, played by beats.js (no marker, no F)
+  { id: 'dex_secret', area: 'dealer', echo: 'dex_secret', at: { spot: 'locker' }, radius: 1, hidden: true }, // chapter 2: played by beats.dealerScene (no marker, no F)
   { id: 'kit_echo', area: 'alley', echo: 'kit_echo', at: { spot: 'echo', dx: 0, dz: -5 }, radius: 2.0 },
 ];
 
@@ -394,6 +433,20 @@ export const ECHOES = {
     ],
     seams: [], tags: [],
     cues: [{ t: 4.6, name: 'stinger' }], // the hooded figure leans into the light and is Juno
+  },
+  // Chapter 2: Dex's hidden echo from Locker 9 (dealer shop, origin x 900). A teaser only: a dying man in a chair, a grey-coated woman steps in and reaches for his implant, then it cuts out.
+  dex_secret: {
+    title: "Dex's hidden echo", owner: 'dex', entry: 'dex_secret', duration: 7,
+    tracks: [
+      { sprite: 'dex', keys: [{ t: 0, x: 901.4, z: -0.6, facing: Math.PI, anim: 'idle' }, { t: 7, x: 901.4, z: -0.6, facing: Math.PI, anim: 'idle' }] },
+      { sprite: 'juno', show: [1.4, 5.2], keys: [{ t: 1.4, x: 903.6, z: 1.2, facing: -2.2, anim: 'walk' }, { t: 3.4, x: 902.2, z: 0.2, facing: -2.2, anim: 'walk' }, { t: 3.6, x: 902.2, z: 0.2, facing: -2.2, anim: 'idle' }, { t: 5.2, x: 902.2, z: 0.2, facing: -2.2, anim: 'idle' }] },
+    ],
+    voices: [
+      { t0: 0.6, t1: 2.2, speaker: 'dex', text: 'Not... you.' },
+      { t0: 3.8, t1: 5.0, speaker: 'dex', text: "Don't. I recorded it. All of it." },
+    ],
+    seams: [5.2], tags: [],
+    cues: [{ t: 5.2, name: 'stinger' }],
   },
   // Kit, out behind the Sable at 23:40, watches the gloved visitor leave.
   kit_echo: {

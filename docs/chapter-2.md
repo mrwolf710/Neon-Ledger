@@ -70,7 +70,7 @@ Hale's question -> car_reply -> car_decide -> Dead Hour ends (signs and music re
 ## Built so far
 - 12 vendors with dialogue (story.js VENDOR_TALK; names: Vesper, Mari, Madame Lux, Tobbo, Gutter, Pim; brush-offs Oyo, Ruth, Slate, Jinx, Bolt, Petra), placeholder sprites borrowed from the street walkers/vendor (CAST `sheet`), talk range from behind the counter.
 - Six clues and four conclusions in ENTRIES/BOARD; the board shows only chapter 2's clues after `chapter1_done`; conclusion cards can be placed as clues (tier two); C4 sets `dealer_open`; the dealer door says it is locked until then.
-- Not built: the dealer's store interior, the fixer scene, the auditors finale.
+- Built (first pass, placeholder sprites): the dealer's shop interior (Locker 9, dealer NPC: show him the receipt), Dex's hidden echo teaser, the fixer's offer (refuse / think about it, both lead to the auditors), the three auditors on the square, an end-of-chapter card. Chapter 3 (Bureau HQ and Hale) is not built; the deal outcome is only stored as flag refused_deal.
 
 ## Layout
 Booths are deliberately uneven (widths, angles, three styles: awning, kiosk, cart; no grid). See EXCHANGE in `src/world/areas.js`.

@@ -106,6 +106,16 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
   }
   let cam = null;
 
+  // Resolves on any tap, click, key or pad button (after BEATS.finaleGuard seconds), or after maxSeconds (Infinity = wait for the player).
+  const anyInput = (maxSeconds) => new Promise((res) => {
+    let raf = 0, tm = 0;
+    const done = () => { window.removeEventListener('pointerdown', skip, true); window.removeEventListener('keydown', skip, true); cancelAnimationFrame(raf); clearTimeout(tm); res(); };
+    const t0 = performance.now(), skip = () => { if (performance.now() - t0 > BEATS.finaleGuard * 1000) done(); };
+    const poll = () => { if ([...(navigator.getGamepads?.() ?? [])].some((p) => p?.buttons.some((b) => b.pressed))) skip(); raf = requestAnimationFrame(poll); };
+    window.addEventListener('pointerdown', skip, true); window.addEventListener('keydown', skip, true); poll();
+    if (Number.isFinite(maxSeconds)) tm = setTimeout(done, maxSeconds * 1000);
+  });
+
   // ---- Beat 7: the cliffhanger ----
   async function cliffhanger() {
     locked = true;
@@ -139,13 +149,7 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     await fade.out();
     endDeadHour(); ending = false; finale = true;                // cut to black: the low tone ends, the fast hard music starts
     fade.card([{ text: 'NEON ECHOES', color: '#ffffff', scale: 6 }, { text: 'CASE 01 CONTINUES', color: '#1fd6e8', scale: 3 }, { text: 'TAP OR PRESS ANY BUTTON', color: '#8a8aa8', scale: 2 }], Infinity);
-    await new Promise((res) => {                                 // BEATS.finaleSeconds of music, or any tap, click, key or pad button after BEATS.finaleGuard
-      let raf = 0, tm = 0;
-      const done = () => { window.removeEventListener('pointerdown', skip, true); window.removeEventListener('keydown', skip, true); cancelAnimationFrame(raf); clearTimeout(tm); res(); };
-      const t0 = performance.now(), skip = () => { if (performance.now() - t0 > BEATS.finaleGuard * 1000) done(); };
-      const poll = () => { if ([...(navigator.getGamepads?.() ?? [])].some((p) => p?.buttons.some((b) => b.pressed))) skip(); raf = requestAnimationFrame(poll); };
-      window.addEventListener('pointerdown', skip, true); window.addEventListener('keydown', skip, true); poll(); tm = setTimeout(done, BEATS.finaleSeconds * 1000);
-    });
+    await anyInput(BEATS.finaleSeconds);                         // BEATS.finaleSeconds of music, or any tap, click, key or pad button after BEATS.finaleGuard
     await fade.hideCard(0.4);                                    // quick fade to black
     finale = false;                                              // the car's own quiet music comes back; she is still in the car
     await fade.in();
@@ -160,12 +164,44 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     locked = false;
   }
 
+  // ---- Chapter 2 ending: Locker 9, the fixer's offer, the auditors ----
+  // Opens Locker 9: Dex's hidden echo plays (a teaser), the fixer steps in and offers a deal, Juno walks out into three auditors, and the chapter ends.
+  async function dealerScene() {
+    locked = true;
+    await dialogue.start('locker_open');
+    await new Promise((res) => echo.start('dex_secret', res));
+    caseFile.setFlag('locker_done');
+    await wait(0.6);
+    const fixer = cast.byId.fixer, j = cast.byId.juno;
+    fixer.away = false; cast.apply();
+    fixer.facing = Math.atan2(player.position.x - fixer.position.x, player.position.z - fixer.position.z);
+    j.facing = Math.atan2(fixer.position.x - player.position.x, fixer.position.z - player.position.z);
+    await wait(0.8);
+    await dialogue.start('fixer_deal');
+    await fade.out();
+    fixer.away = true;
+    const sp = world.spot('exchange', 'start'), door = world.exits.find((e) => e.id === 'dealer-out').spawn;
+    world.jump('exchange', door);                                // out of the shop, while the screen is black
+    for (const id of ['aud1', 'aud2', 'aud3']) cast.byId[id].away = false;
+    cast.apply();
+    await fade.in();
+    await wait(0.8);
+    await dialogue.start('auditors');
+    await fade.out();
+    finale = true;                                               // the end of the chapter: fast, hard music, a card that waits for the player
+    fade.card([{ text: 'END OF CHAPTER 2', color: '#ffffff', scale: 5 }, { text: 'CHAPTER 3: THE BUREAU - COMING SOON', color: '#ff8a1f', scale: 3 }, { text: 'TAP OR PRESS ANY BUTTON', color: '#8a8aa8', scale: 2 }], Infinity);
+    await wait(BEATS.finaleGuard);
+    await anyInput(Infinity);
+    location.reload();                                           // back to the title screen
+  }
+
   // ---- Interactables: doors, clues, people ----
   function register() {
     for (const e of world.exits) {
       interactions.add({ id: e.id, area: e.area, position: new THREE.Vector3(e.at[0], 0, e.at[1]), height: 1.2, verb: e.verb,
-        onInteract: () => world.enter(e.to, e.spawn) });
+        onInteract: () => { if (e.id === 'dealer-door' && !flag('dealer_open')) dialogue.start('dealer_locked'); else world.enter(e.to, e.spawn); } }); // the dealer's door stays shut until the locker deduction
     }
+    for (const id of ['fixer', 'aud1', 'aud2', 'aud3']) cast.byId[id].away = true; // scripted people appear only in dealerScene
     for (const x of EXAMINABLES) {
       const s = world.spot(x.area, x.spot);
       interactions.add({ id: `ex:${x.id}`, area: x.area, position: new THREE.Vector3(s.x, 0, s.z), height: 1.0, verb: x.verb,
@@ -174,9 +210,9 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     for (const s of world.areas.street.spots.filter((p) => p.name === 'vending')) {
       interactions.add({ id: 'vending', area: 'street', position: new THREE.Vector3(s.x, 0, s.z), height: 1.8, verb: 'Use', onInteract: () => dialogue.start(TALK.vending) });
     }
-    const dd = world.spot('exchange', 'dealerDoor');          // the implant dealer's shopfront: locked until the locker deduction
-    interactions.add({ id: 'dealer_door', area: 'exchange', position: new THREE.Vector3(dd.x, 0, dd.z), height: 1.4, verb: 'Try the door',
-      onInteract: () => dialogue.start(flag('dealer_open') ? 'dealer_next' : 'dealer_locked') });
+    const lk = world.spot('dealer', 'locker');                // Dex's locker: the dealer must have seen the receipt first (flag locker_ok)
+    interactions.add({ id: 'locker9', area: 'dealer', position: new THREE.Vector3(lk.x, 0, lk.z), height: 1.2, verb: 'Open Locker 9',
+      onInteract: () => { if (locked || flag('locker_done')) return; if (flag('locker_ok')) dealerScene(); else dialogue.start('locker_shut'); } });
     const seat = world.spot('car', 'seat');
     interactions.add({ id: 'chip', area: 'car', position: new THREE.Vector3(seat.x, 0, seat.z), height: 1.0, verb: "Slot Dex's chip",
       onInteract: () => { if (locked) return; if (flag('kit_coat') && flag('ex_capsule')) cliffhanger(); else dialogue.start('chip_early'); } });
@@ -238,7 +274,8 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     { id: 'press', text: 'Press Kit about what he saw', area: 'hostel', pos: () => spotXZ('hostel', 'kit'), done: () => flag('kit_coat') },
     { id: 'chip', text: "Slot Dex's backup chip in your car", area: 'car', pos: () => spotXZ('car', 'seat'), done: () => chapter1Done },
     { id: 'exchange', text: "Ask around the Echo Exchange about Dex's echo", area: 'exchange', done: () => flag('dealer_open') },
-    { id: 'dealer', text: "Go into the implant dealer's shop", area: 'exchange', pos: () => spotXZ('exchange', 'dealerDoor'), done: () => false },
+    { id: 'dealer', text: "Go into the implant dealer's shop", area: 'exchange', pos: () => spotXZ('exchange', 'dealerDoor'), done: () => flag('visited_dealer') },
+    { id: 'locker', text: "Show the dealer Dex's receipt, then open Locker 9", area: 'dealer', pos: () => spotXZ('dealer', flag('locker_ok') ? 'locker' : 'dealer'), done: () => flag('locker_done') },
   ];
   function markFor(step) {
     const here = world.current.id;
@@ -258,6 +295,7 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     get beatNo() { return STEP_BEAT[STEPS.find((s) => !s.done())?.id] ?? 7; },
     beatTimes,
     cliffhanger, // also for the ?hooks test driver
+    dealerScene, // debug panel: play the chapter 2 ending
     // Debug. n = 2-7: start of chapter 1 beat n, with every clue Juno would hold by then. 8: Chapter 2 start (all chapter 1 clues). 9: Exchange with all six vendor clues.
     // 10: Exchange with every chapter 2 deduction done (dealer door open).
     skipTo(n) {
