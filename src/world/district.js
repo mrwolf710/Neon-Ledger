@@ -32,7 +32,7 @@ export const CAST = [
   { id: 'walkerA', ambient: true, area: 'street', at: [-18, 1.9], path: [[-18, 1.9], [19, 1.9]], speed: 1.3 },
   { id: 'walkerB', ambient: true, area: 'street', at: [19, 0.7], path: [[19, 0.7], [-19, 0.7]], speed: 1.6 },
   { id: 'walkerC', ambient: true, area: 'street', at: [0, -0.7], path: [[0, -0.7], [-19, -0.7], [19, -0.7]], speed: 1.0 },
-  { id: 'walkerD', ambient: true, area: 'street', at: [8, -1.8], path: [[8, -1.8], [19, -1.8], [-19, -1.8]], speed: 1.9 },
+  { id: 'walkerD', ambient: true, area: 'street', at: [8, -1.8], path: [[8, -1.8], [19, -1.8], [-10.2, -1.8]], speed: 1.9 }, // turns round before Juno's car (x -15.2 to -11.9, z -2.7 to -1.1)
   // Chapter 2: the Echo Exchange vendors (docs/chapter-2.md). sheet = a borrowed placeholder sprite until each vendor gets their own art; booth = talk from behind the counter's reach.
   { id: 'vesper', area: 'exchange', at: 'v_echoes', sheet: 'walkerB', facing: 0, booth: true },
   { id: 'mari', area: 'exchange', at: 'v_sauce', sheet: 'vendor', facing: 0, booth: true },
@@ -49,9 +49,9 @@ export const CAST = [
   // The implant dealer's shop and the scripted people of the chapter 2 ending (beats.dealerScene): borrowed sheets until the owner draws them. ambient = no Talk prompt.
   { id: 'dealer', area: 'dealer', at: 'dealer', sheet: 'walkerC', facing: 0, booth: true },
   { id: 'fixer', area: 'dealer', at: 'fixer', sheet: 'walkerB', facing: -Math.PI / 4, ambient: true },
-  { id: 'aud1', area: 'exchange', at: [748.3, -6.0], sheet: 'walkerA', facing: Math.PI, ambient: true },
-  { id: 'aud2', area: 'exchange', at: [751.7, -6.0], sheet: 'walkerD', facing: Math.PI, ambient: true },
-  { id: 'aud3', area: 'exchange', at: [750, -4.8], sheet: 'walkerC', facing: Math.PI, ambient: true },
+  { id: 'aud1', area: 'exchange', at: [748.5, -7.2], facing: Math.PI / 2, ambient: true },
+  { id: 'aud2', area: 'exchange', at: [751.5, -7.2], facing: -Math.PI / 2, ambient: true },
+  { id: 'aud3', area: 'exchange', at: [750, -5.9], facing: Math.PI, ambient: true },
   { id: 'miso', area: 'street', at: [12.4, 2.4], facing: 2.2 }, // right at the foot of the station stairs (spawn 13.8, 1.3): the first character Juno sees
 ];
 

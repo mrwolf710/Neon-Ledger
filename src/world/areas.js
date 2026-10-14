@@ -376,15 +376,52 @@ function exchange(M, rng) {
 }
 
 // ---------- Street extras: the Sable's sign, the car, and a glowing mat at each door ----------
+// Juno's car on the street: a big square-shouldered luxury sedan (two-tone: dark blue upper, brushed steel lower, a tall slatted grille, a headlight bar, big rimmed wheels). Front faces +x.
+const CAR = {
+  at: [-13.5, -1.9], length: 3.3, width: 1.55,        // world position of the centre and the footprint (the first version was 3.0 x 1.4: about 10% bigger now)
+  blue: 0x1b2f55, steel: 0x9a9fa8, trim: 0x0b0b12, rim: 0xc9ccd4, tail: 0xff2a3a, head: 0xdff6ff,
+};
+function junoCar(b, M) {
+  const [cx, cz] = CAR.at, L = CAR.length, W = CAR.width, std = (color, metalness, roughness) => new THREE.MeshStandardMaterial({ color, metalness, roughness });
+  const blue = std(CAR.blue, 0.55, 0.35), steel = std(CAR.steel, 0.8, 0.4), trim = std(CAR.trim, 0.3, 0.6), rim = std(CAR.rim, 0.9, 0.3);
+  const glow = (hex) => new THREE.MeshBasicMaterial({ color: new THREE.Color(hex).multiplyScalar(BUILDINGS.windowGlow) }), tail = glow(CAR.tail), head = glow(CAR.head);
+  const part = (m, sx, sy, sz, x, y, z) => b.box(m, sx, sy, sz, cx + x, y, cz + z, 0, 0, false); // x along the car (front +x), z across
+  part(steel, L, 0.4, W, 0, 0.42, 0);                                   // lower body, steel
+  part(trim, L - 0.5, 0.1, W - 0.2, 0, 0.22, 0);                         // dark sill under it
+  part(blue, L - 0.4, 0.34, W - 0.02, -0.1, 0.8, 0);                     // blue shoulder line
+  part(blue, 1.0, 0.1, W - 0.12, 1.0, 1.0, 0);                           // long flat hood
+  part(M.glassDark, 1.5, 0.34, W - 0.2, -0.45, 1.15, 0);                 // cabin glass
+  part(blue, 1.62, 0.07, W - 0.16, -0.45, 1.34, 0);                      // roof
+  for (const sx of [-1, 1]) part(blue, 0.07, 0.34, 0.07, sx * 0.0 - 0.45, 1.15, 0.52), part(blue, 0.07, 0.34, 0.07, sx * 0.0 - 0.45, 1.15, -0.52); // pillars, mid-cabin
+  part(blue, 0.08, 0.34, W - 0.2, 0.3, 1.15, 0);                         // windscreen frame
+  part(blue, 0.08, 0.34, W - 0.2, -1.2, 1.15, 0);                        // rear window frame
+  part(trim, 0.06, 0.5, W - 0.25, L / 2 + 0.02, 0.62, 0);                // grille block
+  for (let i = -8; i <= 8; i++) part(steel, 0.03, 0.46, 0.035, L / 2 + 0.06, 0.62, i * 0.07); // tall vertical grille slats
+  part(head, 0.06, 0.1, 0.3, L / 2 + 0.03, 0.78, 0.55); part(head, 0.06, 0.1, 0.3, L / 2 + 0.03, 0.78, -0.55); // the headlights
+  part(tail, 0.05, 0.07, W - 0.25, -L / 2 - 0.01, 0.78, 0);              // tail light bar
+  part(steel, 0.6, 0.05, W + 0.04, 0.9, 0.62, 0);                        // chrome band across the nose
+  for (const sz of [-1, 1]) {                                            // door seams on both sides, and the steel / blue split line
+    part(trim, 0.025, 0.4, 0.02, -0.15, 0.82, sz * (W / 2 - 0.005)); part(trim, 0.025, 0.4, 0.02, -0.95, 0.82, sz * (W / 2 - 0.005));
+    part(trim, L - 0.5, 0.02, 0.02, 0, 0.62, sz * (W / 2 + 0.01));
+  }
+  part(steel, 0.02, 0.2, 0.02, 1.2, 1.12, 0);                            // hood ornament
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {                  // four wheels: tyre, rim, hub
+    const wx = cx + sx * (L / 2 - 0.62), wz = cz + sz * (W / 2 - 0.1);
+    b.add(trim, new THREE.CylinderGeometry(0.32, 0.32, 0.22, 14).rotateX(Math.PI / 2).translate(wx, 0.32, wz));
+    b.add(rim, new THREE.CylinderGeometry(0.21, 0.21, 0.235, 12).rotateX(Math.PI / 2).translate(wx, 0.32, wz));
+    b.add(trim, new THREE.CylinderGeometry(0.08, 0.08, 0.25, 8).rotateX(Math.PI / 2).translate(wx, 0.32, wz));
+  }
+  b.block(cx, cz, L, W);
+  b.light(P.cyan, 3, cx, 1.6, cz); b.light(0xdff6ff, 3, cx + L / 2 + 0.6, 0.8, cz);
+}
+
 function streetExtras(M) {
   const b = createBatch(), PM = propMats(M);
   b.setTransform(0, 0, 0);
   b.box(signMat('SABLE', P.amber), 6, 1.2, 0.1, 0, 3.1, -4.82, 0, 0, false);          // covers the random shop sign on that building
   b.light(P.amberLight, 4.5, 0, 3.0, -4.2);
   b.box(signMat('CAPSULE', P.pink), 3.4, 0.8, 0.1, 10.6, 3.0, 4.82, 0, 0, false);       // over the hostel entrance (the door is at x 10.6, z 4.15)
-  b.box(PM.vendBody, 3.0, 0.6, 1.4, -13.5, 0.4, -1.9); b.box(M.glassDark, 1.6, 0.5, 1.3, -13.7, 0.95, -1.9); b.block(-13.5, -1.9, 3.0, 1.4);   // Juno's car
-  b.box(M.litWarm, 0.12, 0.12, 0.3, -12.0, 0.45, -1.4); b.box(M.litWarm, 0.12, 0.12, 0.3, -12.0, 0.45, -2.4);
-  b.light(P.cyan, 3, -13.5, 1.4, -1.9);
+  junoCar(b, M);
   for (const e of EXIT_DEFS.filter((x) => x.area === 'street')) b.box(M.litCool, 1.2, 0.03, 0.8, e.at[0], 0.03 + (Math.abs(e.at[1]) > 3 ? 0.15 : 0), e.at[1]);
   const g = b.build();
   return { group: g, blocks: g.userData.blocks, lights: g.userData.lights };

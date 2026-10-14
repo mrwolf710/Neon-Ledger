@@ -4,7 +4,7 @@ import { input } from './core/input.js';
 import { createCamera, CAMERA } from './render/camera.js';
 import { createDebugPanel, showSprites } from './debug/panel.js';
 import { getSheets } from './gen/sprites.js';
-import { loadJunoSheet, loadTeoSheet, loadPriestSheet, loadDexSheet, loadCatSheet, loadDexStandSheet, loadKitSheet, loadVendorSheet, loadWalkerSheet, MARKET1_ART, WALKER2_ART, WALKER3_ART, WALKER4_ART, loadHaleSheet } from './gen/junoart.js';
+import { loadJunoSheet, loadTeoSheet, loadPriestSheet, loadDexSheet, loadCatSheet, loadDexStandSheet, loadKitSheet, loadVendorSheet, loadWalkerSheet, MARKET1_ART, loadAuditorSheet, WALKER2_ART, WALKER3_ART, WALKER4_ART, loadHaleSheet } from './gen/junoart.js';
 import { createCast } from './game/npc.js';
 import './ui/styles.css';
 import { createTouchUI } from './ui/touch.js';
@@ -70,6 +70,7 @@ try { getSheets().dex = await loadDexSheet(); } catch (e) { console.warn('Dex ar
 
 try { getSheets().vendor = await loadVendorSheet(); } catch (e) { console.warn('Vendor art not loaded, using the generated sprite:', e.message); }
 try { getSheets().tobbo = await loadKitSheet(MARKET1_ART); } catch (e) { console.warn('Tobbo art not loaded, using his borrowed sprite:', e.message); getSheets().tobbo = getSheets().walkerD; }
+try { const aud = await loadAuditorSheet(); Object.assign(getSheets(), { aud1: aud, aud2: aud, aud3: aud }); } catch (e) { console.warn('Auditor art not loaded, using borrowed sprites:', e.message); Object.assign(getSheets(), { aud1: getSheets().walkerA, aud2: getSheets().walkerD, aud3: getSheets().walkerC }); }
 try { getSheets().walkerA = await loadWalkerSheet(); } catch (e) { console.warn('Walker art not loaded, using the generated sprite:', e.message); }
 try { getSheets().walkerB = await loadWalkerSheet(WALKER2_ART); } catch (e) { console.warn('Walker 2 art not loaded, using the generated sprite:', e.message); }
 try { getSheets().walkerC = await loadWalkerSheet(WALKER3_ART); } catch (e) { console.warn('Walker 3 art not loaded, using the generated sprite:', e.message); }
