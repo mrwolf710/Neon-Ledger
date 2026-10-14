@@ -16,6 +16,7 @@ import { createEcho } from './game/echo.js';
 import { createBoard } from './game/board.js';
 import { createWorld } from './game/world.js';
 import { createBeats } from './game/beats.js';
+import { ENTRIES, BOARD } from './game/story.js';
 import { createFade } from './ui/fade.js';
 import { synth } from './audio/synth.js';
 import { createSfx, surfaceAt } from './audio/sfx.js';
@@ -241,8 +242,21 @@ debug.slider('fog high', fog.uniforms.fogHigh, 'value', 0, 1, 0.01);
 debug.slider('fog ground', fog.uniforms.fogGround, 'value', 0, 1, 0.01);
 debug.slider('music volume', synth.volumes, 'music', 0, 1, 0.05, () => synth.setVolume('music', synth.volumes.music));
 debug.slider('sfx volume', synth.volumes, 'sfx', 0, 1, 0.05, () => synth.setVolume('sfx', synth.volumes.sfx));
-debug.select('skip to beat', { '': '-', ...Object.fromEntries([2, 3, 4, 5, 6, 7].map((n) => [n, `Beat ${n}`])) }, '', (n) => { if (n) beats.skipTo(+n); });
+debug.heading('story');
+const STORY_JUMPS = { 2: 'Ch1 beat 2: street', 3: 'Ch1 beat 3: Sable', 4: 'Ch1 beat 4: the echo', 5: 'Ch1 beat 5: Teo / Kit', 6: 'Ch1 beat 6: board 2', 7: 'Ch1 beat 7: chip in the car', 8: 'Ch2: Exchange, no clues', 9: 'Ch2: Exchange, all 6 clues', 10: 'Ch2: all deductions, dealer open' };
+const solveHeld = () => { for (const c of BOARD.conclusions) if (caseFile.has(c.result)) board.logic.solved.add(c.id); }; // the board shows deductions the debug jump already granted as done
+debug.select('jump (with clues)', { '': '-', ...STORY_JUMPS }, '', (n) => { if (n) { beats.skipTo(+n); solveHeld(); } });
+debug.button('play chapter 1 ending (jumps to car first)', () => { beats.skipTo(7); solveHeld(); beats.cliffhanger(); });
+debug.button('give every clue (ch1 + ch2)', () => { for (const id of Object.keys(ENTRIES)) caseFile.add(id); solveHeld(); });
+debug.button('unlock the dealer door', () => caseFile.setFlag('dealer_open'));
+debug.heading('music');
+let musicForce = '';
+debug.select('track', { '': 'auto (by area)', street: 'street', station: 'station', scene: 'scene', echo: 'echo', board: 'board', finale: 'finale (ch1 ending)', bazaar: 'bazaar (Exchange)', silent: 'silent' }, '', (v) => { musicForce = v; if (v) music.setMood(v, 0.4); });
+debug.heading('sfx');
+debug.select('play sfx', { '': '-', phoneRing: 'phone ring', comms: 'Hale comms', stinger: 'reveal stinger', move: 'ui move', confirm: 'ui confirm', back: 'ui back', case: 'ui case', linkOk: 'link ok', linkWrong: 'link wrong', echoOn: 'echo on', echoOff: 'echo off', glitch: 'glitch' }, '', (v) => { if (!v) return; if (sfx[v]) sfx[v](); else sfx.ui(v); });
+debug.heading('world');
 debug.extra = () => `beat ${beats.beatNo}  ${beats.beatTimes.map((s, i) => (s ? `${i + 1}:${Math.round(s)}s` : '')).filter(Boolean).join(' ')}`;
+debug.button('clear save + reload', () => { try { localStorage.removeItem('nl.save'); } catch {} location.reload(); });
 debug.button('toast', () => hud.toast('Case file updated'));
 debug.button('clock +30 min', () => clock.add(30));
 debug.button('pause clock', () => { clock.paused = !clock.paused; });
@@ -343,7 +357,7 @@ renderer.setAnimationLoop((now) => {
     people: cast.list.filter((b) => b.id !== 'juno' && !b.ambient && b.root.visible).map((b) => ({ x: b.position.x, z: b.position.z })),
   });
   if (input.pressed('music')) { synth.setMusicOn(!synth.musicOn); hud.toast(synth.musicOn ? 'Music on' : 'Music off'); }
-  music.setMood(trailer.active ? trailer.mood : beats.finale ? 'finale' : beats.ending ? 'silent' : echo.active ? 'echo' : board.isOpen ? 'board' : place.mood, trailer.active ? 0.25 : beats.finale ? 0.4 : undefined);
+  music.setMood(musicForce ? musicForce : trailer.active ? trailer.mood : beats.finale ? 'finale' : beats.ending ? 'silent' : echo.active ? 'echo' : board.isOpen ? 'board' : place.mood, trailer.active ? 0.25 : beats.finale ? 0.4 : undefined);
   sfx.setEcho(echo.active);
   sfx.update(dt, {
     player: player.position, yaw: cam.yaw, signs: area.id === 'street' ? street.signs : [],

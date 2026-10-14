@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { EXAMINABLES, TALK, FALLBACK, conversationFor } from './story.js';
+import { EXAMINABLES, TALK, FALLBACK, ENTRIES, BOARD, conversationFor } from './story.js';
 
 // The beat manager: the cold open cutscene, the objective line / minimap mark, and the things you can interact with.
 // Beats 1-3 live here (Stage 9A); later beats add steps to STEPS and conversations to story.js.
@@ -254,11 +254,20 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     get beatNo() { return STEP_BEAT[STEPS.find((s) => !s.done())?.id] ?? 7; },
     beatTimes,
     cliffhanger, // also for the ?hooks test driver
+    // Debug. n = 2-7: start of chapter 1 beat n, with every clue Juno would hold by then. 8: Chapter 2 start (all chapter 1 clues). 9: Exchange with all six vendor clues.
+    // 10: Exchange with every chapter 2 deduction done (dealer door open).
     skipTo(n) {
-      caseFile.setFlag('visited_street'); fade.black = false; hud.show();
-      for (let k = 2; k <= n; k++) { SKIP[k].flags?.forEach((f) => caseFile.setFlag(f)); SKIP[k].add?.forEach((id) => caseFile.add(id)); }
-      const e = world.exits.find((x) => x.to === SKIP[n].to);
-      world.jump(SKIP[n].to, e ? e.spawn : null);
+      caseFile.setFlag('visited_street'); fade.black = false; hud.show(); ending = finale = false;
+      for (let k = 2; k <= Math.min(n, 7); k++) { SKIP[k].flags?.forEach((f) => caseFile.setFlag(f)); SKIP[k].add?.forEach((id) => caseFile.add(id)); }
+      if (n < 8) { const e = world.exits.find((x) => x.to === SKIP[n].to); world.jump(SKIP[n].to, e ? e.spawn : null); return; }
+      chapter1Done = true; caseFile.setFlag('chapter1_done');
+      if (n >= 9) {
+        for (const [id, e] of Object.entries(ENTRIES)) if (e.ch2 && e.source !== 'Deduction board') caseFile.add(id);
+        for (const v of Object.values(TALK)) if (v.startsWith('vend_')) caseFile.setFlag(v);
+      }
+      if (n >= 10) for (const c of BOARD.conclusions) if (c.needs.every((f) => ENTRIES[f]?.ch2)) caseFile.apply(c.effects);
+      const sp = world.spot('exchange', 'start');
+      world.jump('exchange', [sp.x, sp.z, Math.PI / 2]);
     },
     setCamera(c) { cam = c; },
     coldOpen,

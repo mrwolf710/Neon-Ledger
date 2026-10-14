@@ -51,6 +51,7 @@ export function createDebugPanel(renderer, seed) {
       syncs.push(() => { if (document.activeElement !== i) i.value = get(); });
       i.value = get();
     },
+    heading(text) { const h = document.createElement('div'); h.textContent = `-- ${text} --`; h.style.cssText = 'margin:6px 0 2px;color:#ffd23a'; el.appendChild(h); },
     button(label, onClick) {
       const b = document.createElement('button');
       b.textContent = label;
