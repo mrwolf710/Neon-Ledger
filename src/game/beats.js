@@ -216,6 +216,10 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     const lk = world.spot('dealer', 'locker');                // Dex's locker: the dealer must have seen the receipt first (flag locker_ok)
     interactions.add({ id: 'locker9', area: 'dealer', position: new THREE.Vector3(lk.x, 0, lk.z), height: 1.2, verb: 'Open Locker 9',
       onInteract: () => { if (locked || flag('locker_done')) return; if (flag('locker_ok')) dealerScene(); else dialogue.start('locker_shut'); } });
+    for (const n of [7, 8, 10, 11]) {                         // the other lockers: not Juno's business
+      const l = world.spot('dealer', `locker${n}`);
+      interactions.add({ id: `locker${n}`, area: 'dealer', position: new THREE.Vector3(l.x, 0, l.z), height: 1.2, verb: `Look at Locker ${n}`, onInteract: () => { if (!locked) dialogue.start(`locker_${n}`); } });
+    }
     const seat = world.spot('car', 'seat');
     interactions.add({ id: 'chip', area: 'car', position: new THREE.Vector3(seat.x, 0, seat.z), height: 1.0, verb: "Slot Dex's chip",
       onInteract: () => { if (locked) return; if (flag('kit_coat') && flag('ex_capsule')) cliffhanger(); else dialogue.start('chip_early'); } });

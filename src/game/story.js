@@ -301,6 +301,8 @@ export const CONVERSATIONS = {
     ok: { speaker: 'dealer', text: "That's my stamp. Paid through the month, and the renter's dead, so the month is nobody's problem. The reader's by the locker wall. I didn't see you.", effects: [{ setFlag: 'locker_ok' }], end: true },
     again: { speaker: 'dealer', text: "Reader's by the locker wall. Whatever you do in there, I'm looking the other way.", end: true },
   } },
+  // The other lockers in the implant shop: just a line each.
+  ...Object.fromEntries([[7, "(Locker 7. Somebody else's secrets, kept safe. Not mine to open.)"], [8, "(Locker 8. A tag on it in a language I don't know. None of my business.)"], [10, "(Locker 10. Empty, or paid up and forgotten. Either way, it isn't Dex's.)"], [11, "(Locker 11. Sealed and humming. I'll leave it that way.)"]].map(([n, text]) => [`locker_${n}`, { start: 'a', nodes: { a: { speaker: 'juno', text, end: true } } }])),
   locker_shut: { start: 'a', nodes: { a: { speaker: 'juno', text: "(Locker 9. Sealed. The reader won't open it for me, not until the dealer says so.)", end: true } } },
   locker_open: { start: 'a', nodes: {
     a: { speaker: 'juno', text: "(Locker 9. A spare implant in a foam cradle, Dex's tag on it, still warm.)", next: 'b' },
