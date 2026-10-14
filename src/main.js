@@ -223,48 +223,64 @@ if (new URLSearchParams(location.search).has('hooks')) {
 }
 const debug = createDebugPanel(renderer, rng.seed);
 if (new URLSearchParams(location.search).has('sprites')) showSprites(getSheets());
+// ---- Debug menu (backtick): Story / World / Audio / Graphics pages ----
+const STORY_JUMPS = { 2: 'Ch1 beat 2: the street', 3: 'Ch1 beat 3: the Sable', 4: 'Ch1 beat 4: the echo', 5: 'Ch1 beat 5: Teo and Kit', 6: 'Ch1 beat 6: second board pass', 7: 'Ch1 beat 7: chip in the car', 8: 'Ch2: Exchange, no clues', 9: 'Ch2: Exchange, all 6 clues', 10: 'Ch2: all deductions, dealer open' };
+const solveHeld = () => { for (const c of BOARD.conclusions) if (caseFile.has(c.result)) board.logic.solved.add(c.id); }; // the board shows deductions the debug jump already granted as done
+debug.tab('Story');
+debug.heading('Jump to a point in the story (with the clues you would hold)');
+debug.select('jump to', { '': '-', ...STORY_JUMPS }, '', (n) => { if (n) { beats.skipTo(+n); solveHeld(); } });
+debug.heading('Scenes');
+debug.button('Play the chapter 1 ending', () => { beats.skipTo(7); solveHeld(); beats.cliffhanger(); });
+debug.button('Chapter 2: dealer shop, receipt shown (then open Locker 9)', () => { beats.skipTo(10); solveHeld(); caseFile.setFlag('locker_ok'); const s = world.exits.find((e) => e.id === 'dealer-door').spawn; world.jump('dealer', s); });
+debug.heading('Case file');
+debug.button('Give every clue (ch1 + ch2)', () => { for (const id of Object.keys(ENTRIES)) caseFile.add(id); solveHeld(); });
+debug.button('Unlock the dealer door', () => caseFile.setFlag('dealer_open'));
+debug.button('Show a case-file toast', () => hud.toast('Case file updated'));
+debug.extra = () => `beat ${beats.beatNo}  ${beats.beatTimes.map((s, i) => (s ? `${i + 1}:${Math.round(s)}s` : '')).filter(Boolean).join(' ')}`;
+
+debug.tab('World');
 const labels = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, v.name ?? v.label]));
-debug.select('time', labels(TIME_OF_DAY), phaseId, (v) => tod.setTimeOfDay(v, MAIN.todBlendSeconds));
-debug.select('tier', labels(TIERS), settings.tier, (v) => { location.search = `?quality=${v}`; });
+debug.heading('Place and time');
 debug.select('go to', Object.fromEntries(Object.entries(world.areas).map(([id, a]) => [id, a.meta.name])), world.current.id, (id) => {
   const e = world.exits.find((x) => x.to === id);
   world.jump(id, e ? e.spawn : null);
 });
+debug.select('time of day', labels(TIME_OF_DAY), phaseId, (v) => tod.setTimeOfDay(v, MAIN.todBlendSeconds));
+debug.button('Clock +30 minutes', () => clock.add(30));
+debug.button('Pause / resume clock', () => { clock.paused = !clock.paused; });
+debug.heading('Save');
+debug.button('Clear saves and reload', () => { try { localStorage.removeItem('nl.save'); } catch {} location.reload(); });
+
+debug.tab('Audio');
+debug.heading('Volume');
+debug.slider('music', synth.volumes, 'music', 0, 1, 0.05, () => synth.setVolume('music', synth.volumes.music));
+debug.slider('sfx', synth.volumes, 'sfx', 0, 1, 0.05, () => synth.setVolume('sfx', synth.volumes.sfx));
+debug.heading('Music track');
+let musicForce = '';
+debug.select('play track', { '': 'auto (by area)', street: 'street', station: 'station', scene: 'scene', echo: 'echo', board: 'board', finale: 'finale (ch1 ending)', bazaar: 'bazaar (Exchange)', dealer: 'dealer (implant shop)', silent: 'silent' }, '', (v) => { musicForce = v; if (v) music.setMood(v, 0.4); });
+debug.heading('Sound effects');
+debug.select('play sfx', { '': '-', phoneRing: 'phone ring', comms: 'Hale comms', override: 'Hale override alarm', stinger: 'reveal stinger', move: 'ui move', confirm: 'ui confirm', back: 'ui back', case: 'ui case', linkOk: 'link ok', linkWrong: 'link wrong', echoOn: 'echo on', echoOff: 'echo off', glitch: 'glitch' }, '', (v) => { if (!v) return; if (sfx[v]) sfx[v](); else sfx.ui(v); });
+
+debug.tab('Graphics');
 const pu = () => post.applyUniforms();
+debug.heading('Quality');
+debug.select('quality tier', labels(TIERS), settings.tier, (v) => { location.search = `?quality=${v}`; });
+debug.heading('Glow and blur');
 debug.slider('bloom', POST.bloom, 'strength', 0, 2, 0.05, pu);
-debug.slider('bloom thr', POST.bloom, 'threshold', 0, 1.5, 0.05, pu);
+debug.slider('bloom threshold', POST.bloom, 'threshold', 0, 1.5, 0.05, pu);
 debug.slider('tilt band', POST.tilt, 'band', 0, 0.5, 0.01, pu);
 debug.slider('tilt blur', POST.tilt, 'maxBlur', 0, 8, 0.25, pu);
+debug.heading('Colour grade');
 for (const k of ['lift', 'gamma', 'gain']) {
   const [min, max] = k === 'lift' ? [-0.1, 0.2] : [0.5, 1.5];
   'rgb'.split('').forEach((ch, i) => debug.slider(`${k} ${ch}`, POST.grade, k, min, max, 0.01, pu, i));
 }
 debug.slider('saturation', POST.grade, 'saturation', 0, 2, 0.05, pu);
-debug.slider('fog falloff', fog.uniforms.fogFalloff, 'value', 0, 1, 0.01);
-debug.slider('fog high', fog.uniforms.fogHigh, 'value', 0, 1, 0.01);
-debug.slider('fog ground', fog.uniforms.fogGround, 'value', 0, 1, 0.01);
-debug.slider('music volume', synth.volumes, 'music', 0, 1, 0.05, () => synth.setVolume('music', synth.volumes.music));
-debug.slider('sfx volume', synth.volumes, 'sfx', 0, 1, 0.05, () => synth.setVolume('sfx', synth.volumes.sfx));
-debug.heading('story');
-const STORY_JUMPS = { 2: 'Ch1 beat 2: street', 3: 'Ch1 beat 3: Sable', 4: 'Ch1 beat 4: the echo', 5: 'Ch1 beat 5: Teo / Kit', 6: 'Ch1 beat 6: board 2', 7: 'Ch1 beat 7: chip in the car', 8: 'Ch2: Exchange, no clues', 9: 'Ch2: Exchange, all 6 clues', 10: 'Ch2: all deductions, dealer open' };
-const solveHeld = () => { for (const c of BOARD.conclusions) if (caseFile.has(c.result)) board.logic.solved.add(c.id); }; // the board shows deductions the debug jump already granted as done
-debug.select('jump (with clues)', { '': '-', ...STORY_JUMPS }, '', (n) => { if (n) { beats.skipTo(+n); solveHeld(); } });
-debug.button('play chapter 1 ending (jumps to car first)', () => { beats.skipTo(7); solveHeld(); beats.cliffhanger(); });
-debug.button('give every clue (ch1 + ch2)', () => { for (const id of Object.keys(ENTRIES)) caseFile.add(id); solveHeld(); });
-debug.button('ch2: into the dealer shop, receipt shown (then open Locker 9)', () => { beats.skipTo(10); solveHeld(); caseFile.setFlag('locker_ok'); const s = world.exits.find((e) => e.id === 'dealer-door').spawn; world.jump('dealer', s); });
-debug.button('unlock the dealer door', () => caseFile.setFlag('dealer_open'));
-debug.heading('music');
-let musicForce = '';
-debug.select('track', { '': 'auto (by area)', street: 'street', station: 'station', scene: 'scene', echo: 'echo', board: 'board', finale: 'finale (ch1 ending)', bazaar: 'bazaar (Exchange)', dealer: 'dealer (implant shop)', silent: 'silent' }, '', (v) => { musicForce = v; if (v) music.setMood(v, 0.4); });
-debug.heading('sfx');
-debug.select('play sfx', { '': '-', phoneRing: 'phone ring', comms: 'Hale comms', override: 'Hale override alarm', stinger: 'reveal stinger', move: 'ui move', confirm: 'ui confirm', back: 'ui back', case: 'ui case', linkOk: 'link ok', linkWrong: 'link wrong', echoOn: 'echo on', echoOff: 'echo off', glitch: 'glitch' }, '', (v) => { if (!v) return; if (sfx[v]) sfx[v](); else sfx.ui(v); });
-debug.heading('world');
-debug.extra = () => `beat ${beats.beatNo}  ${beats.beatTimes.map((s, i) => (s ? `${i + 1}:${Math.round(s)}s` : '')).filter(Boolean).join(' ')}`;
-debug.button('clear save + reload', () => { try { localStorage.removeItem('nl.save'); } catch {} location.reload(); });
-debug.button('toast', () => hud.toast('Case file updated'));
-debug.button('clock +30 min', () => clock.add(30));
-debug.button('pause clock', () => { clock.paused = !clock.paused; });
-debug.button('log values', () => console.log(JSON.stringify({ POST, fogFalloff: fog.uniforms.fogFalloff.value, fogHigh: fog.uniforms.fogHigh.value, fogGround: fog.uniforms.fogGround.value })));
+debug.heading('Fog');
+debug.slider('falloff', fog.uniforms.fogFalloff, 'value', 0, 1, 0.01);
+debug.slider('high', fog.uniforms.fogHigh, 'value', 0, 1, 0.01);
+debug.slider('ground', fog.uniforms.fogGround, 'value', 0, 1, 0.01);
+debug.button('Log these values to the console', () => console.log(JSON.stringify({ POST, fogFalloff: fog.uniforms.fogFalloff.value, fogHigh: fog.uniforms.fogHigh.value, fogGround: fog.uniforms.fogGround.value })));
 
 function resize() {
   const w = window.innerWidth, h = window.innerHeight;
