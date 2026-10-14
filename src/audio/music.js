@@ -38,6 +38,12 @@ export const TUNING = {
     kick: { vol: 0.55, start: 170, end: 36 }, snare: { vol: 0.22, body: 0.14 }, hat: { vol: 0.07 },
     bass: { vol: 0.2, cutoff: 700 }, stab: { vol: 0.07, cutoff: 2600 }, riser: { vol: 0.12 },
   },
+  // The Echo Exchange: a hot, rhythmic market tune. D phrygian dominant (flat 2, major 3), 104 bpm, kick on 1 and 3, shaker, congas, plucked arpeggio.
+  bazaar: {
+    bpm: 104, roots: [38, 38, 41, 40], scale: [0, 1, 4, 5, 7, 8, 10, 12], arp: [0, 2, 4, 2, 3, 5, 4, 2, 0, 2, 4, 6, 7, 6, 4, 2],
+    pad: { vol: 0.035, cutoff: 1100, detune: 8, attack: 0.8, release: 1.2 },
+    kick: { vol: 0.3, start: 140 }, clap: { vol: 0.1 }, shaker: { vol: 0.045 }, conga: { vol: 0.09 }, bass: { vol: 0.16, cutoff: 600 }, pluck: { vol: 0.05, cutoff: 2400 },
+  },
   board: {
     bpm: 96, tick: { vol: 0.04 }, pulse: { freq: 55, vol: 0.13 },
     ladder: [57, 60, 64, 67, 69, 72, 76], noteVol: 0.06, dingVol: 0.12,
@@ -148,6 +154,19 @@ export function createMusic(synth) {
         // Tritone stabs on the offbeats.
         if (i % 16 === 3 || i % 16 === 10) for (const n of [root + 24, root + 30, root + 31]) synth.tone({ freq: midiToFreq(n), type: 'sawtooth', t, dur: sd * 1.6, vol: S.stab.vol, attack: 0.002, release: 0.08, detune: i % 2 ? 12 : -12, filter: { type: 'lowpass', freq: S.stab.cutoff, q: 2 }, to: m.out });
         if (i % 64 === 0) synth.noise({ t, dur: sd * 14, vol: S.riser.vol, attack: sd * 12, release: 0.2, filter: { type: 'bandpass', freq: 400, q: 1.2, sweepTo: 7000 }, to: m.out }); // a riser into the next phrase
+      },
+    },
+    bazaar: {
+      bpm: T.bazaar.bpm,
+      step(m, i, t) {
+        const S = T.bazaar, sd = stepDur(S.bpm), root = S.roots[Math.floor(i / 16) % S.roots.length], s = i % 16;
+        if (s === 0) pad(m.out, [root + 12, root + 16, root + 19, root + 24], t, sd * 16, S.pad);
+        if (s === 0 || s === 8) kick(m.out, t, S.kick.vol, S.kick.start);
+        if (s === 4 || s === 12) synth.noise({ t, dur: 0.1, vol: S.clap.vol, filter: { type: 'bandpass', freq: 1500, q: 0.9 }, to: m.out });
+        if (i % 2 === 1) synth.noise({ t, dur: 0.03, vol: S.shaker.vol * (s % 4 === 3 ? 1.5 : 1), filter: { type: 'highpass', freq: 7000 }, to: m.out });
+        if (s === 6 || s === 10 || s === 11 || s === 14) synth.tone({ freq: s === 11 ? 330 : 250, type: 'sine', t, dur: 0.14, vol: S.conga.vol, slide: 170, attack: 0.002, release: 0.08, to: m.out });
+        if (s % 4 === 0 || s === 6 || s === 14) synth.tone({ freq: midiToFreq(root + (s === 6 ? 1 : s === 14 ? 7 : 0)), type: 'sawtooth', t, dur: sd * 2.2, vol: S.bass.vol, attack: 0.004, release: 0.08, filter: { type: 'lowpass', freq: S.bass.cutoff, q: 1.1 }, to: m.out });
+        if (i % 2 === 0) synth.tone({ freq: midiToFreq(root + 24 + S.scale[S.arp[(i / 2) % S.arp.length]]), type: 'triangle', t, dur: sd * 1.6, vol: S.pluck.vol, attack: 0.003, release: 0.12, filter: { type: 'lowpass', freq: S.pluck.cutoff }, to: m.out });
       },
     },
     board: {

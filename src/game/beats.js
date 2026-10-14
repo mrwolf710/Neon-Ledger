@@ -4,6 +4,7 @@ import { EXAMINABLES, TALK, FALLBACK, conversationFor } from './story.js';
 // The beat manager: the cold open cutscene, the objective line / minimap mark, and the things you can interact with.
 // Beats 1-3 live here (Stage 9A); later beats add steps to STEPS and conversations to story.js.
 export const BEATS = {
+  finaleSeconds: 10, finaleGuard: 1.5, // end of chapter 1: how long the fast music plays before it moves on by itself; seconds before a tap can skip it
   trainSeconds: 6.5,      // the train rolling into the platform
   uiAt: 0.9,              // fraction of the zoom after which the UI fades in (quickly, see #hud.on in styles.css)
   zoomDelay: 2,           // seconds after the title card starts before the zoom begins
@@ -132,10 +133,20 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     await dialogue.start('car_reply');                           // Juno answers Hale: not coming in yet, Hale cuts in
     await wait(0.5);
     await dialogue.start('car_decide');                          // and decides: the Echo Exchange
-    endDeadHour(); ending = false; chapter1Done = true;          // the signs and the music come back as she decides
-    caseFile.setFlag('chapter1_done');
+    chapter1Done = true; caseFile.setFlag('chapter1_done');
     await wait(0.9);
     await fade.out();
+    endDeadHour(); ending = false; finale = true;                // cut to black: the low tone ends, the fast hard music starts
+    fade.card([{ text: 'NEON ECHOES', color: '#ffffff', scale: 6 }, { text: 'CASE 01 CONTINUES', color: '#1fd6e8', scale: 3 }, { text: 'TAP OR PRESS ANY BUTTON', color: '#8a8aa8', scale: 2 }], Infinity);
+    await new Promise((res) => {                                 // BEATS.finaleSeconds of music, or any tap, click, key or pad button after BEATS.finaleGuard
+      let raf = 0, tm = 0;
+      const done = () => { window.removeEventListener('pointerdown', skip, true); window.removeEventListener('keydown', skip, true); cancelAnimationFrame(raf); clearTimeout(tm); res(); };
+      const t0 = performance.now(), skip = () => { if (performance.now() - t0 > BEATS.finaleGuard * 1000) done(); };
+      const poll = () => { if ([...(navigator.getGamepads?.() ?? [])].some((p) => p?.buttons.some((b) => b.pressed))) skip(); raf = requestAnimationFrame(poll); };
+      window.addEventListener('pointerdown', skip, true); window.addEventListener('keydown', skip, true); poll(); tm = setTimeout(done, BEATS.finaleSeconds * 1000);
+    });
+    await fade.hideCard(0.4);                                    // quick fade to black
+    finale = false;                                              // the Exchange's own tune takes over
     const sp = world.spot('exchange', 'start');
     world.jump('exchange', [sp.x, sp.z, Math.PI / 2]);           // while the screen is black
     await fade.card([{ text: 'CHAPTER 2', color: '#ff8a1f', scale: 6 }, { text: 'THE ECHO EXCHANGE', color: '#ffd23a', scale: 3 }], 1.4);

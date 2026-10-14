@@ -54,6 +54,7 @@ export function createFade() {
       await wait(0.9);
       p.remove();
     },
+    async hideCard(s = 0.4) { card.style.transition = `opacity ${s}s ease`; card.style.opacity = '0'; await wait(s); card.style.transition = ''; },
     // lines: [{ text, color, scale }]. Fades in, holds, fades out; resolves when gone.
     async card(lines, hold = 3, bottom = 0) {
       // bottom > 0: park the card at the bottom of the screen (px above the edge) so it never covers the action (trailer)
@@ -86,6 +87,7 @@ export function createFade() {
       } else els.push(...lines.map((l) => line(l.text, l.color ?? '#ffffff', l.scale ?? 6)));
       card.replaceChildren(...els);
       card.style.opacity = '1';
+      if (hold === Infinity) return; // stays up until hideCard()
       await wait(1.2 + hold);
       if (zooming) return; // the zoom is already carrying it away
       card.style.opacity = '0';
