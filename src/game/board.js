@@ -93,7 +93,7 @@ export function createBoard({ caseFile, hud }) {
 
   let isOpen = false, cursor = 0, drag = null, temp = null, lineTimer = 0, cards = [], newId = null;
   let arriving = null, misses = 0, hinted = new Set(), hintTimer = 0, solving = false, busy = false;
-  const sparkRng = createRng(7).fork('sparks'), slots = [null, null], failed = new Set(); // failed: "a|b" pairs already tried
+  const sparkRng = createRng(7).fork('sparks'), slots = [null, null], failed = new Map(); // failed: "a|b" -> how many facts Juno held when it failed; a new clue can make an old pair work, so only an unchanged board counts as "already tried"
   const hintCount = new Map();
   const api = {
     get isOpen() { return isOpen; },
@@ -178,7 +178,7 @@ export function createBoard({ caseFile, hud }) {
     if (!a || !b || busy) return;
     busy = true;
     const key = [a, b].sort().join('|');
-    if (failed.has(key)) { ring.dataset.state = 'bad'; say(`⚠ Already tried those two. ${BOARD.wrongLines[0]}`); api.onWrong?.(); }
+    if (failed.get(key) === caseFile.facts().length) { ring.dataset.state = 'bad'; say(`⚠ Already tried those two. ${BOARD.wrongLines[0]}`); api.onWrong?.(); }
     else {
       const r = logic.link(a, b);
       if (r.kind === 'solved') {
@@ -190,7 +190,7 @@ export function createBoard({ caseFile, hud }) {
         api.onLock?.(r.conclusion);
         render(); merge(); return;
       } else {
-        failed.add(key); misses++; ring.dataset.state = 'bad'; api.onWrong?.();
+        failed.set(key, caseFile.facts().length); misses++; ring.dataset.state = 'bad'; api.onWrong?.();
         say(r.hint ? `${r.line} ${BOARD.hintLine.replace('{fact}', title(r.hint) ?? '…')}` : r.line);
       }
     }
