@@ -33,7 +33,7 @@ export function frame(node) {
 }
 
 // Speaker portrait: head-and-shoulders idle crop (nearest-neighbour), with an optional direction override, or a letter plate for voices with no sprite.
-const PORTRAIT = { gifs: { juno: 'sprites/juno/talk.gif', mamaTeo: 'sprites/teo/talk.gif', hale: 'sprites/hale/talk.gif', vendor: 'sprites/vendor/talk.gif', miso: 'sprites/cat/talk.gif', preacher: 'sprites/priest/talk.gif', kit: 'sprites/kit/talk.gif' }, px: 64, fit: { vendor: 48 }, headFrac: 0.5, catTop: 0.3, holo: ['preacher'], holoTint: 'rgba(60,230,255,0.6)', scanAlpha: 0.4 }; // px = canvas size, headFrac = share of a human frame (from the top) that counts as head + shoulders
+const PORTRAIT = { gifScale: { juno: 0.95, miso: 0.7 }, gifs: { juno: 'sprites/juno/talk.gif', mamaTeo: 'sprites/teo/talk.gif', hale: 'sprites/hale/talk.gif', vendor: 'sprites/vendor/talk.gif', miso: 'sprites/cat/talk.gif', preacher: 'sprites/priest/talk.gif', kit: 'sprites/kit/talk.gif' }, px: 64, fit: { vendor: 48 }, headFrac: 0.5, catTop: 0.3, holo: ['preacher'], holoTint: 'rgba(60,230,255,0.6)', scanAlpha: 0.4 }; // px = canvas size, headFrac = share of a human frame (from the top) that counts as head + shoulders
 function drawPortrait(cv, id, name, color) {
   const g = cv.getContext('2d'); g.imageSmoothingEnabled = false; g.clearRect(0, 0, cv.width, cv.height);
   const sh = getSheets()[id];
@@ -72,7 +72,7 @@ function dialogueBox(root) {
   return {
     show(name, color, id) {
       const gif = PORTRAIT.gifs[id]; if (gif) talk.src = import.meta.env.BASE_URL + gif;
-      talk.style.display = gif ? '' : 'none'; portrait.style.display = gif ? 'none' : ''; talk.style.borderColor = color;
+      talk.style.padding = `${(1 - (PORTRAIT.gifScale[id] ?? 1)) * 3.25}rem`; talk.style.display = gif ? '' : 'none'; portrait.style.display = gif ? 'none' : ''; talk.style.borderColor = color;
       if (!gif) drawPortrait(portrait, id, name, color);
       portrait.style.borderColor = color; portrait.classList.toggle('holo', PORTRAIT.holo.includes(id)); talk.classList.toggle('holo', PORTRAIT.holo.includes(id));
       box.classList.add('on'); nameEl.textContent = name; gem.style.background = color; gem.style.boxShadow = `0 0 0.5rem ${color}`;
