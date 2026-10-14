@@ -13,6 +13,7 @@ export function createMenu({ synth, saves, snapshot = () => null, onLoad = () =>
   box.classList.add('menubox');
   root.appendChild(box);
   box.appendChild(Object.assign(document.createElement('div'), { className: 'nameplate menutitle', textContent: 'Paused' }));
+  box.appendChild(Object.assign(document.createElement('div'), { textContent: `version ${typeof __BUILD__ === 'string' ? __BUILD__ : '?'}`, style: 'text-align:center;font:0.7rem monospace;opacity:0.5;margin:-0.2rem 0 0.4rem' }));
   document.body.appendChild(root);
 
   const pct = (v) => `${Math.round(v * 100)}%`;

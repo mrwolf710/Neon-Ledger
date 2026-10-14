@@ -113,4 +113,8 @@ const dialogueEditor = {
   },
 };
 // base './': relative asset URLs so the built game also runs from a sub-folder (itch.io HTML5 upload).
-export default { base: './', build: { target: 'es2022' }, plugins: [dialogueEditor] };
+// __BUILD__: the git commit and time this server or build started, shown under "Paused" so you can tell which version a device is running.
+import { execSync } from 'node:child_process';
+let commit = 'dev'; try { commit = execSync('git rev-parse --short HEAD').toString().trim(); } catch { /* no git */ }
+const stamp = `${commit} ${new Date().toTimeString().slice(0, 5)}`;
+export default { base: './', build: { target: 'es2022' }, plugins: [dialogueEditor], define: { __BUILD__: JSON.stringify(stamp) } };
