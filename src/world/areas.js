@@ -174,8 +174,8 @@ function sable(M) {
   wallZ(b, M, 2, -3, 3, [[-0.9, 0.9]], { block: true });               // divider with a doorway
   doorMat(b, M, -5.55, 0, 0.8, 1.4); doorMat(b, M, 7.6, 0, 0.8, 1.4);
   // Front room: counter, pots, two tables.
-  b.box(PM.wood, 5.0, 1.0, 0.9, -3.2, 0.5, -2.45); b.box(M.metal, 5.1, 0.06, 1.0, -3.2, 1.03, -2.45); b.block(-3.2, -2.45, 5.0, 0.9);
-  for (const x of [-4.6, -3.4, -2.2]) b.box(PM.lantern, 0.3, 0.2, 0.3, x, 1.16, -2.45);
+  b.box(PM.wood, 5.0, 1.0, 0.7, -3.2, 0.5, -1.5); b.box(M.metal, 5.1, 0.06, 0.8, -3.2, 1.03, -1.5); b.block(-3.2, -1.5, 5.0, 0.7);   // counter stands clear of the back wall: Mama Teo has room to stand behind it
+  for (const x of [-4.6, -3.4, -2.2]) b.box(PM.lantern, 0.3, 0.2, 0.3, x, 1.16, -1.5);
   table(b, PM, -3.7, 1.5); stool(b, PM, -4.4, 2.3); stool(b, PM, -3.0, 2.3);
   table(b, PM, -0.4, 1.4); stool(b, PM, -1.0, 2.2); stool(b, PM, 0.2, 2.2);
   b.box(signMat('NOODLES', P.magenta), 3.0, 0.8, 0.1, -3.2, 2.9, -2.6, 0, 0, false);   // hangs above Teo's head (she is 2 units tall)
@@ -189,7 +189,7 @@ function sable(M) {
   for (let i = 0; i < 9; i++) b.box(M.litCool, 0.1, 0.03, 0.07, 2.4 + (i % 3) * 0.28, 0.03, -0.9 + (i >> 1) * 0.12);  // glass
   b.light(P.white, 18, 4.6, 2.5, 0.6);                      // the forensic lamp over the table: Dex, the cups and the floor around them
   b.light(P.cyanLight, 12, 3.2, 2.2, -1.6); b.light(P.magenta, 7, 6.8, 2.0, -1.4); b.light(P.cyan, 9, 3.2, 1.6, 2.0); b.light(P.cyan, 7, 6.8, 1.8, 1.6);
-  b.spot('teo', -3.2, -2.9); b.spot('dex', 4.6, 0.95); b.spot('body', 5.5, 1.5); b.spot('port', 3.7, 1.0);
+  b.spot('teo', -3.2, -2.45); b.spot('dex', 4.6, 0.95); b.spot('body', 5.5, 1.5); b.spot('port', 3.7, 1.0);
   b.spot('cups', 4.55, -0.9); b.spot('terminal', 5.6, -2.0); b.spot('lamp', 3.0, -0.7); b.spot('echo', 6.0, 1.9);
   b.spot('backroom', 3.0, 0); b.spot('frontdoor', -5.4, 0); b.spot('backdoor', 7.4, 0);
   return finish('sable', b, [-6, -3, 8, 3]);

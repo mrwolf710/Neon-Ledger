@@ -9,6 +9,7 @@ export const BEATS = {
   zoomDelay: 2,           // seconds after the title card starts before the zoom begins
   zoomSeconds: 3,         // after the title card: the CRT frame zooms away and the VHS noise fades out
   settle: 1.5,            // seconds Juno stands still before the title card, so the camera is centred on her
+  talkRange: { mamaTeo: 3.0 }, // bigger Talk reach for people behind a counter (default INTERACT.range 1.6)
   kitStreet: { x: 8.8, z: 3.3, facing: 0 }, // where the worker stands on the street (hostel side, near its door) until Teo names him (then he is at the hostel desk)
   ringEvery: 4,           // seconds between rings while Juno's phone waits to be answered
   cardHold: 2.4,          // title card hold, seconds
@@ -159,7 +160,7 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     for (const b of cast.list) {
       if (b.id === 'juno' || b.id === 'dex' || b.ambient) continue;       // Dex is examined, not spoken to
       interactions.add({
-        id: b.id, get area() { return b.area; }, position: b.position, height: b.id === 'miso' ? 0.8 : 2, verb: b.id === 'miso' ? 'Pet' : 'Talk',
+        id: b.id, get area() { return b.area; }, position: b.position, range: BEATS.talkRange[b.id], height: b.id === 'miso' ? 0.8 : 2, verb: b.id === 'miso' ? 'Pet' : 'Talk',
         onInteract: () => {
           if (b.anim !== 'walk' && b.anim !== 'slump' && !b.follow) b.facing = Math.atan2(player.position.x - b.position.x, player.position.z - b.position.z);
           dialogue.start(conversationFor(b.id, visits[b.id] = (visits[b.id] ?? 0) + 1, { has: (f) => caseFile.has(f), talked: (p) => (visits[p] ?? 0) > 0, flag })).then(() => afterTalk(b));

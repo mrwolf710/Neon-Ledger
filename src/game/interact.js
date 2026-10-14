@@ -3,7 +3,7 @@ import { PALETTE as P } from '../gen/palette.js';
 import { drawText, measure } from '../gen/pixelfont.js';
 
 export const INTERACT = {
-  range: 1.6,         // units from the player
+  range: 1.6,         // units from the player (an interactable can set its own `range`)
   frontDot: 0.2,      // must be roughly in front (cosine) unless closer than closeRange
   closeRange: 0.8,
   pickPixels: 48,     // click this close to an interactable on screen to target it
@@ -66,11 +66,11 @@ export function createInteractions(scene) {
     // Nearest interactable in front of the player (within range).
     nearest(pos, facing) {
       const fx = Math.sin(facing), fz = Math.cos(facing);
-      let best = null, bestD = INTERACT.range;
+      let best = null, bestD = Infinity;
       for (const it of items) {
         if (!here(it)) continue;
         const dx = it.position.x - pos.x, dz = it.position.z - pos.z, d = Math.hypot(dx, dz);
-        if (d >= bestD) continue;
+        if (d >= bestD || d > (it.range ?? INTERACT.range)) continue;
         if (d > INTERACT.closeRange && (dx * fx + dz * fz) / d < INTERACT.frontDot) continue;
         best = it; bestD = d;
       }
