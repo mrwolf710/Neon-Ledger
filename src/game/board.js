@@ -1,4 +1,4 @@
-import { BOARD } from './story.js';
+import { BOARD, ENTRIES } from './story.js';
 import { frame } from '../ui/hud.js';
 import { createRng } from '../core/rng.js';
 
@@ -199,11 +199,12 @@ export function createBoard({ caseFile, hud }) {
   }
 
   const isResult = (f) => f.source === 'Deduction board';
+  const usable = new Set(BOARD.conclusions.flatMap((c) => c.needs)); // a conclusion card can be a clue for a later one (chapter 2 tier two)
   function render() {
-    const all = caseFile.facts(), facts = [...all].reverse(); // newest first: the latest clue sits at the top
+    const all = caseFile.facts(), facts = [...all].reverse().filter((f) => !caseFile.hasFlag('chapter1_done') || f.ch2); // chapter 1's clues leave the board once chapter 2 starts // newest first: the latest clue sits at the top
     const spent = new Set();
     for (const c of BOARD.conclusions) if (logic.solved.has(c.id)) c.needs.forEach((n) => spent.add(n));
-    cards = facts.filter((f) => !isResult(f) && !spent.has(f.id) && !slots.includes(f.id)).map((f) => f.id);
+    cards = facts.filter((f) => (!isResult(f) || usable.has(f.id)) && !spent.has(f.id) && !slots.includes(f.id)).map((f) => f.id);
     cursor = Math.max(0, Math.min(cursor, cards.length - 1));
     const side = [[], []];
     // A card sitting in a ring slot leaves an invisible placeholder behind, so every other card keeps its place and a failed pair puts it back exactly where it was.
@@ -251,7 +252,8 @@ export function createBoard({ caseFile, hud }) {
     archiveEl.replaceChildren(...facts.filter((f) => spent.has(f.id)).map((f) => el('div', 'bd-spent', null, f.title)));
     archiveEl.style.display = spent.size ? '' : 'none';
     if (!facts.length) leftEl.innerHTML = '<div class="bd-empty">&gt; NO DATA. TALK TO PEOPLE. SCAN ECHOES.</div>';
-    status.textContent = `FACTS ${facts.length} · LINKS ${logic.solved.size}/${BOARD.conclusions.length}`;
+    const ch2 = caseFile.hasFlag('chapter1_done'), mine = BOARD.conclusions.filter((c) => !ch2 || c.needs.every((n) => ENTRIES[n]?.ch2)); // chapter 2 counts only its own links
+    status.textContent = `FACTS ${facts.length} · LINKS ${mine.filter((c) => logic.solved.has(c.id)).length}/${mine.length}`;
     solveBtn.style.display = misses >= BOARDUI.solveAfter && nextOpen() ? '' : 'none';
     main.querySelector('.cursor')?.scrollIntoView({ block: 'nearest' }); // pad / keys moving the cursor scroll the columns
     requestAnimationFrame(drawStrings);

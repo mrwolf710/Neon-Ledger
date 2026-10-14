@@ -183,8 +183,8 @@ export function createCast(scene, sheets, areas) {
       [x, z] = s ? [s.x, s.z] : [0, 0];
       if (s && c.facing === undefined) facing = s.facing;
     } else [x, z] = c.at;
-    const b = createBillboard(sheets[c.id], { x, z, facing, pose: c.pose, path: c.path, speed: c.speed, ghost: c.ghost });
-    b.id = c.id; b.area = c.area ?? 'street'; b.ambient = !!c.ambient;
+    const b = createBillboard(sheets[c.sheet ?? c.id], { x, z, facing, pose: c.pose, path: c.path, speed: c.speed, ghost: c.ghost });
+    b.id = c.id; b.area = c.area ?? 'street'; b.ambient = !!c.ambient; b.booth = !!c.booth;
     scene.add(b.root);
     return b;
   });

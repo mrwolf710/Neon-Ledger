@@ -33,6 +33,19 @@ export const CAST = [
   { id: 'walkerB', ambient: true, area: 'street', at: [19, 0.7], path: [[19, 0.7], [-19, 0.7]], speed: 1.6 },
   { id: 'walkerC', ambient: true, area: 'street', at: [0, -0.7], path: [[0, -0.7], [-19, -0.7], [19, -0.7]], speed: 1.0 },
   { id: 'walkerD', ambient: true, area: 'street', at: [8, -1.8], path: [[8, -1.8], [19, -1.8], [-19, -1.8]], speed: 1.9 },
+  // Chapter 2: the Echo Exchange vendors (docs/chapter-2.md). sheet = a borrowed placeholder sprite until each vendor gets their own art; booth = talk from behind the counter's reach.
+  { id: 'vesper', area: 'exchange', at: 'v_echoes', sheet: 'walkerB', facing: 0, booth: true },
+  { id: 'mari', area: 'exchange', at: 'v_sauce', sheet: 'vendor', facing: 0, booth: true },
+  { id: 'lux', area: 'exchange', at: 'v_tarot', sheet: 'walkerC', facing: 0, booth: true },
+  { id: 'tobbo', area: 'exchange', at: 'v_cables', sheet: 'walkerD', facing: 0, booth: true },
+  { id: 'gutter', area: 'exchange', at: 'v_parts', sheet: 'walkerA', facing: Math.PI, booth: true },
+  { id: 'pim', area: 'exchange', at: 'v_umbrellas', sheet: 'walkerC', facing: Math.PI, booth: true },
+  { id: 'oyo', area: 'exchange', at: 'v_noodles', sheet: 'walkerA', facing: 0, booth: true },
+  { id: 'ruth', area: 'exchange', at: 'v_jewels', sheet: 'vendor', facing: Math.PI, booth: true },
+  { id: 'slate', area: 'exchange', at: 'v_idprint', sheet: 'walkerD', facing: Math.PI, booth: true },
+  { id: 'jinx', area: 'exchange', at: 'v_stim', sheet: 'walkerB', facing: 0, booth: true },
+  { id: 'bolt', area: 'exchange', at: 'v_drones', sheet: 'walkerA', facing: 0, booth: true },
+  { id: 'petra', area: 'exchange', at: 'v_flowers', sheet: 'vendor', facing: 0, booth: true },
   { id: 'miso', area: 'street', at: [12.4, 2.4], facing: 2.2 }, // right at the foot of the station stairs (spawn 13.8, 1.3): the first character Juno sees
 ];
 

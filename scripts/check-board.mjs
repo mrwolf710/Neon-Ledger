@@ -28,3 +28,17 @@ assert.ok(['b', 'c', 'a'].includes(r[2].hint) && r[2].hint !== 'c' && r[2].hint 
 assert.equal(l.link('x', 'junk').hint, null, 'links touching no conclusion never hint');
 assert.equal(new Set([l.link('x', 'junk').line, l.link('x', 'junk').line]).size, 2, 'wrong lines rotate');
 console.log('board ok');
+
+// Chapter 2: six clues -> three level-1 pairs -> a level-2 pair, in any order of discovery (docs/chapter-2.md).
+{
+  const have = new Set(['echo_refused', 'suit_argument', 'locker_receipt', 'locker_rental', 'suit_gossip', 'bureau_woman']);
+  const l2 = createBoardLogic(BOARD, (id) => have.has(id));
+  const add = (r) => { if (r.kind === 'solved') have.add(r.conclusion.result); return r; };
+  assert.equal(add(l2.link('locker_rental', 'locker_receipt')).kind, 'solved', 'locker pair, either order');
+  assert.equal(l2.link('locker_rented', 'echo_hidden').kind, 'wrong', 'tier two needs both level-1 results first');
+  assert.equal(add(l2.link('suit_argument', 'echo_refused')).kind, 'solved', 'echo pair');
+  const c4 = add(l2.link('echo_hidden', 'locker_rented'));
+  assert.equal(c4.kind, 'solved', 'tier two locks'); assert.ok(c4.conclusion.effects.some((e) => e.setFlag === 'dealer_open'), 'it opens the dealer');
+  assert.equal(add(l2.link('bureau_woman', 'suit_gossip')).kind, 'solved', 'optional pair');
+  assert.equal(l2.link('echo_refused', 'bureau_woman').kind, 'wrong', 'crossing the pairs is wrong');
+}

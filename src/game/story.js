@@ -14,6 +14,11 @@ export const SPEAKERS = {
   unknown: { name: 'Unknown voice', color: '#e0217d' },
   hale: { name: 'Hale (comms)', color: '#f2a93b' },
   preacher: { name: 'Holo-preacher', color: '#9ff4ff' },
+  // Chapter 2: the Echo Exchange vendors (docs/chapter-2.md)
+  vesper: { name: 'Vesper', color: '#ff5a3c' }, mari: { name: 'Mari', color: '#ff8a1f' }, lux: { name: 'Madame Lux', color: '#ffd23a' },
+  tobbo: { name: 'Tobbo', color: '#ff7a2a' }, gutter: { name: 'Gutter', color: '#e8a030' }, pim: { name: 'Pim', color: '#ff6a4a' },
+  oyo: { name: 'Oyo', color: '#ffb347' }, ruth: { name: 'Ruth', color: '#ff9a3c' }, slate: { name: 'Slate', color: '#ff4a2c' },
+  jinx: { name: 'Jinx', color: '#ffc83a' }, bolt: { name: 'Bolt', color: '#ff8030' }, petra: { name: 'Petra', color: '#ff5a50' },
 };
 
 // Case file entries. kind decides the tab: people | facts | echoes. source = where Juno learned it.
@@ -36,10 +41,22 @@ export const ENTRIES = {
   kit_name: { kind: 'facts', title: 'The worker is Kit Lacroix', text: 'Mama Teo knows him: Kit Lacroix, night worker at the Capsule hostel. He sneaks smokes behind her kitchen.', source: 'Mama Teo' },
   kit_saw_them: { kind: 'facts', title: 'Kit Lacroix saw them leave', text: 'The worker at the capsule hostel is Kit Lacroix. His implant puts him in the alley when the gloved visitor came out of the back door.', source: 'Deduction board' },
   door_unlocked: { kind: 'facts', title: 'The back door was unlocked from outside', text: "Mama Teo locked Dex in. Later the back door, the only other way in, clicked open. No knock. City master keys open every door on Lowmarket; it is written into the leases.", source: 'Mama Teo' },
+  // Chapter 2 clues (ch2: shown on the board after chapter 1) and conclusions
+  echo_refused: { ch2: true, kind: 'facts', title: "Dex's echo was \"too hot\" for the broker", text: 'Vesper refused it three days ago. Dex laughed and took it back.', source: 'Vesper, echo broker' },
+  locker_receipt: { ch2: true, kind: 'facts', title: 'Receipt: \"Locker 9, paid through the month\"', text: "Stamped with the implant dealer's mark. Dex left it at Mari's hot-sauce stall.", source: 'Mari, hot-sauce cook' },
+  suit_gossip: { ch2: true, kind: 'facts', title: 'A man in a dark suit is buying gossip', text: "He pays clean credit for anything about Dex's visitors tonight. \"Especially Bureau.\"", source: 'Madame Lux, fortune-teller' },
+  suit_argument: { ch2: true, kind: 'facts', title: 'Dex told the suit: \"You are too late\"', text: '\"It is somewhere you cannot buy it.\" Then the suit paid Tobbo to go away.', source: 'Tobbo, cable seller' },
+  locker_rental: { ch2: true, kind: 'facts', title: 'The implant dealer rents out lockers', text: "Spare implants kept in the shop with data loaded. Only the renter, on the dealer's own reader, opens one.", source: 'Gutter, parts scrapper' },
+  bureau_woman: { ch2: true, kind: 'facts', title: 'A Bureau woman entered the Sable at 23:10', text: 'Grey coat, Bureau badge. She left near midnight, almost an hour later.', source: 'Pim, umbrella seller' },
+  echo_hidden: { ch2: true, kind: 'facts', title: 'Dex hid the echo before he died', text: 'The broker says he still had it. He told the suit it was out of reach.', source: 'Deduction board' },
+  locker_rented: { ch2: true, kind: 'facts', title: "Dex rented a locker at the implant dealer's", text: 'Locker 9: a spare implant stored in the shop.', source: 'Deduction board' },
+  echo_at_dealer: { ch2: true, kind: 'facts', title: "The echo is in a locker at the dealer's shop", text: "Hidden where only the dealer's reader can open it.", source: 'Deduction board' },
+  fixer_hunting: { ch2: true, kind: 'facts', title: 'The fixer is hunting the Bureau woman', text: 'He is buying news of a Bureau visitor, and one was at the Sable. That is me.', source: 'Deduction board' },
 };
 
 // Which conversation each talkable thing starts. Missing ids fall back to FALLBACK.
-export const TALK = { mamaTeo: 'teo', vending: 'vending', miso: 'miso', vendor: 'vendor', preacher: 'preacher', kit: 'kit' };
+export const TALK = { mamaTeo: 'teo', vending: 'vending', miso: 'miso', vendor: 'vendor', preacher: 'preacher', kit: 'kit',
+  vesper: 'vend_vesper', mari: 'vend_mari', lux: 'vend_lux', tobbo: 'vend_tobbo', gutter: 'vend_gutter', pim: 'vend_pim', oyo: 'vend_oyo', ruth: 'vend_ruth', slate: 'vend_slate', jinx: 'vend_jinx', bolt: 'vend_bolt', petra: 'vend_petra' };
 export const FALLBACK = 'nobody';
 // What a speaker is called right now: an alias replaces the name once its flag is set.
 export const speakerName = (id, flag) => { const s = SPEAKERS[id]; return !s ? id : s.alias && flag?.(s.alias.flag) ? s.alias.name : s.name; };
@@ -94,6 +111,45 @@ const examine = (id, fact, text, again) => ({
     again: { speaker: 'juno', text: again, end: true },
   },
 });
+
+// Chapter 2 vendor talk. lines: [speaker, text, fact?]; the clue (addFact) comes on the line that carries it; the flag vend_<id> makes later visits play `again`.
+const vendorTalk = (id, lines, again) => {
+  const nodes = {};
+  lines.forEach(([sp, text, fact], i) => {
+    const last = i === lines.length - 1, effects = [...(fact ? [{ addFact: fact }] : []), ...(last ? [{ setFlag: `vend_${id}` }] : [])];
+    nodes[`n${i}`] = { speaker: sp, text, ...(effects.length ? { effects } : {}), ...(last ? { end: true } : { next: `n${i + 1}` }) };
+  });
+  nodes.again = { speaker: id, text: again, end: true };
+  return { start: [{ if: { flag: `vend_${id}` }, node: 'again' }, { node: 'n0' }], nodes };
+};
+const VENDOR_TALK = {
+  vesper: { again: 'I said no, and I meant it. Move along.', lines: [
+    ['juno', "I'm looking into Dex Morrow. Broker, like you."], ['vesper', 'Dex. Dead, I hear. He came by three days ago with an echo he swore would make us both rich.'],
+    ['vesper', 'One look at the tag and I said no. Too hot. He just laughed and took it back.', 'echo_refused'], ['juno', 'Too hot how?'], ['vesper', "The kind that gets people deleted. That's all you get, auditor."]] },
+  mari: { again: 'Take the receipt if you want it. Take a sauce too.', lines: [
+    ['juno', 'You know a man called Dex?'], ['mari', 'Dex ate here every night. Extra pepper, never tipped.'],
+    ['mari', "He left a receipt stuck to my counter. Lucky paper. 'Locker 9, paid through the month.' Stamped with the implant dealer's mark.", 'locker_receipt'],
+    ['juno', 'Locker 9.'], ['mari', "Don't ask me what locker. I sell hot sauce."]] },
+  lux: { again: "The suit's been and gone. Ask the cards if you like.", lines: [
+    ['juno', 'Anything about a broker called Dex?'], ['lux', "The cards don't say, but customers do. A man in a dark suit is paying well for gossip tonight. Who visited Dex, who came, who left."],
+    ['lux', "He said 'especially Bureau.' He paid in clean credit. Nobody here has clean credit.", 'suit_gossip'], ['juno', '(Clean credit. Corporate money.)']] },
+  tobbo: { again: "That's all I heard. Cables are three for ten.", lines: [
+    ['juno', 'Did you see Dex tonight?'], ['tobbo', 'Earlier, right here by the cables. Shouting at a man in a dark suit.'],
+    ['tobbo', "Dex says, 'You're too late. It's somewhere you can't buy it.' Then the suit pays me to go away. I took the cash and went.", 'suit_argument']] },
+  gutter: { again: "I've told you what I know. I fix ports, not secrets.", lines: [
+    ['juno', 'If someone wanted to hide data, where would they put it?'], ['gutter', "Not in their head, that's for sure. The implant dealer here rents lockers. Spare implants kept in the shop, with data loaded."],
+    ['gutter', "Only the renter can pull one, and only on the dealer's own reader. Don't ask me about the dealer. Don't touch the lockers.", 'locker_rental']] },
+  pim: { again: 'Please. I only said what I saw.', lines: [
+    ['juno', 'Were you near the Sable tonight?'], ['pim', 'I sell umbrellas on rainy nights, miss. I go where it rains. That is everywhere.'],
+    ['pim', 'I saw a woman with a Bureau badge go in around ten past eleven. Out again close to midnight. Nearly an hour.', 'bureau_woman'],
+    ['pim', "Grey coat, badge. She looked lost. I didn't say anything to anyone."], ['juno', '(Ten past eleven. Almost midnight. Forty-seven minutes.)']] },
+  oyo: { again: 'Still not buying? Then move along.', lines: [['oyo', "If you're not buying, move along."], ['oyo', "And don't touch the broth. Rain gets in everything down here."]] },
+  ruth: { again: 'Look all you like. Buying or leaving.', lines: [['ruth', 'Rings, chains, no questions. Buying?'], ['ruth', 'Everything on this table was on someone\'s hand once. Nobody asks whose.']] },
+  slate: { again: 'I said nothing. Go away.', lines: [['slate', "An auditor? I print nothing. I've never printed anything. Move along."], ['slate', "Echoes fade in seventy-two hours down here, unless somebody pays to keep them. You didn't hear that."]] },
+  jinx: { again: 'Still here? Buy or walk.', lines: [['jinx', "Two for five, no refunds. No? Then you're blocking my light."], ['jinx', 'Stims keep you awake. Awake keeps you remembering. Some folks pay to forget.']] },
+  bolt: { again: 'Not today, auditor.', lines: [['bolt', "Mine's in pieces, yours would be too. Not buying? Walk."], ['bolt', 'Drones record everything now. Half the bits in here are evidence nobody claimed.']] },
+  petra: { again: 'Please, I only sell flowers.', lines: [['petra', "Don't arrest me, they're plastic! Buy one or please keep moving."], ['petra', 'The real ones died with the old market. Now it is plastic and echoes.']] },
+};
 
 export const CONVERSATIONS = {
   // Beat 1: Hale on comms as Juno steps off the train.
@@ -231,6 +287,10 @@ export const CONVERSATIONS = {
   car_decide: { start: 'a', nodes: {
     a: { speaker: 'juno', text: '(Brokers all end up in one place. The Echo Exchange. Somebody there knows what he was selling.)', end: true },
   } },
+  // ---- Chapter 2: the Echo Exchange (docs/chapter-2.md). Each clue vendor gives their clue on the first talk, in any order; later talks give a short repeat line. ----
+  dealer_locked: { start: 'a', nodes: { a: { speaker: 'juno', text: "(Shuttered. Whatever is in there, I don't know enough to knock yet.)", end: true } } },
+  dealer_next: { start: 'a', nodes: { a: { speaker: 'juno', text: "(The dealer's shop. Dex's echo is in there. Whoever else wants it is closing in.)", end: true } } },
+  ...Object.fromEntries(Object.entries(VENDOR_TALK).map(([id, v]) => [`vend_${id}`, vendorTalk(id, v.lines, v.again)])),
   nobody: { start: 'a', nodes: { a: { speaker: 'juno', text: 'Nothing to say yet.', end: true } } },
 };
 
@@ -369,5 +429,13 @@ export const BOARD = {
       line: "(The log says nobody left. The gloved hand says otherwise. Somebody made it lie.)", effects: [{ addFact: 'log_faked' }] },
     { id: 'kit_saw_them', needs: ['kit_outside', 'gloved_hand'], requires: ['kit_name'], result: 'kit_saw_them',
       line: "(The worker is Kit Lacroix, Mama Teo said so. He was in the alley when the gloved hand came out, and he told me he was in his bunk by eleven. Kit saw them leave.)", effects: [{ addFact: 'kit_saw_them' }, { setFlag: 'kit_deduced' }, { setFlag: 'kit_named' }] },
+    { id: 'echo_hidden', needs: ['echo_refused', 'suit_argument'], result: 'echo_hidden',
+      line: "(He still had it, and he told the suit it was somewhere he couldn't buy. Dex hid the echo before he died.)", effects: [{ addFact: 'echo_hidden' }] },
+    { id: 'locker_rented', needs: ['locker_receipt', 'locker_rental'], result: 'locker_rented',
+      line: '(A receipt for Locker 9, and the dealer rents lockers: spare implants kept in the shop. Dex rented one.)', effects: [{ addFact: 'locker_rented' }] },
+    { id: 'echo_at_dealer', needs: ['echo_hidden', 'locker_rented'], requires: ['echo_hidden', 'locker_rented'], result: 'echo_at_dealer',
+      line: "(Hidden, and the only hiding place I know of is a dealer's locker. The echo is in that shop. The dealer.)", effects: [{ addFact: 'echo_at_dealer' }, { setFlag: 'dealer_open' }] },
+    { id: 'fixer_hunting', needs: ['suit_gossip', 'bureau_woman'], result: 'fixer_hunting',
+      line: "(He wants a Bureau visitor, and a Bureau woman was at the Sable. He's hunting me.)", effects: [{ addFact: 'fixer_hunting' }, { setFlag: 'fixer_knows' }] },
   ],
 };

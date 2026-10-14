@@ -9,6 +9,7 @@ export const BEATS = {
   zoomDelay: 2,           // seconds after the title card starts before the zoom begins
   zoomSeconds: 3,         // after the title card: the CRT frame zooms away and the VHS noise fades out
   settle: 1.5,            // seconds Juno stands still before the title card, so the camera is centred on her
+  boothRange: 3.0,     // vendors in the Echo Exchange stand behind a counter
   talkRange: { mamaTeo: 3.0 }, // bigger Talk reach for people behind a counter (default INTERACT.range 1.6)
   kitStreet: { x: 8.8, z: 3.3, facing: 0 }, // where the worker stands on the street (hostel side, near its door) until the key deduction (then he is at the hostel desk)
   ringEvery: 4,           // seconds between rings while Juno's phone waits to be answered
@@ -154,13 +155,16 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     for (const s of world.areas.street.spots.filter((p) => p.name === 'vending')) {
       interactions.add({ id: 'vending', area: 'street', position: new THREE.Vector3(s.x, 0, s.z), height: 1.8, verb: 'Use', onInteract: () => dialogue.start(TALK.vending) });
     }
+    const dd = world.spot('exchange', 'dealerDoor');          // the implant dealer's shopfront: locked until the locker deduction
+    interactions.add({ id: 'dealer_door', area: 'exchange', position: new THREE.Vector3(dd.x, 0, dd.z), height: 1.4, verb: 'Try the door',
+      onInteract: () => dialogue.start(flag('dealer_open') ? 'dealer_next' : 'dealer_locked') });
     const seat = world.spot('car', 'seat');
     interactions.add({ id: 'chip', area: 'car', position: new THREE.Vector3(seat.x, 0, seat.z), height: 1.0, verb: "Slot Dex's chip",
       onInteract: () => { if (locked) return; if (flag('kit_coat') && flag('ex_capsule')) cliffhanger(); else dialogue.start('chip_early'); } });
     for (const b of cast.list) {
       if (b.id === 'juno' || b.id === 'dex' || b.ambient) continue;       // Dex is examined, not spoken to
       interactions.add({
-        id: b.id, get area() { return b.area; }, position: b.position, range: BEATS.talkRange[b.id], height: b.id === 'miso' ? 0.8 : 2, verb: b.id === 'miso' ? 'Pet' : 'Talk',
+        id: b.id, get area() { return b.area; }, position: b.position, range: BEATS.talkRange[b.id] ?? (b.booth ? BEATS.boothRange : undefined), height: b.id === 'miso' ? 0.8 : 2, verb: b.id === 'miso' ? 'Pet' : 'Talk',
         onInteract: () => {
           if (b.anim !== 'walk' && b.anim !== 'slump' && !b.follow) b.facing = Math.atan2(player.position.x - b.position.x, player.position.z - b.position.z);
           dialogue.start(conversationFor(b.id, visits[b.id] = (visits[b.id] ?? 0) + 1, { has: (f) => caseFile.has(f), talked: (p) => (visits[p] ?? 0) > 0, flag })).then(() => afterTalk(b));
@@ -214,7 +218,8 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     { id: 'kitbreak', text: 'Present the alley echo to Kit', area: 'hostel', pos: () => spotXZ('hostel', 'kit'), done: () => flag('kit_broken') },
     { id: 'press', text: 'Press Kit about what he saw', area: 'hostel', pos: () => spotXZ('hostel', 'kit'), done: () => flag('kit_coat') },
     { id: 'chip', text: "Slot Dex's backup chip in your car", area: 'car', pos: () => spotXZ('car', 'seat'), done: () => chapter1Done },
-    { id: 'exchange', text: "Find out what Dex was carrying (Echo Exchange)", area: 'exchange', done: () => false },
+    { id: 'exchange', text: "Ask around the Echo Exchange about Dex's echo", area: 'exchange', done: () => flag('dealer_open') },
+    { id: 'dealer', text: "Go into the implant dealer's shop", area: 'exchange', pos: () => spotXZ('exchange', 'dealerDoor'), done: () => false },
   ];
   function markFor(step) {
     const here = world.current.id;

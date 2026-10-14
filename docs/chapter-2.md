@@ -67,6 +67,11 @@ Chapter 1 ends on Hale's question. Chapter 2 opens in the car:
 ## Car scene: built
 Hale's question -> car_reply -> car_decide -> Dead Hour ends (signs and music return) -> black -> "CHAPTER 2 / THE ECHO EXCHANGE" card -> Juno on the square's west side. The old end card ("CASE 01 CONTINUES", tap, reload) is gone; chapter 2 is always on.
 
+## Built so far
+- 12 vendors with dialogue (story.js VENDOR_TALK; names: Vesper, Mari, Madame Lux, Tobbo, Gutter, Pim; brush-offs Oyo, Ruth, Slate, Jinx, Bolt, Petra), placeholder sprites borrowed from the street walkers/vendor (CAST `sheet`), talk range from behind the counter.
+- Six clues and four conclusions in ENTRIES/BOARD; the board shows only chapter 2's clues after `chapter1_done`; conclusion cards can be placed as clues (tier two); C4 sets `dealer_open`; the dealer door says it is locked until then.
+- Not built: the dealer's store interior, the fixer scene, the auditors finale.
+
 ## Layout
 Booths are deliberately uneven (widths, angles, three styles: awning, kiosk, cart; no grid). See EXCHANGE in `src/world/areas.js`.
 
