@@ -186,7 +186,7 @@ body.echo #hud .right, body.echo #hud .banner, body.echo #hud .controls, body.ec
 #board .bd-spent { padding: 0.15rem 0.5rem; font: 500 0.65rem monospace; letter-spacing: 0.06em; text-transform: uppercase; color: #aaa; filter: grayscale(1); opacity: 0.4; border: 1px solid #666; }
 /* Touch: the cards take drags (to link), so keep a margin on the right and room below where a swipe scrolls the list. */
 @media (pointer: coarse) { #board .bd-cards { touch-action: pan-y; } }
-#board .bd-card { position: relative; padding: 1.7rem 1rem 0.7rem; cursor: grab; touch-action: none; user-select: none; color: var(--text);
+#board .bd-card { position: relative; padding: 1.7rem 1rem 0.7rem; cursor: grab; touch-action: pan-y; user-select: none; color: var(--text);
   background: linear-gradient(160deg, rgba(20, 30, 60, 0.96), rgba(8, 10, 26, 0.96));
   clip-path: polygon(0 0, calc(100% - 0.9rem) 0, 100% 0.9rem, 100% 100%, 0.9rem 100%, 0 calc(100% - 0.9rem));
   box-shadow: inset 0 0 0 1px rgba(31, 214, 232, 0.6); transition: transform 0.12s, background 0.12s; }
