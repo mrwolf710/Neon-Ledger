@@ -23,6 +23,7 @@ export const TUNING = {
   ui: { vol: 0.16 },
   stinger: { vol: 0.4, sub: 46, chord: [220, 233.1, 329.6], dur: 2.6 }, // the big reveal: a sub thud, a dissonant chord and a falling shriek
   ring: { vol: 0.07, freqs: [440, 480], rings: 2, pulses: 18, pulseGap: 0.045, pulseDur: 0.035, period: 1.35 }, // intro: Juno's phone rings (Hale calling), each ring = a quick trill
+  override: { vol: 0.16, freqs: [1046, 740], pulses: 6, gap: 0.2, sub: 48, subVol: 0.4 }, // Hale forcing the call through: harsh square alarm over a sub thud
   comms: { vol: 0.12, freqs: [880, 1175], gap: 0.13 },                 // Hale's incoming call: two soft beeps
   voice: { vol: 0.09, dur: 0.06, every: 2 },
   voices: { // per speaker: base Hz and waveform
@@ -335,6 +336,18 @@ export function createSfx(synth) {
       ringNodes.length = 0;
       synth.noise({ dur: 0.04, vol: 0.1, attack: 0.002, release: 0.03, filter: { type: 'highpass', freq: 1500 } });
       synth.tone({ freq: 700, type: 'sine', dur: 0.06, vol: 0.06, release: 0.04 });
+    },
+    // The forced call at the end of chapter 1: a sub thud, a static burst, then harsh two-tone square alarm pulses (a tritone apart).
+    override(seconds = 2.4) {
+      if (!synth.ready) return;
+      const O = T.override, t = synth.ctx.currentTime, gap = Math.min(O.gap, seconds / O.pulses);
+      synth.tone({ freq: O.sub, type: 'sine', t, dur: 1.2, vol: O.subVol, slide: 30, attack: 0.005, release: 0.8 });
+      synth.noise({ t, dur: 0.25, vol: O.vol * 0.8, attack: 0.002, release: 0.2, filter: { type: 'bandpass', freq: 2500, q: 0.6 } });
+      for (let k = 0; k < O.pulses; k++) {
+        const f = O.freqs[k % 2];
+        synth.tone({ freq: f, type: 'square', t: t + 0.1 + k * gap, dur: gap * 0.85, vol: O.vol, attack: 0.002, release: 0.02, filter: { type: 'lowpass', freq: 3200, q: 2 } });
+        synth.tone({ freq: f * 1.5, type: 'sawtooth', t: t + 0.1 + k * gap, dur: gap * 0.85, vol: O.vol * 0.5, attack: 0.002, release: 0.02, detune: 25, filter: { type: 'lowpass', freq: 3200, q: 2 } });
+      }
     },
     // Hale on comms.
     comms() {

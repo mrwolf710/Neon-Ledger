@@ -130,7 +130,7 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     await wait(1.2);
     // Hale forces the call through: no answering this time, a red override banner and urgent beeps, then her voice.
     callEl.textContent = '⚠ SYSTEM OVERRIDE - INCOMING COMMUNICATION'; callEl.classList.add('on', 'override');
-    for (let k = 0; k < 3; k++) { sfx.comms?.(); await wait(BEATS.overrideSeconds / 3); }
+    sfx.override?.(BEATS.overrideSeconds); await wait(BEATS.overrideSeconds);
     callEl.classList.remove('on', 'override');
     await wait(0.3);
     await dialogue.start('hale_end');
