@@ -286,6 +286,7 @@ renderer.setAnimationLoop((now) => {
   if (!trailer.active && world.current.id === 'sable' && !dialogue.active && !tutorial.isOpen && !caseFile.hasFlag('tut_board') && caseFile.facts().length >= 2) { caseFile.setFlag('tut_board'); tutorial.open('board'); }
   if (!trailer.active && echo.active && !tutorial.isOpen && !caseFile.hasFlag('tut_echo')) { caseFile.setFlag('tut_echo'); tutorial.open('echo'); } // first echo: explain it (the echo waits)
   const modal = trailer.active || tutorial.isOpen || tutWasOpen || !title.done || beats.locked || world.busy || dialogue.active || caseFile.isOpen || echo.active || board.isOpen || menu.isOpen || menuWasOpen;
+  if (input.click && beats.calling) beats.answerCall(); // a click or tap answers Hale's call (it is locked, so the click would otherwise be thrown away below)
   if (modal) { input.click = null; input.moveX = input.moveY = 0; }
   if (!trailer.active && !menuWasOpen && !tutorial.isOpen && !tutWasOpen && title.done && !beats.locked && !world.busy && !dialogue.active && !caseFile.isOpen && !echo.active && !board.isOpen && input.pressed('pause')) menu.open();
   cam.tilt((input.held('tiltDown') ? 1 : 0) - (input.held('tiltUp') ? 1 : 0), dt);

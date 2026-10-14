@@ -22,7 +22,7 @@ export const BEATS = {
 
 export function createBeats({ input, world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, echo, deadHour = () => {}, endDeadHour = () => {}, setExposure = () => {}, setVhs = () => {}, setCrt = () => {} }) {
   const timers = [], tweens = [];
-  let ringing = null, answerWait = null;                          // the intro phone: ring loop + the pending answer
+  let ringing = null, answerWait = null, callHint = 0;                          // the intro phone: ring loop + the pending answer
   const callEl = document.createElement('div'); callEl.className = 'callprompt'; document.body.appendChild(callEl);
   const visits = {}; // how many times Juno has talked to each person (picks the conversation, see story.js VISITS)
   const flag = (n) => caseFile.hasFlag(n);
@@ -91,10 +91,12 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     });
     await card;
     hud.show();
-    const key = input.lastDevice === 'touch' ? 'TAP' : input.lastDevice === 'gamepad' ? 'A' : 'SPACE';
-    callEl.textContent = `📞 Incoming call: Hale. Press ${key} to answer`; callEl.classList.add('on');
+    // Every input answers: tap (touch), click (mouse), Space / Enter (keyboard), A / cross (gamepad). The wording follows the last device used and refreshes if she switches.
+    const how = () => (input.lastDevice === 'touch' ? 'Tap to answer' : input.lastDevice === 'gamepad' ? `Press ${input.padType === 'playstation' ? '\u00d7' : 'A'} to answer` : 'Click or press SPACE to answer');
+    callEl.textContent = `\ud83d\udcde Incoming call: Hale. ${how()}`; callEl.classList.add('on'); callEl.onpointerdown = () => api.answerCall();
+    callHint = setInterval(() => { callEl.textContent = `\ud83d\udcde Incoming call: Hale. ${how()}`; }, 400);
     await new Promise((res) => { answerWait = res; });          // nothing else is possible until she answers
-    callEl.classList.remove('on'); ringing = null; sfx.phoneAnswer?.();                  // Juno picks up
+    clearInterval(callHint); callEl.onpointerdown = null; callEl.classList.remove('on'); ringing = null; sfx.phoneAnswer?.();                  // Juno picks up
     await wait(0.5);
     await dialogue.start('hale_open');                          // Hale on comms
     player.setPose(null);
@@ -232,6 +234,8 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     get locked() { return locked; },
     visits, // talks per person (a save game keeps them)
     get focus() { return focus; },
+    get calling() { return !!answerWait; },                       // Hale's call at the start is waiting to be answered
+    answerCall() { answerWait?.(); answerWait = null; },
     get ending() { return ending; },
     get finale() { return finale; },
     get beatNo() { return STEP_BEAT[STEPS.find((s) => !s.done())?.id] ?? 7; },
@@ -256,7 +260,7 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     update(dt) {
       placeKit();
       if (ringing && (ringing.t += dt) >= BEATS.ringEvery) { ringing.t = 0; sfx.phoneRing?.(); }
-      if (answerWait && (input.pressed('interact') || input.click)) { answerWait(); answerWait = null; }
+      if (answerWait && (input.pressed('interact') || input.click)) api.answerCall();
       if (!locked) beatTimes[api.beatNo - 1] += dt;
       for (let i = timers.length - 1; i >= 0; i--) { timers[i].left -= dt; if (timers[i].left <= 0) { timers[i].res(); timers.splice(i, 1); } }
       for (let i = tweens.length - 1; i >= 0; i--) {
