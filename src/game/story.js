@@ -285,7 +285,7 @@ export const CONVERSATIONS = {
   car_reply: { start: 'a', nodes: {
     a: { speaker: 'juno', text: "Still working it, Hale. I'll bring you something real.", next: 'b' },
     b: { speaker: 'hale', text: 'Come in. Now. And bring the chip.', next: 'c' },
-    c: { speaker: 'juno', text: "Not yet. If I walk into the Bureau with a dead broker and a hole in my head, I won't walk out. I need to know what Dex was carrying first.", next: 'd' },
+    c: { speaker: 'juno', text: "Not yet. If I walk into the Bureau with a dead broker and a hole in my memory, I won't walk out. I need to know what Dex was carrying first.", next: 'd' },
     d: { speaker: 'hale', text: 'Juno\u2014', end: true },
   } },
   car_decide: { start: 'a', nodes: {
@@ -324,7 +324,7 @@ export const CONVERSATIONS = {
     b: { speaker: 'juno', text: 'On whose authority?', next: 'c' },
     c: { speaker: 'aud1', text: "Director Hale's. She said you'd ask.", next: 'd' },
     d: { speaker: 'aud2', text: 'The echo. And your badge. Now.', next: 'e' },
-    e: { speaker: 'juno', text: '(Three auditors in front, a suit behind me, and a hole in my own head where the truth should be.)', next: 'f' },
+    e: { speaker: 'juno', text: '(Three auditors in front, a suit behind me, and a hole in my memory where the truth should be.)', next: 'f' },
     f: { speaker: 'aud1', text: 'Quietly, Vale. Please.', end: true },
   } },
   dealer_locked: { start: 'a', nodes: { a: { speaker: 'juno', text: "(Shuttered. Whatever is in there, I don't know enough to knock yet.)", end: true } } },

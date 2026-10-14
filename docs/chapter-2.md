@@ -60,7 +60,7 @@ Chapter 1 ends on Hale's question. Chapter 2 opens in the car:
 - Juno (thought): "(That was me in that room. I don't remember a minute of it.)"
 - Juno, to Hale: "Still working it. I'll bring you something real."
 - Hale: "Come in. Now. Bring the chip."
-- Juno: "Not yet. If I walk into the Bureau with a dead broker and a hole in my head, I won't walk out. I need to know what Dex was carrying first."
+- Juno: "Not yet. If I walk into the Bureau with a dead broker and a hole in my memory, I won't walk out. I need to know what Dex was carrying first."
 - Hale: "Juno--" (she cuts the call)
 - Juno (thought): "(Brokers all end up in one place. The Echo Exchange. Somebody there knows what he was selling.)" Cut to the square.
 
