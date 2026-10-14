@@ -9,7 +9,7 @@ export const BEATS = {
   zoomDelay: 2,           // seconds after the title card starts before the zoom begins
   zoomSeconds: 3,         // after the title card: the CRT frame zooms away and the VHS noise fades out
   settle: 1.5,            // seconds Juno stands still before the title card, so the camera is centred on her
-  kitStreet: { x: 4.6, z: -4.2, facing: 0 }, // where the worker stands on the street until Teo names him (then he is at the hostel desk)
+  kitStreet: { x: 8.8, z: 3.3, facing: 0 }, // where the worker stands on the street (hostel side, near its door) until Teo names him (then he is at the hostel desk)
   ringEvery: 4,           // seconds between rings while Juno's phone waits to be answered
   cardHold: 2.4,          // title card hold, seconds
   mislaid: 0.6,           // pause before Juno steps out
