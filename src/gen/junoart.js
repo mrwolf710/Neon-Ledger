@@ -34,6 +34,8 @@ export const DEX_STAND_ART = { base: 'sprites/corpo-stand', size: 48, pxPerUnit:
 export const KIT_ART = { base: 'sprites/kit', cell: 68, pxPerUnit: 24, fps: 6, foot: 11, dirs: JUNO_ART.dirs }; // foot = empty pixels under the shoes in each cell
 // The street vendor: same kind of sheet, 64 px cells, a 4-frame breathing loop.
 export const VENDOR_ART = { base: 'sprites/vendor', cell: 64, pxPerUnit: 24, fps: 4, foot: 10, frames: 4, dirs: JUNO_ART.dirs };
+// Echo Exchange vendors drawn by the owner (public/sprites/<name>/sheet.png, same layout as the vendor: 64 px cells, row 0 = 8 stills, rows 1-8 = a 4-frame breathing loop). market1 = Tobbo, the cable seller.
+export const MARKET1_ART = { base: 'sprites/market1', cell: 64, pxPerUnit: 24, fps: 4, foot: 11, frames: 4, dirs: JUNO_ART.dirs };
 // Hale: eight 48 px rotation frames across one row; comms show the rear-left (north-west) view.
 export const HALE_ART = { base: 'sprites/hale', size: 48, pxPerUnit: 24, dirs: JUNO_ART.dirs, portraitDirection: 'north-west' };
 // Street walkers (CAST walkerA, walkerB): one Pixellab sheet each: row 0 = 8 stills (idle), rows 1-8 = the walk per direction (`frames` long). `cell` px cells, cropped to the middle 48 px.

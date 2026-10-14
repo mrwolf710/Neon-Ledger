@@ -1,0 +1,109 @@
+{
+  "character": {
+    "id": "af4698f4-7a89-4af5-9efc-05bdeb5fb26e",
+    "name": "Idle",
+    "prompt": "Fat man with white beard, crazy white hair, black rimmed glasses, white tank top, and bermuda shorts.",
+    "size": {
+      "width": 48,
+      "height": 48
+    },
+    "directions": 8,
+    "view": "low top-down"
+  },
+  "spritesheet": {
+    "path": "Fat_man_with_white_beard-Idle.png",
+    "cell_size": {
+      "width": 64,
+      "height": 64
+    },
+    "sheet_size": {
+      "width": 512,
+      "height": 576
+    },
+    "columns": 8,
+    "pivot": "cell-center",
+    "rows": [
+      {
+        "row": 0,
+        "type": "rotations",
+        "frame_count": 8,
+        "directions": [
+          "south",
+          "south-east",
+          "east",
+          "north-east",
+          "north",
+          "north-west",
+          "west",
+          "south-west"
+        ]
+      },
+      {
+        "row": 1,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "Breathing Idle",
+        "animation_group_id": "681780fe-0d92-47e4-b147-049b1fefc3b7",
+        "direction": "south"
+      },
+      {
+        "row": 2,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "Breathing Idle",
+        "animation_group_id": "681780fe-0d92-47e4-b147-049b1fefc3b7",
+        "direction": "south-east"
+      },
+      {
+        "row": 3,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "Breathing Idle",
+        "animation_group_id": "681780fe-0d92-47e4-b147-049b1fefc3b7",
+        "direction": "east"
+      },
+      {
+        "row": 4,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "Breathing Idle",
+        "animation_group_id": "681780fe-0d92-47e4-b147-049b1fefc3b7",
+        "direction": "north-east"
+      },
+      {
+        "row": 5,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "Breathing Idle",
+        "animation_group_id": "681780fe-0d92-47e4-b147-049b1fefc3b7",
+        "direction": "north"
+      },
+      {
+        "row": 6,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "Breathing Idle",
+        "animation_group_id": "681780fe-0d92-47e4-b147-049b1fefc3b7",
+        "direction": "north-west"
+      },
+      {
+        "row": 7,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "Breathing Idle",
+        "animation_group_id": "681780fe-0d92-47e4-b147-049b1fefc3b7",
+        "direction": "west"
+      },
+      {
+        "row": 8,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "Breathing Idle",
+        "animation_group_id": "681780fe-0d92-47e4-b147-049b1fefc3b7",
+        "direction": "south-west"
+      }
+    ]
+  },
+  "export_version": "1.0",
+  "export_date": "2026-10-14T20:59:28.924887+00:00"
+}
