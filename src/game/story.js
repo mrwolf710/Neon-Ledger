@@ -307,7 +307,11 @@ export const CONVERSATIONS = {
     b: { speaker: 'juno', text: '(Into the reader.)', end: true },
   } },
   // The fixer steps in once Dex's echo has played. Takes the faster route if Juno worked out he was hunting her (flag fixer_knows).
-  fixer_deal: { start: [{ if: { flag: 'fixer_knows' }, node: 'a2' }, { node: 'a' }], nodes: {
+  fixer_deal: { start: [{ if: { flag: 'fixer_knows' }, node: 'sk' }, { node: 's' }], nodes: {
+    s: { speaker: 'juno', text: 'Who—? You!', next: 's2' },                                  // Juno comes out of Dex's memory and he is right there
+    s2: { speaker: 'juno', text: "(The man in the dark suit. I never heard the door. How long has he been standing behind me?)", next: 'a' },
+    sk: { speaker: 'juno', text: 'You! The suit. I never heard you come in.', next: 'sk2' },
+    sk2: { speaker: 'juno', text: "(He's the one hunting me, and I walked right into a locker room with my back to the door.)", next: 'a2' },
     a: { speaker: 'fixer', text: "Don't be alarmed, Ms. Vale. If I wanted you hurt, the door would already be shut.", next: 'b' },
     a2: { speaker: 'fixer', text: "You worked out I was looking for you. Good, it saves time. Yes, I know it was you at the Sable, 23:10.", next: 'b' },
     b: { speaker: 'juno', text: '(A dark suit. The man buying gossip about every visitor Dex had tonight.)', next: 'd' },
