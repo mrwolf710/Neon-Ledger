@@ -40,6 +40,7 @@ export function surfaceAt(x, z) {
 }
 
 export function createSfx(synth) {
+  const ringNodes = []; // the scheduled phone-ring oscillators, so answering can cut them
   const T = TUNING;
   let ambient = null, rumble = null, echoOn = false, echoApplied = null;
   let motor = null;
@@ -325,10 +326,13 @@ export function createSfx(synth) {
     phoneRing() {
       if (!synth.ready) return;
       const R = T.ring, t = synth.ctx.currentTime;
-      for (let r = 0; r < R.rings; r++) for (let k = 0; k < R.pulses; k++) for (const f of R.freqs) synth.tone({ freq: f, type: 'triangle', t: t + r * R.period + k * R.pulseGap, dur: R.pulseDur, vol: R.vol, release: 0.01 });
+      for (let r = 0; r < R.rings; r++) for (let k = 0; k < R.pulses; k++) for (const f of R.freqs) ringNodes.push(synth.tone({ freq: f, type: 'triangle', t: t + r * R.period + k * R.pulseGap, dur: R.pulseDur, vol: R.vol, release: 0.01 }));
     },
     phoneAnswer() {
       if (!synth.ready) return;
+      const now = synth.ctx.currentTime; // the ring is scheduled ahead, so cut every queued pulse
+      for (const n of ringNodes) if (n) { n.gain.gain.cancelScheduledValues(now); n.gain.gain.setValueAtTime(0.0001, now); try { n.osc.stop(now + 0.01); } catch { /* already stopped */ } }
+      ringNodes.length = 0;
       synth.noise({ dur: 0.04, vol: 0.1, attack: 0.002, release: 0.03, filter: { type: 'highpass', freq: 1500 } });
       synth.tone({ freq: 700, type: 'sine', dur: 0.06, vol: 0.06, release: 0.04 });
     },
