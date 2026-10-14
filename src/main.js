@@ -210,7 +210,7 @@ tod.onFlicker = (i) => sfx.crackle(street.signs[i].light.position);
 
 // ?hooks exposes the game objects for the headless test driver (scripts/drive.mjs eval: steps).
 if (new URLSearchParams(location.search).has('hooks')) {
-  const nl = window.__nl = { fade, crtFrame, music, input, tutorial, menu, title, snapshotGame, loadGame, saves, menu, sfx, synth, cam, world, player, beats, caseFile, dialogue, cast, echo, hud, clock, board, THREE };
+  const nl = window.__nl = { CUTAWAY, fade, crtFrame, music, input, tutorial, menu, title, snapshotGame, loadGame, saves, menu, sfx, synth, cam, world, player, beats, caseFile, dialogue, cast, echo, hud, clock, board, THREE };
   // Visual tour helpers: stand the player d units from a point (camera side) in any area, as in play, so the cutaway applies.
   nl.look = (areaId, x, z, d = 1.8) => {
     const b = world.areas[areaId].bounds, dx = (b.x0 + b.x1) / 2 - x, dz = (b.z0 + b.z1) / 2 - z, len = Math.hypot(dx, dz) || 1;
@@ -265,6 +265,11 @@ debug.tab('Graphics');
 const pu = () => post.applyUniforms();
 debug.heading('Quality');
 debug.select('quality tier', labels(TIERS), settings.tier, (v) => { location.search = `?quality=${v}`; });
+debug.heading('See-through (what hides buildings in front of Juno)');
+debug.select('mode', { circle: 'circle around Juno', roof: 'roofs off along the sight line' }, CUTAWAY.mode, (v) => { CUTAWAY.mode = v; });
+debug.slider('roof slot half-width', CUTAWAY, 'roofReach', 1, 8, 0.1);
+debug.slider('roof cut height', CUTAWAY, 'roofFloor', 1, 5, 0.1);
+debug.slider('circle radius', CUTAWAY, 'radius', 2, 10, 0.1);
 debug.heading('Glow and blur');
 debug.slider('bloom', POST.bloom, 'strength', 0, 2, 0.05, pu);
 debug.slider('bloom threshold', POST.bloom, 'threshold', 0, 1.5, 0.05, pu);

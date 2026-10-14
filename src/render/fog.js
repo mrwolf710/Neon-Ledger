@@ -16,6 +16,10 @@ export const CUTAWAY = {
   minY: 0.3,      // never cut below this height (street, sidewalks, curbs)
   margin: 0.8,    // only cut things at least this much closer to the camera than the player
   edge: 0.3,      // dithered fraction of the radius
+  mode: 'circle', // 'circle' = the see-through circle around the player; 'roof' = a slot along the line of sight: anything above the sight line (and above roofFloor) is removed
+  roofReach: 3.2, // roof mode: half-width of the slot around the line from the camera to the player (world units)
+  roofFloor: 2.4, // roof mode: never cut below this height (a bit over Juno's head)
+  roofClear: 0.6, // roof mode: cut this far under the sight line so her whole body is clear
 };
 
 // Height fog: scene.fog (FogExp2) supplies colour/density and the USE_FOG define; patched materials
@@ -23,6 +27,7 @@ export const CUTAWAY = {
 const uniforms = {
   fogFalloff: { value: FOG.falloff }, fogHigh: { value: FOG.high }, fogGround: { value: FOG.ground }, fogStart: { value: 0 },
   cutCenter: { value: new THREE.Vector2(-1e4, -1e4) }, cutRadius: { value: 0 }, cutDepth: { value: 0 }, cutMinY: { value: CUTAWAY.minY },
+  cutMode: { value: 0 }, roofSeg: { value: new THREE.Vector4() }, roofRay: { value: new THREE.Vector2() }, roofP: { value: new THREE.Vector4() },
 };
 
 const VERT = /* glsl */`
@@ -31,14 +36,24 @@ const VERT = /* glsl */`
   #ifdef USE_INSTANCING
     fogWP = instanceMatrix * fogWP;
   #endif
-  vFogWorldY = (modelMatrix * fogWP).y;
+  vec4 fogW = modelMatrix * fogWP;
+  vFogWorldY = fogW.y; vFogWorldXZ = fogW.xz;
   vFogDepth = - mvPosition.z;
 #endif`;
 
 const FRAG = /* glsl */`
 #ifdef USE_FOG
   #ifndef NO_CUT
-  {
+  if (cutMode > 0.5) { // roof mode: a slot along the camera-to-player line, everything above the sight line (and above the floor height) goes
+    vec2 a = roofSeg.xy, ab = roofSeg.zw - a;
+    float rt = clamp(dot(vFogWorldXZ - a, ab) / max(dot(ab, ab), 1e-4), 0.0, 1.0);
+    float rd = length(vFogWorldXZ - (a + ab * rt)) / roofP.x;
+    if (rt < roofP.w && rd < 1.0 && vFogWorldY > max(roofP.y, mix(roofRay.x, roofRay.y, rt) - roofP.z)) {
+      const float bayer2[16] = float[16](0., 8., 2., 10., 12., 4., 14., 6., 3., 11., 1., 9., 15., 7., 13., 5.);
+      ivec2 bq = ivec2(mod(gl_FragCoord.xy, 4.0));
+      if ((rd - 0.7) / 0.3 < (bayer2[bq.y * 4 + bq.x] + 0.5) / 16.0) discard;
+    }
+  } else {
     float cutD = length(gl_FragCoord.xy - cutCenter) / cutRadius;
     if (cutD < 1.0 && vFogDepth < cutDepth && vFogWorldY > cutMinY) {
       const float bayer[16] = float[16](0., 8., 2., 10., 12., 4., 14., 6., 3., 11., 1., 9., 15., 7., 13., 5.);
@@ -57,10 +72,10 @@ function onBeforeCompile(shader) { // material.userData.noCut = a sign or prop t
   Object.assign(shader.uniforms, uniforms);
   if (this.userData.noCut) shader.fragmentShader = '#define NO_CUT\n' + shader.fragmentShader;
   shader.vertexShader = shader.vertexShader
-    .replace('#include <fog_pars_vertex>', '#include <fog_pars_vertex>\nvarying float vFogWorldY;')
+    .replace('#include <fog_pars_vertex>', '#include <fog_pars_vertex>\nvarying float vFogWorldY;\nvarying vec2 vFogWorldXZ;')
     .replace('#include <fog_vertex>', VERT);
   shader.fragmentShader = shader.fragmentShader
-    .replace('#include <fog_pars_fragment>', '#include <fog_pars_fragment>\nvarying float vFogWorldY;\nuniform float cutMinY, fogFalloff, fogHigh, fogGround, fogStart, cutRadius, cutDepth;\nuniform vec2 cutCenter;')
+    .replace('#include <fog_pars_fragment>', '#include <fog_pars_fragment>\nvarying float vFogWorldY;\nvarying vec2 vFogWorldXZ;\nuniform float cutMinY, fogFalloff, fogHigh, fogGround, fogStart, cutRadius, cutDepth, cutMode;\nuniform vec2 cutCenter, roofRay;\nuniform vec4 roofSeg, roofP;')
     .replace('#include <fog_fragment>', FRAG);
 }
 
@@ -81,6 +96,10 @@ export function createHeightFog(scene) {
       uniforms.cutDepth.value = depth - CUTAWAY.margin;
       uniforms.cutMinY.value = CUTAWAY.minY; // main.js changes it per area (indoors tables and counters stay solid)
       uniforms.cutRadius.value = (CUTAWAY.radius / (2 * depth * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2))) * bufferH;
+      uniforms.cutMode.value = CUTAWAY.mode === 'roof' ? 1 : 0;
+      uniforms.roofSeg.value.set(camera.position.x, camera.position.z, playerPos.x, playerPos.z);
+      uniforms.roofRay.value.set(camera.position.y, playerPos.y + 0.3);
+      uniforms.roofP.value.set(CUTAWAY.roofReach, Math.max(CUTAWAY.minY, CUTAWAY.roofFloor), CUTAWAY.roofClear, 0.97);
       v.copy(playerPos).setY(playerPos.y + 1).project(camera);
       uniforms.cutCenter.value.set((v.x + 1) / 2 * bufferW, (v.y + 1) / 2 * bufferH);
     },
