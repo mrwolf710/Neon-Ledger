@@ -199,11 +199,16 @@ export function createBoard({ caseFile, hud }) {
   }
 
   const isResult = (f) => f.source === 'Deduction board';
+  // A clue is spent once a solved conclusion used it, unless another unsolved conclusion still needs it (gloved_hand serves two).
+  const spentClues = () => {
+    const spent = new Set(), later = new Set(BOARD.conclusions.filter((c) => !logic.solved.has(c.id)).flatMap((c) => c.needs));
+    for (const c of BOARD.conclusions) if (logic.solved.has(c.id)) c.needs.forEach((n) => { if (!later.has(n)) spent.add(n); });
+    return spent;
+  };
   const usable = new Set(BOARD.conclusions.flatMap((c) => c.needs)); // a conclusion card can be a clue for a later one (chapter 2 tier two)
   function render() {
     const all = caseFile.facts(), facts = [...all].reverse().filter((f) => !caseFile.hasFlag('chapter1_done') || f.ch2); // chapter 1's clues leave the board once chapter 2 starts // newest first: the latest clue sits at the top
-    const spent = new Set();
-    for (const c of BOARD.conclusions) if (logic.solved.has(c.id)) c.needs.forEach((n) => spent.add(n));
+    const spent = spentClues();
     cards = facts.filter((f) => (!isResult(f) || usable.has(f.id)) && !spent.has(f.id) && !slots.includes(f.id)).map((f) => f.id);
     cursor = Math.max(0, Math.min(cursor, cards.length - 1));
     const side = [[], []];
@@ -260,7 +265,8 @@ export function createBoard({ caseFile, hud }) {
   }
 
   // The next conclusion Juno could draw: the first unsolved one whose facts she holds.
-  const nextOpen = () => BOARD.conclusions.find((c) => !logic.solved.has(c.id) && [...c.needs, ...(c.requires ?? [])].every((f) => caseFile.has(f)));
+  const nextOpen = () => { const spent = spentClues(), ch2 = caseFile.hasFlag('chapter1_done'); // chapter 1's clues leave the board in chapter 2, so those links are no longer offered
+    return BOARD.conclusions.find((c) => !logic.solved.has(c.id) && [...c.needs, ...(c.requires ?? [])].every((f) => caseFile.has(f)) && c.needs.every((n) => !spent.has(n) && (!ch2 || ENTRIES[n]?.ch2))); };
   const factTitle = (id) => title(id) ?? '…';
 
   // Hint: first press names one clue, the next the pair; those cards glow.
