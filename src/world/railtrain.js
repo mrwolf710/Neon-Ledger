@@ -12,8 +12,11 @@ export const TRAIN = {
 // Heads toward +z. Plain boxes merged by material: 3 draw calls, no lights.
 export function createRailTrain(parent, fog) {
   const T = TRAIN, step = T.carLen + T.gap, total = T.cars * step - T.gap;
-  const mat = (c, basic) => (basic ? new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(T.glow) })
-    : new THREE.MeshStandardMaterial({ color: c, roughness: 0.6, metalness: 0.4 }));
+  const mat = (c, basic) => {
+    const m = basic ? new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(T.glow) }) : new THREE.MeshStandardMaterial({ color: c, roughness: 0.6, metalness: 0.4 });
+    m.userData.noCut = true; // the see-through area around Juno never removes the train
+    return m;
+  };
   const body = mat(T.body), roof = mat(T.roof), win = mat(T.window, true), head = mat(T.head, true);
   const b = createBatch();
   for (let i = 0; i < T.cars; i++) {

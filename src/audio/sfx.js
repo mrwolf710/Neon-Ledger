@@ -20,6 +20,8 @@ export const TUNING = {
     body: { freq: 260, vol: 0.9, drive: 4, grit: 11 },               // the deep layer, pushed through a distortion (drive = gain into it, grit = how hard it clips)
     screech: { freq: 3300, q: 7, vol: 0.05 },                        // faint steel-on-steel squeal at the pass
     bogie: [0.11, 0.3], clackVol: 0.35 },                            // wheel clacks come in pairs
+  // Juno driving to the Echo Exchange (end of chapter 1), over black: door, a soft electric pull-away, wet road hiss and a low rumble, wipers, cars passing, braking, the door again.
+  drive: { door: 0.28, roadVol: 0.16, hissFreq: 2400, rumbleVol: 0.3, wipeEvery: 1.15, wipeVol: 0.05, pass: 2, passVol: 0.07, whine: { from: 420, to: 900, vol: 0.012 } },
   steam: { vol: 0.09, dur: 0.8, hp: 3500 },                 // a short pressure hiss for each puff of steam
   echo: { ambientLevel: 0.05, fadeOut: 0.35, fadeIn: 0.5,   // ambient bus level during an echo, and fade time constants (s)
     rumble: { vol: 0.55, lowpass: 95, sub: 41, subVol: 0.5, wobble: 0.17, in: 0.7 } },
@@ -362,6 +364,27 @@ export function createSfx(synth) {
         synth.tone({ freq: f, type: 'square', t: t + 0.1 + k * gap, dur: gap * 0.85, vol: O.vol, attack: 0.002, release: 0.02, filter: { type: 'lowpass', freq: 3200, q: 2 } });
         synth.tone({ freq: f * 1.5, type: 'sawtooth', t: t + 0.1 + k * gap, dur: gap * 0.85, vol: O.vol * 0.5, attack: 0.002, release: 0.02, detune: 25, filter: { type: 'lowpass', freq: 3200, q: 2 } });
       }
+    },
+    // Juno drives off in her car (a few seconds of sound; seconds = how long until she arrives).
+    carDrive(seconds = 5.5) {
+      if (!synth.ready) return;
+      const D = T.drive, t = synth.now, end = t + seconds;
+      const door = (at) => { synth.noise({ t: at, dur: 0.16, vol: D.door, attack: 0.002, release: 0.12, filter: { type: 'lowpass', freq: 380 } }); synth.tone({ freq: 90, t: at, dur: 0.22, vol: D.door, slide: 42, attack: 0.002, release: 0.15 }); synth.noise({ t: at + 0.02, dur: 0.05, vol: D.door * 0.4, attack: 0.001, release: 0.04, filter: { type: 'highpass', freq: 2500 } }); };
+      door(t + 0.1);                                                   // she shuts the door
+      synth.tone({ freq: D.whine.from, t: t + 0.9, dur: seconds - 1.6, vol: D.whine.vol, slide: D.whine.to, attack: 0.6, release: 1.4, type: 'sine' }); // the electric pull-away, barely there
+      synth.noise({ t: t + 0.8, dur: seconds - 0.8, vol: D.roadVol, attack: 1.2, release: 1.4, filter: { type: 'lowpass', freq: D.hissFreq, sweepTo: D.hissFreq * 0.55 } });     // tyres hissing on the wet road, easing as she brakes
+      synth.noise({ t: t + 0.6, dur: seconds - 0.6, vol: D.rumbleVol, attack: 1.0, release: 1.5, filter: { type: 'lowpass', freq: 160, sweepTo: 70 } });                        // low road rumble
+      for (let w = t + 1.2; w < end - 1.0; w += D.wipeEvery) {          // wipers: a swish out and a swish back, with a soft thud at each end
+        synth.noise({ t: w, dur: 0.32, vol: D.wipeVol, attack: 0.08, release: 0.16, filter: { type: 'bandpass', freq: 1500, sweepTo: 2600, q: 1 } });
+        synth.noise({ t: w + 0.4, dur: 0.32, vol: D.wipeVol * 0.8, attack: 0.08, release: 0.16, filter: { type: 'bandpass', freq: 2600, sweepTo: 1500, q: 1 } });
+        synth.noise({ t: w + 0.36, dur: 0.04, vol: D.wipeVol * 0.7, attack: 0.002, release: 0.03, filter: { type: 'lowpass', freq: 500 } });
+      }
+      for (let i = 0; i < D.pass; i++) { // other cars hissing past
+        const at = t + 1.8 + (i + synth.rand() * 0.6) * ((seconds - 3.2) / D.pass);
+        synth.noise({ t: at, dur: 1.1, vol: D.passVol, attack: 0.4, release: 0.6, filter: { type: 'bandpass', freq: 1100, sweepTo: 380, q: 0.8 } });
+      }
+      synth.noise({ t: end - 0.9, dur: 0.8, vol: 0.05, attack: 0.1, release: 0.5, filter: { type: 'bandpass', freq: 3000, sweepTo: 1200, q: 6 } });   // a short squeak of brakes
+      door(end);                                                       // and the door again as she arrives
     },
     // One puff of steam from the platform train: a short hiss.
     steamHiss() {

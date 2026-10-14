@@ -160,10 +160,20 @@ function platform(M) {
   tb.box(trainCool, L, 0.08, 0.06, 0, 0.95, 1.33);                     // thin glowing stripe along the side
   for (let i = -2.5; i <= 2.5; i++) tb.box(trainWarm, 1.7, 0.8, 0.06, i * 2.5, 2.1, 1.33);   // windows on the platform side
   tb.box(trainCool, 1.2, 1.9, 0.06, 0, 1.2, 1.34);                    // the door Juno steps out of
+  // A streamlined nose on the front (+x, the way it rolls in): a sloped wedge with a dark windscreen, a glowing headlight bar and two lamps; red tail lights at the back.
+  const nose = new THREE.Shape(); [[0, 0.2], [0, 3.1], [1.6, 2.55], [2.5, 1.7], [2.62, 0.95], [2.45, 0.2]].forEach(([x, y], i) => (i ? nose.lineTo(x, y) : nose.moveTo(x, y)));
+  tb.add(M.walls[1], new THREE.ExtrudeGeometry(nose, { depth: 2.64, bevelEnabled: false }).translate(L / 2, 0, -1.32));
+  const wsA = [L / 2 + 0.25, 3.016], wsB = [L / 2 + 1.35, 2.636], wz = 0.95, off = [0.012, 0.035];       // the windscreen: a quad lying just above the slope
+  const ws = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute([wsA[0] + off[0], wsA[1] + off[1], -wz, wsA[0] + off[0], wsA[1] + off[1], wz, wsB[0] + off[0], wsB[1] + off[1], wz, wsB[0] + off[0], wsB[1] + off[1], -wz], 3));
+  ws.setIndex([0, 1, 2, 0, 2, 3]); ws.computeVertexNormals();
+  tb.add(new THREE.MeshBasicMaterial({ color: 0x0a1822, side: THREE.DoubleSide }), ws);
+  const trainHead = glow(0xe8fbff), trainTail = glow(0xff2a3a);
+  tb.box(trainHead, 0.1, 0.22, 1.7, L / 2 + 2.57, 1.2, 0);              // headlight bar across the nose
+  for (const sz of [-1, 1]) { tb.box(trainHead, 0.14, 0.34, 0.34, L / 2 + 2.56, 1.2, sz * 0.78); tb.box(trainTail, 0.06, 0.18, 0.5, -L / 2 - 0.02, 1.1, sz * 0.7); }
   const train = tb.build();
   train.traverse((o) => { if (o.isMesh) o.castShadow = true; });
   train.position.set(AREAS.platform.origin[0] - 40, 0, AREAS.platform.origin[1] - 4.6);
-  return finish('platform', b, [-10, -3, 10, 3], { train, trainGlow: [trainWarm, trainCool], trainStop: [AREAS.platform.origin[0] - 0.5, -4.6] });
+  return finish('platform', b, [-10, -3, 10, 3], { train, trainGlow: [trainWarm, trainCool, trainHead, trainTail], trainStop: [AREAS.platform.origin[0] - 0.5, -4.6] });
 }
 
 // ---------- Sable Noodle House: front counter (west) and the back room (east) ----------

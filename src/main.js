@@ -116,17 +116,21 @@ for (const h of echo.hotspots.filter((q) => !q.hidden)) {
 echo.onCue = (name) => { if (name === 'stinger') sfx.stinger(); };
 const board = createBoard({ caseFile, hud });
 const barks = createBarks({ cast, caseFile, player, camera: cam.camera });
-// The platform train stops: three little bursts of steam from its rear (west) end, each with a hiss. particles.steamOn draws steam on the (indoor) platform.
-const STEAM = { bursts: 3, every: 1.7, puffs: 5, scale: 1.7 }; // puffs per burst, and how much bigger than a street vent's
+// The platform train stops: from then on, for as long as Juno is on the platform, little bursts of steam (each with a hiss) come out of its rear section. particles.steamOn draws steam on the (indoor) platform.
+const STEAM = { first: 0.4, every: [1.8, 3.6], puffs: 8, scale: 1.7, back: 6.1, z: [1.45, 2.0], y: [0.5, 2.6] }; // seconds before the first burst and between bursts (min, max); puffs per burst; how much bigger than a street vent's; where on the train's rear end they come out (back = distance behind its centre, z = distance out from its centre line, on the platform side, y = height; they drift along its rear car)
 const steamRng = rng.fork('trainsteam');
-function trainSteam() {
+let steamNext = -1; // seconds to the next burst; -1 = the train has not stopped yet
+function trainSteam() { steamNext = STEAM.first; }
+function platformSteam(dt, areaId) {
+  const on = steamNext >= 0 && areaId === 'platform';
+  particles.steamOn = on;
+  if (!on) return;
+  steamNext -= dt;
+  if (steamNext > 0) return;
+  steamNext = steamRng.range(STEAM.every[0], STEAM.every[1]);
   const [sx, sz] = world.areas.platform.trainStop;
-  particles.steamOn = true;
-  for (let k = 0; k < STEAM.bursts; k++) setTimeout(() => {
-    sfx.steamHiss();
-    for (let j = 0; j < STEAM.puffs; j++) setTimeout(() => particles.puff(sx - 7.6 + steamRng.range(-0.4, 0.4), 0.5 + steamRng.range(0, 0.4), sz + steamRng.range(-0.8, 0.8), STEAM.scale, steamRng.range(-0.5, 0.1)), j * 130);
-    if (k === STEAM.bursts - 1) setTimeout(() => { particles.steamOn = false; }, 4500);
-  }, 400 + k * STEAM.every * 1000);
+  sfx.steamHiss();
+  for (let j = 0; j < STEAM.puffs; j++) setTimeout(() => particles.puff(sx - STEAM.back + steamRng.range(-0.8, 0.8), steamRng.range(STEAM.y[0], STEAM.y[1]), sz + steamRng.range(STEAM.z[0], STEAM.z[1]), STEAM.scale, steamRng.range(-0.5, 0.05)), j * 110); // out of the rear section, on the platform side where the camera sees it
 }
 let deadTone = null; // the low tone held under the cliffhanger
 const beats = createBeats({ trainSteam, input, world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, echo,
@@ -272,7 +276,7 @@ debug.heading('Music track');
 let musicForce = '';
 debug.select('play track', { '': 'auto (by area)', street: 'street', station: 'station', scene: 'scene', echo: 'echo', board: 'board', finale: 'finale (ch1 ending)', bazaar: 'bazaar (Exchange)', dealer: 'dealer (implant shop)', silent: 'silent' }, '', (v) => { musicForce = v; if (v) music.setMood(v, 0.4); });
 debug.heading('Sound effects');
-debug.select('play sfx', { '': '-', phoneRing: 'phone ring', trainNow: 'street train pass', trainArrive: 'platform train arriving', comms: 'Hale comms', override: 'Hale override alarm', stinger: 'reveal stinger', move: 'ui move', confirm: 'ui confirm', back: 'ui back', case: 'ui case', linkOk: 'link ok', linkWrong: 'link wrong', echoOn: 'echo on', echoOff: 'echo off', glitch: 'glitch' }, '', (v) => { if (!v) return; if (sfx[v]) sfx[v](); else sfx.ui(v); });
+debug.select('play sfx', { '': '-', phoneRing: 'phone ring', trainNow: 'street train pass', carDrive: 'Juno drives to the market', trainArrive: 'platform train arriving', comms: 'Hale comms', override: 'Hale override alarm', stinger: 'reveal stinger', move: 'ui move', confirm: 'ui confirm', back: 'ui back', case: 'ui case', linkOk: 'link ok', linkWrong: 'link wrong', echoOn: 'echo on', echoOff: 'echo off', glitch: 'glitch' }, '', (v) => { if (!v) return; if (sfx[v]) sfx[v](); else sfx.ui(v); });
 
 debug.tab('Graphics');
 const pu = () => post.applyUniforms();
@@ -409,6 +413,7 @@ renderer.setAnimationLoop((now) => {
   tod.sunset = sunsetT === null ? 0 : (1 - Math.min(1, sunsetT / tod.sunsetSeconds)) ** 1.5;
   tod.update(dt);
   if (trailer.active && TRAILER.void) { scene.background.setRGB(0, 0, 0); scene.fog.color.setRGB(0, 0, 0); } // trailer: no lit haze around the street
+  platformSteam(dt, area.id);
   particles.update(dt, cam.target, cam.camera);
   cast.update(dt, cam.yaw, area.lights);
   barks.update(dt, area.id, !modal);

@@ -4,6 +4,7 @@ import { EXAMINABLES, TALK, FALLBACK, ENTRIES, BOARD, conversationFor } from './
 // The beat manager: the cold open cutscene, the objective line / minimap mark, and the things you can interact with.
 // Beats 1-3 live here (Stage 9A); later beats add steps to STEPS and conversations to story.js.
 export const BEATS = {
+  driveSeconds: 6.5,   // chapter 1 ending: how long the drive to the Exchange sounds (the CHAPTER 2 card is held to match)
   overrideSeconds: 2.4, // the red 'System override' banner before Hale's forced call at the end of chapter 1
   finaleSeconds: 10, finaleGuard: 1.5, // end of chapter 1: how long the fast music plays before it moves on by itself; seconds before a tap can skip it
   trainSeconds: 6.5,      // the train rolling into the platform
@@ -158,9 +159,10 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     chapter1Done = true; caseFile.setFlag('chapter1_done');
     await wait(0.6);
     await fade.out();
+    sfx.carDrive?.(BEATS.driveSeconds);                          // over black: she drives to the Exchange
     const sp = world.spot('exchange', 'start');
     world.jump('exchange', [sp.x, sp.z, Math.PI / 2]);           // while the screen is black
-    await fade.card([{ text: 'CHAPTER 2', color: '#ff8a1f', scale: 6 }, { text: 'THE ECHO EXCHANGE', color: '#ffd23a', scale: 3 }], 1.4);
+    await fade.card([{ text: 'CHAPTER 2', color: '#ff8a1f', scale: 6 }, { text: 'THE ECHO EXCHANGE', color: '#ffd23a', scale: 3 }], BEATS.driveSeconds - 3.6); // held so the drive sound plays out under it
     await fade.in();
     locked = false;
   }
