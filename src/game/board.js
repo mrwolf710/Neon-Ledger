@@ -1,5 +1,6 @@
 import { BOARD } from './story.js';
 import { frame } from '../ui/hud.js';
+import { createRng } from '../core/rng.js';
 
 export const BOARDUI = {
   lineSeconds: 4.5,               // how long Juno's line stays up
@@ -7,6 +8,10 @@ export const BOARDUI = {
   dragStart: 6,
   solveAfter: 3,                  // wrong links + hints before the Solve button appears
   hintGlowSeconds: 6,             // how long hinted cards glow
+  approachMs: 500,                // match: the two cards float together
+  sparks: 28, sparkMs: 600,       // match: spark shower
+  holdMs: 350,                    // match: the new clue sits between the slots
+  flyMs: 700,                     // match: the new clue flies to the top of the board
   solveStepMs: 1300,              // Solve: time per link (select the first card, then the second)
 };
 
@@ -87,8 +92,8 @@ export function createBoard({ caseFile, hud }) {
   foot.innerHTML = '<span class="keycap">Click</span><span class="keycap">Drag</span>card into the ring <span class="keycap">Arrows</span><span class="keycap">Space</span>pick / deduce <span class="keycap">H</span><span class="keycap">Y</span>hint <span class="keycap">RT</span>solve <span class="keycap">Esc</span>clear / close';
 
   let isOpen = false, cursor = 0, drag = null, temp = null, lineTimer = 0, cards = [], newId = null;
-  let misses = 0, hinted = new Set(), hintTimer = 0, solving = false, busy = false;
-  const slots = [null, null], failed = new Set(); // failed: "a|b" pairs already tried
+  let arriving = null, misses = 0, hinted = new Set(), hintTimer = 0, solving = false, busy = false;
+  const sparkRng = createRng(7).fork('sparks'), slots = [null, null], failed = new Set(); // failed: "a|b" pairs already tried
   const hintCount = new Map();
   const api = {
     get isOpen() { return isOpen; },
@@ -114,7 +119,7 @@ export function createBoard({ caseFile, hud }) {
       svg.appendChild(l);
     };
     const cls = ring.dataset.state === 'bad' ? 'wrong' : 'locked';
-    if (slots[0] && slots[1] && ring.dataset.state !== 'ok') { const [x1, y1] = center(slotEls[0]), [x2, y2] = center(slotEls[1]); line(x1, y1, x2, y2, cls); }
+    if (slots[0] && slots[1] && !['ok', 'merge'].includes(ring.dataset.state)) { const [x1, y1] = center(slotEls[0]), [x2, y2] = center(slotEls[1]); line(x1, y1, x2, y2, cls); }
     const A = temp && cardEl(temp.from);
     if (A) { const [x1, y1] = center(A), b = box.getBoundingClientRect(); line(x1, y1, temp.x - b.left, temp.y - b.top, 'temp'); }
   }
@@ -126,13 +131,44 @@ export function createBoard({ caseFile, hud }) {
     lineTimer = setTimeout(() => lineEl.classList.remove('on'), BOARDUI.lineSeconds * 1000);
   }
 
-  const clearSlots = () => { slots[0] = slots[1] = null; ring.dataset.state = ''; busy = false; render(); };
+  const clearSlots = () => {
+    slots[0] = slots[1] = null; ring.dataset.state = ''; busy = false;
+    for (const n of [...slotEls, fused]) { n.getAnimations().forEach((a) => a.cancel()); n.style.visibility = ''; }
+    render();
+  };
 
   function place(id) {
     if (busy || slots.includes(id)) return;
     const i = slots.indexOf(null);
     if (i < 0) return;
     slots[i] = id; api.onUi?.('move'); render();
+  }
+
+  // Solved: the two cards float together, burst into sparks, the new clue appears between them, then flies to the top-right slot of the board.
+  function merge() {
+    const rr = ring.getBoundingClientRect(), cx = rr.left + rr.width / 2, cy = rr.top + rr.height * 0.43;
+    const tgt = main.querySelector('.arriving');
+    slotEls.forEach((s) => {
+      const r = s.getBoundingClientRect();
+      s.animate([{ transform: 'none' }, { transform: `translate(${cx - r.left - r.width / 2}px, ${cy - r.top - r.height / 2}px) scale(0.6)`, opacity: 0.4 }],
+        { duration: BOARDUI.approachMs, easing: 'ease-in', fill: 'forwards' });
+    });
+    setTimeout(() => {
+      slotEls.forEach((s) => { s.style.visibility = 'hidden'; });
+      for (let i = 0; i < BOARDUI.sparks; i++) {
+        const sp = el('div', 'bd-spark', ring), ang = sparkRng.range(0, Math.PI * 2), dist = sparkRng.range(0.12, 0.5) * rr.width;
+        sp.style.background = ['#fff', '#1fd6e8', '#e0217d', '#39ff88'][i % 4];
+        sp.animate([{ transform: 'translate(-50%, -50%)', opacity: 1 }, { transform: `translate(calc(-50% + ${Math.cos(ang) * dist}px), calc(-50% + ${Math.sin(ang) * dist}px)) scale(0.2)`, opacity: 0 }],
+          { duration: BOARDUI.sparkMs, easing: 'ease-out' }).onfinish = () => sp.remove();
+      }
+      ring.dataset.state = 'ok'; // shows the new clue between the slots
+    }, BOARDUI.approachMs);
+    setTimeout(() => {
+      const a = fused.getBoundingClientRect(), t = tgt?.getBoundingClientRect();
+      if (!t) { clearSlots(); return; }
+      fused.animate([{ transform: 'none' }, { transform: `translate(${t.left + t.width / 2 - a.left - a.width / 2}px, ${t.top + t.height / 2 - a.top - a.height / 2}px) scale(${t.width / a.width})`, opacity: 0.9 }],
+        { duration: BOARDUI.flyMs, easing: 'ease-in-out', fill: 'forwards' }).onfinish = () => { arriving = null; clearSlots(); };
+    }, BOARDUI.approachMs + BOARDUI.sparkMs + BOARDUI.holdMs);
   }
 
   function deduce() {
@@ -144,12 +180,13 @@ export function createBoard({ caseFile, hud }) {
     else {
       const r = logic.link(a, b);
       if (r.kind === 'solved') {
-        ring.dataset.state = 'ok'; say(r.line);
+        ring.dataset.state = 'merge'; say(r.line);
         caseFile.apply(r.conclusion.effects);
         fused.textContent = title(r.conclusion.result) ?? '';
         misses = 0; hintCount.clear(); hinted.clear();
-        newId = r.conclusion.result;
+        newId = arriving = r.conclusion.result;
         api.onLock?.(r.conclusion);
+        render(); merge(); return;
       } else {
         failed.add(key); misses++; ring.dataset.state = 'bad'; api.onWrong?.();
         say(r.hint ? `${r.line} ${BOARD.hintLine.replace('{fact}', title(r.hint) ?? '…')}` : r.line);
@@ -174,6 +211,7 @@ export function createBoard({ caseFile, hud }) {
       if (live && cards[cursor] === f.id) d.classList.add('cursor');
       if (isResult(f)) d.classList.add('result');
       if (f.id === newId) d.classList.add('new');
+      if (f.id === arriving) d.classList.add('arriving');
       if (hinted.has(f.id)) d.classList.add('hinted');
       el('div', 'tag', d, isResult(f) ? 'CONCLUSION' : `FACT-${String(all.indexOf(f) + 1).padStart(2, '0')}`);
       el('div', 't', d, f.title); el('div', 'x', d, f.text);
@@ -196,7 +234,7 @@ export function createBoard({ caseFile, hud }) {
           if (onRing) place(f.id);
         });
       }
-      side[i % 2].push(d);
+      side[(i + 1) % 2].push(d); // newest (i = 0) goes to the right column, top
     });
     leftEl.replaceChildren(...side[0]); rightEl.replaceChildren(...side[1]);
     slotEls.forEach((s, i) => {

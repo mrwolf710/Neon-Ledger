@@ -33,7 +33,7 @@ export function frame(node) {
 }
 
 // Speaker portrait: head-and-shoulders idle crop (nearest-neighbour), with an optional direction override, or a letter plate for voices with no sprite.
-const PORTRAIT = { junoGif: 'sprites/juno/talk.gif', px: 64, fit: { vendor: 48 }, headFrac: 0.5, catTop: 0.3, holo: ['preacher'], holoTint: 'rgba(60,230,255,0.6)', scanAlpha: 0.4 }; // px = canvas size, headFrac = share of a human frame (from the top) that counts as head + shoulders
+const PORTRAIT = { gifs: { juno: 'sprites/juno/talk.gif', mamaTeo: 'sprites/teo/talk.gif' }, px: 64, fit: { vendor: 48 }, headFrac: 0.5, catTop: 0.3, holo: ['preacher'], holoTint: 'rgba(60,230,255,0.6)', scanAlpha: 0.4 }; // px = canvas size, headFrac = share of a human frame (from the top) that counts as head + shoulders
 function drawPortrait(cv, id, name, color) {
   const g = cv.getContext('2d'); g.imageSmoothingEnabled = false; g.clearRect(0, 0, cv.width, cv.height);
   const sh = getSheets()[id];
@@ -65,14 +65,15 @@ function dialogueBox(root) {
   const choicesEl = frame(el('div', 'choices', box));
   const textBox = frame(el('div', 'dtext', box));
   const portrait = el('canvas', 'portrait', textBox); portrait.width = portrait.height = PORTRAIT.px;
-  const talk = el('img', 'portrait', textBox); talk.src = import.meta.env.BASE_URL + PORTRAIT.junoGif; talk.style.display = 'none'; // Juno's animated talking portrait
+  const talk = el('img', 'portrait', textBox); talk.style.display = 'none'; // animated talking portrait, for speakers listed in PORTRAIT.gifs
   const body = el('div', 'body', textBox), hint = el('div', 'hint', textBox, '▼');
   let clickFn = () => {};
   textBox.addEventListener('pointerdown', (e) => { e.preventDefault(); clickFn(); });
   return {
     show(name, color, id) {
-      const juno = id === 'juno'; talk.style.display = juno ? '' : 'none'; portrait.style.display = juno ? 'none' : ''; talk.style.borderColor = color;
-      if (!juno) drawPortrait(portrait, id, name, color);
+      const gif = PORTRAIT.gifs[id]; if (gif) talk.src = import.meta.env.BASE_URL + gif;
+      talk.style.display = gif ? '' : 'none'; portrait.style.display = gif ? 'none' : ''; talk.style.borderColor = color;
+      if (!gif) drawPortrait(portrait, id, name, color);
       portrait.style.borderColor = color; portrait.classList.toggle('holo', PORTRAIT.holo.includes(id));
       box.classList.add('on'); nameEl.textContent = name; gem.style.background = color; gem.style.boxShadow = `0 0 0.5rem ${color}`;
     },
