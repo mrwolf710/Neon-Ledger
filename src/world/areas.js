@@ -379,10 +379,10 @@ function exchange(M, rng) {
 // Juno's car on the street: a big square-shouldered luxury sedan (two-tone: dark blue upper, brushed steel lower, a tall slatted grille, a headlight bar, big rimmed wheels). Front faces +x.
 const CAR = {
   at: [-13.5, -1.9], length: 3.3, width: 1.55,        // world position of the centre and the footprint (the first version was 3.0 x 1.4: about 10% bigger now)
-  blue: 0x1b2f55, steel: 0x9a9fa8, trim: 0x0b0b12, rim: 0xc9ccd4, tail: 0xff2a3a, head: 0xdff6ff,
+  blue: 0x2d4f8f, steel: 0xb4bac4, trim: 0x0b0b12, rim: 0xc9ccd4, tail: 0xff2a3a, head: 0xdff6ff,
 };
 function junoCar(b, M) {
-  const [cx, cz] = CAR.at, L = CAR.length, W = CAR.width, std = (color, metalness, roughness) => new THREE.MeshStandardMaterial({ color, metalness, roughness });
+  const [cx, cz] = CAR.at, L = CAR.length, W = CAR.width, std = (color, metalness, roughness) => new THREE.MeshStandardMaterial({ color, metalness, roughness, emissive: color, emissiveIntensity: 0.18 }); // a faint self-glow so the dark paint still reads at night
   const blue = std(CAR.blue, 0.55, 0.35), steel = std(CAR.steel, 0.8, 0.4), trim = std(CAR.trim, 0.3, 0.6), rim = std(CAR.rim, 0.9, 0.3);
   const glow = (hex) => new THREE.MeshBasicMaterial({ color: new THREE.Color(hex).multiplyScalar(BUILDINGS.windowGlow) }), tail = glow(CAR.tail), head = glow(CAR.head);
   const part = (m, sx, sy, sz, x, y, z) => b.box(m, sx, sy, sz, cx + x, y, cz + z, 0, 0, false); // x along the car (front +x), z across
