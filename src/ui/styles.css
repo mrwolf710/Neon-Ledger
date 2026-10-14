@@ -269,3 +269,7 @@ body.echo #hud .objective { display: none !important; }
 #board .bd-card.arriving { visibility: hidden; }
 #board .bd-spark { position: absolute; left: 50%; top: 43%; z-index: 4; width: 0.35rem; height: 0.35rem; border-radius: 50%; pointer-events: none; box-shadow: 0 0 0.5rem currentColor, 0 0 0.9rem #fff; }
 #board .bd-slot .t { max-width: 100%; overflow-wrap: anywhere; }
+.callprompt { position: fixed; left: 50%; bottom: calc(18% + var(--safe-b, 0px)); transform: translateX(-50%); z-index: 12; display: none; padding: 0.7rem 1.4rem; font: 700 1.1rem var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: #fff;
+  background: rgba(5, 2, 20, 0.85); border: 2px solid var(--magenta); box-shadow: 0 0 1rem var(--magenta); animation: callpulse 0.7s infinite alternate; pointer-events: none; }
+@keyframes callpulse { to { box-shadow: 0 0 2rem var(--magenta); } }
+.callprompt.on { display: block; }

@@ -113,7 +113,7 @@ for (const h of echo.hotspots.filter((q) => !q.hidden)) {
 echo.onCue = (name) => { if (name === 'stinger') sfx.stinger(); };
 const board = createBoard({ caseFile, hud });
 const barks = createBarks({ cast, caseFile, player, camera: cam.camera });
-const beats = createBeats({ world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, echo,
+const beats = createBeats({ input, world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, echo,
   deadHour: () => { tod.setTimeOfDay('blackout', 0.5); lights.scale = 0.3; synth.tone({ freq: 55, type: 'sine', dur: 40, vol: 0.3, attack: 2.5, release: 4, bus: 'music' }); }, // beat 7: signs die, one low tone
 
   setExposure: (v) => { renderer.toneMappingExposure = MAIN.exposure * v; }, setVhs: (a) => post.setVhs(a), setCrt: (a) => { post.setCrt(a); crtFrame.set(a); fade.cardScale(crtFrame.ratio); } });

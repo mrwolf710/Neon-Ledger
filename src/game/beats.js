@@ -9,6 +9,7 @@ export const BEATS = {
   zoomDelay: 2,           // seconds after the title card starts before the zoom begins
   zoomSeconds: 3,         // after the title card: the CRT frame zooms away and the VHS noise fades out
   settle: 1.5,            // seconds Juno stands still before the title card, so the camera is centred on her
+  ringEvery: 4,           // seconds between rings while Juno's phone waits to be answered
   cardHold: 2.4,          // title card hold, seconds
   mislaid: 0.6,           // pause before Juno steps out
   misoFollow: { dist: 1.5, speed: 2.6 },
@@ -16,8 +17,10 @@ export const BEATS = {
   dark: { exposure: 0.06, lampsFrom: 0.3 }, // the opening starts almost black; station lamps fade up once the train is 30% of the way in
 };
 
-export function createBeats({ world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, echo, deadHour = () => {}, setExposure = () => {}, setVhs = () => {}, setCrt = () => {} }) {
+export function createBeats({ input, world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, echo, deadHour = () => {}, setExposure = () => {}, setVhs = () => {}, setCrt = () => {} }) {
   const timers = [], tweens = [];
+  let ringing = null, answerWait = null;                          // the intro phone: ring loop + the pending answer
+  const callEl = document.createElement('div'); callEl.className = 'callprompt'; document.body.appendChild(callEl);
   const visits = {}; // how many times Juno has talked to each person (picks the conversation, see story.js VISITS)
   const flag = (n) => caseFile.hasFlag(n);
   let locked = false, focus = null, lastStep = '', ending = false, finale = false;
@@ -78,14 +81,18 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
     const card = fade.card([{ text: 'CASE 01  LOWMARKET', color: '#1fd6e8', scale: 2, corner: 'glass' }], BEATS.cardHold);
     await wait(BEATS.zoomDelay);                                // the zoom starts while the title words are still on screen
     let uiOn = false;
-    sfx.phoneRing?.();                                          // Hale is calling while the picture zooms out
+    ringing = { t: 0 }; sfx.phoneRing?.();                      // Hale is calling while the picture zooms out; it keeps ringing until Juno answers
     await tween(BEATS.zoomSeconds, (u) => { // the monitor frame zooms out to the full game and the tape noise fades; the UI only fades in as the zoom nears its end
       const k = 1 - smooth(u); fade.cardZoom(u); setCrt(k); setVhs(k);
       if (!uiOn && u >= BEATS.uiAt) { uiOn = true; hud.show(); }
     });
-    sfx.phoneAnswer?.();                                        // Juno picks up
     await card;
     hud.show();
+    const key = input.lastDevice === 'touch' ? 'TAP' : input.lastDevice === 'gamepad' ? 'A' : 'SPACE';
+    callEl.textContent = `📞 Incoming call: Hale. Press ${key} to answer`; callEl.classList.add('on');
+    await new Promise((res) => { answerWait = res; });          // nothing else is possible until she answers
+    callEl.classList.remove('on'); ringing = null; sfx.phoneAnswer?.();                  // Juno picks up
+    await wait(0.5);
     await dialogue.start('hale_open');                          // Hale on comms
     player.setPose(null);
     locked = false;
@@ -228,6 +235,8 @@ export function createBeats({ world, cast, caseFile, dialogue, hud, interactions
       if (area.id === 'street' && !flag('toasted_street')) { caseFile.setFlag('toasted_street'); hud.toast('Lowmarket Street'); }
     },
     update(dt) {
+      if (ringing && (ringing.t += dt) >= BEATS.ringEvery) { ringing.t = 0; sfx.phoneRing?.(); }
+      if (answerWait && (input.pressed('interact') || input.click)) { answerWait(); answerWait = null; }
       if (!locked) beatTimes[api.beatNo - 1] += dt;
       for (let i = timers.length - 1; i >= 0; i--) { timers[i].left -= dt; if (timers[i].left <= 0) { timers[i].res(); timers.splice(i, 1); } }
       for (let i = tweens.length - 1; i >= 0; i--) {
