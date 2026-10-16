@@ -147,8 +147,7 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     callEl.classList.remove('on', 'override');
     await wait(0.3);
     await dialogue.start('hale_end');
-    await dialogue.start('car_reply');                           // Juno answers Hale: not coming in yet, Hale cuts in
-    await wait(0.4);                                             // Hale's "Juno—" is cut off: straight to black
+    await wait(0.4);                                             // chapter 1 ends on Hale's "Juno!": straight to black
     await fade.out();
     endDeadHour(); ending = false; finale = true;                // cut to black: the low tone ends, the fast hard music starts
     fade.card([{ text: 'NEON ECHOES', color: '#ffffff', scale: 6 }, { text: 'CASE 01 CONTINUES', color: '#1fd6e8', scale: 3 }, { text: 'TAP OR PRESS ANY BUTTON', color: '#8a8aa8', scale: 2 }], Infinity);
@@ -156,6 +155,7 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     await fade.hideCard(0.4);                                    // quick fade to black
     finale = false;                                              // the car's own quiet music comes back; she is still in the car
     await fade.in();
+    await dialogue.start('car_reply');                           // chapter 2 opens: Juno answers Hale, not coming in yet
     await dialogue.start('car_decide');                          // she decides: the Echo Exchange
     chapter1Done = true; caseFile.setFlag('chapter1_done');
     await wait(0.6);

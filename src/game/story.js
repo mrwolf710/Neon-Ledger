@@ -283,11 +283,10 @@ export const CONVERSATIONS = {
   car_reply: { start: 'a', nodes: {
     a: { speaker: 'juno', text: "Still working it, Hale. I'll bring you something real.", next: 'b' },
     b: { speaker: 'hale', text: 'Come in. Now. And bring the chip.', next: 'c' },
-    c: { speaker: 'juno', text: "Not yet. If I walk into the Bureau with a dead broker and a hole in my memory, I won't walk out. I need to know what Dex was carrying first.", next: 'd' },
-    d: { speaker: 'hale', text: 'Juno\u2014', end: true },
+    c: { speaker: 'juno', text: "Not yet. If I walk into the Bureau with a dead broker and a hole in my memory, I won't walk out. I need to know what Dex was carrying first.", end: true },
   } },
   car_decide: { start: 'a', nodes: {
-    a: { speaker: 'juno', text: '(Brokers all end up in one place. The Echo Exchange. Somebody there knows what he was selling.)', end: true },
+    a: { speaker: 'juno', text: '(Brokers all end up in one place. The Echo Exchange. Somebody there knows what he was selling. Time for a little drive.)', end: true },
   } },
   // ---- Chapter 2: the Echo Exchange (docs/chapter-2.md). Each clue vendor gives their clue on the first talk, in any order; later talks give a short repeat line. ----
   // The implant dealer: show him the receipt for Locker 9, then Juno can open it (beats.dealerScene).
