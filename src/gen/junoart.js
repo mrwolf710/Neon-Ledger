@@ -36,6 +36,7 @@ export const KIT_ART = { base: 'sprites/kit', cell: 68, pxPerUnit: 24, fps: 6, f
 export const VENDOR_ART = { base: 'sprites/vendor', cell: 64, pxPerUnit: 24, fps: 4, foot: 10, frames: 4, dirs: JUNO_ART.dirs };
 // Echo Exchange vendors drawn by the owner (public/sprites/<name>/sheet.png, same layout as the vendor: 64 px cells, row 0 = 8 stills, rows 1-8 = a 4-frame breathing loop). market1 = Tobbo, the cable seller.
 export const MARKET1_ART = { base: 'sprites/market1', cell: 64, pxPerUnit: 24, fps: 4, foot: 11, frames: 4, dirs: JUNO_ART.dirs };
+export const MARKET5_ART = { ...MARKET1_ART, base: 'sprites/market5', foot: 10 }; // market5 = Ruth, the jewellery seller (gray long hair, glasses, red tee); her feet sit 10 px above the cell bottom
 export const MARKET4_ART = { ...MARKET1_ART, base: 'sprites/market4', cell: 68, fps: 8, frames: 8 }; // market4 = Slate, the ID printer (tattooed, eyepiece): 68 px cells, 8-frame idle
 export const MARKET3_ART = { ...MARKET1_ART, base: 'sprites/market3' }; // market3 = Gutter, the parts seller (tank top, cybernetic arm)
 // Hale: eight 48 px rotation frames across one row; comms show the rear-left (north-west) view.

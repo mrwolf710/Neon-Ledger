@@ -1,0 +1,109 @@
+{
+  "character": {
+    "id": "6aee4ed7-4f46-4539-b91e-73478ec43e1e",
+    "name": "Idle",
+    "prompt": "Female, gray long hair.  With a red short sleeve tshirt.  Brown pants, black shoes. Glasses.",
+    "size": {
+      "width": 48,
+      "height": 48
+    },
+    "directions": 8,
+    "view": "low top-down"
+  },
+  "spritesheet": {
+    "path": "Female_gray_long_hair-Idle.png",
+    "cell_size": {
+      "width": 64,
+      "height": 64
+    },
+    "sheet_size": {
+      "width": 512,
+      "height": 576
+    },
+    "columns": 8,
+    "pivot": "cell-center",
+    "rows": [
+      {
+        "row": 0,
+        "type": "rotations",
+        "frame_count": 8,
+        "directions": [
+          "south",
+          "south-east",
+          "east",
+          "north-east",
+          "north",
+          "north-west",
+          "west",
+          "south-west"
+        ]
+      },
+      {
+        "row": 1,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "Breathing Idle",
+        "animation_group_id": "54910bb7-dc06-4f09-a863-8ee7ca1a2db3",
+        "direction": "south"
+      },
+      {
+        "row": 2,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "Breathing Idle",
+        "animation_group_id": "54910bb7-dc06-4f09-a863-8ee7ca1a2db3",
+        "direction": "south-east"
+      },
+      {
+        "row": 3,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "Breathing Idle",
+        "animation_group_id": "54910bb7-dc06-4f09-a863-8ee7ca1a2db3",
+        "direction": "east"
+      },
+      {
+        "row": 4,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "Breathing Idle",
+        "animation_group_id": "54910bb7-dc06-4f09-a863-8ee7ca1a2db3",
+        "direction": "north-east"
+      },
+      {
+        "row": 5,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "Breathing Idle",
+        "animation_group_id": "54910bb7-dc06-4f09-a863-8ee7ca1a2db3",
+        "direction": "north"
+      },
+      {
+        "row": 6,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "Breathing Idle",
+        "animation_group_id": "54910bb7-dc06-4f09-a863-8ee7ca1a2db3",
+        "direction": "north-west"
+      },
+      {
+        "row": 7,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "Breathing Idle",
+        "animation_group_id": "54910bb7-dc06-4f09-a863-8ee7ca1a2db3",
+        "direction": "west"
+      },
+      {
+        "row": 8,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "Breathing Idle",
+        "animation_group_id": "54910bb7-dc06-4f09-a863-8ee7ca1a2db3",
+        "direction": "south-west"
+      }
+    ]
+  },
+  "export_version": "1.0",
+  "export_date": "2026-10-16T19:55:36.060810+00:00"
+}
