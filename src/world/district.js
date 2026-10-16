@@ -42,7 +42,7 @@ export const CAST = [
   { id: 'pim', area: 'exchange', at: 'v_umbrellas', sheet: 'walkerC', facing: Math.PI, booth: true },
   { id: 'oyo', area: 'exchange', at: 'v_noodles', sheet: 'walkerA', facing: 0, booth: true },
   { id: 'ruth', area: 'exchange', at: 'v_jewels', sheet: 'vendor', facing: Math.PI, booth: true },
-  { id: 'slate', area: 'exchange', at: 'v_idprint', sheet: 'walkerD', facing: Math.PI, booth: true },
+  { id: 'slate', area: 'exchange', at: 'v_idprint', facing: Math.PI, booth: true }, // own art: sheets.slate (public/sprites/market4)
   { id: 'jinx', area: 'exchange', at: 'v_stim', sheet: 'walkerB', facing: 0, booth: true },
   { id: 'bolt', area: 'exchange', at: 'v_drones', sheet: 'walkerA', facing: Math.PI, booth: true },
   { id: 'petra', area: 'exchange', at: 'v_flowers', sheet: 'vendor', facing: Math.PI, booth: true },

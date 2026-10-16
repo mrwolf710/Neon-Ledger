@@ -1,0 +1,109 @@
+{
+  "character": {
+    "id": "72cfc3a3-8025-4f0d-88ba-9c3e36bc2876",
+    "name": "Idle",
+    "prompt": "cyberpunk yakuza shirtless with lots of tattoos.  Electronic eyepiece on left eye",
+    "size": {
+      "width": 48,
+      "height": 48
+    },
+    "directions": 8,
+    "view": "low top-down"
+  },
+  "spritesheet": {
+    "path": "cyberpunk_yakuza_shirtle-Idle.png",
+    "cell_size": {
+      "width": 68,
+      "height": 68
+    },
+    "sheet_size": {
+      "width": 544,
+      "height": 612
+    },
+    "columns": 8,
+    "pivot": "cell-center",
+    "rows": [
+      {
+        "row": 0,
+        "type": "rotations",
+        "frame_count": 8,
+        "directions": [
+          "south",
+          "south-east",
+          "east",
+          "north-east",
+          "north",
+          "north-west",
+          "west",
+          "south-west"
+        ]
+      },
+      {
+        "row": 1,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "idle breathing",
+        "animation_group_id": "9edf306c-374e-4fb4-b850-80a137e27f5b",
+        "direction": "south"
+      },
+      {
+        "row": 2,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "idle breathing",
+        "animation_group_id": "9edf306c-374e-4fb4-b850-80a137e27f5b",
+        "direction": "south-east"
+      },
+      {
+        "row": 3,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "idle breathing",
+        "animation_group_id": "9edf306c-374e-4fb4-b850-80a137e27f5b",
+        "direction": "east"
+      },
+      {
+        "row": 4,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "idle breathing",
+        "animation_group_id": "9edf306c-374e-4fb4-b850-80a137e27f5b",
+        "direction": "north-east"
+      },
+      {
+        "row": 5,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "idle breathing",
+        "animation_group_id": "9edf306c-374e-4fb4-b850-80a137e27f5b",
+        "direction": "north"
+      },
+      {
+        "row": 6,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "idle breathing",
+        "animation_group_id": "9edf306c-374e-4fb4-b850-80a137e27f5b",
+        "direction": "north-west"
+      },
+      {
+        "row": 7,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "idle breathing",
+        "animation_group_id": "9edf306c-374e-4fb4-b850-80a137e27f5b",
+        "direction": "west"
+      },
+      {
+        "row": 8,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "idle breathing",
+        "animation_group_id": "9edf306c-374e-4fb4-b850-80a137e27f5b",
+        "direction": "south-west"
+      }
+    ]
+  },
+  "export_version": "1.0",
+  "export_date": "2026-10-16T19:19:40.044551+00:00"
+}
