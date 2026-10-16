@@ -315,6 +315,7 @@ function exchange(M, rng) {
   const b = begin('exchange'), PM = propMats(M), [hx, hz] = EXCHANGE.half, glow = BUILDINGS.windowGlow;
   const neon = Object.fromEntries(Object.entries(EXCHANGE.neon).map(([k, c]) => [k, new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(glow) })]));
   const cycle = EXCHANGE.order.map((k) => neon[k]), tint = EXCHANGE.order.map((k) => EXCHANGE.neon[k]), N = cycle.length;
+  const sr = rng.fork('stock'), stock = [P.rust2, P.sodium0, P.rust1, P.magentaDeep, P.grey3, 0x2a4f8a, 0x2c6b4a].map((c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.8 })); // goods piled behind and on every booth
   floor(b, M.sidewalk, -hx, -hz, hx, hz);
   for (const z of [-hz - T / 2, hz + T / 2]) wallX(b, M, z, -hx - T, hx + T, [], { h: 1.2, mat: M.walls[0] });
   wallZ(b, M, -hx - T / 2, -hz, hz, [[-1.2, 1.2]], { h: 1.2, mat: M.walls[0] });                   // west: the way in (from the car)
@@ -340,6 +341,17 @@ function exchange(M, rng) {
       part(PM.pole, 0.07, 2.0, 0.07, w / 2 - 0.1, 1.0, cz - 0.1); part(signMat(text, tint[i % N]), 1.5, 0.5, 0.06, w / 2 - 0.7, 2.1, cz - 0.1, 0, false);
     }
     part(PM.crates[i % PM.crates.length], 0.6, 0.6, 0.6, -w / 2 + 0.4, 0.3, -0.5);
+    // The back of the booth: a backboard with three shelves of goods, crate piles at both ends and a few wares on the counter, so it never looks open.
+    part(PM.wood, w + 0.2, 2.1, 0.06, 0, 1.05, -1.15);
+    for (const lv of [0.6, 1.2, 1.8]) {
+      part(PM.wood, w, 0.05, 0.4, 0, lv, -0.93);
+      for (let lx = -w / 2 + 0.25; lx < w / 2 - 0.15; lx += sr.range(0.3, 0.5)) {
+        const h = sr.range(0.18, 0.42), glow = sr.rand() < 0.22;
+        part(glow ? cycle[(i + sr.int(0, N - 1)) % N] : sr.pick(stock), sr.range(0.18, 0.34), glow ? 0.1 : h, 0.26, lx, lv + 0.025 + (glow ? 0.05 : h / 2), -0.93);
+      }
+    }
+    for (const sx of [-1, 1]) { const n = sr.int(1, 3); for (let k = 0; k < n; k++) part(PM.crates[(i + k) % PM.crates.length], 0.55, 0.5, 0.55, sx * (w / 2 + 0.35), 0.25 + k * 0.5, -0.7 + sr.range(-0.1, 0.1), sr.range(-0.2, 0.2)); }
+    for (let k = 0; k < 3; k++) part(sr.rand() < 0.4 ? cycle[(i + k) % N] : sr.pick(stock), sr.range(0.15, 0.3), sr.range(0.1, 0.25), 0.2, sr.range(-w / 2 + 0.3, w / 2 - 0.3), ch + 0.05 + 0.06, cz + 0.05);
     b.spot(`v_${id}`, x + 0.3 * c, z - 0.3 * sn);
   });
   for (const [x, z, n] of EXCHANGE.scatter) crates(b, PM, x, z, n);
