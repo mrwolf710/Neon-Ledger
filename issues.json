@@ -94,7 +94,7 @@
     },
     {
       "id": 5,
-      "status": "open",
+      "status": "fixed",
       "text": "Let's make the market more of a back alley kind of thing.  Put enough debris in the way to where you have to go to the booths along the right wall first, then back down the middle, then to the first booth on the bottom left and all the way up to the last booth on the left",
       "at": "2026-10-16T20:15:49.708Z",
       "context": {
@@ -112,7 +112,9 @@
         "flags": 37,
         "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/15",
         "device": "keyboard"
-      }
+      },
+      "fixedIn": "7b200d6",
+      "note": "Debris walls (EXCHANGE.barriers) force: entrance -> north lane east -> east wall -> middle aisle west -> south lane -> Part Time Parts (bottom left). The climb up the left side is not separate: the entrance sits there, so it stays sealed."
     }
   ]
 }
