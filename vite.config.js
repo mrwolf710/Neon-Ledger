@@ -5,6 +5,30 @@ import path from 'node:path';
 // Dev only: /editor.html posts dialogue changes to /__dialogue-edits, merged into src/game/dialogue-edits.json (story.js lays them over its own text).
 const EDITS = path.resolve('src/game/dialogue-edits.json');
 const SCENES = path.resolve('src/world/scene-edits.json');
+// Dev only: the in-game issue box (F9) posts to /__issues; they are appended to issues.json in the project folder for Claude to read and work through.
+const ISSUES = path.resolve('issues.json');
+const issueLog = {
+  name: 'issue-log',
+  configureServer(server) {
+    server.middlewares.use('/__issues', (req, res) => {
+      const read = () => { try { return JSON.parse(fs.readFileSync(ISSUES, 'utf8')); } catch { return { issues: [] }; } };
+      if (req.method === 'GET') { res.setHeader('content-type', 'application/json'); return res.end(JSON.stringify(read())); }
+      if (req.method !== 'POST') { res.statusCode = 405; return res.end(); }
+      let body = '';
+      req.on('data', (c) => { body += c; if (body.length > 20000) req.destroy(); });
+      req.on('end', () => {
+        try {
+          const { text, context } = JSON.parse(body), all = read();
+          if (typeof text !== 'string') throw new Error('text missing');
+          const id = 1 + Math.max(0, ...all.issues.map((i) => i.id ?? 0));
+          all.issues.push({ id, status: 'open', text: text.slice(0, 2000), at: new Date().toISOString(), context: context ?? {} });
+          fs.writeFileSync(ISSUES, JSON.stringify(all, null, 2) + '\n');
+          res.setHeader('content-type', 'application/json'); res.end(JSON.stringify({ id }));
+        } catch (e) { res.statusCode = 400; res.end(String(e)); }
+      });
+    });
+  },
+};
 const dialogueEditor = {
   name: 'dialogue-editor',
   configureServer(server) {
@@ -117,4 +141,4 @@ const dialogueEditor = {
 import { execSync } from 'node:child_process';
 let commit = 'dev'; try { commit = execSync('git rev-parse --short HEAD').toString().trim(); } catch { /* no git */ }
 const stamp = `${commit} ${new Date().toTimeString().slice(0, 5)}`;
-export default { base: './', build: { target: 'es2022' }, plugins: [dialogueEditor], define: { __BUILD__: JSON.stringify(stamp) } };
+export default { base: './', build: { target: 'es2022' }, plugins: [dialogueEditor, issueLog], define: { __BUILD__: JSON.stringify(stamp) } };

@@ -28,7 +28,7 @@ const CSS = (U) => `
 @media (orientation: portrait) and (pointer: coarse) { #rotate-msg { display:flex; } }
 `;
 
-export function createTouchUI(input) {
+export function createTouchUI(input, { issues = false } = {}) {
   const U = TOUCH_UI;
   const style = document.createElement('style');
   style.textContent = CSS(U);
@@ -61,6 +61,7 @@ export function createTouchUI(input) {
   button('', 'BRD', 'board', icons);
   button('', 'MAP', 'map', icons);
   button('', '❚❚', 'pause', icons);
+  if (issues) button('', '!', 'issue', icons); // report an issue (dev server / ?issues only)
   document.body.appendChild(root);
 
   const touchDevice = matchMedia('(pointer: coarse)').matches; // touch laptops show it once touched (lastDevice)

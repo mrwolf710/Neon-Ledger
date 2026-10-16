@@ -13,6 +13,7 @@ Cyberpunk detective game, HD-2D isometric look, three.js + Vite, plain JavaScrip
 
 ## How to work (the owner is on the Claude Pro plan; save tokens)
 
+- Issues: the owner logs problems while playing (F9, the touch "!" icon, or both stick clicks; dev server or `?issues` only) into `issues.json` in the project folder. At the start of every session, read it and tell the owner the open issues (`status: "open"`, newest last) before other work. When you fix one, set its `status` to `"fixed"` and add `"fixedIn": "<commit>"`; never delete entries. Cloud sessions only see issues the owner has committed and pushed.
 - Read `NOTES.md` first. It summarizes the code. Only open other files a task actually needs; do not scan the whole repo.
 - For stage details, read only the named section of the named file in `docs/stages/`. Ignore "[paste NOTES.md here]" placeholders and "one file per reply" rules there; those are for the Claude web app. Here, edit files directly.
 - Keep chat replies short. Do not print file contents back after editing. End with a 3-line summary and what to check in the browser.

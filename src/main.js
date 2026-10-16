@@ -23,6 +23,7 @@ import { createSfx, surfaceAt } from './audio/sfx.js';
 import { createMusic } from './audio/music.js';
 import { createTitle } from './ui/title.js';
 import { createTrailer, TRAILER } from './ui/trailer.js';
+import { createIssues, issuesEnabled } from './ui/issues.js';
 import { createMenu } from './ui/menu.js';
 import { BEATS } from './game/beats.js';
 import { createTutorial } from './ui/tutorial.js';
@@ -98,7 +99,8 @@ const post = createPost(renderer, scene, cam.camera, Q);
 const cast = createCast(scene, getSheets(), world.areas);
 const player = createPlayer(cast.byId.juno, world.current.collision);
 const interactions = createInteractions(scene);
-const touchUI = createTouchUI(input);
+const issuesOn = issuesEnabled(); // F9 / "!" / both stick clicks: the issue box (dev server or ?issues)
+const touchUI = createTouchUI(input, { issues: issuesOn });
 const saves = createSaves();
 const title = createTitle(() => synth.start(), !!saves.latest());
 const sfx = createSfx(synth), music = createMusic(synth);
@@ -141,6 +143,11 @@ const beats = createBeats({ trainSteam, input, world, cast, caseFile, dialogue, 
 beats.setCamera(cam);
 beats.register();
 let phaseId = '', sunsetT = null, lastAreaId = null, cameFromSable = false;
+const issues = issuesOn ? createIssues({ input, toast: (t) => hud.toast(t), context: () => ({
+  area: world.current.id, place: world.placeAt(player.position.x, player.position.z).name, pos: [+player.position.x.toFixed(1), +player.position.z.toFixed(1)],
+  objective: document.querySelector('#hud .objective span')?.textContent ?? '', clock: clock.text, quality: settings.tier, build: typeof __BUILD__ === 'undefined' ? 'dev' : __BUILD__,
+  facts: caseFile.facts().length, flags: caseFile.dump().flags.length, ua: navigator.userAgent.slice(0, 90),
+}) }) : { isOpen: false, update() {} };
 const trailerOn = new URLSearchParams(location.search).has('trailer'); // ?trailer plays a scripted teaser (src/ui/trailer.js)
 const trailer = createTrailer({ cam, world, player, post, fade, cast, sfx, synth });
 const startParam = new URLSearchParams(location.search).get('start'); // ?start=sable jumps straight to an area (testing)
@@ -329,6 +336,7 @@ renderer.setAnimationLoop((now) => {
   if (import.meta.env.MODE !== 'itch' && input.pressed('debug')) debug.toggle(); // the itch.io build (npm run itch) has no debug menu
   cam.zoom(CAMERA.wheelZoom ** input.zoomSteps * CAMERA.keyZoom ** (input.zoom * dt) * input.zoomFactor);
   touchUI.update();
+  issues.update();
   const scrubAxis = input.moveX; // echo mode scrubs with the move axis
   // Title, cutscene, area change, conversation, case file, echo or board: the world waits for the player.
   const menuWasOpen = menu.isOpen;
@@ -342,7 +350,7 @@ renderer.setAnimationLoop((now) => {
   if (!trailer.active && world.current.id === 'sable' && !dialogue.active && !tutorial.isOpen && !caseFile.hasFlag('tut_board') && caseFile.facts().length >= 2) { caseFile.setFlag('tut_board'); tutorial.open('board'); }
   if (!trailer.active && echo.active && !tutorial.isOpen && !caseFile.hasFlag('tut_echo')) { caseFile.setFlag('tut_echo'); tutorial.open('echo'); } // first echo: explain it (the echo waits)
   const paused = menu.isOpen || menuWasOpen; // the menu freezes cutscenes and conversations too (it opens during both)
-  const modal = trailer.active || tutorial.isOpen || tutWasOpen || !title.done || beats.locked || world.busy || dialogue.active || caseFile.isOpen || echo.active || board.isOpen || menu.isOpen || menuWasOpen;
+  const modal = issues.isOpen || trailer.active || tutorial.isOpen || tutWasOpen || !title.done || beats.locked || world.busy || dialogue.active || caseFile.isOpen || echo.active || board.isOpen || menu.isOpen || menuWasOpen;
   if (input.click && beats.calling && !paused) beats.answerCall(); // a click or tap answers Hale's call (it is locked, so the click would otherwise be thrown away below)
   if (modal) { input.click = null; input.moveX = input.moveY = 0; }
   if (!trailer.active && !menuWasOpen && !tutorial.isOpen && !tutWasOpen && title.done && !world.busy && !caseFile.isOpen && !echo.active && !board.isOpen && input.pressed('pause')) menu.open();

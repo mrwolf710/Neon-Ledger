@@ -52,9 +52,10 @@ const axis = (neg, pos) => (held.has(pos) ? 1 : 0) - (held.has(neg) ? 1 : 0);
 const dead = (v) => (Math.abs(v) < INPUT.deadZone ? 0 : (v - Math.sign(v) * INPUT.deadZone) / (1 - INPUT.deadZone));
 
 // --- Keyboard ---
+const typing = (e) => e.target?.matches?.('input, textarea, [contenteditable]'); // while a text box has focus, game keys must not fire (the issue box)
 window.addEventListener('keydown', (e) => {
   const a = KEY_BINDINGS[e.code];
-  if (!a) return;
+  if (!a || typing(e)) return;
   e.preventDefault(); // stop Tab focus changes and Space scrolling
   input.lastDevice = 'keyboard';
   press(a);
@@ -105,6 +106,9 @@ function pollGamepad() {
     if (down && !padHeld.has(a)) { padHeld.add(a); press(a); active = true; }
     if (!down && padHeld.has(a)) { padHeld.delete(a); release(a); }
   }
+  const both = !!pad.buttons[10]?.pressed && !!pad.buttons[11]?.pressed; // issue box: click both sticks together (a single stick click is never enough)
+  if (both && !padHeld.has('issue')) { padHeld.add('issue'); press('issue'); active = true; }
+  if (!both && padHeld.has('issue')) { padHeld.delete('issue'); release('issue'); }
   const ax = pad.axes;
   padStick = { x: dead(ax[0] ?? 0), y: -dead(ax[1] ?? 0), lookX: dead(ax[2] ?? 0), zoom: dead(ax[3] ?? 0) };
   if (active || padStick.x || padStick.y || padStick.lookX || padStick.zoom) {
