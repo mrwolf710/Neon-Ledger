@@ -93,8 +93,9 @@ function textSign(text, color, bg = P.ink) {
   t.magFilter = t.minFilter = THREE.NearestFilter; t.generateMipmaps = false; t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
-const signMat = (text, color, noCut = false) => { // noCut: the see-through circle around Juno never removes this sign
-  const m = new THREE.MeshBasicMaterial({ map: textSign(text, color), color: new THREE.Color().setScalar(BUILDINGS.signGlow) });
+const signMat = (text, color, noCut = false, minLum = 0) => { // noCut: the see-through circle around Juno never removes this sign; minLum: brighten dark colours (blue, red, purple) until the text is this bright, so every sign blooms
+  const c = new THREE.Color(color), lum = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+  const m = new THREE.MeshBasicMaterial({ map: textSign(text, color), color: new THREE.Color().setScalar(Math.min(EXCHANGE.signBoostMax, Math.max(BUILDINGS.signGlow, minLum / lum))) });
   m.userData.noCut = noCut;
   return m;
 };
@@ -300,6 +301,7 @@ function car(M) {
 export const EXCHANGE = {
   half: [15, 10.5],                 // square half-size (x, z)
   neon: { red: 0xff3b2f, orange: 0xff8a1f, yellow: 0xffd23a, blue: 0x2f8bff, green: 0x2fe07a, purple: 0xa43bff },   // the palette of the whole square; booths cycle through `order`
+  signLum: 1.3, signBoostMax: 7,   // every sign's text is lifted to this brightness (over the bloom threshold 0.85) up to this multiplier, so dark colours glow as much as yellow
   order: ['red', 'blue', 'yellow', 'purple', 'orange', 'green'],
   // id, sign text, x, z (the vendor's spot), side (-1: customers come from +z, +1: from -z), width, yaw offset (radians), style (awning | kiosk | cart).
   // Deliberately uneven: no two booths share a width, angle or style for long, and none sit on a grid. Placeholder stock; the cast list is in docs/chapter-2.md.
@@ -332,14 +334,14 @@ function exchange(M, rng) {
     if (style === 'awning') {
       for (const sx of [-1, 1]) part(PM.pole, 0.08, 2.3, 0.08, sx * (w / 2 - 0.05), 1.15, cz);
       part(mat, w, 0.08, 0.08, 0, 2.3, cz);
-      part(signMat(text, tint[i % N]), ...fit(w - 0.3, 0.55), 0.06, 0, 2.75, -0.2, 0, false);
+      part(signMat(text, tint[i % N], false, EXCHANGE.signLum), ...fit(w - 0.3, 0.55), 0.06, 0, 2.75, -0.2, 0, false);
     } else if (style === 'kiosk') {
       for (const sx of [-1, 1]) for (const lz of [-0.4, cz + 0.3]) part(PM.pole, 0.08, 2.2, 0.08, sx * (w / 2 - 0.05), 1.1, lz);
       part(PM.wood, w + 0.3, 0.08, cz + 1.0, 0, 2.24, cz / 2 - 0.05); part(mat, w + 0.3, 0.05, 0.05, 0, 2.2, cz + 0.45);
-      part(signMat(text, tint[i % N]), ...fit(w - 0.4, 0.5), 0.06, 0, 2.7, -0.05, 0, false);
+      part(signMat(text, tint[i % N], false, EXCHANGE.signLum), ...fit(w - 0.4, 0.5), 0.06, 0, 2.7, -0.05, 0, false);
     } else { // cart: low, with two wheels and a tall sign on a pole
       for (const sx of [-1, 1]) b.add(PM.pole, new THREE.CylinderGeometry(0.22, 0.22, 0.08, 10).rotateZ(Math.PI / 2).rotateY(yaw).translate(x + sx * (w / 2) * c + cz * sn, 0.22, z - sx * (w / 2) * sn + cz * c));
-      part(PM.pole, 0.07, 2.0, 0.07, w / 2 - 0.1, 1.0, cz - 0.1); part(signMat(text, tint[i % N]), ...fit(2.2, 0.5), 0.06, w / 2 - 0.7, 2.1, cz - 0.1, 0, false);
+      part(PM.pole, 0.07, 2.0, 0.07, w / 2 - 0.1, 1.0, cz - 0.1); part(signMat(text, tint[i % N], false, EXCHANGE.signLum), ...fit(2.2, 0.5), 0.06, w / 2 - 0.7, 2.1, cz - 0.1, 0, false);
     }
     part(PM.crates[i % PM.crates.length], 0.6, 0.6, 0.6, -w / 2 + 0.4, 0.3, -0.5);
     // The back of the booth: a backboard with three shelves of goods, crate piles at both ends and a few wares on the counter, so it never looks open.
@@ -389,7 +391,7 @@ function exchange(M, rng) {
   // The implant dealer: a shopfront in the gap between the two middle north booths (faces +z, toward the camera; the interior is added later, the door is a glowing mat for now).
   b.box(M.walls[1], 2.6, 3.4, 1.0, 0, 1.7, -hz + 0.5); b.block(0, -hz + 0.5, 2.6, 1.0);
   b.box(neon.red, 1.1, 2.0, 0.06, 0, 1.0, -hz + 1.03);
-  b.box(signMat('IMPLANTS', EXCHANGE.neon.red), 2.4, 0.6, 0.06, 0, 3.7, -hz + 1.0, 0, 0, false);
+  b.box(signMat('IMPLANTS', EXCHANGE.neon.red, false, EXCHANGE.signLum), 2.4, 0.6, 0.06, 0, 3.7, -hz + 1.0, 0, 0, false);
   b.box(M.litCool, 1.4, 0.03, 0.8, 0, 0.02, -hz + 1.6);
   b.light(0xff3b2f, 14, 0, 2.6, -8); b.light(0x2f8bff, 16, -8, 3.2, -4); b.light(0xa43bff, 16, 8, 3.2, 4); b.light(0xffd23a, 14, 0, 3.4, 0);
   b.light(0x2fe07a, 12, -8, 3.2, 5); b.light(0xff6a1f, 12, 8, 3.2, -4); b.light(0xffd23a, 10, -13, 2.6, 0);
