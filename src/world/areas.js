@@ -311,11 +311,11 @@ export const EXCHANGE = {
     ['cables', 'CABLE GUY', -4.6, -2.9, -1, 3.0, 0.42, 'awning'], ['stim', 'STIMULATING STIMS', 4.0, -2.0, -1, 2.5, -0.34, 'cart'], ['drones', 'DRONE ZONE', -3.4, 3.4, 1, 3.5, 0.19, 'kiosk'], ['flowers', 'FLOWERS FOR HOURS', 5.2, 3.2, 1, 2.8, 0.22, 'cart'],
   ],
   // Back-alley debris walls (x0, z0, x1, z1): solid piles of crates, barrels and pallets that force one route (camera faces north). From the west entrance the only way is south, then right (east) along the
-  // south lane (Part Time Parts, Bling Thing, Rain Check, Faux Real), up the east wall (Tarot or Not; the north lane and the dealer's door branch off to the west there), back west through the middle aisle
-  // and out of its west end into the left lane, which runs up the left side to Echo Chamber.
+  // south lane (Part Time Parts, Bling Thing, Rain Check, Faux Real), up the east wall (Tarot or Not; the north lane and the dealer's door branch off to the west there) and back west through the middle aisle (a dead end).
+  // The left lane runs from the bottom-left corner (Part Time Parts) up the left side to Echo Chamber.
   barriers: [
     [-14.9, -2.6, -11.4, -2.6], [-11.4, -2.6, -11.4, 3.0],                            // the entrance corridor: shut to the north and east, so the only way is south
-    [-11.4, 3.0, -7.2, 3.0], [-7.2, -10.3, -7.2, -1.0], [-7.2, 1.5, -7.2, 3.4],           // the left lane (up to Echo Chamber) is shut off from the south and the north lane; its only door is the middle aisle's west end
+    [-7.2, -10.3, -7.2, 3.4],                                                           // the wall east of the left lane runs unbroken: the left lane (up to Echo Chamber) opens onto the bottom-left corner only, and the middle aisle ends here
     [-7.2, -2.4, -6.2, -2.4], [-3.0, -2.4, 2.7, -2.4], [5.3, -2.4, 11.5, -2.4],           // close the gaps between the north-middle booths (Cables, Stim)
     [-7.2, 3.4, -5.3, 3.4], [-1.5, 3.4, 3.7, 3.4], [6.6, 3.4, 11.5, 3.4],                  // close the gaps between the south-middle booths (Drones, Flowers): the aisle opens only at its two ends
   ],
