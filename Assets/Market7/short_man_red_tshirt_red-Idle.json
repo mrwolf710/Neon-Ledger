@@ -13,14 +13,14 @@
   "spritesheet": {
     "path": "short_man_red_tshirt_red-Idle.png",
     "cell_size": {
-      "width": 48,
-      "height": 48
+      "width": 68,
+      "height": 68
     },
     "sheet_size": {
-      "width": 384,
-      "height": 48
+      "width": 612,
+      "height": 612
     },
-    "columns": 8,
+    "columns": 9,
     "pivot": "cell-center",
     "rows": [
       {
@@ -37,9 +37,73 @@
           "west",
           "south-west"
         ]
+      },
+      {
+        "row": 1,
+        "type": "animation",
+        "frame_count": 9,
+        "animation": "standing, idle, but moving arms around excitedly",
+        "animation_group_id": "f6a13174-9b90-478a-90cb-54b6d6771082",
+        "direction": "south"
+      },
+      {
+        "row": 2,
+        "type": "animation",
+        "frame_count": 9,
+        "animation": "standing, idle, but moving arms around excitedly",
+        "animation_group_id": "f6a13174-9b90-478a-90cb-54b6d6771082",
+        "direction": "south-east"
+      },
+      {
+        "row": 3,
+        "type": "animation",
+        "frame_count": 9,
+        "animation": "standing, idle, but moving arms around excitedly",
+        "animation_group_id": "f6a13174-9b90-478a-90cb-54b6d6771082",
+        "direction": "east"
+      },
+      {
+        "row": 4,
+        "type": "animation",
+        "frame_count": 9,
+        "animation": "standing, idle, but moving arms around excitedly",
+        "animation_group_id": "f6a13174-9b90-478a-90cb-54b6d6771082",
+        "direction": "north-east"
+      },
+      {
+        "row": 5,
+        "type": "animation",
+        "frame_count": 9,
+        "animation": "standing, idle, but moving arms around excitedly",
+        "animation_group_id": "f6a13174-9b90-478a-90cb-54b6d6771082",
+        "direction": "north"
+      },
+      {
+        "row": 6,
+        "type": "animation",
+        "frame_count": 9,
+        "animation": "standing, idle, but moving arms around excitedly",
+        "animation_group_id": "f6a13174-9b90-478a-90cb-54b6d6771082",
+        "direction": "north-west"
+      },
+      {
+        "row": 7,
+        "type": "animation",
+        "frame_count": 9,
+        "animation": "standing, idle, but moving arms around excitedly",
+        "animation_group_id": "f6a13174-9b90-478a-90cb-54b6d6771082",
+        "direction": "west"
+      },
+      {
+        "row": 8,
+        "type": "animation",
+        "frame_count": 9,
+        "animation": "standing, idle, but moving arms around excitedly",
+        "animation_group_id": "f6a13174-9b90-478a-90cb-54b6d6771082",
+        "direction": "south-west"
       }
     ]
   },
   "export_version": "1.0",
-  "export_date": "2026-10-16T22:36:36.237495+00:00"
+  "export_date": "2026-10-16T22:55:16.520562+00:00"
 }
