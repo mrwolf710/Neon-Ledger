@@ -408,8 +408,10 @@ export const ECHOES = {
       ] },
     ],
     voices: [
+      { t0: 0.1, t1: 1.2, speaker: 'juno', text: "(Mama Teo's memory: Dex, alive, alone in his back room.)" },
       { t0: 1.3, t1: 2.7, speaker: 'dex', text: "...you weren't supposed to know I kept a copy." },
       { t0: 2.8, t1: 4.4, speaker: 'unknown', text: 'Then tell me where it is.' },
+      { t0: 4.5, t1: 6, speaker: 'juno', text: '(Someone walked in on him. Their face is scrubbed out. Two voices: tag them.)' },
     ],
     seams: [3.5],
     tags: [{ t: 2.0, window: 0.9, fact: 'two_voices', label: 'Two voices' }],
