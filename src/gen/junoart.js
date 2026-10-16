@@ -74,7 +74,34 @@ export async function loadPriestSheet() {
   });
   return loadSheet(PRIEST_ART, TEO_FRAMES, [''], imgs);
 }
-export const loadDexSheet = () => loadSheet(DEX_ART, DEX_FRAMES, ['']);
+// Dex's dead body (the owner's stills) gets a wound painted on at load: blood pooled at the back of his head, seen from every direction that shows the back of it.
+// Masks: R = blood, D = dark clot, r = wet highlight, . = nothing; drawn only over opaque pixels. at = [x, y] of the mask's top-left in the 48 px frame.
+export const DEX_BLOOD = {
+  colors: { R: '#a3121a', D: '#5c0a0f', r: '#d02a32' },
+  big: ['..DDRD...', '.DRRrRD..', 'DRRRDRRD.', 'DRrRDRRRD', '.DRRRRRD.', '..DRRRD..', '...DRD...', '....R....', '....D....'],
+  side: ['.DRD', 'DRRD', 'DRrR', 'DRRD', '.DRD', '..R.'],
+  at: { 'north': ['big', 20, 3], 'north-west': ['big', 21, 4], 'north-east': ['big', 19, 4], 'east': ['side', 17, 4], 'west': ['side', 27, 4] },
+};
+export async function loadDexSheet() {
+  const A = DEX_ART, imgs = {};
+  await Promise.all(A.dirs.map(async (d) => {
+    const img = await load(`${import.meta.env.BASE_URL}${A.base}/${d}.png`);
+    const cv = Object.assign(document.createElement('canvas'), { width: img.width, height: img.height }), ctx = cv.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    const spot = DEX_BLOOD.at[d];
+    if (spot) {
+      const [mask, x0, y0] = spot, rows = DEX_BLOOD[mask], data = ctx.getImageData(0, 0, cv.width, cv.height);
+      rows.forEach((row, dy) => [...row].forEach((ch, dx) => {
+        const col = DEX_BLOOD.colors[ch], x = x0 + dx, y = y0 + dy, i = (y * cv.width + x) * 4;
+        if (!col || data.data[i + 3] < 20) return; // only on the body, never in the empty space around it
+        data.data[i] = parseInt(col.slice(1, 3), 16); data.data[i + 1] = parseInt(col.slice(3, 5), 16); data.data[i + 2] = parseInt(col.slice(5, 7), 16);
+      }));
+      ctx.putImageData(data, 0, 0);
+    }
+    imgs[`/${d}`] = cv;
+  }));
+  return loadSheet(A, DEX_FRAMES, [''], imgs);
+}
 export const loadTeoSheet = () => loadSheet(TEO_ART, TEO_FRAMES, ['']);
 export const loadVendorSheet = () => loadKitSheet(VENDOR_ART);
 // The three Bureau auditors (chapter 2 ending): eight 48 px stills (<dir>.png) and a 4-frame breathing loop (64 px frames, idle-<dir>-<n>.png) for south, north and south-east; other directions hold their still.
