@@ -310,7 +310,8 @@ export const EXCHANGE = {
     ['echoes', 'ECHO CHAMBER', -10.4, -8.9, -1, 3.6, 0.10, 'kiosk'], ['sauce', 'SAUCY BUSINESS', -4.2, -8.2, -1, 2.6, -0.14, 'cart'], ['noodles', 'SLURP CITY', 3.4, -9.1, -1, 3.0, 0.08, 'awning'], ['tarot', 'TAROT OR NOT', 10.1, -8.4, -1, 3.8, -0.12, 'kiosk'],
     ['parts', 'PART TIME PARTS', -9.4, 8.7, 1, 3.4, -0.16, 'awning'], ['jewels', 'BLING THING', -2.6, 8.2, 1, 2.4, 0.2, 'cart'], ['umbrellas', 'RAIN CHECK', 4.6, 8.9, 1, 3.8, 0.09, 'kiosk'], ['idprint', 'FAUX REAL', 11.2, 8.0, 1, 2.8, -0.22, 'awning'],
     ['cables', 'CABLE GUY', -4.6, -2.9, -1, 3.0, 0.42, 'awning'], ['stim', 'STIMULATING STIMS', 4.0, -2.0, -1, 2.5, -0.34, 'cart'], ['drones', 'DRONE ZONE', -3.4, 3.4, 1, 3.5, 0.19, 'kiosk'], ['flowers', 'FLOWERS FOR HOURS', 5.2, 3.2, 1, 2.8, 0.22, 'cart'],
-    ['abandoned', 'BACK SOON', -9.0, 3.0, 1, 3.0, -0.08, 'kiosk', true],   // an abandoned booth in the nook off the aisle's west end (from screenshots/abandoned_booth.png): sign and neon off, no vendor, stock left on the shelves
+    ['abandoned', 'BACK SOON', -9.0, 3.0, 1, 3.0, -0.08, 'kiosk', true],
+    ['closed', 'CLOSED FOREVER', 10.8, -3.6, -1, 3.0, 0.05, 'kiosk', true],   // a second dead booth at the east end of the middle aisle, against the wall behind Stim (from the owner's screenshot circle): sign off, no vendor   // an abandoned booth in the nook off the aisle's west end (from screenshots/abandoned_booth.png): sign and neon off, no vendor, stock left on the shelves
   ],
   // Back-alley debris walls (x0, z0, x1, z1), drawn by the owner on screenshots/path.png: solid piles of crates, barrels and pallets that force one route (view: camera yaw 270, the entrance at the bottom,
   // up = east, right = south). From the west entrance the only way is south, then east along the south lane, up the east end (between the walls' east end and the east wall), back west through the middle aisle,
