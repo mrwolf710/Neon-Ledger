@@ -309,6 +309,7 @@ export const EXCHANGE = {
     ['echoes', 'ECHO CHAMBER', -10.4, -8.9, -1, 3.6, 0.10, 'kiosk'], ['sauce', 'SAUCY BUSINESS', -4.2, -8.2, -1, 2.6, -0.14, 'cart'], ['noodles', 'SLURP CITY', 3.4, -9.1, -1, 3.0, 0.08, 'awning'], ['tarot', 'TAROT OR NOT', 10.1, -8.4, -1, 3.8, -0.12, 'kiosk'],
     ['parts', 'PART TIME PARTS', -9.4, 8.7, 1, 3.4, -0.16, 'awning'], ['jewels', 'BLING THING', -2.6, 8.2, 1, 2.4, 0.2, 'cart'], ['umbrellas', 'RAIN CHECK', 4.6, 8.9, 1, 3.8, 0.09, 'kiosk'], ['idprint', 'FAUX REAL', 11.2, 8.0, 1, 2.8, -0.22, 'awning'],
     ['cables', 'CABLE GUY', -4.6, -2.9, -1, 3.0, 0.42, 'awning'], ['stim', 'STIMULATING STIMS', 4.0, -2.0, -1, 2.5, -0.34, 'cart'], ['drones', 'DRONE ZONE', -3.4, 3.4, 1, 3.5, 0.19, 'kiosk'], ['flowers', 'FLOWERS FOR HOURS', 5.2, 3.2, 1, 2.8, 0.22, 'cart'],
+    ['abandoned', 'BACK SOON', -9.0, 3.0, 1, 3.0, -0.08, 'kiosk', true],   // an abandoned booth in the nook off the aisle's west end (from screenshots/abandoned_booth.png): sign and neon off, no vendor, stock left on the shelves
   ],
   // Back-alley debris walls (x0, z0, x1, z1), drawn by the owner on screenshots/path.png: solid piles of crates, barrels and pallets that force one route (view: camera yaw 270, the entrance at the bottom,
   // up = east, right = south). From the west entrance the only way is south, then east along the south lane, up the east end (between the walls' east end and the east wall), back west through the middle aisle,
@@ -328,12 +329,13 @@ function exchange(M, rng) {
   const neon = Object.fromEntries(Object.entries(EXCHANGE.neon).map(([k, c]) => [k, new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(glow) })]));
   const cycle = EXCHANGE.order.map((k) => neon[k]), tint = EXCHANGE.order.map((k) => EXCHANGE.neon[k]), N = cycle.length;
   const sr = rng.fork('stock'), stock = [P.rust2, P.sodium0, P.rust1, P.magentaDeep, P.grey3, 0x2a4f8a, 0x2c6b4a].map((c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.8 })); // goods piled behind and on every booth
+  const deadMat = new THREE.MeshStandardMaterial({ color: 0x2a2226, roughness: 0.9 }); // frame of a booth whose neon is off
   floor(b, M.sidewalk, -hx, -hz, hx, hz);
   for (const z of [-hz - T / 2, hz + T / 2]) wallX(b, M, z, -hx - T, hx + T, [], { h: 1.2, mat: M.walls[0] });
   wallZ(b, M, -hx - T / 2, -hz, hz, [[-1.2, 1.2]], { h: 1.2, mat: M.walls[0] });                   // west: the way in (from the car)
   for (const [x, z, ry, len, col] of [[-6, 1, 0.5, 6, neon.blue], [3, -5.5, -0.35, 5, neon.purple], [7, 6, 0.8, 4, neon.green]]) b.box(col, len, 0.04, 0.05, x, 0.02, z, 0, ry); // a few glowing floor strips at odd angles
-  EXCHANGE.booths.forEach(([id, text, x, z, side, w, rot, style], i) => {
-    const yaw = rot + (side === 1 ? Math.PI : 0), c = Math.cos(yaw), sn = Math.sin(yaw), mat = cycle[i % N];
+  EXCHANGE.booths.forEach(([id, text, x, z, side, w, rot, style, off], i) => {
+    const yaw = rot + (side === 1 ? Math.PI : 0), c = Math.cos(yaw), sn = Math.sin(yaw), mat = off ? deadMat : cycle[i % N], sgn = () => (off ? signMat(text, 0x4a3c3c) : signMat(text, tint[i % N], false, EXCHANGE.signLum)); // an abandoned booth (off) has a dull frame and an unlit sign
     // part in the booth's own frame: lx along the counter, lz toward the customer (+z), rotated into the world with the booth.
     const part = (m, sx, sy, sz, lx, ly, lz, ry = 0, uv = true) => b.box(m, sx, sy, sz, x + lx * c + lz * sn, ly, z - lx * sn + lz * c, 0, yaw + ry, uv); // uv false = the texture fills each face (sign text)
     const fit = (aw, ah) => { const a = (text.length * 4 + 3) / 9, sw = Math.min(aw, ah * a); return [sw, sw / a]; }; // sign size that keeps the text's proportions, so long names get smaller instead of squashed
@@ -344,14 +346,14 @@ function exchange(M, rng) {
     if (style === 'awning') {
       for (const sx of [-1, 1]) part(PM.pole, 0.08, 2.3, 0.08, sx * (w / 2 - 0.05), 1.15, cz);
       part(mat, w, 0.08, 0.08, 0, 2.3, cz);
-      part(signMat(text, tint[i % N], false, EXCHANGE.signLum), ...fit(w - 0.3, 0.55), 0.06, 0, 2.75, -0.2, 0, false);
+      part(sgn(), ...fit(w - 0.3, 0.55), 0.06, 0, 2.75, -0.2, 0, false);
     } else if (style === 'kiosk') {
       for (const sx of [-1, 1]) for (const lz of [-0.4, cz + 0.3]) part(PM.pole, 0.08, 2.2, 0.08, sx * (w / 2 - 0.05), 1.1, lz);
       part(PM.wood, w + 0.3, 0.08, cz + 1.0, 0, 2.24, cz / 2 - 0.05); part(mat, w + 0.3, 0.05, 0.05, 0, 2.2, cz + 0.45);
-      part(signMat(text, tint[i % N], false, EXCHANGE.signLum), ...fit(w - 0.4, 0.5), 0.06, 0, 2.7, -0.05, 0, false);
+      part(sgn(), ...fit(w - 0.4, 0.5), 0.06, 0, 2.7, -0.05, 0, false);
     } else { // cart: low, with two wheels and a tall sign on a pole
       for (const sx of [-1, 1]) b.add(PM.pole, new THREE.CylinderGeometry(0.22, 0.22, 0.08, 10).rotateZ(Math.PI / 2).rotateY(yaw).translate(x + sx * (w / 2) * c + cz * sn, 0.22, z - sx * (w / 2) * sn + cz * c));
-      part(PM.pole, 0.07, 2.0, 0.07, w / 2 - 0.1, 1.0, cz - 0.1); part(signMat(text, tint[i % N], false, EXCHANGE.signLum), ...fit(2.2, 0.5), 0.06, w / 2 - 0.7, 2.1, cz - 0.1, 0, false);
+      part(PM.pole, 0.07, 2.0, 0.07, w / 2 - 0.1, 1.0, cz - 0.1); part(sgn(), ...fit(2.2, 0.5), 0.06, w / 2 - 0.7, 2.1, cz - 0.1, 0, false);
     }
     part(PM.crates[i % PM.crates.length], 0.6, 0.6, 0.6, -w / 2 + 0.4, 0.3, -0.5);
     // The back of the booth: a backboard with three shelves of goods, crate piles at both ends and a few wares on the counter, so it never looks open.
@@ -359,12 +361,12 @@ function exchange(M, rng) {
     for (const lv of [0.6, 1.2, 1.8]) {
       part(PM.wood, w, 0.05, 0.4, 0, lv, -0.93);
       for (let lx = -w / 2 + 0.25; lx < w / 2 - 0.15; lx += sr.range(0.3, 0.5)) {
-        const h = sr.range(0.18, 0.42), glow = sr.rand() < 0.22;
+        const h = sr.range(0.18, 0.42), glow = sr.rand() < 0.22 && !off;
         part(glow ? cycle[(i + sr.int(0, N - 1)) % N] : sr.pick(stock), sr.range(0.18, 0.34), glow ? 0.1 : h, 0.26, lx, lv + 0.025 + (glow ? 0.05 : h / 2), -0.93);
       }
     }
     for (const sx of [-1, 1]) { const n = sr.int(1, 3); for (let k = 0; k < n; k++) part(PM.crates[(i + k) % PM.crates.length], 0.55, 0.5, 0.55, sx * (w / 2 + 0.35), 0.25 + k * 0.5, -0.7 + sr.range(-0.1, 0.1), sr.range(-0.2, 0.2)); }
-    for (let k = 0; k < 3; k++) part(sr.rand() < 0.4 ? cycle[(i + k) % N] : sr.pick(stock), sr.range(0.15, 0.3), sr.range(0.1, 0.25), 0.2, sr.range(-w / 2 + 0.3, w / 2 - 0.3), ch + 0.05 + 0.06, cz + 0.05);
+    for (let k = 0; k < 3; k++) part(sr.rand() < 0.4 && !off ? cycle[(i + k) % N] : sr.pick(stock), sr.range(0.15, 0.3), sr.range(0.1, 0.25), 0.2, sr.range(-w / 2 + 0.3, w / 2 - 0.3), ch + 0.05 + 0.06, cz + 0.05);
     b.spot(`v_${id}`, x + 0.3 * c, z - 0.3 * sn);
   });
   for (const [x, z, n] of EXCHANGE.scatter) if (!EXCHANGE.lanes.some(([x0, z0, x1, z1]) => x > x0 - 0.8 && x < x1 + 0.8 && z > z0 - 0.8 && z < z1 + 0.8)) crates(b, PM, x, z, n); // loose stacks never stand in the walking lanes (the debris walls are the only thing in the way)
