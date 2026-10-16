@@ -39,6 +39,7 @@ export const MARKET1_ART = { base: 'sprites/market1', cell: 64, pxPerUnit: 24, f
 export const MARKET7_ART = { ...MARKET1_ART, base: 'sprites/market7', cell: 48, frames: 1, foot: 1 }; // market7 = Pim, the umbrella seller (short, red tee, stovepipe hat): a single row of 8 stills, no idle frames yet; feet 1 px above the cell bottom
 export const MARKET6_ART = { ...MARKET1_ART, base: 'sprites/market6', cell: 80, foot: 16 }; // market6 = Oyo, the noodle seller (potbelly, dirty tee, flip-flops): 80 px cells, feet 16 px above the cell bottom
 export const MARKET5_ART = { ...MARKET1_ART, base: 'sprites/market5', foot: 10 }; // market5 = Ruth, the jewellery seller (gray long hair, glasses, red tee); her feet sit 10 px above the cell bottom
+export const DEALER_ART = { ...MARKET1_ART, base: 'sprites/dealer', cell: 68, fps: 8, frames: 8, foot: 11 }; // the implant dealer: 68 px cells, 8-frame idle, feet 11 px above the cell bottom (portrait still to come)
 export const MARKET4_ART = { ...MARKET1_ART, base: 'sprites/market4', cell: 68, fps: 8, frames: 8 }; // market4 = Slate, the ID printer (tattooed, eyepiece): 68 px cells, 8-frame idle
 export const MARKET3_ART = { ...MARKET1_ART, base: 'sprites/market3' }; // market3 = Gutter, the parts seller (tank top, cybernetic arm)
 // Hale: eight 48 px rotation frames across one row; comms show the rear-left (north-west) view.
