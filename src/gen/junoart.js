@@ -78,20 +78,7 @@ export const loadDexSheet = () => loadSheet(DEX_ART, DEX_FRAMES, ['']);
 export const loadTeoSheet = () => loadSheet(TEO_ART, TEO_FRAMES, ['']);
 export const loadVendorSheet = () => loadKitSheet(VENDOR_ART);
 // The three Bureau auditors (chapter 2 ending): eight 48 px stills (<dir>.png) and a 4-frame breathing loop (64 px frames, idle-<dir>-<n>.png) for south, north and south-east; other directions hold their still.
-export const AUDITOR_ART = { base: 'sprites/auditors', size: 48, pxPerUnit: 24, fps: 4, frames: 4, loops: ['south', 'north', 'south-east'], dirs: JUNO_ART.dirs };
-export async function loadAuditorSheet(A = AUDITOR_ART) {
-  const S = A.size, url = (n) => `${import.meta.env.BASE_URL}${A.base}/${n}.png`, N = A.frames;
-  const stills = await Promise.all(A.dirs.map((d) => load(url(d))));
-  const loops = Object.fromEntries(await Promise.all(A.loops.map(async (d) => [d, await Promise.all(Array.from({ length: N }, (_, i) => load(url(`idle-${d}-${i}`))))])));
-  const canvas = Object.assign(document.createElement('canvas'), { width: S * N, height: S * A.dirs.length });
-  const ctx = canvas.getContext('2d');
-  A.dirs.forEach((d, row) => { for (let f = 0; f < N; f++) { const im = loops[d]?.[f] ?? stills[row]; ctx.drawImage(im, (im.width - S) / 2, (im.height - S) / 2, S, S, f * S, row * S, S, S); } });
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.magFilter = texture.minFilter = THREE.NearestFilter;
-  texture.generateMipmaps = false;
-  texture.colorSpace = THREE.SRGBColorSpace;
-  return { texture, canvas, frameW: S, frameH: S, pxPerUnit: A.pxPerUnit, dirs: 8, rows: {}, animRows: { idle: Object.fromEntries(A.dirs.map((d, i) => [d, i])) }, anims: { idle: { start: 0, frames: N } }, fps: A.fps };
-}
+export const AUDITOR_ART = { ...MARKET1_ART, base: 'sprites/auditors', foot: 11 }; // the three Bureau auditors share one owner sheet (64 px cells, 8 directions, 4-frame idle) and portrait
 export async function loadHaleSheet() {
   const A = HALE_ART, grid = await load(`${import.meta.env.BASE_URL}${A.base}/sheet.png`), imgs = {};
   A.dirs.forEach((dir, i) => {

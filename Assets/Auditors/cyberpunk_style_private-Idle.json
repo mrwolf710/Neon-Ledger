@@ -1,0 +1,109 @@
+{
+  "character": {
+    "id": "588cbf21-a740-4f5f-ad35-c53f0c175d43",
+    "name": "Idle",
+    "prompt": "cyberpunk style private investigator.  Dark blue trech coat.  Male.  Dark short hair.  pale.  Sleek, cool.  Dark pallette.",
+    "size": {
+      "width": 48,
+      "height": 48
+    },
+    "directions": 8,
+    "view": "low top-down"
+  },
+  "spritesheet": {
+    "path": "cyberpunk_style_private-Idle.png",
+    "cell_size": {
+      "width": 64,
+      "height": 64
+    },
+    "sheet_size": {
+      "width": 512,
+      "height": 576
+    },
+    "columns": 8,
+    "pivot": "cell-center",
+    "rows": [
+      {
+        "row": 0,
+        "type": "rotations",
+        "frame_count": 8,
+        "directions": [
+          "south",
+          "south-east",
+          "east",
+          "north-east",
+          "north",
+          "north-west",
+          "west",
+          "south-west"
+        ]
+      },
+      {
+        "row": 1,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "Breathing Idle",
+        "animation_group_id": "b81df070-d55f-4f9c-8a42-83ff405323fa",
+        "direction": "south"
+      },
+      {
+        "row": 2,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "Breathing Idle",
+        "animation_group_id": "b81df070-d55f-4f9c-8a42-83ff405323fa",
+        "direction": "south-east"
+      },
+      {
+        "row": 3,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "Breathing Idle",
+        "animation_group_id": "b81df070-d55f-4f9c-8a42-83ff405323fa",
+        "direction": "east"
+      },
+      {
+        "row": 4,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "Breathing Idle",
+        "animation_group_id": "b81df070-d55f-4f9c-8a42-83ff405323fa",
+        "direction": "north-east"
+      },
+      {
+        "row": 5,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "Breathing Idle",
+        "animation_group_id": "b81df070-d55f-4f9c-8a42-83ff405323fa",
+        "direction": "north"
+      },
+      {
+        "row": 6,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "Breathing Idle",
+        "animation_group_id": "b81df070-d55f-4f9c-8a42-83ff405323fa",
+        "direction": "north-west"
+      },
+      {
+        "row": 7,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "Breathing Idle",
+        "animation_group_id": "b81df070-d55f-4f9c-8a42-83ff405323fa",
+        "direction": "west"
+      },
+      {
+        "row": 8,
+        "type": "animation",
+        "frame_count": 4,
+        "animation": "Breathing Idle",
+        "animation_group_id": "b81df070-d55f-4f9c-8a42-83ff405323fa",
+        "direction": "south-west"
+      }
+    ]
+  },
+  "export_version": "1.0",
+  "export_date": "2026-10-16T22:23:20.217878+00:00"
+}
