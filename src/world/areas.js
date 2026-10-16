@@ -304,9 +304,9 @@ export const EXCHANGE = {
   // id, sign text, x, z (the vendor's spot), side (-1: customers come from +z, +1: from -z), width, yaw offset (radians), style (awning | kiosk | cart).
   // Deliberately uneven: no two booths share a width, angle or style for long, and none sit on a grid. Placeholder stock; the cast list is in docs/chapter-2.md.
   booths: [
-    ['echoes', 'ECHOES', -10.4, -8.9, -1, 3.6, 0.10, 'kiosk'], ['sauce', 'HOT SAUCE', -4.2, -8.2, -1, 2.6, -0.14, 'cart'], ['noodles', 'NOODLES', 3.4, -9.1, -1, 3.0, 0.08, 'awning'], ['tarot', 'TAROT', 10.1, -8.4, -1, 3.8, -0.12, 'kiosk'],
-    ['parts', 'PARTS', -9.4, 8.7, 1, 3.4, -0.16, 'awning'], ['jewels', 'JEWELS', -2.6, 8.2, 1, 2.4, 0.2, 'cart'], ['umbrellas', 'UMBRELLAS', 4.6, 8.9, 1, 3.8, 0.09, 'kiosk'], ['idprint', 'ID PRINT', 11.2, 8.0, 1, 2.8, -0.22, 'awning'],
-    ['cables', 'CABLES', -4.6, -2.9, -1, 3.0, 0.42, 'awning'], ['stim', 'STIM', 4.0, -2.0, -1, 2.5, -0.34, 'cart'], ['drones', 'DRONES', -3.4, 3.4, 1, 3.5, 0.19, 'kiosk'], ['flowers', 'FLOWERS', 5.2, 3.2, 1, 2.8, 0.22, 'cart'],
+    ['echoes', 'ECHO CHAMBER', -10.4, -8.9, -1, 3.6, 0.10, 'kiosk'], ['sauce', 'SAUCY BUSINESS', -4.2, -8.2, -1, 2.6, -0.14, 'cart'], ['noodles', 'SLURP CITY', 3.4, -9.1, -1, 3.0, 0.08, 'awning'], ['tarot', 'TAROT OR NOT', 10.1, -8.4, -1, 3.8, -0.12, 'kiosk'],
+    ['parts', 'PART TIME PARTS', -9.4, 8.7, 1, 3.4, -0.16, 'awning'], ['jewels', 'BLING THING', -2.6, 8.2, 1, 2.4, 0.2, 'cart'], ['umbrellas', 'RAIN CHECK', 4.6, 8.9, 1, 3.8, 0.09, 'kiosk'], ['idprint', 'FAUX REAL', 11.2, 8.0, 1, 2.8, -0.22, 'awning'],
+    ['cables', 'CABLE GUY', -4.6, -2.9, -1, 3.0, 0.42, 'awning'], ['stim', 'STIMULATING STIMS', 4.0, -2.0, -1, 2.5, -0.34, 'cart'], ['drones', 'DRONE ZONE', -3.4, 3.4, 1, 3.5, 0.19, 'kiosk'], ['flowers', 'FLOWERS FOR HOURS', 5.2, 3.2, 1, 2.8, 0.22, 'cart'],
   ],
   junk: { small: 90, large: 14, seedLabel: 'junk' },            // how much loose clutter litters the square (placed with the seeded rng, so it is the same every run)
   scatter: [[-12.4, -4.5, 3], [-12.6, 5.4, 2], [12.8, -3.6, 2], [13.2, 3.8, 3], [0.6, 5.7, 1], [-0.8, -5.6, 2], [8.2, 0.6, 1]],   // loose crate stacks: x, z, height in crates
@@ -324,6 +324,7 @@ function exchange(M, rng) {
     const yaw = rot + (side === 1 ? Math.PI : 0), c = Math.cos(yaw), sn = Math.sin(yaw), mat = cycle[i % N];
     // part in the booth's own frame: lx along the counter, lz toward the customer (+z), rotated into the world with the booth.
     const part = (m, sx, sy, sz, lx, ly, lz, ry = 0, uv = true) => b.box(m, sx, sy, sz, x + lx * c + lz * sn, ly, z - lx * sn + lz * c, 0, yaw + ry, uv); // uv false = the texture fills each face (sign text)
+    const fit = (aw, ah) => { const a = (text.length * 4 + 3) / 9, sw = Math.min(aw, ah * a); return [sw, sw / a]; }; // sign size that keeps the text's proportions, so long names get smaller instead of squashed
     const cd = style === 'cart' ? 0.8 : 0.9, ch = style === 'cart' ? 0.85 : 1.0, cz = 0.9;               // counter depth, height, distance from the vendor
     part(PM.wood, w, ch, cd, 0, ch / 2, cz); part(mat, w, 0.05, 0.06, 0, ch + 0.02, cz + cd / 2);          // counter + thin neon edge on the customer side
     const hw = Math.abs(c) * w / 2 + Math.abs(sn) * cd / 2, hd = Math.abs(sn) * w / 2 + Math.abs(c) * cd / 2; // axis-aligned bounds of the rotated counter
@@ -331,14 +332,14 @@ function exchange(M, rng) {
     if (style === 'awning') {
       for (const sx of [-1, 1]) part(PM.pole, 0.08, 2.3, 0.08, sx * (w / 2 - 0.05), 1.15, cz);
       part(mat, w, 0.08, 0.08, 0, 2.3, cz);
-      part(signMat(text, tint[i % N]), w - 0.3, 0.55, 0.06, 0, 2.75, -0.2, 0, false);
+      part(signMat(text, tint[i % N]), ...fit(w - 0.3, 0.55), 0.06, 0, 2.75, -0.2, 0, false);
     } else if (style === 'kiosk') {
       for (const sx of [-1, 1]) for (const lz of [-0.4, cz + 0.3]) part(PM.pole, 0.08, 2.2, 0.08, sx * (w / 2 - 0.05), 1.1, lz);
       part(PM.wood, w + 0.3, 0.08, cz + 1.0, 0, 2.24, cz / 2 - 0.05); part(mat, w + 0.3, 0.05, 0.05, 0, 2.2, cz + 0.45);
-      part(signMat(text, tint[i % N]), w - 0.4, 0.5, 0.06, 0, 2.7, -0.05, 0, false);
+      part(signMat(text, tint[i % N]), ...fit(w - 0.4, 0.5), 0.06, 0, 2.7, -0.05, 0, false);
     } else { // cart: low, with two wheels and a tall sign on a pole
       for (const sx of [-1, 1]) b.add(PM.pole, new THREE.CylinderGeometry(0.22, 0.22, 0.08, 10).rotateZ(Math.PI / 2).rotateY(yaw).translate(x + sx * (w / 2) * c + cz * sn, 0.22, z - sx * (w / 2) * sn + cz * c));
-      part(PM.pole, 0.07, 2.0, 0.07, w / 2 - 0.1, 1.0, cz - 0.1); part(signMat(text, tint[i % N]), 1.5, 0.5, 0.06, w / 2 - 0.7, 2.1, cz - 0.1, 0, false);
+      part(PM.pole, 0.07, 2.0, 0.07, w / 2 - 0.1, 1.0, cz - 0.1); part(signMat(text, tint[i % N]), ...fit(2.2, 0.5), 0.06, w / 2 - 0.7, 2.1, cz - 0.1, 0, false);
     }
     part(PM.crates[i % PM.crates.length], 0.6, 0.6, 0.6, -w / 2 + 0.4, 0.3, -0.5);
     // The back of the booth: a backboard with three shelves of goods, crate piles at both ends and a few wares on the counter, so it never looks open.
