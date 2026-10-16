@@ -102,7 +102,7 @@ const interactions = createInteractions(scene);
 const issuesOn = issuesEnabled(); // F9 / "!" / both stick clicks: the issue box (dev server or ?issues)
 const touchUI = createTouchUI(input, { issues: issuesOn });
 const saves = createSaves();
-const title = createTitle(() => synth.start(), !!saves.latest());
+const title = createTitle(() => synth.start(), { saves, synth });
 const sfx = createSfx(synth), music = createMusic(synth);
 const hud = createHud(world.current.collision);
 const menu = createMenu({ synth, saves, snapshot: () => snapshotGame(), onLoad: (d) => loadGame(d) });
@@ -187,7 +187,7 @@ function loadGame(s) {
 }
 title.started.then(() => {
   if (trailerOn) { beats.skipOpen(); const q = new URLSearchParams(location.search); setTimeout(() => trailer.start(Math.max(0, (parseInt(q.get('trailer')) || 1) - 1)), (parseFloat(q.get('delay')) || 8) * 1000); return; } // 8 s head start (press a key, then start recording); ?delay=N changes it
-  if (title.continuing && saves.latest()) { beats.skipOpen(); loadGame(saves.latest().data); return; }
+  if (title.save) { beats.skipOpen(); loadGame(title.save); return; }
   if (startParam && world.areas[startParam]) {
     beats.skipOpen();
     const sp = world.spot(startParam, 'start'); world.jump(startParam, world.exits.find((x) => x.to === startParam)?.spawn ?? (sp ? [sp.x, sp.z, Math.PI / 2] : null)); // areas with no door in (the Exchange) use their 'start' spot
