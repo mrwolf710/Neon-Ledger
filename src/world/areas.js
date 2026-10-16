@@ -317,7 +317,7 @@ export const EXCHANGE = {
     [-14.9, -2.6, -11.4, -2.6], [-11.4, -2.6, -11.4, 3.0],                            // the entrance corridor: shut to the north and east, so the only way is south
     [-11.4, 3.0, -7.2, 3.0], [-7.2, -10.3, -7.2, -1.0], [-7.2, 1.5, -7.2, 3.4],           // the left lane (up to Echo Chamber) is shut off from the south and the north lane; its only door is the middle aisle's west end
     [-7.2, -2.4, -6.2, -2.4], [-3.0, -2.4, 2.7, -2.4], [5.3, -2.4, 11.5, -2.4],           // close the gaps between the north-middle booths (Cables, Stim)
-    [-7.2, 3.4, -5.3, 3.4], [-1.5, 3.4, 3.7, 3.4], [6.6, 3.4, 8.0, 3.4],                  // close the gaps between the south-middle booths (Drones, Flowers): the aisle opens only at its two ends
+    [-7.2, 3.4, -5.3, 3.4], [-1.5, 3.4, 3.7, 3.4], [6.6, 3.4, 11.5, 3.4],                  // close the gaps between the south-middle booths (Drones, Flowers): the aisle opens only at its two ends
   ],
   lanes: [[-7.2, -7.2, 15, -4.0], [-7.5, -1.2, 15, 1.7], [-15, 3.0, 15, 7.2], [11, -10.5, 15, 10.5], [-11.4, -10.5, -7.2, 3.0], [-15, -2.6, -11.4, 4.2]],   // x0, z0, x1, z1: north lane, middle aisle, south lane, east column, left lane, entrance corridor
   barrierStep: 0.62,                // spacing of the piles along a wall
