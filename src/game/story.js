@@ -456,7 +456,9 @@ export const ECHOES = {
     ],
     voices: [
       { t0: 0.6, t1: 2.2, speaker: 'dex', text: 'Not... you.' },
+      { t0: 2.3, t1: 3.7, speaker: 'juno', text: '(Dex, dying. A woman in a grey coat is reaching for his implant.)' },
       { t0: 3.8, t1: 5.0, speaker: 'dex', text: "Don't. I recorded it. All of it." },
+      { t0: 5.3, t1: 7, speaker: 'juno', text: '(The memory cuts off. The woman in grey... is me.)' },
     ],
     seams: [5.2], tags: [],
     cues: [{ t: 5.2, name: 'stinger' }],
