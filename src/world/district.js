@@ -38,7 +38,7 @@ export const CAST = [
   { id: 'mari', area: 'exchange', at: 'v_sauce', sheet: 'vendor', facing: 0, booth: true },
   { id: 'lux', area: 'exchange', at: 'v_tarot', sheet: 'walkerC', facing: 0, booth: true },
   { id: 'tobbo', area: 'exchange', at: 'v_cables', facing: 0, booth: true }, // own art: sheets.tobbo (public/sprites/market1)
-  { id: 'gutter', area: 'exchange', at: 'v_parts', sheet: 'walkerA', facing: Math.PI, booth: true },
+  { id: 'gutter', area: 'exchange', at: 'v_parts', facing: Math.PI, booth: true }, // own art: sheets.gutter (public/sprites/market3)
   { id: 'pim', area: 'exchange', at: 'v_umbrellas', sheet: 'walkerC', facing: Math.PI, booth: true },
   { id: 'oyo', area: 'exchange', at: 'v_noodles', sheet: 'walkerA', facing: 0, booth: true },
   { id: 'ruth', area: 'exchange', at: 'v_jewels', sheet: 'vendor', facing: Math.PI, booth: true },
