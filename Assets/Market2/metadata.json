@@ -1,0 +1,36 @@
+{
+  "group_id": "da27c4f5-4e8a-4ed1-b128-9b9138b3d631",
+  "states": [
+    {
+      "character": {
+        "id": "22531f9a-4110-409c-b3ed-a0f90a0b1366",
+        "name": "Standing, looking ba",
+        "prompt": "Crazy hacker cyberpunk, with headgear and a black leather jacket, black leather pants and black boots. And a red shirt.  Spiky black hair.  Very pale.",
+        "size": {
+          "width": 48,
+          "height": 48
+        },
+        "template_id": "mannequin",
+        "directions": 8,
+        "view": "low top-down",
+        "created_at": "2026-10-16T15:41:12.178984+00:00"
+      },
+      "folder": "Standing_looking_ba",
+      "frames": {
+        "rotations": {
+          "south": "Standing_looking_ba/rotations/south.png",
+          "south-east": "Standing_looking_ba/rotations/south-east.png",
+          "east": "Standing_looking_ba/rotations/east.png",
+          "north-east": "Standing_looking_ba/rotations/north-east.png",
+          "north": "Standing_looking_ba/rotations/north.png",
+          "north-west": "Standing_looking_ba/rotations/north-west.png",
+          "west": "Standing_looking_ba/rotations/west.png",
+          "south-west": "Standing_looking_ba/rotations/south-west.png"
+        },
+        "animations": {}
+      }
+    }
+  ],
+  "export_version": "3.1",
+  "export_date": "2026-10-16T15:44:18.187442"
+}
