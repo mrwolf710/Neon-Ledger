@@ -2,7 +2,7 @@
   "issues": [
     {
       "id": 1,
-      "status": "open",
+      "status": "fixed",
       "text": "wasd test: the cat clips into the wall",
       "at": "2026-10-16T12:29:50.101Z",
       "context": {
@@ -20,11 +20,12 @@
         "flags": 7,
         "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.",
         "device": "keyboard"
-      }
+      },
+      "note": "Test entry made while building the issue box; not a real problem."
     },
     {
       "id": 2,
-      "status": "open",
+      "status": "fixed",
       "text": "second issue by clicking OK",
       "at": "2026-10-16T12:29:53.047Z",
       "context": {
@@ -42,11 +43,12 @@
         "flags": 7,
         "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.",
         "device": "keyboard"
-      }
+      },
+      "note": "Test entry made while building the issue box; not a real problem."
     },
     {
       "id": 3,
-      "status": "open",
+      "status": "fixed",
       "text": "(no text: saved from a gamepad)",
       "at": "2026-10-16T12:29:56.462Z",
       "context": {
@@ -64,11 +66,12 @@
         "flags": 7,
         "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.",
         "device": "gamepad"
-      }
+      },
+      "note": "Test entry made while building the issue box; not a real problem."
     },
     {
       "id": 4,
-      "status": "open",
+      "status": "fixed",
       "text": "touch issue",
       "at": "2026-10-16T12:30:10.441Z",
       "context": {
@@ -86,7 +89,8 @@
         "flags": 7,
         "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.",
         "device": "keyboard"
-      }
+      },
+      "note": "Test entry made while building the issue box; not a real problem."
     }
   ]
 }

@@ -42,3 +42,17 @@ console.log('board ok');
   assert.equal(add(l2.link('bureau_woman', 'suit_gossip')).kind, 'solved', 'optional pair');
   assert.equal(l2.link('echo_refused', 'bureau_woman').kind, 'wrong', 'crossing the pairs is wrong');
 }
+
+// Chapter 1: six clues -> three pairs -> a level-2 pair (the same shape as chapter 2).
+{
+  const have = new Set(['door_unlocked', 'two_voices', 'burned_port', 'gloved_hand', 'kit_outside', 'kit_name']);
+  const l1 = createBoardLogic(BOARD, (id) => have.has(id));
+  const add = (r) => { if (r.kind === 'solved') have.add(r.conclusion.result); return r; };
+  assert.equal(l1.link('burned_port', 'door_unlocked').kind, 'wrong', 'crossing pairs is wrong');
+  assert.equal(add(l1.link('door_unlocked', 'two_voices')).kind, 'solved', 'key pair');
+  assert.equal(l1.link('override_used', 'kit_alley').kind, 'wrong', 'level two needs both level-1 results');
+  assert.equal(add(l1.link('gloved_hand', 'burned_port')).kind, 'solved', 'override pair, either order');
+  assert.equal(add(l1.link('kit_name', 'kit_outside')).kind, 'solved', 'Kit pair');
+  const last = add(l1.link('override_used', 'kit_alley'));
+  assert.equal(last.kind, 'solved', 'level two locks'); assert.ok(last.conclusion.effects.some((e) => e.setFlag === 'kit_deduced'), 'it names Kit');
+}
