@@ -44,8 +44,8 @@ export const CAST = [
   { id: 'ruth', area: 'exchange', at: 'v_jewels', sheet: 'vendor', facing: Math.PI, booth: true },
   { id: 'slate', area: 'exchange', at: 'v_idprint', sheet: 'walkerD', facing: Math.PI, booth: true },
   { id: 'jinx', area: 'exchange', at: 'v_stim', sheet: 'walkerB', facing: 0, booth: true },
-  { id: 'bolt', area: 'exchange', at: 'v_drones', sheet: 'walkerA', facing: 0, booth: true },
-  { id: 'petra', area: 'exchange', at: 'v_flowers', sheet: 'vendor', facing: 0, booth: true },
+  { id: 'bolt', area: 'exchange', at: 'v_drones', sheet: 'walkerA', facing: Math.PI, booth: true },
+  { id: 'petra', area: 'exchange', at: 'v_flowers', sheet: 'vendor', facing: Math.PI, booth: true },
   // The implant dealer's shop and the scripted people of the chapter 2 ending (beats.dealerScene): borrowed sheets until the owner draws them. ambient = no Talk prompt.
   { id: 'dealer', area: 'dealer', at: 'dealer', sheet: 'walkerC', facing: 0, booth: true },
   { id: 'fixer', area: 'dealer', at: 'fixer', sheet: 'walkerB', facing: -Math.PI / 4, ambient: true },

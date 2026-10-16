@@ -306,7 +306,7 @@ export const EXCHANGE = {
   booths: [
     ['echoes', 'ECHOES', -10.4, -8.9, -1, 3.6, 0.10, 'kiosk'], ['sauce', 'HOT SAUCE', -4.2, -8.2, -1, 2.6, -0.14, 'cart'], ['noodles', 'NOODLES', 3.4, -9.1, -1, 3.0, 0.08, 'awning'], ['tarot', 'TAROT', 10.1, -8.4, -1, 3.8, -0.12, 'kiosk'],
     ['parts', 'PARTS', -9.4, 8.7, 1, 3.4, -0.16, 'awning'], ['jewels', 'JEWELS', -2.6, 8.2, 1, 2.4, 0.2, 'cart'], ['umbrellas', 'UMBRELLAS', 4.6, 8.9, 1, 3.8, 0.09, 'kiosk'], ['idprint', 'ID PRINT', 11.2, 8.0, 1, 2.8, -0.22, 'awning'],
-    ['cables', 'CABLES', -4.6, -2.9, -1, 3.0, 0.42, 'awning'], ['stim', 'STIM', 4.0, -2.0, -1, 2.5, -0.34, 'cart'], ['drones', 'DRONES', -3.4, 3.4, -1, 3.5, -0.22, 'kiosk'], ['flowers', 'FLOWERS', 5.2, 3.2, -1, 2.8, 0.5, 'cart'],
+    ['cables', 'CABLES', -4.6, -2.9, -1, 3.0, 0.42, 'awning'], ['stim', 'STIM', 4.0, -2.0, -1, 2.5, -0.34, 'cart'], ['drones', 'DRONES', -3.4, 3.4, 1, 3.5, 0.19, 'kiosk'], ['flowers', 'FLOWERS', 5.2, 3.2, 1, 2.8, 0.22, 'cart'],
   ],
   junk: { small: 90, large: 14, seedLabel: 'junk' },            // how much loose clutter litters the square (placed with the seeded rng, so it is the same every run)
   scatter: [[-12.4, -4.5, 3], [-12.6, 5.4, 2], [12.8, -3.6, 2], [13.2, 3.8, 3], [0.6, 5.7, 1], [-0.8, -5.6, 2], [8.2, 0.6, 1]],   // loose crate stacks: x, z, height in crates
