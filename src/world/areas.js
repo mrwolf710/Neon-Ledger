@@ -299,7 +299,8 @@ function car(M) {
 // The implant dealer's shopfront sits in the north-middle gap. First pass: placeholder booths with sign text, lights and collision. Vendors are cast later (spots 'v_<id>', each facing its counter's customer side).
 export const EXCHANGE = {
   half: [15, 10.5],                 // square half-size (x, z)
-  neon: { red: 0xff3b2f, orange: 0xff8a1f, yellow: 0xffd23a },        // the palette of the whole square: reds, oranges, yellows
+  neon: { red: 0xff3b2f, orange: 0xff8a1f, yellow: 0xffd23a, blue: 0x2f8bff, green: 0x2fe07a, purple: 0xa43bff },   // the palette of the whole square; booths cycle through `order`
+  order: ['red', 'blue', 'yellow', 'purple', 'orange', 'green'],
   // id, sign text, x, z (the vendor's spot), side (-1: customers come from +z, +1: from -z), width, yaw offset (radians), style (awning | kiosk | cart).
   // Deliberately uneven: no two booths share a width, angle or style for long, and none sit on a grid. Placeholder stock; the cast list is in docs/chapter-2.md.
   booths: [
@@ -313,13 +314,13 @@ export const EXCHANGE = {
 function exchange(M, rng) {
   const b = begin('exchange'), PM = propMats(M), [hx, hz] = EXCHANGE.half, glow = BUILDINGS.windowGlow;
   const neon = Object.fromEntries(Object.entries(EXCHANGE.neon).map(([k, c]) => [k, new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(glow) })]));
-  const cycle = [neon.red, neon.orange, neon.yellow], tint = [EXCHANGE.neon.red, EXCHANGE.neon.orange, EXCHANGE.neon.yellow];
+  const cycle = EXCHANGE.order.map((k) => neon[k]), tint = EXCHANGE.order.map((k) => EXCHANGE.neon[k]), N = cycle.length;
   floor(b, M.sidewalk, -hx, -hz, hx, hz);
   for (const z of [-hz - T / 2, hz + T / 2]) wallX(b, M, z, -hx - T, hx + T, [], { h: 1.2, mat: M.walls[0] });
   wallZ(b, M, -hx - T / 2, -hz, hz, [[-1.2, 1.2]], { h: 1.2, mat: M.walls[0] });                   // west: the way in (from the car)
-  for (const [x, z, ry, len] of [[-6, 1, 0.5, 6], [3, -5.5, -0.35, 5], [7, 6, 0.8, 4]]) b.box(neon.orange, len, 0.04, 0.05, x, 0.02, z, 0, ry); // a few glowing floor strips at odd angles
+  for (const [x, z, ry, len, col] of [[-6, 1, 0.5, 6, neon.blue], [3, -5.5, -0.35, 5, neon.purple], [7, 6, 0.8, 4, neon.green]]) b.box(col, len, 0.04, 0.05, x, 0.02, z, 0, ry); // a few glowing floor strips at odd angles
   EXCHANGE.booths.forEach(([id, text, x, z, side, w, rot, style], i) => {
-    const yaw = rot + (side === 1 ? Math.PI : 0), c = Math.cos(yaw), sn = Math.sin(yaw), mat = cycle[i % 3];
+    const yaw = rot + (side === 1 ? Math.PI : 0), c = Math.cos(yaw), sn = Math.sin(yaw), mat = cycle[i % N];
     // part in the booth's own frame: lx along the counter, lz toward the customer (+z), rotated into the world with the booth.
     const part = (m, sx, sy, sz, lx, ly, lz, ry = 0, uv = true) => b.box(m, sx, sy, sz, x + lx * c + lz * sn, ly, z - lx * sn + lz * c, 0, yaw + ry, uv); // uv false = the texture fills each face (sign text)
     const cd = style === 'cart' ? 0.8 : 0.9, ch = style === 'cart' ? 0.85 : 1.0, cz = 0.9;               // counter depth, height, distance from the vendor
@@ -329,14 +330,14 @@ function exchange(M, rng) {
     if (style === 'awning') {
       for (const sx of [-1, 1]) part(PM.pole, 0.08, 2.3, 0.08, sx * (w / 2 - 0.05), 1.15, cz);
       part(mat, w, 0.08, 0.08, 0, 2.3, cz);
-      part(signMat(text, tint[i % 3]), w - 0.3, 0.55, 0.06, 0, 2.75, -0.2, 0, false);
+      part(signMat(text, tint[i % N]), w - 0.3, 0.55, 0.06, 0, 2.75, -0.2, 0, false);
     } else if (style === 'kiosk') {
       for (const sx of [-1, 1]) for (const lz of [-0.4, cz + 0.3]) part(PM.pole, 0.08, 2.2, 0.08, sx * (w / 2 - 0.05), 1.1, lz);
       part(PM.wood, w + 0.3, 0.08, cz + 1.0, 0, 2.24, cz / 2 - 0.05); part(mat, w + 0.3, 0.05, 0.05, 0, 2.2, cz + 0.45);
-      part(signMat(text, tint[i % 3]), w - 0.4, 0.5, 0.06, 0, 2.7, -0.05, 0, false);
+      part(signMat(text, tint[i % N]), w - 0.4, 0.5, 0.06, 0, 2.7, -0.05, 0, false);
     } else { // cart: low, with two wheels and a tall sign on a pole
       for (const sx of [-1, 1]) b.add(PM.pole, new THREE.CylinderGeometry(0.22, 0.22, 0.08, 10).rotateZ(Math.PI / 2).rotateY(yaw).translate(x + sx * (w / 2) * c + cz * sn, 0.22, z - sx * (w / 2) * sn + cz * c));
-      part(PM.pole, 0.07, 2.0, 0.07, w / 2 - 0.1, 1.0, cz - 0.1); part(signMat(text, tint[i % 3]), 1.5, 0.5, 0.06, w / 2 - 0.7, 2.1, cz - 0.1, 0, false);
+      part(PM.pole, 0.07, 2.0, 0.07, w / 2 - 0.1, 1.0, cz - 0.1); part(signMat(text, tint[i % N]), 1.5, 0.5, 0.06, w / 2 - 0.7, 2.1, cz - 0.1, 0, false);
     }
     part(PM.crates[i % PM.crates.length], 0.6, 0.6, 0.6, -w / 2 + 0.4, 0.3, -0.5);
     b.spot(`v_${id}`, x + 0.3 * c, z - 0.3 * sn);
@@ -344,7 +345,7 @@ function exchange(M, rng) {
   for (const [x, z, n] of EXCHANGE.scatter) crates(b, PM, x, z, n);
   // Random junk: the square should feel chaotic. Clutter keeps out of the booths, the entrance and the dealer's doorway; small pieces never block, large ones do.
   const jr = rng.fork(EXCHANGE.junk.seedLabel), jstd = (color, rough = 0.8) => new THREE.MeshStandardMaterial({ color, roughness: rough });
-  const JM = { tarp: [jstd(P.rust2), jstd(P.sodium0), jstd(P.rust1), jstd(P.magentaDeep)], barrel: jstd(P.rust1, 0.6), drum: jstd(P.sodium0, 0.5), can: jstd(P.grey3, 0.4) };
+  const JM = { tarp: [jstd(P.rust2), jstd(P.sodium0), jstd(0x2a4f8a), jstd(P.magentaDeep), jstd(0x2c6b4a)], barrel: jstd(P.rust1, 0.6), drum: jstd(P.sodium0, 0.5), can: jstd(P.grey3, 0.4) };
   const booths = EXCHANGE.booths.map(([, , x, z, , w]) => [x, z, w / 2 + 1.5]);
   const free = (x, z, r) => Math.abs(x) < hx - 0.7 && Math.abs(z) < hz - 0.7 && !(x < -11 && Math.abs(z) < 3) && !(Math.abs(x) < 3.2 && z < -hz + 3.4)
     && booths.every(([bx, bz, br]) => Math.hypot(x - bx, z - bz) > br + r);
@@ -377,8 +378,8 @@ function exchange(M, rng) {
   b.box(neon.red, 1.1, 2.0, 0.06, 0, 1.0, -hz + 1.03);
   b.box(signMat('IMPLANTS', EXCHANGE.neon.red), 2.4, 0.6, 0.06, 0, 3.7, -hz + 1.0, 0, 0, false);
   b.box(M.litCool, 1.4, 0.03, 0.8, 0, 0.02, -hz + 1.6);
-  b.light(0xff3b2f, 14, 0, 2.6, -8); b.light(0xffa23a, 16, -8, 3.2, -4); b.light(0xff6a1f, 16, 8, 3.2, 4); b.light(0xffd23a, 14, 0, 3.4, 0);
-  b.light(0xff6a1f, 12, -8, 3.2, 5); b.light(0xff3b2f, 12, 8, 3.2, -4); b.light(0xffd23a, 10, -13, 2.6, 0);
+  b.light(0xff3b2f, 14, 0, 2.6, -8); b.light(0x2f8bff, 16, -8, 3.2, -4); b.light(0xa43bff, 16, 8, 3.2, 4); b.light(0xffd23a, 14, 0, 3.4, 0);
+  b.light(0x2fe07a, 12, -8, 3.2, 5); b.light(0xff6a1f, 12, 8, 3.2, -4); b.light(0xffd23a, 10, -13, 2.6, 0);
   b.steam(-6, 0, -5.2); b.steam(6, 0, 5.2);
   b.spot('start', -12.5, 0); b.spot('dealerDoor', 0, -hz + 1.7);
   return finish('exchange', b, [-hx, -hz, hx, hz]);
