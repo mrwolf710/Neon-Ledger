@@ -368,7 +368,7 @@ function exchange(M, rng) {
     for (let k = 0; k < 3; k++) part(sr.rand() < 0.4 ? cycle[(i + k) % N] : sr.pick(stock), sr.range(0.15, 0.3), sr.range(0.1, 0.25), 0.2, sr.range(-w / 2 + 0.3, w / 2 - 0.3), ch + 0.05 + 0.06, cz + 0.05);
     b.spot(`v_${id}`, x + 0.3 * c, z - 0.3 * sn);
   });
-  for (const [x, z, n] of EXCHANGE.scatter) crates(b, PM, x, z, n);
+  for (const [x, z, n] of EXCHANGE.scatter) if (!EXCHANGE.lanes.some(([x0, z0, x1, z1]) => x > x0 - 0.8 && x < x1 + 0.8 && z > z0 - 0.8 && z < z1 + 0.8)) crates(b, PM, x, z, n); // loose stacks never stand in the walking lanes (the debris walls are the only thing in the way)
   // Random junk: the square should feel chaotic. Clutter keeps out of the booths, the entrance and the dealer's doorway; small pieces never block, large ones do.
   const jr = rng.fork(EXCHANGE.junk.seedLabel), jstd = (color, rough = 0.8) => new THREE.MeshStandardMaterial({ color, roughness: rough });
   const JM = { tarp: [jstd(P.rust2), jstd(P.sodium0), jstd(0x2a4f8a), jstd(P.magentaDeep), jstd(0x2c6b4a)], barrel: jstd(P.rust1, 0.6), drum: jstd(P.sodium0, 0.5), can: jstd(P.grey3, 0.4) };
