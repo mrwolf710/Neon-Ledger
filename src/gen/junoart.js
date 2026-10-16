@@ -36,6 +36,7 @@ export const KIT_ART = { base: 'sprites/kit', cell: 68, pxPerUnit: 24, fps: 6, f
 export const VENDOR_ART = { base: 'sprites/vendor', cell: 64, pxPerUnit: 24, fps: 4, foot: 10, frames: 4, dirs: JUNO_ART.dirs };
 // Echo Exchange vendors drawn by the owner (public/sprites/<name>/sheet.png, same layout as the vendor: 64 px cells, row 0 = 8 stills, rows 1-8 = a 4-frame breathing loop). market1 = Tobbo, the cable seller.
 export const MARKET1_ART = { base: 'sprites/market1', cell: 64, pxPerUnit: 24, fps: 4, foot: 11, frames: 4, dirs: JUNO_ART.dirs };
+export const MARKET7_ART = { ...MARKET1_ART, base: 'sprites/market7', cell: 48, frames: 1, foot: 1 }; // market7 = Pim, the umbrella seller (short, red tee, stovepipe hat): a single row of 8 stills, no idle frames yet; feet 1 px above the cell bottom
 export const MARKET6_ART = { ...MARKET1_ART, base: 'sprites/market6', cell: 80, foot: 16 }; // market6 = Oyo, the noodle seller (potbelly, dirty tee, flip-flops): 80 px cells, feet 16 px above the cell bottom
 export const MARKET5_ART = { ...MARKET1_ART, base: 'sprites/market5', foot: 10 }; // market5 = Ruth, the jewellery seller (gray long hair, glasses, red tee); her feet sit 10 px above the cell bottom
 export const MARKET4_ART = { ...MARKET1_ART, base: 'sprites/market4', cell: 68, fps: 8, frames: 8 }; // market4 = Slate, the ID printer (tattooed, eyepiece): 68 px cells, 8-frame idle
@@ -117,8 +118,10 @@ export async function loadHaleSheet() {
 }
 export async function loadKitSheet(A = KIT_ART) {
   const img = await load(`${import.meta.env.BASE_URL}${A.base}/sheet.png`);
-  const canvas = Object.assign(document.createElement('canvas'), { width: img.width, height: img.height });
-  canvas.getContext('2d').drawImage(img, 0, 0);
+  const still = img.height <= A.cell; // stills-only sheet (one row of 8): stack them as the 8 idle rows
+  const canvas = Object.assign(document.createElement('canvas'), still ? { width: A.cell, height: A.cell * 9 } : { width: img.width, height: img.height });
+  if (still) A.dirs.forEach((d, i) => canvas.getContext('2d').drawImage(img, i * A.cell, 0, A.cell, A.cell, 0, (i + 1) * A.cell, A.cell, A.cell));
+  else canvas.getContext('2d').drawImage(img, 0, 0);
   const texture = new THREE.CanvasTexture(canvas);
   texture.magFilter = texture.minFilter = THREE.NearestFilter;
   texture.generateMipmaps = false;
