@@ -8,7 +8,7 @@ export const ISSUES = {
   toastSeconds: 2.4,
 };
 
-export const issuesEnabled = () => import.meta.env.DEV || new URLSearchParams(location.search).has('issues');
+export const issuesEnabled = () => import.meta.env.MODE !== 'itch' && (import.meta.env.DEV || new URLSearchParams(location.search).has('issues')); // never in the itch.io build, not even with ?issues
 
 // context(): () => { ...whatever helps reproduce it } is called when the box opens, so it describes the moment you noticed the problem.
 export function createIssues({ input, context, toast }) {
