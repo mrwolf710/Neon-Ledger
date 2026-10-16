@@ -310,6 +310,15 @@ export const EXCHANGE = {
     ['parts', 'PART TIME PARTS', -9.4, 8.7, 1, 3.4, -0.16, 'awning'], ['jewels', 'BLING THING', -2.6, 8.2, 1, 2.4, 0.2, 'cart'], ['umbrellas', 'RAIN CHECK', 4.6, 8.9, 1, 3.8, 0.09, 'kiosk'], ['idprint', 'FAUX REAL', 11.2, 8.0, 1, 2.8, -0.22, 'awning'],
     ['cables', 'CABLE GUY', -4.6, -2.9, -1, 3.0, 0.42, 'awning'], ['stim', 'STIMULATING STIMS', 4.0, -2.0, -1, 2.5, -0.34, 'cart'], ['drones', 'DRONE ZONE', -3.4, 3.4, 1, 3.5, 0.19, 'kiosk'], ['flowers', 'FLOWERS FOR HOURS', 5.2, 3.2, 1, 2.8, 0.22, 'cart'],
   ],
+  // Back-alley debris walls (x0, z0, x1, z1): solid piles of crates, barrels and pallets that force one route. From the west entrance the only way is north, then east along the north lane,
+  // down the east wall (Tarot, ID Print), west along the middle aisle, out of its west end into the south lane and on to the bottom-left booth (Part Time Parts).
+  barriers: [
+    [-14.9, 2.6, -7.2, 2.6], [-7.2, -4.3, -7.2, 2.6],                                   // seal the entrance's south side and the west end of the middle aisle
+    [-7.2, -2.4, -6.2, -2.4], [-3.0, -2.4, 2.7, -2.4], [5.3, -2.4, 11.5, -2.4],           // close the gaps between the north-middle booths (Cables, Stim): the aisle opens only at its east end
+    [-1.5, 3.4, 3.7, 3.4], [6.6, 3.4, 8.0, 3.4], [8.0, 3.6, 8.0, 9.8],                    // close the gaps between the south-middle booths (Drones, Flowers) and cut the south lane at x 8
+  ],
+  lanes: [[-15, -7.2, 15, -4.0], [-7.5, -1.2, 15, 1.7], [-15, 4.2, 15, 7.2], [11, -10.5, 15, 10.5], [-15, -10.5, -11, 10.5]],   // x0, z0, x1, z1: north lane, middle aisle, south lane, east and west columns
+  barrierStep: 0.62,                // spacing of the piles along a wall
   junk: { small: 90, large: 14, seedLabel: 'junk' },            // how much loose clutter litters the square (placed with the seeded rng, so it is the same every run)
   scatter: [[-12.4, -4.5, 3], [-12.6, 5.4, 2], [12.8, -3.6, 2], [13.2, 3.8, 3], [0.6, 5.7, 1], [-0.8, -5.6, 2], [8.2, 0.6, 1]],   // loose crate stacks: x, z, height in crates
 };
@@ -363,7 +372,8 @@ function exchange(M, rng) {
   const JM = { tarp: [jstd(P.rust2), jstd(P.sodium0), jstd(0x2a4f8a), jstd(P.magentaDeep), jstd(0x2c6b4a)], barrel: jstd(P.rust1, 0.6), drum: jstd(P.sodium0, 0.5), can: jstd(P.grey3, 0.4) };
   const booths = EXCHANGE.booths.map(([, , x, z, , w]) => [x, z, w / 2 + 1.5]);
   const free = (x, z, r) => Math.abs(x) < hx - 0.7 && Math.abs(z) < hz - 0.7 && !(x < -11 && Math.abs(z) < 3) && !(Math.abs(x) < 3.2 && z < -hz + 3.4)
-    && booths.every(([bx, bz, br]) => Math.hypot(x - bx, z - bz) > br + r);
+    && booths.every(([bx, bz, br]) => Math.hypot(x - bx, z - bz) > br + r)
+    && (r < 0.5 || !EXCHANGE.lanes.some(([x0, z0, x1, z1]) => x > x0 - r && x < x1 + r && z > z0 - r && z < z1 + r)); // big (solid) junk keeps out of the lanes, so the debris walls are the only thing in the way
   const spot = (r) => { for (let t = 0; t < 40; t++) { const x = jr.range(-hx + 0.8, hx - 0.8), z = jr.range(-hz + 0.8, hz - 0.8); if (free(x, z, r)) return [x, z]; } return null; };
   const bigAt = [];
   for (let i = 0; i < EXCHANGE.junk.large; i++) {
@@ -387,6 +397,17 @@ function exchange(M, rng) {
     else if (kind === 'coil') b.add(JM.can, new THREE.CylinderGeometry(0.24, 0.24, 0.12, 8).translate(x, 0.06, z));
     else if (kind === 'can') b.add(jr.rand() < 0.5 ? JM.can : JM.drum, new THREE.CylinderGeometry(0.1, 0.1, 0.22, 7).translate(x, 0.11, z));
     else b.box(jr.pick(cycle), jr.range(0.15, 0.3), 0.05, jr.range(0.06, 0.12), x, 0.04, z, 0, ry); // a glowing shard of broken neon
+  }
+  // Debris walls: a pile every barrierStep along each segment, so the square is a winding back alley. Each pile is solid.
+  const br = rng.fork('barriers');
+  for (const [x0, z0, x1, z1] of EXCHANGE.barriers) {
+    const len = Math.hypot(x1 - x0, z1 - z0), n = Math.max(1, Math.round(len / EXCHANGE.barrierStep));
+    for (let k = 0; k <= n; k++) {
+      const x = x0 + (x1 - x0) * k / n + br.range(-0.08, 0.08), z = z0 + (z1 - z0) * k / n + br.range(-0.08, 0.08), kind = br.pick(['crates', 'crates', 'barrel', 'pallet']);
+      if (kind === 'crates') crates(b, PM, x, z, br.int(2, 3));
+      else if (kind === 'barrel') { b.add(br.rand() < 0.5 ? JM.barrel : JM.drum, new THREE.CylinderGeometry(0.3, 0.3, 1.0, 10).translate(x, 0.5, z)); b.block(x, z, 0.7, 0.7); }
+      else { b.box(PM.wood, 0.9, 0.14, 0.9, x, 0.07, z, 0, br.range(0, 3)); b.box(PM.crates[br.int(0, 2)], 0.7, 0.9, 0.7, x, 0.59, z, 0, br.range(0, 3)); b.block(x, z, 0.8, 0.8); }
+    }
   }
   // The implant dealer: a shopfront in the gap between the two middle north booths (faces +z, toward the camera; the interior is added later, the door is a glowing mat for now).
   b.box(M.walls[1], 2.6, 3.4, 1.0, 0, 1.7, -hz + 0.5); b.block(0, -hz + 0.5, 2.6, 1.0);

@@ -91,6 +91,28 @@
         "device": "keyboard"
       },
       "note": "Test entry made while building the issue box; not a real problem."
+    },
+    {
+      "id": 5,
+      "status": "open",
+      "text": "Let's make the market more of a back alley kind of thing.  Put enough debris in the way to where you have to go to the booths along the right wall first, then back down the middle, then to the first booth on the bottom left and all the way up to the last booth on the left",
+      "at": "2026-10-16T20:15:49.708Z",
+      "context": {
+        "area": "exchange",
+        "place": "The Echo Exchange",
+        "pos": [
+          744.4,
+          1
+        ],
+        "objective": "",
+        "clock": "06:27",
+        "quality": "high",
+        "build": "0a42e6b 09:51",
+        "facts": 11,
+        "flags": 37,
+        "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/15",
+        "device": "keyboard"
+      }
     }
   ]
 }
