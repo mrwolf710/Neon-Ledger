@@ -310,14 +310,16 @@ export const EXCHANGE = {
     ['parts', 'PART TIME PARTS', -9.4, 8.7, 1, 3.4, -0.16, 'awning'], ['jewels', 'BLING THING', -2.6, 8.2, 1, 2.4, 0.2, 'cart'], ['umbrellas', 'RAIN CHECK', 4.6, 8.9, 1, 3.8, 0.09, 'kiosk'], ['idprint', 'FAUX REAL', 11.2, 8.0, 1, 2.8, -0.22, 'awning'],
     ['cables', 'CABLE GUY', -4.6, -2.9, -1, 3.0, 0.42, 'awning'], ['stim', 'STIMULATING STIMS', 4.0, -2.0, -1, 2.5, -0.34, 'cart'], ['drones', 'DRONE ZONE', -3.4, 3.4, 1, 3.5, 0.19, 'kiosk'], ['flowers', 'FLOWERS FOR HOURS', 5.2, 3.2, 1, 2.8, 0.22, 'cart'],
   ],
-  // Back-alley debris walls (x0, z0, x1, z1): solid piles of crates, barrels and pallets that force one route. From the west entrance the only way is north, then east along the north lane,
-  // down the east wall (Tarot, ID Print), west along the middle aisle, out of its west end into the south lane and on to the bottom-left booth (Part Time Parts).
+  // Back-alley debris walls (x0, z0, x1, z1): solid piles of crates, barrels and pallets that force one route (camera faces north). From the west entrance the only way is south, then right (east) along the
+  // south lane (Part Time Parts, Bling Thing, Rain Check, Faux Real), up the east wall (Tarot or Not; the north lane and the dealer's door branch off to the west there), back west through the middle aisle
+  // and out of its west end into the left lane, which runs up the left side to Echo Chamber.
   barriers: [
-    [-14.9, 2.6, -7.2, 2.6], [-7.2, -4.3, -7.2, 2.6],                                   // seal the entrance's south side and the west end of the middle aisle
-    [-7.2, -2.4, -6.2, -2.4], [-3.0, -2.4, 2.7, -2.4], [5.3, -2.4, 11.5, -2.4],           // close the gaps between the north-middle booths (Cables, Stim): the aisle opens only at its east end
-    [-1.5, 3.4, 3.7, 3.4], [6.6, 3.4, 8.0, 3.4], [8.0, 3.6, 8.0, 9.8],                    // close the gaps between the south-middle booths (Drones, Flowers) and cut the south lane at x 8
+    [-14.9, -2.6, -11.4, -2.6], [-11.4, -2.6, -11.4, 3.0],                            // the entrance corridor: shut to the north and east, so the only way is south
+    [-11.4, 3.0, -7.2, 3.0], [-7.2, -10.3, -7.2, -1.0], [-7.2, 1.5, -7.2, 3.4],           // the left lane (up to Echo Chamber) is shut off from the south and the north lane; its only door is the middle aisle's west end
+    [-7.2, -2.4, -6.2, -2.4], [-3.0, -2.4, 2.7, -2.4], [5.3, -2.4, 11.5, -2.4],           // close the gaps between the north-middle booths (Cables, Stim)
+    [-7.2, 3.4, -5.3, 3.4], [-1.5, 3.4, 3.7, 3.4], [6.6, 3.4, 8.0, 3.4],                  // close the gaps between the south-middle booths (Drones, Flowers): the aisle opens only at its two ends
   ],
-  lanes: [[-15, -7.2, 15, -4.0], [-7.5, -1.2, 15, 1.7], [-15, 4.2, 15, 7.2], [11, -10.5, 15, 10.5], [-15, -10.5, -11, 10.5]],   // x0, z0, x1, z1: north lane, middle aisle, south lane, east and west columns
+  lanes: [[-7.2, -7.2, 15, -4.0], [-7.5, -1.2, 15, 1.7], [-15, 3.0, 15, 7.2], [11, -10.5, 15, 10.5], [-11.4, -10.5, -7.2, 3.0], [-15, -2.6, -11.4, 4.2]],   // x0, z0, x1, z1: north lane, middle aisle, south lane, east column, left lane, entrance corridor
   barrierStep: 0.62,                // spacing of the piles along a wall
   junk: { small: 90, large: 14, seedLabel: 'junk' },            // how much loose clutter litters the square (placed with the seeded rng, so it is the same every run)
   scatter: [[-12.4, -4.5, 3], [-12.6, 5.4, 2], [12.8, -3.6, 2], [13.2, 3.8, 3], [0.6, 5.7, 1], [-0.8, -5.6, 2], [8.2, 0.6, 1]],   // loose crate stacks: x, z, height in crates

@@ -114,7 +114,7 @@
         "device": "keyboard"
       },
       "fixedIn": "7b200d6",
-      "note": "Debris walls (EXCHANGE.barriers) force: entrance -> north lane east -> east wall -> middle aisle west -> south lane -> Part Time Parts (bottom left). The climb up the left side is not separate: the entrance sits there, so it stays sealed."
+      "note": "Reworked with the owner: camera faces north in the Exchange; route = south, east along the south lane, up the east wall, west through the middle aisle, up the left lane to Echo Chamber."
     }
   ]
 }

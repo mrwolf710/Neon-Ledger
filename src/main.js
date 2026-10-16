@@ -213,6 +213,7 @@ function onAreaEnter(area, spawn) {
   tod.setIndoor(!area.meta.outdoor);
   CUTAWAY.minY = area.id === 'exchange' ? 1e3 : area.meta.outdoor ? 0.3 : 1.15; // exchange: never cut, the booths must always be visible; // indoors, tables and the counter stay solid; only walls and signs above them are cut
   tod.setScene(area.id);
+  if (area.id === 'exchange') { cam.set({ yaw: (CAMERA.exchangeYawDeg * Math.PI) / 180 }); cam.snap(); } // the market route is laid out for a north-facing view
   if (area.id === 'hostel' || area.id === 'dealer') cam.reset(true); // the default view looks at the back wall: Kit and the capsules, no spinning needed
   particles.center.x = area.meta.origin[0]; particles.center.z = area.meta.origin[1];
   if (spawn) {

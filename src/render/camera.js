@@ -3,6 +3,7 @@ import * as THREE from 'three';
 export const CAMERA = {
   fov: 20,
   yawDeg: 45, pitchDeg: 35, distance: 37.5,       // start / reset view
+  exchangeYawDeg: 0,                              // the Echo Exchange opens with the camera facing north (0 = up the screen is north, right is east)
   minPitchDeg: 8, maxPitchDeg: 85,
   minDistance: 8, maxDistance: 140,
   orbitSpeed: 0.3,    // degrees per pixel of mouse drag
