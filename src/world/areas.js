@@ -274,7 +274,7 @@ function dealer(M) {
   b.box(PM.wood, 3.0, 1.0, 0.9, -2.9, 0.5, 0.4); b.box(M.metal, 3.1, 0.06, 1.0, -2.9, 1.03, 0.4); b.block(-2.9, 0.4, 3.0, 0.9); // the dealer's counter
   b.box(M.litCool, 0.8, 0.03, 0.5, -2.2, 1.08, 0.4);                                                                             // the counter's reader pad
   table(b, PM, 3.2, 0.4, 1.3, 0.8); stool(b, PM, 2.6, 1.2); stool(b, PM, 3.8, 1.2);
-  b.box(signMat('IMPLANTS', 0xff3b2f, false, EXCHANGE.signLum), 3.2, 0.8, 0.1, -2.9, 2.8, -0.2, 0, 0, false); // over the counter, clear of the lockers and their numbers
+  b.box(signMat('IMPLANTS', 0xff3b2f, true, EXCHANGE.signLum), 3.2, 0.8, 0.1, -2.9, 2.8, -0.2, 0, 0, false); // over the counter, clear of the lockers and their numbers
   b.light(0xff3b2f, 16, 0, 2.5, -0.5); b.light(0xffa23a, 13, 3.0, 2.2, 2.0); b.light(0xffd23a, 12, -3.5, 2.2, 1.0); b.light(0xff6a1f, 10, 0.5, 2.0, -2.0);
   b.spot('door', 0, 2.9); b.spot('dealer', -2.9, -0.7); b.spot('fixer', 2.6, 1.8);
   return finish('dealer', b, [-5, -3.5, 5, 3.5]);
