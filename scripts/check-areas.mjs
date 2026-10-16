@@ -21,6 +21,7 @@ for (const e of EXITS) {
   assert.ok(free(e.to, e.spawn[0], e.spawn[1]), `exit ${e.id} lands on open floor of ${e.to} (${e.spawn.slice(0, 2)})`);
 }
 
+// (vendor spots v_* use the booth talk range 3.0, BEATS.boothRange)
 // Flood fill on a 0.25 grid from a spawn: every exit and clue of the area has to be within reach (1.4 units of a reachable point).
 function reach(id, start) {
   const c = areas[id].collision, step = 0.25, b = c.bounds, seen = new Set(), pts = [];
@@ -44,7 +45,7 @@ START.platform = areas.platform.spots.find((s) => s.name === 'start') ? [areas.p
 for (const [id, a] of Object.entries(areas)) {
   const can = reach(id, START[id]);
   for (const e of EXITS.filter((x) => x.area === id)) assert.ok(can(e.at[0], e.at[1], 0.6), `${id}: exit ${e.id} reachable`);
-  for (const s of a.spots.filter((q) => q.name !== 'trainstop')) assert.ok(can(s.x, s.z, 1.5), `${id}: spot ${s.name} within reach (${s.x.toFixed(1)}, ${s.z.toFixed(1)})`);
+  for (const s of a.spots.filter((q) => q.name !== 'trainstop')) assert.ok(can(s.x, s.z, s.name.startsWith('v_') ? 3.0 : 1.5), `${id}: spot ${s.name} within reach (${s.x.toFixed(1)}, ${s.z.toFixed(1)})`);
   for (const e of EXITS.filter((x) => x.to === id)) assert.ok(can(e.spawn[0], e.spawn[1], 0.4), `${id}: spawn from ${e.id} connects to the rest`);
 }
 // The cold open: Juno appears at the train door and walks 1.6 units out; none of that may be blocked.
