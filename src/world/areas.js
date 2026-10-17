@@ -398,6 +398,7 @@ function bureau(M, rng) {
   for (const [x, z] of [[-11, -5.3], [-4, -5.3], [3, -5.3], [-11, -1.3], [-4, -1.3], [3, -1.3]]) b.light(C.cool, 5, x, 1.5, z);
   b.light(C.warm, 6, hx + 2.0, 1.6, hz - 0.75); b.light(C.cool, 3, hx + 1.0, 1.4, hz - 0.5);
   b.light(C.cool, 6, lx, 2.0, lz - 1.0); b.light(C.alarm, 6, wx1 - 2.0, 2.0, (R.cells[0] + R.cells[1]) / 2); b.light(C.cool, 4, -11.5, 2.0, 6.2);
+  b.spot('frontdoor', 0, 8.3); b.spot('roster', -6.5, -2.9); b.spot('queue', 2.5, 1.0); b.spot('haledesk', hx + 1.0, hz + 1.3);   // clue spots: a desk roster, a desk's clean-up queue, Hale's desk terminal
   b.spot('start', 0, 7.4); b.spot('hale', hx - 1.0, R.hale[0] + 3.1); b.spot('chair', lx, lz + 0.9); b.spot('cell1', wx1 - 1.2, R.cells[0] + cn / 6); b.spot('archive', -11.5, 5.0);
   return finish('bureau', b, [hx0, hz0, wx1, hz1]);
 }

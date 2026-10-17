@@ -240,6 +240,20 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     locked = false;                                              // the station is hers to walk
   }
 
+  // Chapter 3 end: the front door is locked until Juno has put the clues together (flag bureau_deduced); then she slips out and Hale will come after her.
+  async function bureauSlip() {
+    if (locked) return;
+    if (!flag('bureau_deduced')) { dialogue.start('bureau_locked'); return; }
+    locked = true;
+    await dialogue.start('bureau_slip');
+    caseFile.setFlag('hale_hunting');
+    await fade.out();
+    fade.card([{ text: 'END OF CHAPTER 3', color: '#ffffff', scale: 5 }, { text: 'CHAPTER 4: LOWMARKET AT DAWN - COMING SOON', color: '#1fd6e8', scale: 3 }, { text: 'TAP OR PRESS ANY BUTTON', color: '#8a8aa8', scale: 2 }], 3600);
+    await wait(BEATS.finaleGuard);
+    await anyInput(Infinity);
+    location.reload();                                           // back to the title screen
+  }
+
   // ---- Interactables: doors, clues, people ----
   function register() {
     for (const e of world.exits) {
@@ -262,6 +276,8 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
       const l = world.spot('dealer', `locker${n}`);
       interactions.add({ id: `locker${n}`, area: 'dealer', position: new THREE.Vector3(l.x, 0, l.z), height: 1.2, verb: `Look at Locker ${n}`, onInteract: () => { if (!locked) dialogue.start(`locker_${n}`); } });
     }
+    const fd = world.spot('bureau', 'frontdoor');                // the Bureau's front door: locked until the deduction, then Juno slips out
+    interactions.add({ id: 'bureau_door', area: 'bureau', position: new THREE.Vector3(fd.x, 0, fd.z), height: 1.2, verb: 'Try the door', onInteract: () => bureauSlip() });
     const seat = world.spot('car', 'seat');
     interactions.add({ id: 'chip', area: 'car', position: new THREE.Vector3(seat.x, 0, seat.z), height: 1.0, verb: "Slot Dex's chip",
       onInteract: () => { if (locked) return; if (flag('kit_coat') && flag('ex_capsule')) cliffhanger(); else dialogue.start('chip_early'); } });
@@ -327,7 +343,8 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     { id: 'locker', text: "Show the dealer Dex's receipt, then open Locker 9", area: 'dealer', pos: () => spotXZ('dealer', flag('locker_ok') ? 'locker' : 'dealer'), done: () => flag('locker_done') },
     { id: 'out', text: 'Leave the shop', area: 'dealer', pos: () => spotXZ('dealer', 'door'), done: () => flag('auditors_done') },
     { id: 'hale', text: 'Face Hale in her office', area: 'bureau', pos: () => spotXZ('bureau', 'hale'), done: () => flag('hale_met') },
-    { id: 'station', text: 'Look around the station', area: 'bureau', done: () => false },
+    { id: 'station', text: 'Find out what the Bureau has done to you', area: 'bureau', done: () => flag('bureau_deduced') },
+    { id: 'slip', text: 'Slip out through the front door', area: 'bureau', pos: () => spotXZ('bureau', 'frontdoor'), done: () => false },
   ];
   function markFor(step) {
     const here = world.current.id;

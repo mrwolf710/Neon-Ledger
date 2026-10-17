@@ -56,3 +56,17 @@ console.log('board ok');
   const last = add(l1.link('override_used', 'kit_alley'));
   assert.equal(last.kind, 'solved', 'level two locks'); assert.ok(last.conclusion.effects.some((e) => e.setFlag === 'kit_deduced'), 'it names Kit');
 }
+
+// Chapter 3 (the Bureau): six clues in any order -> three pairs -> a level-2 pair that unlocks the way out.
+{
+  const have = new Set(['wipe_signature', 'clean_closes', 'line9_arrival', 'override_signed', 'cell_message', 'dex_closed_early']);
+  const l3 = createBoardLogic(BOARD, (id) => have.has(id));
+  const add = (r) => { if (r.kind === 'solved') have.add(r.conclusion.result); return r; };
+  assert.equal(l3.link('wipe_signature', 'override_signed').kind, 'wrong', 'crossing pairs is wrong');
+  assert.equal(add(l3.link('dex_closed_early', 'override_signed')).kind, 'solved', 'Hale pair, either order');
+  assert.equal(l3.link('wipes_scheduled', 'hale_buried').kind, 'wrong', 'level two needs both level-1 results');
+  assert.equal(add(l3.link('line9_arrival', 'wipe_signature')).kind, 'solved', 'schedule pair');
+  assert.equal(add(l3.link('clean_closes', 'cell_message')).kind, 'solved', 'others pair');
+  const last = add(l3.link('hale_buried', 'wipes_scheduled'));
+  assert.equal(last.kind, 'solved', 'level two locks'); assert.ok(last.conclusion.effects.some((e) => e.setFlag === 'bureau_deduced'), 'it unlocks the door');
+}

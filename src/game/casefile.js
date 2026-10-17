@@ -106,6 +106,7 @@ export function createCaseFile(hud, clock) {
       }
     },
     facts: () => entries('facts'),
+    chapter: chapterNow, chapterOf,   // which chapter Juno is in; which chapter a fact belongs to (the board and the picker show only the current one)
     hasFlag: (name) => flags.has(name),
     // Opens the case file. opts: { present: true, onPick(id), onCancel() } for the Present choice.
     open(opts = {}) {

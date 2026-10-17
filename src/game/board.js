@@ -208,7 +208,7 @@ export function createBoard({ caseFile, hud }) {
   };
   const usable = new Set(BOARD.conclusions.flatMap((c) => c.needs)); // a conclusion card can be a clue for a later one (chapter 2 tier two)
   function render() {
-    const all = caseFile.facts(), facts = [...all].reverse().filter((f) => !caseFile.hasFlag('chapter1_done') || f.ch2); // chapter 1's clues leave the board once chapter 2 starts // newest first: the latest clue sits at the top
+    const all = caseFile.facts(), facts = [...all].reverse().filter((f) => caseFile.chapterOf(f) === caseFile.chapter()); // an earlier chapter's clues leave the board when the next chapter starts // newest first: the latest clue sits at the top
     const spent = spentClues();
     cards = facts.filter((f) => (!isResult(f) || usable.has(f.id)) && !spent.has(f.id) && !slots.includes(f.id)).map((f) => f.id);
     cursor = Math.max(0, Math.min(cursor, cards.length - 1));

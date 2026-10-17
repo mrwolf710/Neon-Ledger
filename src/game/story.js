@@ -52,6 +52,17 @@ export const ENTRIES = {
   echo_hidden: { ch2: true, kind: 'facts', title: 'Dex hid the echo before he died', text: 'The broker says he still had it. He told the suit it was out of reach.', source: 'Deduction board' },
   locker_rented: { ch2: true, kind: 'facts', title: "Dex rented a locker at the implant dealer's", text: 'Locker 9: a spare implant stored in the shop.', source: 'Deduction board' },
   echo_at_dealer: { ch2: true, kind: 'facts', title: "The echo is in a locker at the dealer's shop", text: "Hidden where only the dealer's reader can open it.", source: 'Deduction board' },
+  // Chapter 3 (the Bureau) clues and conclusions (ch: 3)
+  wipe_signature: { ch: 3, kind: 'facts', title: 'A wipe signature in my implant', text: 'The reader shows a clean 47-minute cut with a wipe signature, and the same mark on the edges of older gaps.', source: 'Memory-audit lab' },
+  clean_closes: { ch: 3, kind: 'facts', title: 'Thirty-one cases, thirty-one clean closes', text: 'My file: every case closed inside a day, none with a witness statement.', source: 'Echo archive' },
+  line9_arrival: { ch: 3, kind: 'facts', title: 'Every case starts the same minute on Line 9', text: 'The duty roster logs me stepping off a train at 22:40 before each case. Thirty-one times.', source: 'A desk roster' },
+  override_signed: { ch: 3, kind: 'facts', title: "An override request, signed on Hale's account", text: 'Code VALE-07, signed out at 23:05, the night Dex died.', source: "Hale's terminal" },
+  cell_message: { ch: 3, kind: 'facts', title: '"They take the hours. Don\'t sign."', text: 'Scratched into the wall of a holding cell by someone who sat here before me.', source: 'A holding cell' },
+  dex_closed_early: { ch: 3, kind: 'facts', title: 'Dex\'s case was closed before anyone looked', text: '"D. MORROW. Burnout. Close, no echo review." Hale\'s initials, entered before the body was cold.', source: 'A desk clean-up queue' },
+  wipes_scheduled: { ch: 3, kind: 'facts', title: 'The wipes run on a schedule', text: 'Every case starts on the same train and ends with a wipe. It is not overwork. It is a routine.', source: 'Deduction board' },
+  hale_buried: { ch: 3, kind: 'facts', title: 'Someone buried Dex\'s case on Hale\'s account', text: 'The override was signed and the case closed unread, both on Hale\'s account.', source: 'Deduction board' },
+  not_the_first: { ch: 3, kind: 'facts', title: 'I am not the first auditor they have wiped', text: 'Someone sat in that cell, and wrote down a warning before they lost the hours.', source: 'Deduction board' },
+  runs_through_hale: { ch: 3, kind: 'facts', title: "It all runs through Hale's account", text: "My schedule, the override and the cover-up. Hale, or someone using her name.", source: 'Deduction board' },
   fixer_hunting: { ch2: true, kind: 'facts', title: 'The fixer is hunting the Bureau woman', text: 'He is buying news of a Bureau visitor, and one was at the Sable. That is me.', source: 'Deduction board' },
 };
 
@@ -103,7 +114,10 @@ export const EXAMINABLES = [
   { id: 'lamp', area: 'sable', spot: 'lamp', verb: 'Examine', conv: 'ex_lamp' },
   { id: 'capsule', area: 'hostel', spot: 'capsule3f', verb: 'Search', conv: 'ex_capsule' },
   { id: 'glove', area: 'alley', spot: 'glove', verb: 'Examine', conv: 'ex_glove' },
-  { id: 'kitgear', area: 'hostel', spot: 'gear', verb: 'Examine', conv: 'ex_kitgear' },   // Kit's shelf of rare cyber gear (sets up the finale)
+  { id: 'kitgear', area: 'hostel', spot: 'gear', verb: 'Examine', conv: 'ex_kitgear' },
+  { id: 'reader', area: 'bureau', spot: 'chair', verb: 'Read the log', conv: 'ex_reader' }, { id: 'archive', area: 'bureau', spot: 'archive', verb: 'Read my file', conv: 'ex_archive' },
+  { id: 'roster', area: 'bureau', spot: 'roster', verb: 'Read', conv: 'ex_roster' }, { id: 'haledesk', area: 'bureau', spot: 'haledesk', verb: 'Read', conv: 'ex_haledesk' },
+  { id: 'cellwall', area: 'bureau', spot: 'cell1', verb: 'Read the wall', conv: 'ex_cellwall' }, { id: 'queue', area: 'bureau', spot: 'queue', verb: 'Read', conv: 'ex_queue' },   // Kit's shelf of rare cyber gear (sets up the finale)
 ];
 
 // One-line examine conversation: Juno speaks, adds the fact and sets the flag ex_<id>; examining again gives a shorter line.
@@ -168,6 +182,14 @@ export const CONVERSATIONS = {
   ex_terminal: examine('terminal', null, "The back door terminal. One entry logged tonight. Zero exits. Whoever came in never left, or the log is lying.", 'One in, none out. That log is wrong or somebody is still here.'),
   ex_lamp: examine('lamp', null, 'The corner lamp is smashed, glass swept toward the door. Someone wanted the room dark.', 'Smashed on purpose. Dark room, quiet exit.'),
   ex_kitgear: examine('kitgear', null, "A locked shelf behind the desk. Signal jammers, a stripped implant reader, an override damper, Bureau-grade, and a door-breaker with the serial filed off. Collector's pieces, and none of it cheap.", "Kit's collection. He's proud of it."),
+  // Chapter 3 clues in the Bureau.
+  ex_reader: examine('reader', 'wipe_signature', "The reader wakes at my touch. My implant log: 23:10 to 23:57, a clean cut with a wipe signature. The same mark sits on the edges of older gaps, every one of them.", 'The reader. The same mark, again and again.'),
+  ex_archive: examine('archive', 'clean_closes', "My case file. Thirty-one cases, every one closed inside a day, not one witness statement. Thirty-one clean closes.", 'Thirty-one cases. Thirty-one clean closes.'),
+  ex_roster: examine('roster', 'line9_arrival', "A Line 9 duty roster. Every one of my cases begins with me stepping off a train at 22:40. The same minute, thirty-one times.", 'Same train, same minute. Every time.'),
+  ex_haledesk: examine('haledesk', 'override_signed', "Hale's terminal, left unlocked. An override request for code VALE-07, signed out on her account at 23:05. The night Dex died.", "Her account. 23:05. VALE-07."),
+  ex_cellwall: examine('cellwall', 'cell_message', "Scratched into the cell wall: THEY TAKE THE HOURS. DON'T SIGN. Someone sat here before me and wrote it down while they still remembered.", 'They take the hours. Don\'t sign.'),
+  ex_queue: examine('queue', 'dex_closed_early', "A clean-up queue. D. MORROW. BURNOUT. CLOSE, NO ECHO REVIEW. Hale's initials, entered before the body was cold.", 'Closed before anyone looked. Her initials.'),
+  bureau_locked: { start: 'a', nodes: { a: { speaker: 'juno', text: "(Locked. Hale's doing. 'For your protection.' I'm not staying to be protected.)", end: true } } },
   ex_glove: examine('glove', null, "A grey glove. Bureau issue. I have a pair just like it.", 'Bureau grey. Same as mine.'),
   vendor: { start: 'a', nodes: {
     a: { speaker: 'vendor', text: "You smell like rain and Bureau paperwork. The Sable is up the street on the left, under the red awning. They found a broker in the back.", next: 'b' },
@@ -348,10 +370,20 @@ export const CONVERSATIONS = {
   ...Object.fromEntries(Object.entries(VENDOR_TALK).map(([id, v]) => [`vend_${id}`, vendorTalk(id, v.lines, v.again)])),
   // Chapter 3: Juno is walked into Hale's office. PLACEHOLDER lines; the real scene is the owner's to write (docs/chapter-3.md).
   hale_office: { start: 'a', nodes: {
-    a: { speaker: 'hale', text: 'Sit down, Juno.', next: 'b' },
-    b: { speaker: 'hale', text: 'Auditors. Wait outside.', end: true },
+    a: { speaker: 'hale', text: 'Sit down, Juno. You look terrible. When did you last sleep?', next: 'b' },
+    b: { speaker: 'juno', text: "Dex Morrow's dead, and you sent me to call it a burnout.", next: 'c' },
+    c: { speaker: 'hale', text: "I sent you because I trust you. Because you're the best I have. Burnout is the kindest word for it, and you know why.", next: 'd' },
+    d: { speaker: 'hale', text: "A broker dies on your shift and the Bureau starts asking questions. I would rather they asked me. Let me close this for you.", next: 'e' },
+    e: { speaker: 'juno', text: 'I was in that room, Hale.', next: 'f' },
+    f: { speaker: 'hale', text: "You were exhausted, and you lost time. It happens to all of us. Rest. I'll deal with the rest.", next: 'g' },
+    g: { speaker: 'hale', text: "The doors are locked until dawn, for your protection. Walk the floor, get some air, and I'll see you in the morning.", end: true },
   } },
-  hale_talk: { start: 'a', nodes: { a: { speaker: 'hale', text: 'Not now, Juno. Wait for me here.', end: true } } },
+  hale_talk: { start: 'a', nodes: { a: { speaker: 'hale', text: "Rest, Juno. The doors are locked until dawn. It's for your own good.", end: true } } },
+  // Chapter 3 end: Juno slips out through the front door once she has put it together.
+  bureau_slip: { start: 'a', nodes: {
+    a: { speaker: 'juno', text: "(Her account, her initials, my schedule. If I stay till dawn she'll put me back in that chair and I'll lose all of this.)", next: 'b' },
+    b: { speaker: 'juno', text: "(The door isn't locked for me. It's locked for her to find me. Not tonight.)", end: true },
+  } },
   nobody: { start: 'a', nodes: { a: { speaker: 'juno', text: 'Nothing to say yet.', end: true } } },
 };
 
@@ -520,5 +552,13 @@ export const BOARD = {
       line: "(Hidden, and the only hiding place I know of is a dealer's locker. The echo is in that shop. The dealer.)", effects: [{ addFact: 'echo_at_dealer' }, { setFlag: 'dealer_open' }] },
     { id: 'fixer_hunting', needs: ['suit_gossip', 'bureau_woman'], result: 'fixer_hunting',
       line: "(He wants a Bureau visitor, and a Bureau woman was at the Sable. He's hunting me.)", effects: [{ addFact: 'fixer_hunting' }, { setFlag: 'fixer_knows' }] },
+    { id: 'wipes_scheduled', needs: ['wipe_signature', 'line9_arrival'], result: 'wipes_scheduled',
+      line: '(A wipe on the edge of every gap, and every case starts on the same train at the same minute. They wipe me on a schedule.)', effects: [{ addFact: 'wipes_scheduled' }] },
+    { id: 'hale_buried', needs: ['override_signed', 'dex_closed_early'], result: 'hale_buried',
+      line: "(The override signed, the case closed unread, both on Hale's account before anyone looked. Someone wanted Dex buried.)", effects: [{ addFact: 'hale_buried' }] },
+    { id: 'not_the_first', needs: ['clean_closes', 'cell_message'], result: 'not_the_first',
+      line: "(Thirty-one clean closes for me, and a warning scratched into a cell wall by someone else. I'm not the first they've done this to.)", effects: [{ addFact: 'not_the_first' }] },
+    { id: 'runs_through_hale', needs: ['wipes_scheduled', 'hale_buried'], requires: ['wipes_scheduled', 'hale_buried'], result: 'runs_through_hale',
+      line: "(My schedule and the override, both through Hale's account. Hale, or someone using her name.)", effects: [{ addFact: 'runs_through_hale' }, { setFlag: 'bureau_deduced' }] },
   ],
 };
