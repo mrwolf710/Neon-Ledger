@@ -10,9 +10,11 @@ export const CRT_FRAME = {
   glow: 'drop-shadow(0 0 3vh rgba(255,255,255,0.6)) drop-shadow(0 0 10vh rgba(235,240,255,0.45))', // on a copy behind the canvas, so it never tints the picture
 };
 
-export function createCrtFrame(canvas) {
+export interface CrtFrame { set(v: number): void; readonly ratio: number }
+
+export function createCrtFrame(canvas: HTMLCanvasElement): CrtFrame {
   const C = CRT_FRAME;
-  const make = (z, filter) => {
+  const make = (z: number, filter: string) => {
     const im = new Image();
     im.src = `${import.meta.env.BASE_URL}sprites/crt/frame.png`;
     im.style.cssText = `position:fixed;left:50%;top:50%;width:${C.size}px;height:${C.size}px;margin:${-C.size / 2}px 0 0 ${-C.size / 2}px;
@@ -21,7 +23,7 @@ export function createCrtFrame(canvas) {
     return im;
   };
   const img = make(3, 'none'), glow = make(0, C.glow);
-  canvas.style.position = 'relative'; canvas.style.zIndex = 1; // the glow copy sits under the canvas
+  canvas.style.position = 'relative'; canvas.style.zIndex = '1'; // the glow copy sits under the canvas
   let k = 0, ratio = 1; // ratio: how much bigger the monitor is than at k = 1 (the title card scales by the same amount)
   function apply() {
     if (k <= 0) { img.style.display = glow.style.display = 'none'; canvas.style.transform = canvas.style.clipPath = ''; return; }
@@ -40,5 +42,5 @@ export function createCrtFrame(canvas) {
     img.style.transform = glow.style.transform = `scale(${S}) translate(${C.size / 2 - C.glass.cx}px, ${C.size / 2 - C.glass.cy}px)`; // glass centre on the window centre
   }
   window.addEventListener('resize', apply);
-  return { set(v) { k = v; apply(); }, get ratio() { return ratio; } };
+  return { set(v: number) { k = v; apply(); }, get ratio() { return ratio; } };
 }

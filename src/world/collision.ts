@@ -1,16 +1,25 @@
 import { DISTRICT } from './district.ts';
+import type { Block, Bounds } from '../types.ts';
+import type * as THREE from 'three';
 
 export const COLLISION = { cell: 0.5 }; // grid cell size in world units
 
 // Walkable rectangle of the street: between the building lines.
-export const streetBounds = () => {
+export const streetBounds = (): Bounds => {
   const D = DISTRICT, hz = D.roadWidth / 2 + D.sidewalkWidth;
   return { x0: -D.length / 2, z0: -hz, x1: D.length / 2, z1: hz };
 };
 
 // Walk grid over a rectangle (bounds { x0, z0, x1, z1 }, default the street): open inside, blocked under footprints.
 // blocks: world AABBs { x0, z0, x1, z1 } (props, furniture, inner walls). opts.road = [z0, z1] band for the minimap.
-export function createCollision(blocks, bounds = streetBounds(), opts = {}) {
+export interface Collision {
+  grid: { nx: number; nz: number; solid: Uint8Array; cell: number; x0: number; z0: number; road: [number, number] | null };
+  bounds: Bounds;
+  hits(x: number, z: number, r: number): boolean;
+  move(pos: THREE.Vector3, dx: number, dz: number, r: number): boolean;
+}
+
+export function createCollision(blocks: Block[], bounds: Bounds = streetBounds(), opts: { road?: [number, number] } = {}): Collision {
   const c = COLLISION.cell, ox = bounds.x0, oz = bounds.z0;
   const nx = Math.ceil((bounds.x1 - ox) / c), nz = Math.ceil((bounds.z1 - oz) / c);
   const solid = new Uint8Array(nx * nz);
@@ -22,10 +31,10 @@ export function createCollision(blocks, bounds = streetBounds(), opts = {}) {
     }
   }
   // Outside the grid (walls, street ends) counts as solid.
-  const cellSolid = (i, j) => i < 0 || j < 0 || i >= nx || j >= nz || solid[j * nx + i] === 1;
+  const cellSolid = (i: number, j: number) => i < 0 || j < 0 || i >= nx || j >= nz || solid[j * nx + i] === 1;
 
   // Does a circle at (x, z) overlap any solid cell?
-  function hits(x, z, r) {
+  function hits(x: number, z: number, r: number) {
     const i0 = Math.floor((x - r - ox) / c), i1 = Math.floor((x + r - ox) / c);
     const j0 = Math.floor((z - r - oz) / c), j1 = Math.floor((z + r - oz) / c);
     for (let j = j0; j <= j1; j++) {
@@ -45,7 +54,7 @@ export function createCollision(blocks, bounds = streetBounds(), opts = {}) {
     hits,
     // Moves pos (Vector3) by (dx, dz), one axis at a time so blocked motion slides along walls. Returns true if moved.
     // Long moves are split into small steps so fast motion can't tunnel through a cell.
-    move(pos, dx, dz, r) {
+    move(pos: THREE.Vector3, dx: number, dz: number, r: number) {
       const x0 = pos.x, z0 = pos.z, n = Math.max(1, Math.ceil(Math.hypot(dx, dz) / (c * 0.4)));
       const sx = dx / n, sz = dz / n, len = Math.hypot(sx, sz);
       for (let k = 0; k < n; k++) {

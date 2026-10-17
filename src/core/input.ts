@@ -42,43 +42,43 @@ export const PAD_BINDINGS = {
   7: 'solve', 8: 'board', 9: 'pause', 12: 'menuUp', 13: 'menuDown', 14: 'menuLeft', 15: 'menuRight',
 };
 
-const held = new Set();
-const pressed = new Set();
-let wheel = 0, click = null;
+const held = new Set<string>();
+const pressed = new Set<string>();
+let wheel = 0, click: { x: number; y: number } | null = null;
 
-const press = (a) => { if (!held.has(a)) pressed.add(a); held.add(a); };
-const release = (a) => held.delete(a);
-const axis = (neg, pos) => (held.has(pos) ? 1 : 0) - (held.has(neg) ? 1 : 0);
-const dead = (v) => (Math.abs(v) < INPUT.deadZone ? 0 : (v - Math.sign(v) * INPUT.deadZone) / (1 - INPUT.deadZone));
+const press = (a: string) => { if (!held.has(a)) pressed.add(a); held.add(a); };
+const release = (a: string) => held.delete(a);
+const axis = (neg: string, pos: string) => (held.has(pos) ? 1 : 0) - (held.has(neg) ? 1 : 0);
+const dead = (v: number) => (Math.abs(v) < INPUT.deadZone ? 0 : (v - Math.sign(v) * INPUT.deadZone) / (1 - INPUT.deadZone));
 
 // --- Keyboard ---
-const typing = (e) => e.target?.matches?.('input, textarea, [contenteditable]'); // while a text box has focus, game keys must not fire (the issue box)
+const typing = (e: KeyboardEvent) => (e.target as Element | null)?.matches?.('input, textarea, [contenteditable]'); // while a text box has focus, game keys must not fire (the issue box)
 window.addEventListener('keydown', (e) => {
-  const a = KEY_BINDINGS[e.code];
+  const a = (KEY_BINDINGS as Record<string, string>)[e.code];
   if (!a || typing(e)) return;
   e.preventDefault(); // stop Tab focus changes and Space scrolling
   input.lastDevice = 'keyboard';
   press(a);
 });
 window.addEventListener('keyup', (e) => {
-  const a = KEY_BINDINGS[e.code];
+  const a = (KEY_BINDINGS as Record<string, string>)[e.code];
   if (a) release(a);
 });
 window.addEventListener('blur', () => held.clear());
 
 // --- Mouse: a press that stays within dragStart pixels is a click; beyond that it orbits ---
 window.addEventListener('wheel', (e) => {
-  if (e.target.id !== 'game') return;
+  if ((e.target as HTMLElement).id !== 'game') return;
   wheel += Math.sign(e.deltaY);
   input.lastDevice = 'mouse';
 }, { passive: true });
 const drag = { down: false, button: 0, sx: 0, sy: 0, x: 0, y: 0, dragging: false, dx: 0, dy: 0 };
 window.addEventListener('pointerdown', (e) => {
-  if (e.target.id !== 'game') return; // ignore clicks on the debug panel
+  if ((e.target as HTMLElement).id !== 'game') return; // ignore clicks on the debug panel
   if (e.pointerType === 'touch') { touchDown(e); return; }
   Object.assign(drag, { down: true, button: e.button, sx: e.clientX, sy: e.clientY, x: e.clientX, y: e.clientY, dragging: false });
   if (e.pointerType !== 'touch') input.lastDevice = 'mouse';
-  e.target.setPointerCapture(e.pointerId);
+  (e.target as HTMLElement).setPointerCapture(e.pointerId);
 });
 window.addEventListener('pointermove', (e) => {
   if (e.pointerType === 'touch') { touchMove(e); return; }
@@ -92,7 +92,7 @@ window.addEventListener('pointerup', (e) => {
   if (drag.down && !drag.dragging && drag.button === 0) click = { x: e.clientX, y: e.clientY };
   drag.down = false;
 });
-window.addEventListener('contextmenu', (e) => { if (e.target.id === 'game') e.preventDefault(); });
+window.addEventListener('contextmenu', (e) => { if ((e.target as HTMLElement).id === 'game') e.preventDefault(); });
 
 // --- Gamepad ---
 const padHeld = new Set();
@@ -102,7 +102,7 @@ function pollGamepad() {
   if (!pad) { padStick = { x: 0, y: 0, lookX: 0, zoom: 0 }; return; }
   let active = false;
   for (const [i, a] of Object.entries(PAD_BINDINGS)) {
-    const down = !!pad.buttons[i]?.pressed;
+    const down = !!pad.buttons[+i]?.pressed;
     if (down && !padHeld.has(a)) { padHeld.add(a); press(a); active = true; }
     if (!down && padHeld.has(a)) { padHeld.delete(a); release(a); }
   }
@@ -118,22 +118,22 @@ function pollGamepad() {
 }
 
 // --- Touch ---
-const touches = new Map(); // pointerId -> { x, y, sx, sy, t0, role: stick | look, moved }
+const touches = new Map<number, { x: number; y: number; sx: number; sy: number; t0: number; role: string; moved: boolean }>(); // pointerId -> { x, y, sx, sy, t0, role: stick | look, moved }
 const touchStick = { active: false, ox: 0, oy: 0, x: 0, y: 0 };
-let gesture = null, zoomFactor = 1, stickVec = { x: 0, y: 0, mag: 0 };
+let gesture: { dist: number; mid: number } | null = null, zoomFactor = 1, stickVec = { x: 0, y: 0, mag: 0 };
 window.addEventListener('pointercancel', (e) => { if (e.pointerType === 'touch') touchUp(e, true); });
 document.addEventListener('gesturestart', (e) => e.preventDefault()); // iOS page pinch-zoom
 
-function touchDown(e) {
+function touchDown(e: PointerEvent) {
   input.lastDevice = 'touch';
-  e.target.setPointerCapture(e.pointerId);
+  (e.target as HTMLElement).setPointerCapture(e.pointerId);
   const stickFree = ![...touches.values()].some((t) => t.role === 'stick');
   const role = e.clientX < window.innerWidth / 2 && stickFree ? 'stick' : 'look';
   touches.set(e.pointerId, { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t0: performance.now(), role, moved: false });
   if (role === 'stick') Object.assign(touchStick, { active: true, ox: e.clientX, oy: e.clientY, x: e.clientX, y: e.clientY });
   gesture = null;
 }
-function touchMove(e) {
+function touchMove(e: PointerEvent) {
   const t = touches.get(e.pointerId);
   if (!t) return;
   const looks = [...touches.values()].filter((o) => o.role === 'look');
@@ -142,7 +142,7 @@ function touchMove(e) {
   if (Math.hypot(t.x - t.sx, t.y - t.sy) > INPUT.dragStart) t.moved = true;
   if (t.role === 'stick') { touchStick.x = t.x; touchStick.y = t.y; }
 }
-function touchUp(e, cancelled = false) {
+function touchUp(e: PointerEvent, cancelled = false) {
   const t = touches.get(e.pointerId);
   if (!t) return;
   const looks = [...touches.values()].filter((o) => o.role === 'look');
@@ -169,7 +169,23 @@ function pollTouch() {
   }
 }
 
-export const input = {
+export interface InputState {
+  moveX: number; moveY: number; run: boolean; zoom: number; zoomSteps: number;
+  orbitDX: number; orbitDY: number; lookX: number;
+  click: { x: number; y: number } | null;
+  zoomFactor: number;
+  touchStick: typeof touchStick;
+  pressAction: (a: string) => void;
+  releaseAction: (a: string) => boolean;
+  lastDevice: string;
+  padType: string;
+  held: (a: string) => boolean;
+  pressed: (a: string) => boolean;
+  update(): void;
+  endFrame(): void;
+}
+
+export const input: InputState = {
   moveX: 0,
   moveY: 0,
   run: false,
@@ -183,8 +199,8 @@ export const input = {
   releaseAction: release,
   lastDevice: 'keyboard',
   padType: 'xbox',
-  held: (a) => held.has(a),
-  pressed: (a) => pressed.has(a),
+  held: (a: string) => held.has(a),
+  pressed: (a: string) => pressed.has(a),
   update() {
     pollGamepad();
     pollTouch();

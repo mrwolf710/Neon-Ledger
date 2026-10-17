@@ -11,14 +11,24 @@ export const CLOCK = {
 };
 
 // Game clock: 1 real second = CLOCK.speed game minutes. Pausable; setTime(h, m) jumps.
-export function createClock() {
+export interface Clock {
+  paused: boolean;
+  readonly minutes: number;
+  add(min: number): void;
+  setTime(h: number, m?: number): void;
+  update(dt: number): void;
+  readonly text: string;
+  readonly phase: { id: string; from: number; label: string };
+  readonly progress: number;
+}
+export function createClock(): Clock {
   let minutes = CLOCK.start;
-  const api = {
+  const api: Clock = {
     paused: false,
     get minutes() { return minutes; },
-    add(min) { minutes += min; },
-    setTime(h, m = 0) { minutes = (h < 12 ? h + 24 : h) * 60 + m; }, // hours before noon are after midnight
-    update(dt) { if (!api.paused) minutes += dt * CLOCK.speed; },
+    add(min: number) { minutes += min; },
+    setTime(h: number, m = 0) { minutes = (h < 12 ? h + 24 : h) * 60 + m; }, // hours before noon are after midnight
+    update(dt: number) { if (!api.paused) minutes += dt * CLOCK.speed; },
     get text() {
       const t = Math.floor(minutes) % 1440;
       return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;

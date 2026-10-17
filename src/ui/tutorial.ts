@@ -1,7 +1,8 @@
 import { frame } from './hud.ts';
 
 // A one-off help window. open() pauses the game (main treats isOpen as modal); Space / Enter / Esc / click / tap closes it.
-export const TUTORIALS = {
+export interface Tutorial { title: string; lines: string[]; touchLines?: string[] }
+export const TUTORIALS: Record<string, Tutorial> = {
   board: {
     title: 'Using your clues',
     lines: [
@@ -50,7 +51,10 @@ TUTORIALS.echo = {
   ],
 };
 
-export function createTutorial(input) {
+interface InputLike { pressed(a: string): boolean; click: unknown }
+export interface TutorialUI { readonly isOpen: boolean; open(id: string): void; close(): void; update(): void }
+
+export function createTutorial(input: InputLike): TutorialUI {
   const root = document.createElement('div');
   root.className = 'tutorial';
   const box = frame(document.createElement('div'));
@@ -58,9 +62,9 @@ export function createTutorial(input) {
   root.append(box);
   document.body.appendChild(root);
   let open = false, openedAt = 0;
-  const api = {
+  const api: TutorialUI = {
     get isOpen() { return open; },
-    open(id) {
+    open(id: string) {
       const t = TUTORIALS[id];
       box.replaceChildren(Object.assign(document.createElement('h2'), { textContent: t.title }),
         ...((matchMedia('(pointer: coarse)').matches && t.touchLines) || t.lines).map((l) => Object.assign(document.createElement('p'), { textContent: l })),

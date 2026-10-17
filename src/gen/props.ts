@@ -1,5 +1,16 @@
 import * as THREE from 'three';
 import { PALETTE as P } from './palette.ts';
+import type { Rng } from '../core/rng.ts';
+import type { Batch } from './batch.ts';
+import type { Materials } from './buildings.ts';
+
+// Materials owned by the props themselves (cached per street Materials).
+export interface PropMaterials {
+  wood: THREE.MeshStandardMaterial; crates: THREE.MeshStandardMaterial[]; vendBody: THREE.MeshStandardMaterial;
+  vendGlow: THREE.MeshBasicMaterial; lantern: THREE.MeshBasicMaterial; bag: THREE.MeshStandardMaterial;
+  pole: THREE.MeshStandardMaterial; lamp: THREE.MeshBasicMaterial;
+}
+export type PropBuilder = (rng: Rng, M: Materials, batch: Batch) => void;
 
 // Street props from primitives. Local frame: base centred on origin, front faces +z (towards the road).
 // Each adds to the batch (transform already set) using shared materials, so props cost ~1 draw per material.
@@ -14,15 +25,15 @@ export const PROPS = {
   lamp: { height: 4.2, arm: 0.9, glow: 2.5, light: 6 }, // glow: colour multiplier for bloom; light: point intensity
 };
 
-let cached = null;
+let cached: { M: Materials; PM: PropMaterials } | null = null;
 
 export { mats as propMats };
-function mats(M) {
+function mats(M: Materials): PropMaterials {
   if (cached && cached.M === M) return cached.PM;
   const C = PROPS.colors;
-  const std = (color, roughness = 0.8) => new THREE.MeshStandardMaterial({ color, roughness });
-  const glow = (color) => new THREE.MeshBasicMaterial({ color });
-  const PM = {
+  const std = (color: number, roughness = 0.8) => new THREE.MeshStandardMaterial({ color, roughness });
+  const glow = (color: number) => new THREE.MeshBasicMaterial({ color });
+  const PM: PropMaterials = {
     wood: std(C.wood), crates: C.crates.map((c) => std(c, 0.6)), vendBody: std(C.vendBody, 0.4),
     vendGlow: glow(C.vendGlow), lantern: glow(C.lantern), bag: std(C.bag, 0.3), pole: std(C.pole, 0.5),
     lamp: new THREE.MeshBasicMaterial({ color: new THREE.Color(C.lamp).multiplyScalar(PROPS.lamp.glow) }),
@@ -31,9 +42,9 @@ function mats(M) {
   return PM;
 }
 
-const cyl = (r, h, x, y, z, seg = 6) => new THREE.CylinderGeometry(r, r, h, seg).translate(x, y, z);
+const cyl = (r: number, h: number, x: number, y: number, z: number, seg = 6) => new THREE.CylinderGeometry(r, r, h, seg).translate(x, y, z);
 
-export const PROP_BUILDERS = {
+export const PROP_BUILDERS: Record<string, PropBuilder> = {
   stall(rng, M, batch) {
     const PM = mats(M);
     batch.box(PM.wood, 2.0, 1.0, 0.8, 0, 0.5, -0.2);                     // counter

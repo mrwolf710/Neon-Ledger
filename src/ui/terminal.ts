@@ -1,3 +1,5 @@
+import type { Sfx } from '../audio/sfx.ts';
+
 // Computer screens: an e-mail reader (Juno snooping on a desk computer) and a door keypad.
 // Both take the whole screen, work with keyboard, mouse, touch and gamepad, and resolve a promise when they close.
 export const TERMINAL = {
@@ -28,17 +30,26 @@ const CSS = `#term{position:fixed;inset:0;z-index:${TERMINAL.z};display:none;ali
 #term .readout.bad{color:${TERMINAL.alarm}} #term .readout.good{color:${TERMINAL.ok}}
 @media (max-height:460px){#term .scr{padding:.4rem .8rem}#term .pad button{height:2.4rem;font-size:1.1rem}#term .readout{font-size:1.5rem;min-height:2rem}}`;
 
-export function createTerminal({ sfx } = {}) {
+export interface MailItem { from: string; subject: string; body: string }
+interface InputLike { pressed(a: string): boolean; lastDevice: string }
+export interface Terminal {
+  readonly isOpen: boolean;
+  mail(owner: string, items: MailItem[]): Promise<boolean>;
+  keypad(title: string, correct: string): Promise<boolean>;
+  update(dt: number, input: InputLike): void;
+}
+
+export function createTerminal({ sfx }: { sfx?: Sfx } = {}): Terminal {
   const root = document.createElement('div');
   root.id = 'term';
   document.body.appendChild(root);
   const style = document.createElement('style'); style.textContent = CSS; document.head.appendChild(style);
   root.addEventListener('pointerdown', (e) => e.stopPropagation()); // taps on the screen are not clicks on the world
 
-  let mode = null, done = null, sel = 0, mails = [], entry = '', denied = 0, code = '', keys = [], shut = false;
-  const el = (tag, cls, parent, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text) n.textContent = text; parent?.appendChild(n); return n; };
+  let mode: 'mail' | 'pad' | null = null, done: ((v: boolean) => void) | null = null, sel = 0, mails: { owner: string; items: MailItem[] } = { owner: '', items: [] }, entry = '', denied = 0, code = '', keys: { title: string } = { title: '' }, shut = false;
+  const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, parent?: Node | null, text?: string): HTMLElementTagNameMap[K] => { const n = document.createElement(tag); if (cls) n.className = cls; if (text) n.textContent = text; parent?.appendChild(n); return n; };
 
-  function close(result) {
+  function close(result: boolean) {
     if (!mode) return;
     mode = null; shut = true; root.classList.remove('on'); root.replaceChildren();
     const f = done; done = null; f?.(result);
@@ -77,7 +88,7 @@ export function createTerminal({ sfx } = {}) {
     LABELS.forEach((l, i) => { const b = el('button', i === sel ? 'sel' : '', pad, l); b.type = 'button'; b.addEventListener('click', () => { sel = i; press(l); }); });
     el('div', 'hint', scr, 'Type the code · Enter: confirm · Back / Esc: leave');
   }
-  function press(l) {
+  function press(l: string) {
     if (denied > 0) return;
     if (l === 'DEL') entry = entry.slice(0, -1);
     else if (l === 'OK') submit();
@@ -91,7 +102,7 @@ export function createTerminal({ sfx } = {}) {
     drawPad();
   }
 
-  const onKey = (e) => {
+  const onKey = (e: KeyboardEvent) => {
     if (!mode) return;
     const k = e.key;
     if (mode === 'pad' && /^[0-9]$/.test(k)) { e.preventDefault(); e.stopPropagation(); press(k); }
@@ -99,19 +110,19 @@ export function createTerminal({ sfx } = {}) {
   };
   window.addEventListener('keydown', onKey, true);
 
-  const api = {
+  const api: Terminal = {
     get isOpen() { return !!mode || shut; }, // stays true for the frame it closed, so the press that closed it is not also read as "use"
     // items: [{ from, subject, body }]; {{text}} in a body is highlighted. Resolves true when closed.
-    mail(owner, items) {
+    mail(owner: string, items: MailItem[]) {
       mails = { owner, items }; mode = 'mail'; sel = 0; root.classList.add('on'); drawMail();
-      return new Promise((res) => { done = res; });
+      return new Promise<boolean>((res) => { done = res; });
     },
     // Resolves true when the right code is typed, false if she backs out.
-    keypad(title, correct) {
+    keypad(title: string, correct: string) {
       keys = { title }; code = correct; entry = ''; denied = 0; mode = 'pad'; sel = 4; root.classList.add('on'); drawPad();
-      return new Promise((res) => { done = res; });
+      return new Promise<boolean>((res) => { done = res; });
     },
-    update(dt, input) {
+    update(dt: number, input: InputLike) {
       if (!mode) { shut = false; return; }
       const up = input.pressed('up') || input.pressed('menuUp'), down = input.pressed('down') || input.pressed('menuDown');
       const left = input.pressed('left') || input.pressed('menuLeft'), right = input.pressed('right') || input.pressed('menuRight');

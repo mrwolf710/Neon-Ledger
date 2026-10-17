@@ -1,5 +1,7 @@
 import { createBatch } from '../gen/batch.ts';
 import { building, getMaterials } from '../gen/buildings.ts';
+import type * as THREE from 'three';
+import type { Rng } from '../core/rng.ts';
 import { PROPS, PROP_BUILDERS } from '../gen/props.ts';
 
 // Lowmarket street. Street runs along X; Z is across it. Everything is merged by material.
@@ -10,10 +12,10 @@ export const DISTRICT = {
   curbHeight: 0.15,
   buildingsPerSide: 5,
   buildingDepth: 3,       // road 6 + sidewalks 2x2 + buildings 2x3 = 16 wide
-  buildingGap: [0.4, 1.6],
+  buildingGap: [0.4, 1.6] as [number, number],
   rail: { x: 17, height: 7, deckWidth: 2.5, deckThickness: 0.6, deckLength: 24, pillarSize: 0.8 },
   lamps: { spacing: 10, curbInset: 0.25, southStart: 9, block: 0.16 }, // southStart keeps the south poles off the hostel door (x 10.6) and the rail pillar (x 17),
-  props: { inset: 0.7, gap: [1.5, 4], pillarClear: 1.4, depth: 0.9 }, // inset from the building line; depth = collision
+  props: { inset: 0.7, gap: [1.5, 4] as [number, number], pillarClear: 1.4, depth: 0.9 }, // inset from the building line; depth = collision
 };
 
 // Who stands where. at: [x, z] or a spot name from the batch (first match), facing: radians (0 = +z).
@@ -63,20 +65,20 @@ export const ZONES = [
   { name: 'Lowmarket Street', district: 'Lowmarket', box: [-30, -30, 30, 30] },
   { name: 'Line 9 Underpass', district: 'Lowmarket', box: [DISTRICT.rail.x - 3, -30, DISTRICT.rail.x + 3, 30] },
 ];
-export const zoneAt = (x, z) => [...ZONES].reverse().find((q) => x >= q.box[0] && x <= q.box[2] && z >= q.box[1] && z <= q.box[3]) ?? ZONES[0];
+export const zoneAt = (x: number, z: number) => [...ZONES].reverse().find((q) => x >= q.box[0] && x <= q.box[2] && z >= q.box[1] && z <= q.box[3]) ?? ZONES[0];
 
 // Ground height at z: sidewalks are raised by the curb.
-export function groundY(z, x = 0) {
+export function groundY(z: number, x = 0) {
   const D = DISTRICT, a = Math.abs(z);
   if (Math.abs(x) > D.length / 2 + 2) return 0; // other areas are flat
   return a > D.roadWidth / 2 && a < D.roadWidth / 2 + D.sidewalkWidth ? D.curbHeight : 0;
 }
 
-export function buildDistrict(rng) {
+export function buildDistrict(rng: Rng) {
   const D = DISTRICT;
   const M = getMaterials(rng.fork('textures'));
   const batch = createBatch();
-  const sideRot = (s) => (s < 0 ? 0 : Math.PI); // local +z faces the road
+  const sideRot = (s: number) => (s < 0 ? 0 : Math.PI); // local +z faces the road
 
   // Road and raised sidewalks.
   batch.box(M.road, D.length, 0.1, D.roadWidth, 0, -0.05, 0);

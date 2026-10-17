@@ -9,7 +9,7 @@ export const TOUCH_UI = {
   color: '#1fd6e8', bg: 'rgba(7,7,15,.55)',
 };
 
-const CSS = (U) => `
+const CSS = (U: typeof TOUCH_UI) => `
 #touch-ui { position:fixed; inset:0; pointer-events:none; z-index:6; font:bold 11px monospace; color:${U.color}; }
 #touch-ui .btn { position:absolute; pointer-events:auto; display:flex; align-items:center; justify-content:center;
   border:2px solid ${U.color}; background:${U.bg}; border-radius:50%; touch-action:none; letter-spacing:1px; }
@@ -28,7 +28,15 @@ const CSS = (U) => `
 @media (orientation: portrait) and (pointer: coarse) { #rotate-msg { display:flex; } }
 `;
 
-export function createTouchUI(input, { issues = false } = {}) {
+interface InputLike {
+  lastDevice: string;
+  pressAction(a: string): void;
+  releaseAction(a: string): void;
+  touchStick: { active: boolean; x: number; y: number; ox: number; oy: number };
+}
+export interface TouchUI { update(): void }
+
+export function createTouchUI(input: InputLike, { issues = false }: { issues?: boolean } = {}): TouchUI {
   const U = TOUCH_UI;
   const style = document.createElement('style');
   style.textContent = CSS(U);
@@ -45,7 +53,7 @@ export function createTouchUI(input, { issues = false } = {}) {
   const knob = Object.assign(document.createElement('div'), { className: 'knob' });
   root.append(ring, knob);
 
-  const button = (cls, label, action, parent = root) => {
+  const button = (cls: string, label: string, action: string, parent: HTMLElement = root) => {
     const b = Object.assign(document.createElement('div'), { className: `btn ${cls}`, textContent: label });
     b.addEventListener('pointerdown', (e) => { e.preventDefault(); b.classList.add('down'); input.pressAction(action); });
     const up = () => { b.classList.remove('down'); input.releaseAction(action); };

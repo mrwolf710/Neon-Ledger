@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { PALETTE as P } from '../gen/palette.ts';
 import { drawText, measure } from '../gen/pixelfont.ts';
+import type { Interactable } from '../types.ts';
 
 export const INTERACT = {
   range: 1.6,         // units from the player (an interactable can set its own `range`)
@@ -12,18 +13,18 @@ export const INTERACT = {
   colors: { bubble: P.ink, border: P.cyan, text: P.white, key: P.grey6, keyText: P.ink, xbox: 0x3fae2a, ps: 0x4a7fe0 },
 };
 
-const hex = (c) => `#${c.toString(16).padStart(6, '0')}`;
+const hex = (c: number) => `#${c.toString(16).padStart(6, '0')}`;
 
 // Draws "[glyph] VERB" in the pixel font for the device: key cap, mouse, Xbox A, PlayStation cross.
 // glyph: 'interact' (Space / A / ×) or 'echo' (F / X / □).
-function promptCanvas(verb, device, padType, glyph = 'interact') {
+function promptCanvas(verb: string, device: string, padType: string, glyph = 'interact'): HTMLCanvasElement {
   const echo = glyph === 'echo';
   const C = INTERACT.colors, h = 11;
   const label = device === 'keyboard' ? (echo ? 'F' : 'SPC') : device === 'touch' ? 'TAP' : '';
   const gw = label ? measure(label) + 4 : 7;
   const w = 3 + gw + 3 + measure(verb) + 3;
   const cv = Object.assign(document.createElement('canvas'), { width: w, height: h + 2 });
-  const ctx = cv.getContext('2d');
+  const ctx = cv.getContext('2d')!;
   ctx.fillStyle = hex(C.border); ctx.fillRect(0, 0, w, h);                                   // frame
   ctx.fillStyle = hex(C.bubble); ctx.fillRect(1, 1, w - 2, h - 2);
   ctx.fillStyle = hex(C.border); ctx.fillRect((w >> 1) - 1, h, 3, 1); ctx.fillRect(w >> 1, h + 1, 1, 1); // tail
@@ -44,29 +45,41 @@ function promptCanvas(verb, device, padType, glyph = 'interact') {
   return cv;
 }
 
+export type InteractableInput = Omit<Interactable, 'height'> & { height?: number };
+export interface Interactions {
+  items: Interactable[];
+  add(item: InteractableInput): void;
+  setArea(id: string): void;
+  readonly area: string;
+  readonly current: Interactable | null;
+  nearest(pos: { x: number; z: number }, facing: number): Interactable | null;
+  pick(click: { x: number; y: number }, camera: THREE.Camera): Interactable | null;
+  hide(): void;
+  update(pos: { x: number; z: number }, facing: number, device: string, padType: string, camera: THREE.Camera): void;
+}
 // Interactables: { position: Vector3 (live), height, verb, onInteract, id }.
-export function createInteractions(scene) {
-  const items = [];
+export function createInteractions(scene: unknown): Interactions {
+  const items: Interactable[] = [];
   // Drawn as a screen overlay (not in 3D) so bloom and tilt-shift never blur it.
-  let canvas = null;
+  let canvas: HTMLCanvasElement | null = null;
   const el = document.createElement('div');
   el.style.cssText = 'position:fixed;left:0;top:0;pointer-events:none;z-index:5;display:none;padding:14px;margin:-14px'; // the padding is a bigger touch target
   el.addEventListener('pointerdown', (e) => { if (!current) return; e.preventDefault(); e.stopPropagation(); current.onInteract?.(); }); // touch: tap the prompt to use it
   document.body.appendChild(el);
-  let shownKey = '', current = null, area = 'street';
-  const here = (it) => (it.area ?? 'street') === area;
+  let shownKey = '', current: Interactable | null = null, area = 'street';
+  const here = (it: Interactable) => (it.area ?? 'street') === area;
   const v = new THREE.Vector3();
 
   return {
     items,
-    add(item) { item.height ??= 2; items.push(item); },
-    setArea(id) { area = id; },
+    add(item: InteractableInput) { item.height ??= 2; items.push(item as Interactable); },
+    setArea(id: string) { area = id; },
     get area() { return area; },
     get current() { return current; },
     // Nearest interactable in front of the player (within range).
-    nearest(pos, facing) {
+    nearest(pos: { x: number; z: number }, facing: number) {
       const fx = Math.sin(facing), fz = Math.cos(facing);
-      let best = null, bestD = Infinity;
+      let best: Interactable | null = null, bestD = Infinity;
       for (const it of items) {
         if (!here(it)) continue;
         const dx = it.position.x - pos.x, dz = it.position.z - pos.z, d = Math.hypot(dx, dz);
@@ -77,8 +90,8 @@ export function createInteractions(scene) {
       return best;
     },
     // Interactable under a screen click, if any.
-    pick(click, camera) {
-      let best = null, bestD = INTERACT.pickPixels;
+    pick(click: { x: number; y: number }, camera: THREE.Camera) {
+      let best: Interactable | null = null, bestD = INTERACT.pickPixels;
       for (const it of items) {
         if (!here(it)) continue;
         v.copy(it.position).setY(it.position.y + it.height / 2).project(camera);
@@ -91,7 +104,7 @@ export function createInteractions(scene) {
     },
     hide() { el.style.display = 'none'; current = null; },
     // Shows the prompt over the nearest interactable, with the glyph for the last-used device.
-    update(pos, facing, device, padType, camera) {
+    update(pos: { x: number; z: number }, facing: number, device: string, padType: string, camera: THREE.Camera) {
       current = this.nearest(pos, facing);
       el.style.display = current ? 'block' : 'none';
       el.style.pointerEvents = device === 'touch' ? 'auto' : 'none';
@@ -105,8 +118,8 @@ export function createInteractions(scene) {
         el.replaceChildren(canvas);
       }
       v.copy(current.position).setY(current.position.y + current.height + INTERACT.promptGap).project(camera);
-      const sx = Math.round((v.x + 1) / 2 * window.innerWidth - (canvas.width * INTERACT.promptScale) / 2);
-      const sy = Math.round((1 - v.y) / 2 * window.innerHeight - canvas.height * INTERACT.promptScale);
+      const sx = Math.round((v.x + 1) / 2 * window.innerWidth - (canvas!.width * INTERACT.promptScale) / 2);
+      const sy = Math.round((1 - v.y) / 2 * window.innerHeight - canvas!.height * INTERACT.promptScale);
       el.style.transform = `translate(${sx}px, ${sy}px)`;
     },
   };

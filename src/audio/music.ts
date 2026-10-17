@@ -1,4 +1,5 @@
 import { midiToFreq } from './synth.ts';
+import type { Synth } from './synth.ts';
 
 // Step sequencer: slow synthwave / lo-fi built from oscillators and filtered noise. One mood plays at a time;
 // setMood cross-fades. All numbers are in TUNING (midi note numbers, volumes 0..1, cutoffs in Hz).
@@ -42,7 +43,7 @@ export const TUNING = {
   // so the tune takes a long time to repeat. mel: eighth-note slots, numbers = steps up a pentatonic scale (-1 = rest).
   bazaar: {
     bpm: 82,
-    chords: [[48, 'maj'], [45, 'min'], [53, 'maj'], [55, 'maj'], [48, 'maj'], [52, 'maj'], [45, 'min'], [55, 'maj']],
+    chords: [[48, 'maj'], [45, 'min'], [53, 'maj'], [55, 'maj'], [48, 'maj'], [52, 'maj'], [45, 'min'], [55, 'maj']] as [number, string][],
     mel: [[0, -1, 2, -1, 4, 2, -1, -1], [4, -1, 3, 2, -1, 0, -1, -1], [2, 2, -1, 4, -1, 5, 4, -1], [-1, 0, 1, 2, -1, -1, 4, -1], [5, -1, 4, -1, 2, -1, 0, -1], [0, 2, 4, 2, -1, -1, -1, -1], [7, -1, 5, 4, 2, -1, -1, -1]],
     pad: { vol: 0.018, cutoff: 800, detune: 6, attack: 1.2, release: 1.5 },
     lead: { vol: 0.07, cutoff: 3000, restChance: 0.15 }, bass: { vol: 0.15, cutoff: 500 }, stab: { vol: 0.035 },
@@ -68,21 +69,25 @@ export const TUNING = {
   },
 };
 
-export function createMusic(synth) {
-  const T = TUNING;
-  let cur = null, old = [], curName = '', nextTime = 0, timer = null, links = 0;
-  const stepDur = (bpm) => 60 / bpm / 4; // a 16th note
+interface Layer { def: MoodDef; out: GainNode; i: number; name: string; killAt?: number }
+interface MoodDef { bpm: number; step(m: Layer, i: number, t: number): void }
+export interface Music { readonly mood: string; setMood(name: string, fade?: number): void; addLink(): void; resetLinks(): void }
 
-  const pad = (out, notes, t, dur, c) => {
+export function createMusic(synth: Synth): Music {
+  const T = TUNING;
+  let cur: Layer | null = null, old: Layer[] = [], curName = '', nextTime = 0, timer: ReturnType<typeof setInterval> | null = null, links = 0;
+  const stepDur = (bpm: number) => 60 / bpm / 4; // a 16th note
+
+  const pad = (out: AudioNode, notes: number[], t: number, dur: number, c: { detune: number; vol: number; attack: number; release: number; cutoff: number }) => {
     for (const n of notes) for (const d of [-c.detune, c.detune]) {
       synth.tone({ freq: midiToFreq(n), type: 'sawtooth', t, dur, vol: c.vol, attack: c.attack, release: c.release, detune: d,
         filter: { type: 'lowpass', freq: c.cutoff, q: 0.5 }, to: out });
     }
   };
-  const kick = (out, t, vol, f = 120) => synth.tone({ freq: f, type: 'sine', t, dur: 0.16, vol, slide: 42, attack: 0.002, release: 0.05, to: out });
+  const kick = (out: AudioNode, t: number, vol: number, f = 120) => synth.tone({ freq: f, type: 'sine', t, dur: 0.16, vol, slide: 42, attack: 0.002, release: 0.05, to: out });
 
   // Each mood: bpm + step(m, i, t) where m = { out (its gain node) }. i counts 16th notes since the mood began.
-  const MOODS = {
+  const MOODS: Record<string, MoodDef> = {
     street: {
       bpm: T.street.bpm,
       step(m, i, t) {
@@ -253,19 +258,19 @@ export function createMusic(synth) {
       for (const m of [cur, ...old]) if (m) m.def.step(m, m.i++, nextTime);
       nextTime += stepDur(cur ? cur.def.bpm : 72);
     }
-    old = old.filter((m) => { if (now < m.killAt) return true; m.out.disconnect(); return false; });
+    old = old.filter((m) => { if (now < m.killAt!) return true; m.out.disconnect(); return false; });
   }
 
   return {
-    get mood() { return curName; },
+    get mood(): string { return curName; },
     // fade: cross-fade seconds. 'silent' fades everything out (for the cliffhanger).
-    setMood(name, fade = T.fade) {
+    setMood(name: string, fade = T.fade) {
       if (!synth.ready || name === curName) return;
       curName = name;
       const t = synth.now;
       if (cur) { cur.out.gain.setTargetAtTime(0, t, fade / 3); cur.killAt = t + fade * 1.6; old.push(cur); cur = null; }
       if (name === 'silent' || !MOODS[name]) return;
-      const out = synth.ctx.createGain(); out.gain.value = 0; out.connect(synth.buses.music);
+      const out = synth.ctx!.createGain(); out.gain.value = 0; out.connect(synth.buses.music);
       out.gain.setTargetAtTime(1, t, fade / 3);
       cur = { def: MOODS[name], out, i: 0, name };
       timer ??= setInterval(tick, T.tickMs);

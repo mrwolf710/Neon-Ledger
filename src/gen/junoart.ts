@@ -1,4 +1,16 @@
 import * as THREE from 'three';
+import type { SpriteSheet, SheetAnim } from './sprites.ts';
+
+// Shapes of the *_ART tables below, by the loader that consumes them.
+export interface SheetArt { base: string; pxPerUnit: number; dirs: string[]; size: number; sheets?: Record<string, { file: string; frames: number }>; sheetCell?: number; walkFps?: number }
+export interface KitArt { base: string; cell: number; pxPerUnit: number; fps: number; foot: number; frames?: number; dirs: string[] }
+export interface WalkerArt { base: string; size: number; cell: number; frames: number; pxPerUnit: number; walkFps: number; dirs: string[] }
+export interface LoopArt { base: string; size: number; pxPerUnit: number; fps?: number; small?: boolean; walk?: string; walkFps?: number; dirs: string[]; files?: Record<string, string> }
+// [state, mirrored (true = whole figure, 'legs' = legs only), dy, lift per leg half]
+type FrameRecipe = [string, boolean | string, number, number[]?];
+type FrameTable = Record<string, FrameRecipe[]>;
+type Anims = Record<string, SheetAnim>;
+type AnimRows = Record<string, Record<string, number>>;
 
 // Juno's sprites are the owner's own pixel art (48x48, 8 directions), loaded from public/sprites/juno/<state>/<direction>.png.
 // Each state is one key pose per direction, so the animations are assembled from those poses:
@@ -18,12 +30,12 @@ export const JUNO_ART = {
 };
 // Mama Teo: the owner's "slow breathing idle" (one pose per direction); the breath is the pose dipping 1 px.
 export const TEO_ART = { base: 'sprites/teo', size: 48, pxPerUnit: 24, dirs: JUNO_ART.dirs, states: [''] }; // pxPerUnit: her figure is ~38 px tall and stout
-const TEO_FRAMES = { idle: [['', false, 0], ['', false, 1]] };
+const TEO_FRAMES: FrameTable = { idle: [['', false, 0], ['', false, 1]] };
 // Holo-preacher: one 144x144 PNG, a 3x3 grid of 48 px cells in reading order = the 8 directions (the 9th cell is empty). Drawn as a cyan hologram by the CAST ghost flag.
 export const PRIEST_ART = { base: 'sprites/priest', size: 48, pxPerUnit: 25, dirs: JUNO_ART.dirs, states: [''] };
 // Dex (dead, seated in the Sable's back room): 8 still poses, one frame only so he never moves.
 export const DEX_ART = { base: 'sprites/corpo', size: 48, pxPerUnit: 24, dirs: JUNO_ART.dirs, states: [''] };
-const DEX_FRAMES = { idle: [['', false, 0]] };
+const DEX_FRAMES: FrameTable = { idle: [['', false, 0]] };
 // Animated idles (the owner's Pixellab exports): one south-facing loop of 8 frames (idle-0..7.png) plus a still per direction.
 // Other directions hold their still, so the loop only shows when the character faces the camera.
 export const CAT_ART = { base: 'sprites/cat', size: 48, pxPerUnit: 55, fps: 8, small: true, walk: 'walk', walkFps: 10, dirs: JUNO_ART.dirs }; // Miso: figure ~46 px tall facing the camera, so ~0.8 units
@@ -52,10 +64,10 @@ export const WALKER4_ART = { base: 'sprites/walker4', size: 48, cell: 80, frames
 const LEGS_Y = 38; // px row where the legs start (below the coat hem): walk/sneak frames swap only the part below it
 const FOOT_LIFT = 3; // px a stepping foot is raised (the left / right half of the legs alternate), so the feet visibly move
 const LOOP = 8;
-const OPP = { south: 'south', north: 'north', east: 'west', west: 'east', 'south-east': 'south-west', 'south-west': 'south-east', 'north-east': 'north-west', 'north-west': 'north-east' };
+const OPP: Record<string, string> = { south: 'south', north: 'north', east: 'west', west: 'east', 'south-east': 'south-west', 'south-west': 'south-east', 'north-east': 'north-west', 'north-west': 'north-east' };
 
 // Frame recipes: [state, mirrored?, dy] where mirrored uses the opposite direction's picture flipped.
-const FRAMES = {
+const FRAMES: FrameTable = {
   idle: [['idle', false, 0], ['idle', false, 1]],
   walk: [['walk', false, 1, [FOOT_LIFT, 0]], ['walk', false, 0], ['walk', 'legs', 1, [0, FOOT_LIFT]], ['walk', 'legs', 0]],
   sneak: [['sneak', false, 0, [1, 0]], ['sneak', false, 1], ['sneak', 'legs', 0, [0, 1]], ['sneak', 'legs', 1]],
@@ -63,15 +75,15 @@ const FRAMES = {
   listening: [['listening', false, 0], ['listening', false, 1]],
 };
 
-const load = (url) => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error(`could not load ${url}`)); i.src = url; });
+const load = (url: string) => new Promise<HTMLImageElement>((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error(`could not load ${url}`)); i.src = url; });
 
 // Returns a sheet in the same shape the billboard expects, with 8 directions per animation (sheet.dirs = 8).
 export const loadJunoSheet = () => loadSheet(JUNO_ART, FRAMES, ['idle', 'walk', 'sneak', 'tablet', 'listening']);
-export async function loadPriestSheet() {
-  const S = PRIEST_ART.size, grid = await load(`${import.meta.env.BASE_URL}${PRIEST_ART.base}/sheet.png`), imgs = {};
+export async function loadPriestSheet(): Promise<SpriteSheet> {
+  const S = PRIEST_ART.size, grid = await load(`${import.meta.env.BASE_URL}${PRIEST_ART.base}/sheet.png`), imgs: Record<string, CanvasImageSource> = {};
   PRIEST_ART.dirs.forEach((d, i) => {
     const c = Object.assign(document.createElement('canvas'), { width: S, height: S });
-    c.getContext('2d').drawImage(grid, (i % 3) * S, Math.floor(i / 3) * S, S, S, 0, 0, S, S);
+    c.getContext('2d')!.drawImage(grid, (i % 3) * S, Math.floor(i / 3) * S, S, S, 0, 0, S, S);
     imgs[`/${d}`] = c;
   });
   return loadSheet(PRIEST_ART, TEO_FRAMES, [''], imgs);
@@ -79,16 +91,16 @@ export async function loadPriestSheet() {
 // Dex's dead body (the owner's stills) gets a wound painted on at load: blood pooled at the back of his head, seen from every direction that shows the back of it.
 // Masks: R = blood, D = dark clot, r = wet highlight, . = nothing; drawn only over opaque pixels. at = [x, y] of the mask's top-left in the 48 px frame.
 export const DEX_BLOOD = {
-  colors: { R: '#a3121a', D: '#5c0a0f', r: '#d02a32' },
+  colors: { R: '#a3121a', D: '#5c0a0f', r: '#d02a32' } as Record<string, string>,
   big: ['..DDRD...', '.DRRrRD..', 'DRRRDRRD.', 'DRrRDRRRD', '.DRRRRRD.', '..DRRRD..', '...DRD...', '....R....', '....D....'],
   side: ['.DRD', 'DRRD', 'DRrR', 'DRRD', '.DRD', '..R.'],
-  at: { 'north': ['big', 20, 3], 'north-west': ['big', 21, 4], 'north-east': ['big', 19, 4], 'east': ['side', 17, 4], 'west': ['side', 27, 4] },
+  at: { 'north': ['big', 20, 3], 'north-west': ['big', 21, 4], 'north-east': ['big', 19, 4], 'east': ['side', 17, 4], 'west': ['side', 27, 4] } as Record<string, ['big' | 'side', number, number]>,
 };
-export async function loadDexSheet() {
-  const A = DEX_ART, imgs = {};
+export async function loadDexSheet(): Promise<SpriteSheet> {
+  const A = DEX_ART, imgs: Record<string, CanvasImageSource> = {};
   await Promise.all(A.dirs.map(async (d) => {
     const img = await load(`${import.meta.env.BASE_URL}${A.base}/${d}.png`);
-    const cv = Object.assign(document.createElement('canvas'), { width: img.width, height: img.height }), ctx = cv.getContext('2d');
+    const cv = Object.assign(document.createElement('canvas'), { width: img.width, height: img.height }), ctx = cv.getContext('2d')!;
     ctx.drawImage(img, 0, 0);
     const spot = DEX_BLOOD.at[d];
     if (spot) {
@@ -108,21 +120,21 @@ export const loadTeoSheet = () => loadSheet(TEO_ART, TEO_FRAMES, ['']);
 export const loadVendorSheet = () => loadKitSheet(VENDOR_ART);
 // The three Bureau auditors (chapter 2 ending): eight 48 px stills (<dir>.png) and a 4-frame breathing loop (64 px frames, idle-<dir>-<n>.png) for south, north and south-east; other directions hold their still.
 export const AUDITOR_ART = { ...MARKET1_ART, base: 'sprites/auditors', foot: 11 }; // the three Bureau auditors share one owner sheet (64 px cells, 8 directions, 4-frame idle) and portrait
-export async function loadHaleSheet() {
-  const A = HALE_ART, grid = await load(`${import.meta.env.BASE_URL}${A.base}/sheet.png`), imgs = {};
+export async function loadHaleSheet(): Promise<SpriteSheet> {
+  const A = HALE_ART, grid = await load(`${import.meta.env.BASE_URL}${A.base}/sheet.png`), imgs: Record<string, CanvasImageSource> = {};
   A.dirs.forEach((dir, i) => {
     const canvas = Object.assign(document.createElement('canvas'), { width: A.size, height: A.size });
-    canvas.getContext('2d').drawImage(grid, i * A.size, 0, A.size, A.size, 0, 0, A.size, A.size);
+    canvas.getContext('2d')!.drawImage(grid, i * A.size, 0, A.size, A.size, 0, 0, A.size, A.size);
     imgs[`/${dir}`] = canvas;
   });
   return { ...await loadSheet(A, DEX_FRAMES, [''], imgs), portraitDirection: A.portraitDirection };
 }
-export async function loadKitSheet(A = KIT_ART) {
+export async function loadKitSheet(A: KitArt = KIT_ART): Promise<SpriteSheet> {
   const img = await load(`${import.meta.env.BASE_URL}${A.base}/sheet.png`);
   const still = img.height <= A.cell; // stills-only sheet (one row of 8): stack them as the 8 idle rows
   const canvas = Object.assign(document.createElement('canvas'), still ? { width: A.cell, height: A.cell * 9 } : { width: img.width, height: img.height });
-  if (still) A.dirs.forEach((d, i) => canvas.getContext('2d').drawImage(img, i * A.cell, 0, A.cell, A.cell, 0, (i + 1) * A.cell, A.cell, A.cell));
-  else canvas.getContext('2d').drawImage(img, 0, 0);
+  if (still) A.dirs.forEach((d, i) => canvas.getContext('2d')!.drawImage(img, i * A.cell, 0, A.cell, A.cell, 0, (i + 1) * A.cell, A.cell, A.cell));
+  else canvas.getContext('2d')!.drawImage(img, 0, 0);
   const texture = new THREE.CanvasTexture(canvas);
   texture.magFilter = texture.minFilter = THREE.NearestFilter;
   texture.generateMipmaps = false;
@@ -130,10 +142,10 @@ export async function loadKitSheet(A = KIT_ART) {
   const animRows = { idle: Object.fromEntries(A.dirs.map((d, i) => [d, i + 1])) };
   return { texture, canvas, frameW: A.cell, frameH: A.cell, pxPerUnit: A.pxPerUnit, dirs: 8, rows: {}, animRows, anims: { idle: { start: 0, frames: A.frames ?? LOOP } }, fps: A.fps, footPx: A.foot };
 }
-export async function loadWalkerSheet(A = WALKER1_ART) {
+export async function loadWalkerSheet(A: WalkerArt = WALKER1_ART): Promise<SpriteSheet> {
   const S = A.size, n = A.dirs.length, N = A.frames, img = await load(`${import.meta.env.BASE_URL}${A.base}/sheet.png`), o = (A.cell - S) / 2;
   const canvas = Object.assign(document.createElement('canvas'), { width: S * N, height: S * n * 2 });
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d')!;
   A.dirs.forEach((d, i) => {
     ctx.drawImage(img, i * A.cell + o, o, S, S, 0, i * S, S, S);                                              // idle: the still
     for (let f = 0; f < N; f++) ctx.drawImage(img, f * A.cell + o, (i + 1) * A.cell + o, S, S, f * S, (n + i) * S, S, S); // walk
@@ -142,22 +154,22 @@ export async function loadWalkerSheet(A = WALKER1_ART) {
   texture.magFilter = texture.minFilter = THREE.NearestFilter;
   texture.generateMipmaps = false;
   texture.colorSpace = THREE.SRGBColorSpace;
-  const rows = (base) => Object.fromEntries(A.dirs.map((d, i) => [d, base + i]));
+  const rows = (base: number) => Object.fromEntries(A.dirs.map((d, i) => [d, base + i]));
   return { texture, canvas, frameW: S, frameH: S, pxPerUnit: A.pxPerUnit, dirs: 8, rows: {}, animRows: { idle: rows(0), walk: rows(n) },
     anims: { idle: { start: 0, frames: 1 }, walk: { start: 0, frames: N } }, fps: 2, walkFps: A.walkFps };
 }
 export const loadCatSheet = () => loadLoopSheet(CAT_ART);
 export const loadDexStandSheet = () => loadLoopSheet(DEX_STAND_ART);
 
-async function loadLoopSheet(A) {
-  const S = A.size, url = (n) => `${import.meta.env.BASE_URL}${A.base}/${n}.png`;
+async function loadLoopSheet(A: LoopArt): Promise<SpriteSheet> {
+  const S = A.size, url = (n: string) => `${import.meta.env.BASE_URL}${A.base}/${n}.png`;
   const stills = await Promise.all(A.dirs.map((d) => load(url(A.files?.[d] ?? d))));
   const loop = await Promise.all(Array.from({ length: LOOP }, (_, i) => load(url(`idle-${i}`))));
   const canvas = Object.assign(document.createElement('canvas'), { width: S * LOOP, height: S * A.dirs.length * (A.walk ? 2 : 1) });
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d')!;
   // the loop frames are 80 px, the stills 48: crop the middle of each
   A.dirs.forEach((d, row) => { for (let f = 0; f < LOOP; f++) { const im = d === 'south' ? loop[f] : stills[row]; ctx.drawImage(im, (im.width - S) / 2, (im.height - S) / 2, S, S, f * S, row * S, S, S); } });
-  const animRows = { idle: Object.fromEntries(A.dirs.map((d, i) => [d, i])) }, anims = { idle: { start: 0, frames: LOOP } };
+  const animRows: AnimRows = { idle: Object.fromEntries(A.dirs.map((d, i) => [d, i])) }, anims: Anims = { idle: { start: 0, frames: LOOP } };
   if (A.walk) { // Pixellab sheet of 80 px cells: row 0 stills, rows 1-8 the 8-frame walk per direction; crop each to the middle 48 px
     const w = await load(`${import.meta.env.BASE_URL}${A.base}/${A.walk}.png`), cell = w.width / LOOP, o = (cell - S) / 2;
     A.dirs.forEach((d, i) => { for (let f = 0; f < LOOP; f++) ctx.drawImage(w, f * cell + o, (i + 1) * cell + o, S, S, f * S, (A.dirs.length + i) * S, S, S); });
@@ -170,21 +182,21 @@ async function loadLoopSheet(A) {
   return { texture, canvas, frameW: S, frameH: S, pxPerUnit: A.pxPerUnit, dirs: 8, rows: {}, animRows, anims, fps: A.fps, walkFps: A.walkFps, small: !!A.small };
 }
 
-async function loadSheet(A, FRAMES, states, preloaded) {
+async function loadSheet(A: SheetArt, FRAMES: FrameTable, states: string[], preloaded?: Record<string, CanvasImageSource>): Promise<SpriteSheet> {
   const S = A.size;
-  const imgs = preloaded || {};
+  const imgs: Record<string, CanvasImageSource> = preloaded || {};
   if (!preloaded) await Promise.all(states.flatMap((st) => A.dirs.map(async (d) => { imgs[`${st}/${d}`] = await load(`${import.meta.env.BASE_URL}${A.base}/${st ? st + '/' : ''}${d}.png`); })));
 
-  const extra = []; // owner animation sheets that loaded: { name, img, frames }
+  const extra: { name: string; img: HTMLImageElement; frames: number }[] = []; // owner animation sheets that loaded: { name, img, frames }
   for (const [name, x] of Object.entries(A.sheets ?? {})) {
     const img = await load(`${import.meta.env.BASE_URL}${A.base}/${x.file}.png`).catch(() => null);
     if (img) extra.push({ name, img, frames: x.frames });
   }
   const anims = Object.keys(FRAMES).filter((a) => !extra.some((e) => e.name === a)), cols = Math.max(4, ...extra.map((e) => e.frames));
   const canvas = Object.assign(document.createElement('canvas'), { width: S * cols, height: S * A.dirs.length * (anims.length + extra.length) });
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d')!;
   ctx.imageSmoothingEnabled = false;
-  const animRows = {}, sheetAnims = {};
+  const animRows: AnimRows = {}, sheetAnims: Anims = {};
   anims.forEach((anim, ai) => {
     animRows[anim] = {}; sheetAnims[anim] = { start: 0, frames: FRAMES[anim].length };
     A.dirs.forEach((dir, di) => {
@@ -210,7 +222,7 @@ async function loadSheet(A, FRAMES, states, preloaded) {
     });
   });
   extra.forEach(({ name, img, frames }, ei) => {
-    const cell = A.sheetCell, o = (cell - S) / 2;
+    const cell = A.sheetCell!, o = (cell - S) / 2;
     animRows[name] = {}; sheetAnims[name] = { start: 0, frames };
     A.dirs.forEach((dir, di) => {
       const row = (anims.length + ei) * A.dirs.length + di;

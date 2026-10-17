@@ -1,6 +1,6 @@
 // 3x5 pixel font, defined as data (no font files). Upper case, digits and basic punctuation; lower case
 // is drawn as upper case. Each glyph is 5 rows of 3 cells, '#' = on. Advance is 4 px (1 px spacing).
-const ROWS = {
+const ROWS: Record<string, string[]> = {
   A: ['.#.', '#.#', '###', '#.#', '#.#'], B: ['##.', '#.#', '##.', '#.#', '##.'], C: ['.##', '#..', '#..', '#..', '.##'],
   D: ['##.', '#.#', '#.#', '#.#', '##.'], E: ['###', '#..', '##.', '#..', '###'], F: ['###', '#..', '##.', '#..', '#..'],
   G: ['.##', '#..', '#.#', '#.#', '.##'], H: ['#.#', '#.#', '###', '#.#', '#.#'], I: ['###', '.#.', '.#.', '.#.', '###'],
@@ -23,10 +23,10 @@ const ROWS = {
 
 export const FONT = { w: 3, h: 5, advance: 4 };
 
-export const measure = (text) => Math.max(0, String(text).length * FONT.advance - 1);
+export const measure = (text: unknown) => Math.max(0, String(text).length * FONT.advance - 1);
 
 // Draws text with fillRect pixels at (x, y) = top-left, in the given CSS colour.
-export function drawText(ctx, text, x, y, color) {
+export function drawText(ctx: CanvasRenderingContext2D, text: unknown, x: number, y: number, color: string) {
   ctx.fillStyle = color;
   [...String(text).toUpperCase()].forEach((ch, i) => {
     const g = ROWS[ch] ?? ROWS['?'];

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import type { Billboard } from './npc.ts';
 
 export const PLAYER = {
   walk: 3, run: 6, sneak: 1.5,   // units per second
@@ -11,22 +12,35 @@ export const PLAYER = {
 };
 
 // Juno: drives a billboard (from npc.js) with camera-relative movement or click-to-move, colliding via collision.js.
-export function createPlayer(billboard, initialCollision) {
+// What the player needs from the collision world and the input module (typed structurally; the real ones live in src/world and src/core).
+export interface PlayerCollision { move(pos: THREE.Vector3, dx: number, dz: number, radius: number): boolean }
+export interface PlayerInput { moveX: number; moveY: number; run: boolean; held(a: string): boolean }
+export interface Player {
+  position: THREE.Vector3;
+  cancel(): void;
+  setPose(p: string | null): void;
+  setCollision(c: PlayerCollision): void;
+  readonly facing: number;
+  walkTo(point: { x: number; z: number }, reach?: number, onArrive?: (() => void) | null): void;
+  update(dt: number, input: PlayerInput, camYaw: number, idleOk?: boolean): void;
+}
+interface Goal { point: { x: number; z: number }; reach: number; onArrive: (() => void) | null }
+export function createPlayer(billboard: Billboard, initialCollision: PlayerCollision): Player {
   let collision = initialCollision;
   const pos = billboard.position, vel = new THREE.Vector2();
-  let goal = null, stuck = 0, pose = null, forced = false, idle = 0;
+  let goal: Goal | null = null, stuck = 0, pose: string | null = null, forced = false, idle = 0;
 
   return {
     position: pos,
     cancel() { goal = null; },
     // Hold a pose while standing ('tablet'); null releases it. Any movement also releases it.
-    setPose(p) { pose = p; forced = !!p; idle = 0; },
-    setCollision(c) { collision = c; goal = null; vel.set(0, 0); },
+    setPose(p: string | null) { pose = p; forced = !!p; idle = 0; },
+    setCollision(c: PlayerCollision) { collision = c; goal = null; vel.set(0, 0); },
     get facing() { return billboard.facing; },
     // Walk to point (Vector3, may be a live reference), stop within reach, then call onArrive.
-    walkTo(point, reach = 0.15, onArrive = null) { goal = { point, reach, onArrive }; stuck = 0; },
+    walkTo(point: { x: number; z: number }, reach = 0.15, onArrive: (() => void) | null = null) { goal = { point, reach, onArrive }; stuck = 0; },
     // idleOk: false during conversations / menus, so she doesn't start fidgeting mid-scene.
-    update(dt, input, camYaw, idleOk = true) {
+    update(dt: number, input: PlayerInput, camYaw: number, idleOk = true) {
       // Stick/keys: W is up the screen at any camera angle.
       const cx = Math.cos(camYaw), sx = Math.sin(camYaw);
       let wx = input.moveX * cx - input.moveY * sx, wz = -input.moveX * sx - input.moveY * cx;

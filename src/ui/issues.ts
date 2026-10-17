@@ -11,15 +11,19 @@ export const ISSUES = {
 export const issuesEnabled = () => import.meta.env.MODE !== 'itch' && (import.meta.env.DEV || new URLSearchParams(location.search).has('issues')); // never in the itch.io build, not even with ?issues
 
 // context(): () => { ...whatever helps reproduce it } is called when the box opens, so it describes the moment you noticed the problem.
-export function createIssues({ input, context, toast }) {
+interface InputLike { pressed(a: string): boolean; lastDevice: string }
+export interface IssueEntry { text: string; context: Record<string, unknown> }
+export interface Issues { readonly isOpen: boolean; open(): void; close(): void; submit(): void; toggle(): void; update(): void }
+
+export function createIssues({ input, context, toast }: { input: InputLike; context?: () => Record<string, unknown>; toast?: (text: string) => void }): Issues {
   const root = document.createElement('div');
   root.id = 'issue-box';
   root.innerHTML = `<label for="issue-text">Describe the issue:</label>
     <textarea id="issue-text" rows="3" maxlength="${ISSUES.maxChars}" placeholder="What happened? What did you expect?" autocomplete="off" autocapitalize="sentences"></textarea>
     <div class="row"><span class="hint"></span><button type="button" class="cancel">Cancel</button><button type="button" class="ok">OK</button></div>`;
   document.body.appendChild(root);
-  const text = root.querySelector('textarea'), hint = root.querySelector('.hint');
-  let isOpen = false, snapshot = {}, pending = 0;
+  const text = root.querySelector('textarea')!, hint = root.querySelector('.hint')!;
+  let isOpen = false, snapshot: Record<string, unknown> = {}, pending = 0;
 
   const style = document.createElement('style');
   style.textContent = `#issue-box{position:fixed;right:max(1rem,env(safe-area-inset-right));bottom:max(1rem,env(safe-area-inset-bottom));z-index:30;width:min(24rem,calc(100vw - 2rem));display:none;
@@ -34,10 +38,10 @@ export function createIssues({ input, context, toast }) {
     #issue-box button.ok{background:var(--magenta,#e0217d);border-color:var(--magenta,#e0217d)}`;
   document.head.appendChild(style);
 
-  function remember(entry) { // the server was not there: keep it in this browser
+  function remember(entry: unknown) { // the server was not there: keep it in this browser
     try { const all = JSON.parse(localStorage.getItem(ISSUES.key) ?? '[]'); all.push(entry); localStorage.setItem(ISSUES.key, JSON.stringify(all)); return all.length; } catch { return 0; }
   }
-  async function send(entry) {
+  async function send(entry: IssueEntry) {
     try {
       const r = await fetch('/__issues', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(entry) });
       if (!r.ok) throw new Error(String(r.status));
@@ -49,7 +53,7 @@ export function createIssues({ input, context, toast }) {
     }
   }
 
-  const api = {
+  const api: Issues = {
     get isOpen() { return isOpen; },
     open() {
       if (isOpen) return;
@@ -75,9 +79,9 @@ export function createIssues({ input, context, toast }) {
     },
   };
   // F9 acts at once on the key press, not on the next game frame, so the letters typed right after it can never reach the game.
-  window.addEventListener('keydown', (e) => { if (e.code === 'F9' && !e.repeat && !e.target?.matches?.('textarea')) { e.preventDefault(); api.toggle(); } });
-  root.querySelector('.ok').addEventListener('click', api.submit);
-  root.querySelector('.cancel').addEventListener('click', api.close);
+  window.addEventListener('keydown', (e) => { if (e.code === 'F9' && !e.repeat && !(e.target as Element | null)?.matches?.('textarea')) { e.preventDefault(); api.toggle(); } });
+  root.querySelector('.ok')!.addEventListener('click', api.submit);
+  root.querySelector('.cancel')!.addEventListener('click', api.close);
   text.addEventListener('keydown', (e) => {
     e.stopPropagation(); // the game must not see typing
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); api.submit(); }

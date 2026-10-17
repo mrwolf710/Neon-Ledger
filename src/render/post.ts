@@ -90,7 +90,7 @@ const Grade = {
     }`,
 };
 
-export function createPost(renderer, scene, camera, quality) {
+export function createPost(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera, quality: { bloomScale: number }) {
   const P = POST;
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
@@ -118,11 +118,11 @@ export function createPost(renderer, scene, camera, quality) {
   return {
     composer,
     applyUniforms, // call after changing POST (debug sliders in 3B)
-    setEcho(a) { g.echo.value = a; },       // 0..1 echo-mode grade
-    setCrt(a) { g.crt.value = a; },         // 0..1 CRT monitor frame (1 = small bulged screen in a bezel, 0 = full screen)
-    setVhs(a) { g.vhs.value = a; },         // 0..1 old-VHS-tape look (cold open)
-    setGlitch(a) { g.glitch.value = a; },   // 0..1 pixel-tear strength
-    setSize(w, h) {
+    setEcho(a: number) { g.echo.value = a; },       // 0..1 echo-mode grade
+    setCrt(a: number) { g.crt.value = a; },         // 0..1 CRT monitor frame (1 = small bulged screen in a bezel, 0 = full screen)
+    setVhs(a: number) { g.vhs.value = a; },         // 0..1 old-VHS-tape look (cold open)
+    setGlitch(a: number) { g.glitch.value = a; },   // 0..1 pixel-tear strength
+    setSize(w: number, h: number) {
       composer.setSize(w, h);
       const pr = renderer.getPixelRatio();
       bloom.setSize( // after composer.setSize, which sizes bloom at full res
@@ -130,7 +130,7 @@ w * pr * quality.bloomScale, h * pr * quality.bloomScale);
       tiltH.uniforms.dir.value.set(1 / (w * pr), 0);
       tiltV.uniforms.dir.value.set(0, 1 / (h * pr));
     },
-    render(dt) {
+    render(dt: number) {
       g.time.value = (g.time.value + dt) % 100;
       composer.render(dt);
     },

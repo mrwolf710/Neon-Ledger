@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import type { HeightFog } from '../render/fog.ts';
 import { createBatch } from '../gen/batch.ts';
 import { DISTRICT } from './district.ts';
 
@@ -10,9 +11,9 @@ export const TRAIN = {
 
 // The Line 9 train crossing the street on the elevated rail. Its z comes from the sound (sfx.trainZ()), so what you see is what you hear.
 // Heads toward +z. Plain boxes merged by material: 3 draw calls, no lights.
-export function createRailTrain(parent, fog) {
+export function createRailTrain(parent: THREE.Object3D, fog: HeightFog) {
   const T = TRAIN, step = T.carLen + T.gap, total = T.cars * step - T.gap;
-  const mat = (c, basic) => {
+  const mat = (c: number, basic?: boolean) => {
     const m = basic ? new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(T.glow) }) : new THREE.MeshStandardMaterial({ color: c, roughness: 0.6, metalness: 0.4 });
     m.userData.noCut = true; // the see-through area around Juno never removes the train
     return m;
@@ -33,6 +34,6 @@ export function createRailTrain(parent, fog) {
   fog.patch(group);
   return {
     group,
-    update(z) { group.visible = z !== null; if (z !== null) group.position.z = z; },
+    update(z: number | null) { group.visible = z !== null; if (z !== null) group.position.z = z; },
   };
 }

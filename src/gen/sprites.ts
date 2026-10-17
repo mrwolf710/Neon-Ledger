@@ -1,6 +1,38 @@
 import * as THREE from 'three';
 import { PALETTE as P, snap } from './palette.ts';
 
+export type PaletteName = keyof typeof P;
+type Mat = string | null;
+export interface Outfit { type: string; color?: PaletteName; collar?: boolean }
+export interface Accessory { type: string; color: PaletteName }
+export interface CharacterDef {
+  name: string; skin: PaletteName; iris: PaletteName; lips?: PaletteName; lashes?: boolean;
+  hair: { style: string; color: PaletteName; shine?: PaletteName };
+  top: PaletteName; legs: PaletteName; shoes: PaletteName; outfit?: Outfit; acc: Accessory[];
+  anims?: string[]; poses?: string[]; rolledSleeves?: boolean; stoop?: number;
+}
+export interface CatDef { name: string; fur: PaletteName; stripes: PaletteName; eyes: PaletteName; nose: PaletteName }
+type SpriteDef = Partial<CharacterDef> & Partial<CatDef>;
+export interface SheetAnim { start: number; frames: number }
+// What the billboard consumes: one canvas texture of frames plus row / animation tables.
+export interface SpriteSheet {
+  texture: THREE.CanvasTexture; canvas: HTMLCanvasElement; frameW: number; frameH: number; pxPerUnit: number; dirs?: number;
+  rows: Record<string, number>; animRows: Record<string, Record<string, number>>; anims: Record<string, SheetAnim>;
+  fps?: number; walkFps?: number; footPx?: number; small?: boolean; portraitDirection?: string;
+}
+export interface Grid {
+  w: number; h: number; m: Mat[]; mask: ((x: number, y: number) => boolean) | null;
+  rect(x0: number, y0: number, x1: number, y1: number, mat: Mat): void;
+  px(x: number, y: number, mat: Mat): void;
+  ellipse(cx: number, cy: number, rx: number, ry: number, mat: Mat): void;
+  capsule(ax: number, ay: number, bx: number, by: number, ra: number, rb: number, mat: Mat): void;
+  poly(pts: number[][], mat: Mat): void;
+  get(x: number, y: number): Mat;
+  mirrored(): Grid;
+}
+interface SideStep { a: number[]; b: number[]; armA: number; armB: number }
+interface FrontStep { lift: number[]; arm?: number[] }
+
 // Layered pixel characters, realistic proportions (~6 heads), drawn at double density (32 px per unit; the
 // street is 16). Each frame is a grid of material keys built from smooth shapes (ovals, tapered limbs, polygons)
 // on a simple skeleton, then shaded in 4 tones per row-run (lit from the left), hem shadows, neon rim on the
@@ -9,10 +41,10 @@ import { PALETTE as P, snap } from './palette.ts';
 export const SPRITES = {
   w: 40, h: 64, pxPerUnit: 32,
   cat: { w: 16, h: 12, pxPerUnit: 16 },
-  rim: { left: 'magentaDeep', right: 'cyanDeep' }, // neon edge light on the silhouette (palette names, null = off)
+  rim: { left: 'magentaDeep', right: 'cyanDeep' } as { left: PaletteName | null; right: PaletteName | null }, // neon edge light on the silhouette (palette names, null = off)
   fps: { idle: 2, walk: 5.5, run: 9, sneak: 4.5, tablet: 2.5 },
 };
-export const DIRS = ['down', 'up', 'left', 'right'];
+export const DIRS: string[] = ['down', 'up', 'left', 'right'];
 export const ANIMS = { idle: { start: 0, frames: 2 }, walk: { start: 2, frames: 4 } };
 
 // Characters are data. Colours are palette names.
@@ -64,13 +96,13 @@ export const CHARACTERS = {
     acc: [{ type: 'poncho', color: 'teal' }, { type: 'trim', color: 'pink' }, { type: 'hood', color: 'deepTeal' },
       { type: 'visor', color: 'cyan' }],
   },
-};
+} satisfies Record<string, CharacterDef>;
 export const CATS = {
   miso: { name: 'Miso', fur: 'sodium', stripes: 'sodium0', eyes: 'acid', nose: 'pink' },
-};
+} satisfies Record<string, CatDef>;
 
 // Shade chains: a colour's tones are its neighbours here (two darker, one lighter).
-const CHAINS = [
+const CHAINS: string[][] = [
   ['ink', 'night', 'indigo', 'violet'],
   ['ink', 'deepTeal', 'teal', 'seaGlass', 'cyanLight'],
   ['ink', 'grey0', 'grey1', 'grey2', 'grey3', 'grey4', 'grey5', 'grey6', 'white'],
@@ -83,32 +115,32 @@ const CHAINS = [
 // Flat (unshaded, no rim) materials: glows and tiny face features.
 const FLAT = new Set(['implant', 'visor', 'eyes', 'iris', 'stripe', 'soles', 'trim', 'nose', 'lips', 'brow', 'screen']);
 
-const chainOf = (name) => CHAINS.find((ch) => ch.indexOf(name) > 0 && ch.indexOf(name) < ch.length - 1)
+const chainOf = (name: string) => CHAINS.find((ch) => ch.indexOf(name) > 0 && ch.indexOf(name) < ch.length - 1)
   ?? CHAINS.find((ch) => ch.includes(name));
 // [darkest, dark, mid, light]
-function ramp(name) {
-  const c = chainOf(name), i = c.indexOf(name), at = (k) => P[c[Math.max(0, Math.min(c.length - 1, k))]];
+function ramp(name: string) {
+  const c = chainOf(name)!, i = c.indexOf(name), at = (k: number) => P[c[Math.max(0, Math.min(c.length - 1, k))] as PaletteName];
   return [at(i - 2), at(i - 1), at(i), at(i + 1)];
 }
 // Cool shadow for a skin colour: 30% of the way to indigo, snapped to the palette (rust tones look orange on pale skin).
-const skinShade = (name) => {
-  const c = P[name], i = P.indigo, mix = (sh) => Math.round(((c >> sh) & 255) * 0.7 + ((i >> sh) & 255) * 0.3);
+const skinShade = (name: string) => {
+  const c = P[name as PaletteName], i = P.indigo, mix = (sh: number) => Math.round(((c >> sh) & 255) * 0.7 + ((i >> sh) & 255) * 0.3);
   return snap((mix(16) << 16) | (mix(8) << 8) | mix(0));
 };
-const lum = (c) => (0.2126 * ((c >> 16) & 255) + 0.7152 * ((c >> 8) & 255) + 0.0722 * (c & 255)) / 255;
+const lum = (c: number) => (0.2126 * ((c >> 16) & 255) + 0.7152 * ((c >> 8) & 255) + 0.0722 * (c & 255)) / 255;
 
 // --- Grid with shape primitives. Pixel (x, y) covers [x, x+1); shapes test pixel centres. ---
-function grid(w, h) {
-  const g = { w, h, m: new Array(w * h).fill(null), mask: null };
-  const set = (x, y, mat) => {
+function grid(w: number, h: number): Grid {
+  const g = { w, h, m: new Array(w * h).fill(null), mask: null } as Grid;
+  const set = (x: number, y: number, mat: Mat) => {
     if (x < 0 || y < 0 || x >= w || y >= h || (g.mask && !g.mask(x, y))) return;
     g.m[y * w + x] = mat;
   };
-  g.rect = (x0, y0, x1, y1, mat) => { // inclusive pixel coords
+  g.rect = (x0: number, y0: number, x1: number, y1: number, mat: Mat) => { // inclusive pixel coords
     for (let y = Math.round(y0); y <= Math.round(y1); y++) for (let x = Math.round(x0); x <= Math.round(x1); x++) set(x, y, mat);
   };
-  g.px = (x, y, mat) => set(Math.round(x), Math.round(y), mat);
-  g.ellipse = (cx, cy, rx, ry, mat) => {
+  g.px = (x: number, y: number, mat: Mat) => set(Math.round(x), Math.round(y), mat);
+  g.ellipse = (cx: number, cy: number, rx: number, ry: number, mat: Mat) => {
     for (let y = Math.floor(cy - ry); y <= Math.ceil(cy + ry); y++) {
       for (let x = Math.floor(cx - rx); x <= Math.ceil(cx + rx); x++) {
         if (((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 <= 1) set(x, y, mat);
@@ -116,7 +148,7 @@ function grid(w, h) {
     }
   };
   // Tapered segment from (ax, ay, radius ra) to (bx, by, radius rb).
-  g.capsule = (ax, ay, bx, by, ra, rb, mat) => {
+  g.capsule = (ax: number, ay: number, bx: number, by: number, ra: number, rb: number, mat: Mat) => {
     const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy || 1, r = Math.max(ra, rb);
     for (let y = Math.floor(Math.min(ay, by) - r); y <= Math.ceil(Math.max(ay, by) + r); y++) {
       for (let x = Math.floor(Math.min(ax, bx) - r); x <= Math.ceil(Math.max(ax, bx) + r); x++) {
@@ -125,7 +157,7 @@ function grid(w, h) {
       }
     }
   };
-  g.poly = (pts, mat) => {
+  g.poly = (pts: number[][], mat: Mat) => {
     const ys = pts.map((p) => p[1]), xs = pts.map((p) => p[0]);
     for (let y = Math.floor(Math.min(...ys)); y <= Math.ceil(Math.max(...ys)); y++) {
       for (let x = Math.floor(Math.min(...xs)); x <= Math.ceil(Math.max(...xs)); x++) {
@@ -139,8 +171,8 @@ function grid(w, h) {
       }
     }
   };
-  g.get = (x, y) => (x < 0 || y < 0 || x >= w || y >= h ? null : g.m[y * w + x]);
-  g.mirrored = () => {
+  g.get = (x: number, y: number) => (x < 0 || y < 0 || x >= w || y >= h ? null : g.m[y * w + x]);
+  g.mirrored = (): Grid => {
     const o = grid(w, h);
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) o.m[y * w + x] = g.m[y * w + w - 1 - x];
     return o;
@@ -149,7 +181,7 @@ function grid(w, h) {
 }
 
 // Two-segment limb from (x, y): angles in degrees from straight down (+ = toward +x). Returns joints.
-function limb(g, x, y, a1, a2, l1, l2, r0, r1, r2, mat) {
+function limb(g: Grid, x: number, y: number, a1: number, a2: number, l1: number, l2: number, r0: number, r1: number, r2: number, mat: Mat) {
   const d = Math.PI / 180;
   const kx = x + Math.sin(a1 * d) * l1, ky = y + Math.cos(a1 * d) * l1;
   const ex = kx + Math.sin(a2 * d) * l2, ey = ky + Math.cos(a2 * d) * l2;
@@ -159,38 +191,38 @@ function limb(g, x, y, a1, a2, l1, l2, r0, r1, r2, mat) {
 }
 
 // Side-view walk (facing -x, so negative angles step forward). Leg [thigh, shin], arm = upper-arm angle.
-const SIDE_WALK = [
+const SIDE_WALK: SideStep[] = [
   { a: [-26, -6], b: [22, 14], armA: 36, armB: -36 },
   { a: [0, 2], b: [-10, 38], armA: 6, armB: -6 },
   { a: [22, 14], b: [-26, -6], armA: -36, armB: 36 },
   { a: [-10, 38], b: [0, 2], armA: -6, armB: 6 },
 ];
-const FRONT_WALK = [{ lift: [0, 0], arm: [3, -3] }, { lift: [0, 3], arm: [0, 0] }, { lift: [0, 0], arm: [-3, 3] }, { lift: [3, 0], arm: [0, 0] }];
+const FRONT_WALK: FrontStep[] = [{ lift: [0, 0], arm: [3, -3] }, { lift: [0, 3], arm: [0, 0] }, { lift: [0, 0], arm: [-3, 3] }, { lift: [3, 0], arm: [0, 0] }];
 // Sneak: a deep crouch. Side view legs [thigh, shin] are far more bent than the walk; front view legs spread wide.
-const SIDE_SNEAK = [
+const SIDE_SNEAK: SideStep[] = [
   { a: [-52, -14], b: [30, 38], armA: 10, armB: -8 },
   { a: [-22, 8], b: [12, 26], armA: 3, armB: -3 },
   { a: [30, 38], b: [-52, -14], armA: -8, armB: 10 },
   { a: [12, 26], b: [-22, 8], armA: -3, armB: 3 },
 ];
-const FRONT_SNEAK = [{ lift: [0, 0] }, { lift: [0, 2] }, { lift: [0, 0] }, { lift: [2, 0] }];
+const FRONT_SNEAK: FrontStep[] = [{ lift: [0, 0] }, { lift: [0, 2] }, { lift: [0, 0] }, { lift: [2, 0] }];
 const CX = 20, HIP = 35, ANKLE = 57, THIGH = 11, SHIN = 11;
 
 // --- Human figure. view: down | up | left. pose: idle | walk | slump. f: frame within the animation. ---
-function human(def, view, pose, f) {
+function human(def: CharacterDef, view: string, pose: string, f: number) {
   const g = grid(SPRITES.w, SPRITES.h);
   const acc = Object.fromEntries((def.acc ?? []).map((a) => [a.type, a]));
   const side = view === 'left', back = view === 'up', slump = pose === 'slump';
-  const outfit = def.outfit ?? { type: 'none' }, coat = outfit.type !== 'none';
+  const outfit: Outfit = def.outfit ?? { type: 'none' }, coat = outfit.type !== 'none';
   const cx = CX, st = def.hair.style, full = st === 'bob' || st === 'fringe';
   const crouch = pose === 'sneak', tab = pose === 'tablet';
 
   // Skeleton offsets: legs place the hips so the planted foot touches the ground; U shifts the upper body.
-  const moveTbl = pose === 'walk' ? [SIDE_WALK, FRONT_WALK] : crouch ? [SIDE_SNEAK, FRONT_SNEAK] : null;
+  const moveTbl: [SideStep[], FrontStep[]] | null = pose === 'walk' ? [SIDE_WALK, FRONT_WALK] : crouch ? [SIDE_SNEAK, FRONT_SNEAK] : null;
   const sw = side && moveTbl ? moveTbl[0][f] : null, fw = !side && moveTbl ? moveTbl[1][f] : null;
   let hipY = HIP;
   if (sw) {
-    const d = Math.PI / 180, foot = (l) => THIGH * Math.cos(l[0] * d) + SHIN * Math.cos(l[1] * d);
+    const d = Math.PI / 180, foot = (l: number[]) => THIGH * Math.cos(l[0] * d) + SHIN * Math.cos(l[1] * d);
     hipY = ANKLE - Math.max(foot(sw.a), foot(sw.b));
   }
   if (fw && (fw.lift[0] || fw.lift[1])) hipY -= 1;                        // passing frames rise
@@ -209,7 +241,7 @@ function human(def, view, pose, f) {
       return;
     }
     if (side) {
-      for (const [l, mat] of [[sw ? sw.b : [0, 0], 'legsFar'], [sw ? sw.a : [0, 0], 'legs']]) {
+      for (const [l, mat] of [[sw ? sw.b : [0, 0], 'legsFar'], [sw ? sw.a : [0, 0], 'legs']] as [number[], string][]) {
         const j = limb(g, cx + 0.5, hipY, l[0], l[1], THIGH, SHIN, 3, 2.5, 2.1, mat);
         const ax = Math.round(j.ex), ay = Math.round(j.ey);
         g.rect(ax - 4, ay - 1, ax + 1, ay + 4, mat === 'legsFar' ? 'shoesFar' : 'shoes');
@@ -235,7 +267,7 @@ function human(def, view, pose, f) {
   }
 
   // Arms: near/far in side view; both beside the torso otherwise.
-  function arm(which) {
+  function arm(which: string) {
     const sleeve = which === 'far' ? 'sleeveFar' : 'sleeve';
     if (slump) {
       const s = which === 'l' ? -1 : 1;
@@ -269,7 +301,7 @@ function human(def, view, pose, f) {
       g.ellipse(j.ex - 0.5, j.ey + 1.5, 1.8, 1.8, 'skin');
       return;
     }
-    const s = which === 'l' ? -1 : 1, swing = fw ? fw.arm[which === 'l' ? 0 : 1] : 0;
+    const s = which === 'l' ? -1 : 1, swing = fw ? fw.arm![which === 'l' ? 0 : 1] : 0;
     const ex = cx + s * (coat ? 11 : 10.3), wx = ex + s * 0.3, wy = 35 + U + swing;
     g.capsule(cx + s * 9, 18.5 + U, ex, 27 + U, 2.7, 2.2, sleeve);
     g.capsule(ex, 27 + U, wx, wy, 2.2, 1.8, def.rolledSleeves ? 'skin' : sleeve);
@@ -279,7 +311,7 @@ function human(def, view, pose, f) {
 
   // Torso, coats and clothing layers.
   function torso() {
-    const T = (pts) => pts.map(([x, y]) => [x, y + U]);
+    const T = (pts: number[][]) => pts.map(([x, y]) => [x, y + U]);
     if (side) g.poly(T([[cx - 4, 17], [cx + 3.5, 17], [cx + 4, 26], [cx + 3.5, 36], [cx - 3.5, 36], [cx - 4.5, 26]]), 'top');
     else g.poly(T([[cx - 9.5, 17], [cx + 9.5, 17], [cx + 8.5, 26], [cx + 6.5, 33], [cx + 7.5, 36], [cx - 7.5, 36], [cx - 6.5, 33], [cx - 8.5, 26]]), 'top');
     if (!coat) return;
@@ -304,8 +336,8 @@ function human(def, view, pose, f) {
     if (t === 'trench') {                                                  // split skirt shows the legs
       const gap = [[cx - 1, 34 + U], [cx + 1, 34 + U], [cx + 3.5, hem], [cx - 3.5, hem]];
       g.poly(gap, null);
-      const inGap = grid(SPRITES.w, SPRITES.h); inGap.poly(gap, 1);
-      g.mask = (x, y) => inGap.get(x, y) === 1; legs(); g.mask = null;
+      const inGap = grid(SPRITES.w, SPRITES.h); inGap.poly(gap, '1');
+      g.mask = (x, y) => inGap.get(x, y) === '1'; legs(); g.mask = null;
     }
   }
 
@@ -369,7 +401,7 @@ function human(def, view, pose, f) {
   }
 
   function extras() {
-    const T = (pts) => pts.map(([x, y]) => [x, y + U]);
+    const T = (pts: number[][]) => pts.map(([x, y]) => [x, y + U]);
     if (acc.apron) {
       if (back) g.rect(cx - 1, 30 + U, cx, 31 + U, 'apron');
       else if (side) g.rect(cx - 5, 27 + U, cx - 4, 47, 'apron');
@@ -413,7 +445,7 @@ function human(def, view, pose, f) {
 }
 
 // --- Cat, 16 x 12. pose: idle (sit, tail flick) | walk (trot). ---
-function cat(def, view, pose, f) {
+function cat(def: SpriteDef, view: string, pose: string, f: number) {
   const g = grid(SPRITES.cat.w, SPRITES.cat.h);
   if (view === 'left') {
     if (pose === 'idle') {
@@ -446,10 +478,10 @@ function cat(def, view, pose, f) {
 }
 
 // Material key -> palette name for a definition. *Far / *Dark keys reuse a colour, shaded darker.
-function materials(def) {
+function materials(def: SpriteDef) {
   const acc = Object.fromEntries((def.acc ?? []).map((a) => [a.type, a.color]));
   const m = { skin: def.skin, eyes: 'ink', iris: def.iris ?? 'ink', hair: def.hair?.color, top: def.top, legs: def.legs,
-    shoes: def.shoes, coat: def.outfit?.color, fur: def.fur, stripes: def.stripes, nose: def.nose, ...acc };
+    shoes: def.shoes, coat: def.outfit?.color, fur: def.fur, stripes: def.stripes, nose: def.nose, ...acc } as Record<string, string>;
   if (def.eyes && !def.skin) m.eyes = def.eyes; // cats
   Object.assign(m, {
     legsFar: m.legs, shoesFar: m.shoes, sole: 'ink', furFar: m.fur, sleeve: m.coat ?? m.top, sleeveFar: m.coat ?? m.top,
@@ -460,8 +492,8 @@ function materials(def) {
 }
 
 // Shade, rim and outline one grid into image data at (ox, oy).
-function paintGrid(img, sheetW, g, ox, oy, names) {
-  const put = (x, y, c) => {
+function paintGrid(img: ImageData, sheetW: number, g: Grid, ox: number, oy: number, names: Record<string, string>) {
+  const put = (x: number, y: number, c: number) => {
     const o = ((oy + y) * sheetW + ox + x) * 4;
     img.data[o] = (c >> 16) & 255; img.data[o + 1] = (c >> 8) & 255; img.data[o + 2] = c & 255; img.data[o + 3] = 255;
   };
@@ -475,7 +507,7 @@ function paintGrid(img, sheetW, g, ox, oy, names) {
       if (k === null) {
         // Outline tinted to the touching material's darkest tone (ink when that is too light).
         const n = N4.map(([dx, dy]) => g.get(x + dx, y + dy)).find((v) => v !== null);
-        if (n !== undefined) { const d = ramp(names[n])[0]; put(x, y, lum(d) > 0.2 ? P.ink : d); }
+        if (n !== undefined) { const d = ramp(names[n!])[0]; put(x, y, lum(d) > 0.2 ? P.ink : d); }
         continue;
       }
       const r = ramp(names[k]);
@@ -506,16 +538,16 @@ function paintGrid(img, sheetW, g, ox, oy, names) {
 }
 
 // Builds a sheet: { texture, canvas, frameW, frameH, rows: { down, up, left, right, [pose] }, anims: ANIMS }.
-const EXTRA_FRAMES = { sneak: 4, tablet: 2 };
-export function spriteSheet(def, isCat = false) {
+const EXTRA_FRAMES: Record<string, number> = { sneak: 4, tablet: 2 };
+export function spriteSheet(def: SpriteDef, isCat = false): SpriteSheet {
   const fw = isCat ? SPRITES.cat.w : SPRITES.w, fh = isCat ? SPRITES.cat.h : SPRITES.h;
-  const draw = isCat ? cat : human;
+  const draw = (isCat ? cat : human) as (def: SpriteDef, view: string, pose: string, f: number) => Grid;
   const poses = def.poses ?? [];
   const extra = (!isCat && def.anims) || [];
   const cols = ANIMS.idle.frames + ANIMS.walk.frames, rowsN = DIRS.length + poses.length + extra.length * DIRS.length;
   const canvas = Object.assign(document.createElement('canvas'), { width: fw * cols, height: fh * rowsN });
-  const ctx = canvas.getContext('2d'), img = ctx.createImageData(canvas.width, canvas.height);
-  const names = materials(def), rows = {};
+  const ctx = canvas.getContext('2d')!, img = ctx.createImageData(canvas.width, canvas.height);
+  const names = materials(def), rows: Record<string, number> = {};
   DIRS.forEach((dir, r) => {
     rows[dir] = r;
     const view = dir === 'right' ? 'left' : dir;
@@ -530,7 +562,7 @@ export function spriteSheet(def, isCat = false) {
     rows[pose] = DIRS.length + i;
     paintGrid(img, canvas.width, draw(def, 'down', pose, 0), 0, rows[pose] * fh, names);
   });
-  const animRows = {}, anims = { ...ANIMS };
+  const animRows: Record<string, Record<string, number>> = {}, anims: Record<string, SheetAnim> = { ...ANIMS };
   extra.forEach((name, i) => {
     const base = DIRS.length + poses.length + i * DIRS.length, frames = EXTRA_FRAMES[name];
     animRows[name] = {}; anims[name] = { start: 0, frames };
@@ -552,8 +584,8 @@ export function spriteSheet(def, isCat = false) {
 }
 
 // All sheets by id, built once.
-let sheets = null;
-export function getSheets() {
+let sheets: Record<string, SpriteSheet> | null = null;
+export function getSheets(): Record<string, SpriteSheet> {
   if (!sheets) {
     sheets = {};
     for (const [id, def] of Object.entries(CHARACTERS)) sheets[id] = spriteSheet(def);

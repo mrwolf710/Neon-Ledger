@@ -1,5 +1,10 @@
 import * as THREE from 'three';
 import { POST } from '../render/post.ts';
+import type { createPost } from '../render/post.ts';
+import type { createLights } from '../render/lights.ts';
+import type { Rng } from '../core/rng.ts';
+import type { BatchSign } from '../gen/batch.ts';
+import type { Particles } from './particles.ts';
 import { BUILDINGS } from '../gen/buildings.ts';
 import SCENE_EDITS from './scene-edits.json' with { type: 'json' };
 
@@ -37,95 +42,116 @@ export const SUNSET = {
   },
 };
 export const INDOOR = { sky: 0.18, fill: 4.5 }; // multipliers on sky colour and hemisphere light inside rooms
-export const FLICKER = { rate: [3, 12], offLevel: 0.06 }; // steps per second per sign, brightness when off
+export const FLICKER = { rate: [3, 12] as [number, number], offLevel: 0.06 }; // steps per second per sign, brightness when off
 
 const COLORS = ['sky', 'fog', 'moonColor'];
 const ARRAYS = ['lift', 'gamma', 'gain'];
-const hash = (a, b) => { const x = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453; return x - Math.floor(x); };
+// A mood with its colours as THREE.Color (what snapshot/blend produce).
+export interface Snap {
+  sky: THREE.Color; fog: THREE.Color; moonColor: THREE.Color; fogDensity: number; moon: number; hemi: number; saturation: number;
+  lift: number[]; gamma: number[]; gain: number[]; signs: number; flicker: number; dead: number; rain: number;
+}
+type Loose = Record<string, THREE.Color | number[] | number | string | undefined>;
+// Per-scene overrides from scene-edits.json (colours are '#rrggbb' strings, vec3 are arrays).
+interface SceneOver { lightScale?: number; sunset?: number; sunsetSeconds?: number; bloom?: number; tiltBlur?: number; [k: string]: number | string | number[] | undefined }
+export interface TimeOfDay {
+  name: string; indoor: boolean; sunset: number; sunsetScale: number; sunsetSeconds: number;
+  setIndoor(on: boolean): void;
+  setScene(id: string): void;
+  setTimeOfDay(name: string, seconds?: number): void;
+  update(dt: number): void;
+  onFlicker?: (i: number) => void;
+}
+const hash = (a: number, b: number) => { const x = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453; return x - Math.floor(x); };
 
-function snapshot(def) {
-  const s = { ...def };
-  for (const k of COLORS) s[k] = new THREE.Color(def[k]);
-  for (const k of ARRAYS) s[k] = [...def[k]];
-  return s;
+function snapshot(def: object): Snap {
+  const d = def as Record<string, number | number[]>, s: Loose = { ...d };
+  for (const k of COLORS) s[k] = new THREE.Color(d[k] as number);
+  for (const k of ARRAYS) s[k] = [...(d[k] as number[])];
+  return s as unknown as Snap;
 }
 
-function blend(a, b, t) {
-  const s = {};
+function blend(a0: Snap, b0: Snap, t: number): Snap {
+  const a = a0 as unknown as Loose, b = b0 as unknown as Loose, s: Loose = {};
   for (const k in b) {
-    if (COLORS.includes(k)) s[k] = a[k].clone().lerp(b[k], t);
-    else if (ARRAYS.includes(k)) s[k] = a[k].map((v, i) => THREE.MathUtils.lerp(v, b[k][i], t));
-    else if (typeof b[k] === 'number') s[k] = THREE.MathUtils.lerp(a[k], b[k], t);
+    if (COLORS.includes(k)) s[k] = (a[k] as THREE.Color).clone().lerp(b[k] as THREE.Color, t);
+    else if (ARRAYS.includes(k)) s[k] = (a[k] as number[]).map((v, i) => THREE.MathUtils.lerp(v, (b[k] as number[])[i], t));
+    else if (typeof b[k] === 'number') s[k] = THREE.MathUtils.lerp(a[k] as number, b[k] as number, t);
   }
-  return s;
+  return s as unknown as Snap;
 }
 
 // signs: district userData.signs ({ mat, light }). Blends all values over `seconds` in setTimeOfDay.
-export function createTimeOfDay({ scene, lights, post, particles, signs, rng }) {
-  const per = signs.map(() => ({ rate: rng.range(...FLICKER.rate), weak: rng.rand() }));
-  let from, to, cur, t = 1, dur = 0, time = 0, over = {};
+export interface TimeOfDayDeps {
+  scene: THREE.Scene; lights: ReturnType<typeof createLights>; post: ReturnType<typeof createPost>;
+  particles: Particles; signs: BatchSign[]; rng: Rng;
+}
+
+export function createTimeOfDay({ scene, lights, post, particles, signs, rng }: TimeOfDayDeps): TimeOfDay {
+  const per = signs.map(() => ({ rate: rng.range(...FLICKER.rate), weak: rng.rand(), off: undefined as boolean | undefined }));
+  let from: Snap | undefined, to: Snap | undefined, cur: Snap | undefined, t = 1, dur = 0, time = 0, over: SceneOver = {};
   const BASE = { bloom: POST.bloom.strength, tilt: POST.tilt.maxBlur };
   // The scene's own settings (scene-edits.json, made in the Neon Editor) replace the mood's values.
-  const withOver = (s) => {
+  const withOver = (s: Snap): Snap => {
     if (!Object.keys(over).length) return s;
-    const r = { ...s };
-    for (const k in over) if (k in s) r[k] = COLORS.includes(k) ? new THREE.Color(over[k]) : over[k];
-    return r;
+    const r: Loose = { ...(s as unknown as Loose) };
+    for (const k in over) if (k in s) r[k] = COLORS.includes(k) ? new THREE.Color(over[k] as string) : over[k];
+    return r as unknown as Snap;
   };
   let sunWas = 0;
   const sunsetMood = snapshot(SUNSET.mood);
-  const api = { name: 'night', indoor: false, sunset: 0, sunsetScale: 1, sunsetSeconds: SUNSET.seconds }; // sunset 0..1: how much of the red sunset is laid over the mood (outdoors only)
+  const api = { name: 'night', indoor: false, sunset: 0, sunsetScale: 1, sunsetSeconds: SUNSET.seconds } as TimeOfDay; // sunset 0..1: how much of the red sunset is laid over the mood (outdoors only)
 
-  function apply(s, gradeToo) {
-    scene.background.copy(s.sky).multiplyScalar(api.indoor ? INDOOR.sky : 1);
-    scene.fog.color.copy(s.fog);
-    scene.fog.density = s.fogDensity;
+  function apply(s: Snap, gradeToo: boolean) {
+    (scene.background as THREE.Color).copy(s.sky).multiplyScalar(api.indoor ? INDOOR.sky : 1);
+    (scene.fog as THREE.FogExp2).color.copy(s.fog);
+    (scene.fog as THREE.FogExp2).density = s.fogDensity;
     lights.moon.intensity = s.moon;
     lights.moon.color.copy(s.moonColor);
     lights.hemi.intensity = s.hemi * (api.indoor ? INDOOR.fill : 1);
     particles.rainScale = s.rain;
     if (gradeToo) {
-      for (const k of ARRAYS) POST.grade[k] = s[k];
+      for (const k of ARRAYS) (POST.grade as Record<string, number[] | number>)[k] = (s as unknown as Loose)[k] as number[];
       POST.grade.saturation = s.saturation;
       post.applyUniforms();
     }
   }
 
   // Rooms get a darker backdrop and a brighter fill than the open street.
-  api.setIndoor = (on) => { api.indoor = on; if (cur) apply(withOver(cur), false); };
-  api.setScene = (id) => {
-    over = SCENE_EDITS[id] ?? {};
+  api.setIndoor = (on: boolean) => { api.indoor = on; if (cur) apply(withOver(cur), false); };
+  api.setScene = (id: string) => {
+    over = (SCENE_EDITS as unknown as Record<string, SceneOver>)[id] ?? {};
     lights.scale = over.lightScale ?? 1;
     api.sunsetScale = over.sunset ?? 1; api.sunsetSeconds = over.sunsetSeconds ?? SUNSET.seconds;
     POST.bloom.strength = over.bloom ?? BASE.bloom;
     POST.tilt.maxBlur = over.tiltBlur ?? BASE.tilt;
     if (cur) apply(withOver(cur), true);
   };
-  api.setTimeOfDay = (name, seconds = 0) => {
+  api.setTimeOfDay = (name: string, seconds = 0) => {
     api.name = name;
-    from = cur ?? snapshot(TIME_OF_DAY[name]);
-    to = snapshot(TIME_OF_DAY[name]);
+    from = cur ?? snapshot((TIME_OF_DAY as Record<string, object>)[name]);
+    to = snapshot((TIME_OF_DAY as Record<string, object>)[name]);
     t = 0; dur = seconds;
   };
 
-  api.update = (dt) => {
+  api.update = (dt: number) => {
     time += dt;
     const sun = api.indoor ? 0 : api.sunset * api.sunsetScale;
     if (t < 1) {
       t = dur > 0 ? Math.min(1, t + dt / dur) : 1;
-      cur = blend(from, to, t);
+      cur = blend(from!, to!, t);
     }
-    if (t < 1 || sun > 0 || sunWas > 0) apply(sun > 0 ? blend(withOver(cur), sunsetMood, sun) : withOver(cur), true); // grade is only written while blending, so debug sliders stick afterwards
+    if (t < 1 || sun > 0 || sunWas > 0) apply(sun > 0 ? blend(withOver(cur!), sunsetMood, sun) : withOver(cur!), true); // grade is only written while blending, so debug sliders stick afterwards
     sunWas = sun;
     signs.forEach((sg, i) => {
       const p = per[i];
-      let k = cur.signs;
-      if (p.weak < cur.dead) k = 0;
-      else if (hash(i, Math.floor(time * p.rate)) < cur.flicker * (0.5 + p.weak)) k *= FLICKER.offLevel;
-      const off = k < cur.signs * 0.5;
-      if (off && !p.off && p.weak >= cur.dead) api.onFlicker?.(i); // a sign just blinked off
+      let k = cur!.signs;
+      if (p.weak < cur!.dead) k = 0;
+      else if (hash(i, Math.floor(time * p.rate)) < cur!.flicker * (0.5 + p.weak)) k *= FLICKER.offLevel;
+      const off = k < cur!.signs * 0.5;
+      if (off && !p.off && p.weak >= cur!.dead) api.onFlicker?.(i); // a sign just blinked off
       p.off = off;
-      sg.mat.color.setScalar(BUILDINGS.signGlow * k);
+      (sg.mat as THREE.MeshBasicMaterial).color.setScalar(BUILDINGS.signGlow * k);
       sg.light.intensity = sg.light.base * k;
     });
   };

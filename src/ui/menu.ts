@@ -1,14 +1,23 @@
 import { frame } from './hud.ts';
 import { TIERS, settings, QUALITY_KEY } from '../core/settings.ts';
+import type { TierName } from '../core/settings.ts';
+import type { createSaves } from '../core/saves.ts';
+import type { Synth } from '../audio/synth.ts';
+
+declare const __BUILD__: string | undefined; // injected by vite.config (define)
 
 export const MENU = { step: 0.1, z: 20 }; // step = volume change per press
 
 // Pause menu (Esc / pad Start / touch pause): sound, video, restart, quit. Keyboard, pad (menu*), mouse and touch.
 // Saves opens a list of save slots in the browser (core/saves.js): new, load, overwrite, rename, delete. Quality, Restart and Quit reload the page and go back to the title.
-export function createMenu({ synth, saves, snapshot = () => null, onLoad = () => {} }) {
+interface Row { head?: string; label?: string | (() => string); val?: () => string; adj?: (d: number) => void; act?: () => void }
+interface InputLike { pressed(a: string): boolean }
+export interface Menu { readonly isOpen: boolean; open(): void; close(): void; update(input: InputLike): void }
+
+export function createMenu({ synth, saves, snapshot = () => null, onLoad = () => {} }: { synth: Synth; saves: ReturnType<typeof createSaves>; snapshot?: () => unknown; onLoad?: (data: unknown) => void }): Menu {
   const root = document.createElement('div');
   root.id = 'menu';
-  root.style.zIndex = MENU.z;
+  root.style.zIndex = String(MENU.z);
   const box = frame(document.createElement('div'));
   box.classList.add('menubox');
   root.appendChild(box);
@@ -16,46 +25,46 @@ export function createMenu({ synth, saves, snapshot = () => null, onLoad = () =>
   box.appendChild(Object.assign(document.createElement('div'), { textContent: `version ${typeof __BUILD__ === 'string' ? __BUILD__ : '?'}`, style: 'text-align:center;font:0.7rem monospace;opacity:0.5;margin:-0.2rem 0 0.4rem' }));
   document.body.appendChild(root);
 
-  const pct = (v) => `${Math.round(v * 100)}%`;
-  const tiers = Object.keys(TIERS);
+  const pct = (v: number) => `${Math.round(v * 100)}%`;
+  const tiers = Object.keys(TIERS) as TierName[];
   const reload = () => { try { localStorage.setItem(QUALITY_KEY, quality); } catch { /* private mode */ } location.href = location.pathname; };
   const canFull = document.fullscreenEnabled;
   const toggleFull = () => { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen?.(); };
-  let lastKey = '', lastSel = -1, pending = null, sel = 0, open = false, quality = settings.tier, view = 'main', rows = [], items = [];
-  const sure = (key, fn) => () => { if (pending === key) fn(); else pending = key; };
+  let lastKey = '', lastSel = -1, pending: string | null = null, sel = 0, open = false, quality = settings.tier, view = 'main', rows: Row[] = [], items: Row[] = [];
+  const sure = (key: string, fn: () => void) => () => { if (pending === key) fn(); else pending = key; };
 
-  const mainRows = () => [
+  const mainRows = (): Row[] => [
     { label: 'Resume', act: () => api.close() },
     { head: 'Sound' },
-    { label: 'Music volume', val: () => pct(synth.volumes.music), adj: (d) => synth.setVolume('music', synth.volumes.music + d * MENU.step) },
-    { label: 'Effects volume', val: () => pct(synth.volumes.sfx), adj: (d) => synth.setVolume('sfx', synth.volumes.sfx + d * MENU.step) },
+    { label: 'Music volume', val: () => pct(synth.volumes.music), adj: (d: number) => synth.setVolume('music', synth.volumes.music + d * MENU.step) },
+    { label: 'Effects volume', val: () => pct(synth.volumes.sfx), adj: (d: number) => synth.setVolume('sfx', synth.volumes.sfx + d * MENU.step) },
     { label: 'Music', val: () => (synth.musicOn ? 'On' : 'Off'), adj: () => synth.setMusicOn(!synth.musicOn), act: () => synth.setMusicOn(!synth.musicOn) },
     { head: 'Video' },
     { label: 'Quality', val: () => TIERS[quality].name + (quality !== settings.tier ? ' (on restart)' : ''),
-      adj: (d) => { quality = tiers[(tiers.indexOf(quality) + d + tiers.length) % tiers.length]; } },
+      adj: (d: number) => { quality = tiers[(tiers.indexOf(quality) + d + tiers.length) % tiers.length]; } },
     ...(canFull ? [{ label: 'Fullscreen', val: () => (document.fullscreenElement ? 'On' : 'Off'), adj: toggleFull, act: toggleFull }] : []),
     { head: 'Game' },
     { label: 'Saves…', act: () => setView('saves') },
     { label: () => (pending === 'restart' ? 'Restart: press again to confirm' : 'Restart'), act: sure('restart', reload) },
     { label: () => (pending === 'quit' ? 'Quit: press again to confirm' : 'Quit to title'), act: sure('quit', () => { window.close(); reload(); }) },
   ];
-  const when = (t) => new Date(t).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-  const saveRows = () => [
+  const when = (t: number) => new Date(t).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  const saveRows = (): Row[] => [
     { label: '◄ Back', act: () => setView('main') },
     { head: 'Saves' },
     { label: 'New save', act: () => { const d = snapshot(); if (d && saves.add(d)) setView('saves', 1); } },
     ...saves.list.map((s) => {
       let k = 0;
-      const acts = [['Load', () => { api.close(); onLoad(s.data); }], ['Overwrite', () => { const d = snapshot(); if (d) saves.overwrite(s.id, d); }],
+      const acts: [string, () => unknown][] = [['Load', () => { api.close(); onLoad(s.data); }], ['Overwrite', () => { const d = snapshot(); if (d) saves.overwrite(s.id, d); }],
         ['Rename', () => { const n = prompt('Name this save', s.name); if (n) saves.rename(s.id, n); }], ['Delete', () => saves.remove(s.id)]];
-      return { label: () => `${s.name} · ${when(s.t)}`, val: () => (pending === 'save' ? 'Sure? Again' : acts[k][0]), adj: (d) => { k = (k + d + acts.length) % acts.length; },
+      return { label: () => `${s.name} · ${when(s.t)}`, val: () => (pending === 'save' ? 'Sure? Again' : acts[k][0]), adj: (d: number) => { k = (k + d + acts.length) % acts.length; },
         act: () => {
           const [name, fn] = acts[k], run = () => { const at = sel; fn(); if (name !== 'Load') setView('saves', at); };
           if (name === 'Rename') run(); else if (pending === 'save') run(); else pending = 'save';
         } };
     }),
   ];
-  function setView(v, keep = 0) { view = v; rows = v === 'saves' ? saveRows() : mainRows(); items = rows.filter((r) => !r.head); sel = Math.max(0, Math.min(keep, items.length - 1)); pending = null; lastKey = ''; lastSel = -1; }
+  function setView(v: string, keep = 0) { view = v; rows = v === 'saves' ? saveRows() : mainRows(); items = rows.filter((r) => !r.head); sel = Math.max(0, Math.min(keep, items.length - 1)); pending = null; lastKey = ''; lastSel = -1; }
 
   // render() runs every frame while the menu is open; it only rebuilds the rows when something changed, otherwise a finger or mouse
   // press would land on a row that was replaced before the release (no click) and scrolling would jump back.
@@ -71,9 +80,9 @@ export function createMenu({ synth, saves, snapshot = () => null, onLoad = () =>
       d.appendChild(Object.assign(document.createElement('span'), { textContent: typeof r.label === 'function' ? r.label() : r.label }));
       if (r.val) {
         const v = document.createElement('span'); v.className = 'menuval';
-        const arrow = (t, dir) => {
+        const arrow = (t: string, dir: number) => {
           const b = Object.assign(document.createElement('b'), { textContent: t });
-          b.addEventListener('click', (e) => { e.stopPropagation(); sel = i; pending = null; r.adj(dir); render(); });
+          b.addEventListener('click', (e) => { e.stopPropagation(); sel = i; pending = null; r.adj!(dir); render(); });
           return b;
         };
         v.append(arrow('◄', -1), Object.assign(document.createElement('i'), { textContent: r.val() }), arrow('►', 1));
@@ -87,12 +96,12 @@ export function createMenu({ synth, saves, snapshot = () => null, onLoad = () =>
     lastSel = sel;
   }
 
-  const api = {
+  const api: Menu = {
     get isOpen() { return open; },
     open() { open = true; quality = settings.tier; setView('main'); root.classList.add('on'); render(); },
     close() { open = false; pending = null; root.classList.remove('on'); },
     // Call each frame while open.
-    update(input) {
+    update(input: InputLike) {
       if (!open) return;
       if (input.pressed('pause')) { api.close(); return; }
       const r = items[sel], was = sel;

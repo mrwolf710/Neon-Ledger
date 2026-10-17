@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 import { ECHOES, HOTSPOTS, speakerName } from './story.ts';
 import { createBillboard } from './npc.ts';
+import type { Billboard, Cast, Sheet, SpriteLight } from './npc.ts';
+import type { CaseFile } from './casefile.ts';
+import type { EchoData, EchoTrack, Hotspot, Spot } from '../types.ts';
 import { frame } from '../ui/hud.ts';
 
 export const ECHO = {
@@ -12,8 +15,8 @@ export const ECHO = {
   marker: { color: 0x1fd6e8, size: 0.26, height: 1.5, bob: 0.12, spin: 1.2 },
 };
 
-const fmt = (t) => t.toFixed(1).padStart(4, '0');
-const el = (tag, cls, parent, text) => {
+const fmt = (t: number) => t.toFixed(1).padStart(4, '0');
+const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, parent?: Node | null, text?: string): HTMLElementTagNameMap[K] => {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
   if (text !== undefined) e.textContent = text;
@@ -22,7 +25,8 @@ const el = (tag, cls, parent, text) => {
 };
 
 // Position / pose of a track at time t: linear between keys, held outside them.
-export function sample(track, t) {
+export interface EchoSample { x: number; z: number; facing?: number; anim?: string; t?: number }
+export function sample(track: Pick<EchoTrack, 'keys'>, t: number): EchoSample {
   const k = track.keys;
   if (t <= k[0].t) return { ...k[0] };
   if (t >= k[k.length - 1].t) return { ...k[k.length - 1] };
@@ -36,16 +40,39 @@ export function sample(track, t) {
 
 // Echo mode: hotspot markers in the world, then a desaturated replay of ghost sprites with a scrub bar,
 // seam glitches and tagging. Data lives in story.js (ECHOES / HOTSPOTS); format documented in NOTES.md.
-export function createEcho({ scene, sheets, post, caseFile, hud, cast, areas }) {
-  let areaId = null;
+export type EchoHotspot = Hotspot & { position: THREE.Vector3; marker: THREE.Mesh };
+interface ActiveEcho {
+  def: EchoData; t: number; last: number; playing: boolean; freeze: number; glitch: number;
+  tagged: Set<string>; seen: Set<number>; ghosts: { b: Billboard; tr: EchoTrack }[]; cine?: () => void;
+}
+export interface EchoDeps {
+  scene: THREE.Object3D; sheets: Record<string, Sheet>;
+  post: { setGlitch(a: number): void; setEcho(a: number): void };
+  caseFile: CaseFile; hud: { toast(text: string): void }; cast: Cast;
+  areas: Record<string, { spots: Spot[] }>;
+}
+export interface EchoInput { pressed(action: string): boolean; lastDevice?: string; padType?: string }
+export interface Echo {
+  readonly active: boolean;
+  hotspots: EchoHotspot[];
+  setArea(id: string): void;
+  tryStart(pos: THREE.Vector3): boolean;
+  start(hotspotId: string, cine?: () => void): void;
+  exit(): void;
+  update(dt: number, input: EchoInput, camYaw: number, lights: SpriteLight[], axis: number, playerPos: { x: number; z: number }): void;
+  onUi?: (kind: string) => void;
+  onCue?: (name: string) => void;
+}
+export function createEcho({ scene, sheets, post, caseFile, hud, cast, areas }: EchoDeps): Echo {
+  let areaId: string | null = null;
   // --- Hotspots and their floating markers ---
-  const hotspots = [];
+  const hotspots: EchoHotspot[] = [];
   const mGeo = new THREE.OctahedronGeometry(ECHO.marker.size), mMat = new THREE.MeshBasicMaterial({ color: ECHO.marker.color, transparent: true, opacity: 0.9, fog: false });
   for (const h of HOTSPOTS) {
-    let x, z;
-    if (Array.isArray(h.at)) [x, z] = h.at;
+    let x: number, z: number;
+    if (Array.isArray(h.at)) [x, z] = h.at as unknown as [number, number];
     else {
-      const s = areas[h.area ?? 'street']?.spots.find((p) => p.name === h.at.spot);
+      const s = areas[h.area ?? 'street']?.spots.find((p: Spot) => p.name === h.at.spot);
       if (!s) { console.warn('echo: no spot', h.at.spot); continue; }
       [x, z] = [s.x + (h.at.dx ?? 0), s.z + (h.at.dz ?? 0)];
     }
@@ -72,13 +99,13 @@ export function createEcho({ scene, sheets, post, caseFile, hud, cast, areas }) 
   const total = el('span', 'echo-time', bar);
   const closeBtn = el('button', 'echo-btn', bar, '✕');
 
-  let active = null, fade = 0, dragging = false;
+  let active: ActiveEcho | null = null, fade = 0, dragging = false;
 
-  function setFromPointer(e) {
+  function setFromPointer(e: PointerEvent) {
     const r = rail.getBoundingClientRect();
-    active.t = Math.min(active.def.duration, Math.max(0, ((e.clientX - r.left) / r.width) * active.def.duration));
-    crossSeams(active.last, active.t, true);
-    active.last = active.t;
+    active!.t = Math.min(active!.def.duration, Math.max(0, ((e.clientX - r.left) / r.width) * active!.def.duration));
+    crossSeams(active!.last, active!.t, true);
+    active!.last = active!.t;
   }
   rail.addEventListener('pointerdown', (e) => { if (!active || active.cine) return; dragging = true; rail.setPointerCapture(e.pointerId); setFromPointer(e); });
   rail.addEventListener('pointermove', (e) => { if (dragging) setFromPointer(e); });
@@ -88,38 +115,38 @@ export function createEcho({ scene, sheets, post, caseFile, hud, cast, areas }) 
   closeBtn.addEventListener('click', () => { if (!active?.cine) api.exit(); });
   tagBtn.addEventListener('click', () => doTag());
 
-  function crossSeams(a, b, scrubbed) {
+  function crossSeams(a: number, b: number, scrubbed: boolean) {
     if (a === b) return;
     const lo = Math.min(a, b), hi = Math.max(a, b);
-    for (const s of active.def.seams ?? []) {
+    for (const s of active!.def.seams ?? []) {
       if (s >= lo && s <= hi) {
-        active.glitch = ECHO.glitchSeconds; active.seen.add(s); api.onUi?.('glitch');
-        if (!scrubbed && active.playing) active.freeze = ECHO.glitchSeconds; // the replay stutters
+        active!.glitch = ECHO.glitchSeconds; active!.seen.add(s); api.onUi?.('glitch');
+        if (!scrubbed && active!.playing) active!.freeze = ECHO.glitchSeconds; // the replay stutters
       }
     }
   }
 
-  const tagNear = () => active.def.tags?.find((g) => !active.tagged.has(g.fact) && Math.abs(active.t - g.t) <= g.window);
+  const tagNear = () => active!.def.tags?.find((g) => !active!.tagged.has(g.fact) && Math.abs(active!.t - g.t) <= g.window);
   function doTag() {
     const g = active && !active.cine && tagNear();
     if (!g) return false;
-    active.tagged.add(g.fact);
+    active!.tagged.add(g.fact);
     caseFile.add(g.fact);
     return true;
   }
 
   function buildBar() {
     rail.querySelectorAll('.seam, .tagmark').forEach((n) => n.remove());
-    for (const s of active.def.seams ?? []) { const n = el('u', 'seam', rail); n.style.left = `${(s / active.def.duration) * 100}%`; n.dataset.t = s; }
-    for (const g of active.def.tags ?? []) { const n = el('s', 'tagmark', rail); n.style.left = `${(g.t / active.def.duration) * 100}%`; n.dataset.f = g.fact; }
+    for (const s of active!.def.seams ?? []) { const n = el('u', 'seam', rail); n.style.left = `${(s / active!.def.duration) * 100}%`; n.dataset.t = String(s); }
+    for (const g of active!.def.tags ?? []) { const n = el('s', 'tagmark', rail); n.style.left = `${(g.t / active!.def.duration) * 100}%`; n.dataset.f = g.fact; }
   }
 
-  const api = {
+  const api: Echo = {
     get active() { return !!active; },
     hotspots,
-    setArea(id) { areaId = id; },
+    setArea(id: string) { areaId = id; },
     // Starts the echo of the hotspot within reach of pos; false (and a toast) when there is none.
-    tryStart(pos) {
+    tryStart(pos: THREE.Vector3) {
       const h = hotspots.filter((q) => !q.hidden && q.area === areaId && Math.hypot(q.position.x - pos.x, q.position.z - pos.z) <= q.radius)
         .sort((a, b) => a.position.distanceTo(pos) - b.position.distanceTo(pos))[0];
       if (!h) { hud.toast('No echo here'); return false; }
@@ -127,7 +154,7 @@ export function createEcho({ scene, sheets, post, caseFile, hud, cast, areas }) 
       return true;
     },
     // cine: a function = cinematic play (no scrubbing, no exit, no loop); it is called when the replay ends.
-    start(hotspotId, cine) {
+    start(hotspotId: string, cine?: () => void) {
       const h = hotspots.find((q) => q.id === hotspotId), def = h && ECHOES[h.echo];
       if (!def) return;
       const ghosts = def.tracks.map((tr) => {
@@ -149,7 +176,7 @@ export function createEcho({ scene, sheets, post, caseFile, hud, cast, areas }) 
       if (!active) return;
       for (const { b } of active.ghosts) {
         scene.remove(b.root);
-        b.root.traverse((o) => { if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); } });
+        b.root.traverse((o: THREE.Object3D) => { const m = o as THREE.Mesh; if (m.isMesh) { m.geometry.dispose(); (m.material as THREE.Material).dispose(); } });
       }
       active = null; dragging = false;
       cast.setHidden(false);
@@ -159,7 +186,7 @@ export function createEcho({ scene, sheets, post, caseFile, hud, cast, areas }) 
       api.onUi?.('echoOff');
     },
     // Every frame. axis = scrub input (-1..1, stick / A-D); lights for ghost tinting.
-    update(dt, input, camYaw, lights, axis, playerPos) {
+    update(dt: number, input: EchoInput, camYaw: number, lights: SpriteLight[], axis: number, playerPos: { x: number; z: number }) {
       // World grade fade in / out.
       const target = active ? 1 : 0;
       fade += Math.max(-dt / ECHO.fadeSeconds, Math.min(dt / ECHO.fadeSeconds, target - fade));
@@ -201,7 +228,7 @@ export function createEcho({ scene, sheets, post, caseFile, hud, cast, areas }) 
         b.root.visible = show;
         const s = sample(tr, A.t);
         b.position.set(s.x, 0, s.z);
-        b.facing = s.facing; b.anim = s.anim; b.fpsScale = moving ? 1 : 0;
+        b.facing = s.facing!; b.anim = s.anim!; b.fpsScale = moving ? 1 : 0;
         b.update(dt, camYaw, lights);
       }
 
@@ -210,8 +237,8 @@ export function createEcho({ scene, sheets, post, caseFile, hud, cast, areas }) 
       head.style.left = pct; fill.style.width = pct;
       cur.textContent = fmt(A.t);
       playBtn.textContent = A.playing ? '❚❚' : '▶';
-      rail.querySelectorAll('.seam').forEach((n) => n.classList.toggle('seen', A.seen.has(+n.dataset.t)));
-      rail.querySelectorAll('.tagmark').forEach((n) => n.classList.toggle('done', A.tagged.has(n.dataset.f)));
+      rail.querySelectorAll<HTMLElement>('.seam').forEach((n) => n.classList.toggle('seen', A.seen.has(+n.dataset.t!)));
+      rail.querySelectorAll<HTMLElement>('.tagmark').forEach((n) => n.classList.toggle('done', A.tagged.has(n.dataset.f!)));
       const v = D.voices?.find((q) => A.t >= q.t0 && A.t <= q.t1);
       caption.textContent = v ? `${speakerName(v.speaker, (f) => caseFile.hasFlag(f))}: “${v.text}”` : '';
       caption.style.visibility = v ? 'visible' : 'hidden';

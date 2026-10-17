@@ -1,4 +1,6 @@
+import type * as THREE from 'three';
 import { DISTRICT } from '../world/district.ts';
+import type { Synth } from './synth.ts';
 
 // Sound effects. All numbers live in TUNING so they can be tweaked without touching the code.
 export const TUNING = {
@@ -39,58 +41,84 @@ export const TUNING = {
   voices: { // per speaker: base Hz and waveform
     juno: [230, 'triangle'], mamaTeo: [310, 'square'], kit: [400, 'sawtooth'], dex: [200, 'square'], vendor: [195, 'triangle'],
     miso: [760, 'sine'], hale: [185, 'sawtooth'], preacher: [190, 'triangle'], unknown: [170, 'sawtooth'], vending: [540, 'square'],
-  },
+  } as Record<string, [number, OscillatorType]>,
 };
 
 // Which surface is under (x, z): wet asphalt on the road, metal grating under the rail, tile on the sidewalks.
-export function surfaceAt(x, z) {
+export function surfaceAt(x: number, z: number): string {
   const D = DISTRICT;
   if (Math.abs(z) < D.roadWidth / 2) return 'asphalt';
   if (Math.abs(x - D.rail.x) < D.rail.deckWidth / 2 + 1.2) return 'metal';
   return 'tile';
 }
 
-export function createSfx(synth) {
-  const ringNodes = []; // the scheduled phone-ring oscillators, so answering can cut them
+interface XYZ { x: number; y: number; z: number }
+export interface SfxUpdate { player: XYZ; yaw: number; rainScale?: number; noRain?: boolean; signs?: { light: THREE.PointLight & { base?: number } }[] }
+export type UiSound = 'move' | 'confirm' | 'back' | 'case' | 'linkOk' | 'linkWrong' | 'echoOn' | 'echoOff' | 'glitch';
+export interface Sfx {
+  update(dt: number, s: SfxUpdate): void;
+  step(surface: string, pos: XYZ, run?: boolean, quiet?: boolean): void;
+  trainArrive(seconds?: number): void;
+  trainStop(): void;
+  trainNow(at?: number): void;
+  trainZ(): number | null;
+  setEcho(on: boolean): void;
+  crackle(pos: XYZ): void;
+  ui(kind: UiSound | string): void;
+  stinger(): void;
+  phoneRing(): void;
+  phoneAnswer(): void;
+  override(seconds?: number): void;
+  carDrive(seconds?: number): void;
+  steamHiss(): void;
+  comms(): void;
+  voice(ch: string, speaker: string): void;
+}
+interface Layer { g: GainNode; f: BiquadFilterNode }
+interface RainState { hiss: Layer; body: Layer; patter: Layer; awning: number }
+interface TrainState { g: GainNode; p: PannerNode; t: number; clack: number; hiss: AudioBufferSourceNode; hf: BiquadFilterNode; body: AudioBufferSourceNode; bf: BiquadFilterNode; screech: AudioBufferSourceNode; sf: BiquadFilterNode; sg: GainNode; beat: number }
+
+export function createSfx(synth: Synth): Sfx {
+  const ringNodes: ({ osc: OscillatorNode; gain: GainNode } | null)[] = []; // the scheduled phone-ring oscillators, so answering can cut them
   const T = TUNING;
-  let ambient = null, rumble = null, echoOn = false, echoApplied = null;
-  let motor = null;
-  let rain = null, hum = null, train = null, lastPlayer = { x: 0, y: 0, z: 0 }, lastYaw = 0;
+  let ambient: GainNode | null = null, rumble: { g: GainNode } | null = null, echoOn = false, echoApplied: boolean | null = null;
+  let motor: { out: GainNode; nodes: AudioBufferSourceNode[] } | null = null;
+  let rain: RainState | null = null, hum: { out: GainNode; p: PannerNode }[] | null = null, train: TrainState | null = null, lastPlayer: XYZ = { x: 0, y: 0, z: 0 }, lastYaw = 0;
   let droplet = 0, humTimer = 0, trainTimer = T.train.first, voiceCount = 0, rainLevel = 1;
 
   // ---------- Rain (built lazily once audio is ready) ----------
   function buildRain() {
     // Each layer: its own noise loop (different lengths) -> filter -> level gain (controlled in update) -> bus.
-    const mk = (type, freq, q, loopSeconds) => {
-      const f = synth.filter(type, freq, q), g = synth.ctx.createGain();
+    const mk = (type: BiquadFilterType, freq: number, q: number, loopSeconds: number): Layer => {
+      const f = synth.filter(type, freq, q), g = synth.ctx!.createGain();
       g.gain.value = 0;
       synth.noiseLoop(loopSeconds).connect(f); f.connect(g);
       return { g, f };
     };
     const R = T.rain;
     const hiss = mk('lowpass', R.hissFreq, 0.4, 5.3), body = mk('lowpass', R.bodyFreq, 0.5, 4.1), patter = mk('bandpass', R.patterFreq, 0.9, 6.7);
-    hiss.g.connect(ambient); body.g.connect(ambient);
+    hiss.g.connect(ambient!); body.g.connect(ambient!);
     // Patter: gentle irregular wobble (two slow, unrelated LFOs) applied as a multiplier, never as an additive offset.
-    const wob = synth.ctx.createGain(); wob.gain.value = 0.75;
+    const wob = synth.ctx!.createGain(); wob.gain.value = 0.75;
     R.drift.forEach((hz, i) => {
-      const lfo = synth.ctx.createOscillator(), amp = synth.ctx.createGain();
+      const lfo = synth.ctx!.createOscillator(), amp = synth.ctx!.createGain();
       lfo.frequency.value = hz; amp.gain.value = i ? 0.1 : 0.15; lfo.connect(amp); amp.connect(wob.gain); lfo.start();
     });
-    patter.g.connect(wob); wob.connect(ambient);
+    patter.g.connect(wob); wob.connect(ambient!);
     rain = { hiss, body, patter, awning: 0 };
   }
 
   // ---------- Train arriving (cold open) ----------
   // Built like the street train and the rain: broad noise layers (a distorted deep one and a rushing one) whose filters sweep DOWN as the train brakes, so the whole sound falls in pitch
   // and settles into a low idle. No pitched tone or buzz.
-  function startMotor(seconds) {
+  function startMotor(seconds: number) {
     stopMotor(0.1);
-    const ctx = synth.ctx, t = synth.now, M = T.motor;
+    const ctx = synth.ctx!, t = synth.now, M = T.motor;
     const out = ctx.createGain(); out.gain.setValueAtTime(M.start, t); out.connect(synth.buses.sfx);
     const body = synth.noiseLoop(4.1), bf = synth.filter('lowpass', M.body.fast, 0.6), pre = ctx.createGain(), ws = ctx.createWaveShaper(), bg = ctx.createGain();
     pre.gain.value = M.body.drive; ws.curve = distortion(M.body.grit); ws.oversample = '2x'; bg.gain.value = M.body.vol; body.connect(bf); bf.connect(pre); pre.connect(ws); ws.connect(bg); bg.connect(out);
     const hiss = synth.noiseLoop(5.3), hf = synth.filter('lowpass', M.hiss.fast, 0.4), hg = ctx.createGain(); hg.gain.value = M.hiss.vol; hiss.connect(hf); hf.connect(hg); hg.connect(out);
-    for (const [f, fast, slow] of [[bf, M.body.fast, M.body.slow], [hf, M.hiss.fast, M.hiss.slow]]) { // the pitch falls as the train slows
+    for (const [f, fast, slow] of [[bf, M.body.fast, M.body.slow], [hf, M.hiss.fast, M.hiss.slow]] as [BiquadFilterNode, number, number][]) { // the pitch falls as the train slows
       f.frequency.setValueAtTime(fast, t); f.frequency.exponentialRampToValueAtTime(slow, t + seconds);
     }
     out.gain.exponentialRampToValueAtTime(1, t + seconds * M.swellAt);          // swells as it comes in...
@@ -111,7 +139,7 @@ export function createSfx(synth) {
 
   // ---------- Echo rumble: very low filtered noise + a sub sine, slowly breathing ----------
   function buildRumble() {
-    const R = T.echo.rumble, ctx = synth.ctx;
+    const R = T.echo.rumble, ctx = synth.ctx!;
     const g = ctx.createGain(); g.gain.value = 0; g.connect(synth.buses.sfx);
     const lp = synth.filter('lowpass', R.lowpass, 1.1);
     synth.noiseLoop(7.1).connect(lp); lp.connect(g);
@@ -128,36 +156,36 @@ export function createSfx(synth) {
   function buildHum() {
     const H = T.hum;
     hum = Array.from({ length: H.voices }, () => {
-      const out = synth.ctx.createGain(); out.gain.value = 0;
+      const out = synth.ctx!.createGain(); out.gain.value = 0;
       const lp = synth.filter('lowpass', H.lowpass, 0.6);
-      [[1, 'sawtooth', 0.5], [2, 'square', 0.25], [3, 'triangle', 0.35]].forEach(([mult, type, v]) => {
-        const o = synth.ctx.createOscillator(), g = synth.ctx.createGain();
+      ([[1, 'sawtooth', 0.5], [2, 'square', 0.25], [3, 'triangle', 0.35]] as [number, OscillatorType, number][]).forEach(([mult, type, v]) => {
+        const o = synth.ctx!.createOscillator(), g = synth.ctx!.createGain();
         o.type = type; o.frequency.value = H.base * mult; g.gain.value = v; o.connect(g); g.connect(lp); o.start();
       });
       lp.connect(out);
-      const p = synth.panner(0, 4, 0, { ref: H.ref, to: ambient });
+      const p = synth.panner(0, 4, 0, { ref: H.ref, to: ambient! });
       out.connect(p);
       return { out, p };
     });
   }
 
   // A soft-clipping curve for the train's roar: grit = how hard it clips.
-  const distortion = (grit) => { const n = 512, c = new Float32Array(n); for (let i = 0; i < n; i++) { const x = (i * 2) / n - 1; c[i] = ((3 + grit) * x * 20 * (Math.PI / 180)) / (Math.PI + grit * Math.abs(x)); } return c; };
+  const distortion = (grit: number) => { const n = 512, c = new Float32Array(n); for (let i = 0; i < n; i++) { const x = (i * 2) / n - 1; c[i] = ((3 + grit) * x * 20 * (Math.PI / 180)) / (Math.PI + grit * Math.abs(x)); } return c; };
 
   // ---------- Train ----------
   function startTrain() {
-    const Tr = T.train, ctx = synth.ctx;
+    const Tr = T.train, ctx = synth.ctx!;
     const g = ctx.createGain(); g.gain.value = 0;
     // Built like the rain (which reads as a subway): broad lowpassed noise layers, here lower, with the deep one pushed through a distortion. Nothing pulses or chops.
     const hiss = synth.noiseLoop(5.3), hf = synth.filter('lowpass', Tr.hiss.freq, 0.4), hg = ctx.createGain(); hg.gain.value = Tr.hiss.vol; hiss.connect(hf); hf.connect(hg); hg.connect(g);
     const body = synth.noiseLoop(4.1), bf = synth.filter('lowpass', Tr.body.freq, 0.6), pre = ctx.createGain(), ws = ctx.createWaveShaper(), bg = ctx.createGain();
     pre.gain.value = Tr.body.drive; ws.curve = distortion(Tr.body.grit); ws.oversample = '2x'; bg.gain.value = Tr.body.vol; body.connect(bf); bf.connect(pre); pre.connect(ws); ws.connect(bg); bg.connect(g);
     const screech = synth.noiseLoop(6.7), sf = synth.filter('bandpass', Tr.screech.freq, Tr.screech.q), sg = ctx.createGain(); sg.gain.value = 0; screech.connect(sf); sf.connect(sg); sg.connect(g);
-    const p = synth.panner(Tr.x, Tr.y, Tr.startZ, { ref: 10, rolloff: 0.8, max: 120, to: ambient });
+    const p = synth.panner(Tr.x, Tr.y, Tr.startZ, { ref: 10, rolloff: 0.8, max: 120, to: ambient! });
     g.connect(p);
     train = { g, p, t: 0, clack: 0, hiss, hf, body, bf, screech, sf, sg, beat: 0 };
   }
-  function updateTrain(dt) {
+  function updateTrain(dt: number) {
     const Tr = T.train;
     if (!train) { trainTimer -= dt; if (trainTimer <= 0) { startTrain(); trainTimer = Tr.minGap + synth.rand() * (Tr.maxGap - Tr.minGap); } return; }
     train.t += dt;
@@ -186,50 +214,50 @@ export function createSfx(synth) {
   }
 
   // ---------- Helpers ----------
-  const distance = (pos) => Math.hypot(pos.x - lastPlayer.x, pos.z - lastPlayer.z);
-  const pan = (pos) => { const rx = Math.cos(lastYaw), rz = -Math.sin(lastYaw); const d = distance(pos) || 1;
+  const distance = (pos: XYZ) => Math.hypot(pos.x - lastPlayer.x, pos.z - lastPlayer.z);
+  const pan = (pos: XYZ) => { const rx = Math.cos(lastYaw), rz = -Math.sin(lastYaw); const d = distance(pos) || 1;
     return Math.max(-1, Math.min(1, ((pos.x - lastPlayer.x) * rx + (pos.z - lastPlayer.z) * rz) / d)) * Math.min(1, d / 4); };
-  function stereo(node, p) {
-    const sp = synth.ctx.createStereoPanner?.();
+  function stereo(node: AudioNode, p: number): AudioNode {
+    const sp = synth.ctx!.createStereoPanner?.();
     if (!sp) return node;
     sp.pan.value = p; sp.connect(node);
     return sp;
   }
 
-  const api = {
+  const api: Sfx = {
     // Called every frame. s: { player: {x,y,z}, yaw, rainScale, signs: [{light}] }
-    update(dt, s) {
+    update(dt: number, s: SfxUpdate) {
       if (!synth.ready) return;
       lastPlayer = s.player; lastYaw = s.yaw;
       synth.setListener(s.player.x, 1, s.player.z, s.yaw);
       const t = synth.now, R = T.rain;
       if (!ambient) { // ambient bus: rain, hum, train, droplets. Ducks during an echo while the rumble swells.
-        ambient = synth.ctx.createGain(); ambient.connect(synth.buses.sfx);
+        ambient = synth.ctx!.createGain(); ambient.connect(synth.buses.sfx);
         buildRumble();
       }
       if (echoOn !== echoApplied) {
         echoApplied = echoOn;
         const E = T.echo;
         ambient.gain.setTargetAtTime(echoOn ? E.ambientLevel : 1, t, echoOn ? E.fadeOut : E.fadeIn);
-        rumble.g.gain.setTargetAtTime(echoOn ? E.rumble.vol : 0, t, echoOn ? E.rumble.in : 0.4);
+        rumble!.g.gain.setTargetAtTime(echoOn ? E.rumble.vol : 0, t, echoOn ? E.rumble.in : 0.4);
       }
       if (!rain) buildRain();
       if (!hum) buildHum();
       // Rain: brighter hiss in the open, drumming patter under awnings.
       rainLevel = s.noRain ? 0 : 0.3 + 0.7 * (s.rainScale ?? 1); // noRain: a place with no rain sound at all (the platform)
       const under = Math.abs(s.player.z) > T.awningZ && Math.abs(s.player.z) < DISTRICT.roadWidth / 2 + DISTRICT.sidewalkWidth ? 1 : 0;
-      rain.awning += (under - rain.awning) * Math.min(1, dt * 3);
+      rain!.awning += (under - rain!.awning) * Math.min(1, dt * 3);
       const k = R.smooth;
-      rain.hiss.g.gain.setTargetAtTime(R.hiss * rainLevel * (1 - R.awningDuck * rain.awning), t, k);
-      rain.body.g.gain.setTargetAtTime(R.body * rainLevel, t, k);
-      rain.patter.g.gain.setTargetAtTime(R.patter * rainLevel * rain.awning * 0.5, t, k);
+      rain!.hiss.g.gain.setTargetAtTime(R.hiss * rainLevel * (1 - R.awningDuck * rain!.awning), t, k);
+      rain!.body.g.gain.setTargetAtTime(R.body * rainLevel, t, k);
+      rain!.patter.g.gain.setTargetAtTime(R.patter * rainLevel * rain!.awning * 0.5, t, k);
       // Droplet clicks.
       droplet -= dt;
       if (droplet <= 0 && rainLevel > 0) {
-        const rate = R.droplets.perSecond + (R.droplets.awningPerSecond - R.droplets.perSecond) * rain.awning;
+        const rate = R.droplets.perSecond + (R.droplets.awningPerSecond - R.droplets.perSecond) * rain!.awning;
         droplet = (0.5 + synth.rand()) / (rate * rainLevel + 0.1);
         const [lo, hi] = R.droplets.freq, p = (synth.rand() * 2 - 1) * 0.8;
-        const g = synth.ctx.createGain(); g.gain.value = 1; const sp = stereo(ambient, p); g.connect(sp);
+        const g = synth.ctx!.createGain(); g.gain.value = 1; const sp = stereo(ambient, p); g.connect(sp);
         synth.tone({ freq: lo + synth.rand() * (hi - lo), type: 'sine', dur: 0.012, release: 0.025, vol: R.droplets.vol * (0.5 + synth.rand()), to: g });
       }
       // Neon hum: re-park the voices on the nearest signs a couple of times a second.
@@ -237,7 +265,7 @@ export function createSfx(synth) {
       if (humTimer <= 0 && s.signs?.length) {
         humTimer = T.hum.update;
         const near = [...s.signs].sort((a, b) => a.light.position.distanceToSquared(s.player) - b.light.position.distanceToSquared(s.player));
-        hum.forEach((v, i) => {
+        hum!.forEach((v, i) => {
           const sg = near[i];
           if (!sg) { v.out.gain.setTargetAtTime(0, t, 0.2); return; }
           const pp = sg.light.position, bright = sg.light.base ? sg.light.intensity / sg.light.base : 1;
@@ -249,7 +277,7 @@ export function createSfx(synth) {
     },
 
     // ---- Footsteps: surface, level, world position of the walker ----
-    step(surface, pos, run = false, quiet = false) {
+    step(surface: string, pos: XYZ, run = false, quiet = false) {
       if (!synth.ready) return;
       const S = T.steps, d = distance(pos);
       if (d > S.otherRange) return;
@@ -289,13 +317,13 @@ export function createSfx(synth) {
     trainStop() { if (synth.ready) stopMotor(); },
     // The passing Line 9 train's z along the rail (null when none is passing), so the visible train matches the sound.
     // Trailer: send a train through now, starting `at` seconds into its run (the sound and the visible train follow the same clock).
-    trainNow(at = 0) { if (synth.ready && !train) { startTrain(); train.t = at; } },
+    trainNow(at = 0) { if (synth.ready && !train) { startTrain(); train!.t = at; } },
     trainZ() { return train ? T.train.startZ + (T.train.endZ - T.train.startZ) * (train.t / T.train.duration) : null; },
 
     // Echo mode on / off: ambient sound fades away and a low rumble swells in.
-    setEcho(on) { echoOn = on; },
+    setEcho(on: boolean) { echoOn = on; },
 
-    crackle(pos) {
+    crackle(pos: XYZ) {
       if (!synth.ready || echoOn || distance(pos) > 22) return;
       const C = T.crackle, t = synth.now, p = synth.panner(pos.x, pos.y, pos.z, { ref: 4 });
       for (let i = 0; i < C.bursts; i++) {
@@ -305,10 +333,10 @@ export function createSfx(synth) {
     },
 
     // ---- UI ----
-    ui(kind) {
+    ui(kind: string) {
       if (!synth.ready) return;
       const v = T.ui.vol, t = synth.now;
-      const n = (f, dt, d = 0.07, type = 'triangle') => synth.tone({ freq: f, t: t + dt, dur: d, type, vol: v, release: 0.06 });
+      const n = (f: number, dt: number, d = 0.07, type: OscillatorType = 'triangle') => synth.tone({ freq: f, t: t + dt, dur: d, type, vol: v, release: 0.06 });
       if (kind === 'move') n(660, 0, 0.03, 'square');
       else if (kind === 'confirm') { n(520, 0, 0.05); n(780, 0.06, 0.09); }
       else if (kind === 'back') { n(520, 0, 0.05); n(340, 0.06, 0.09); }
@@ -342,12 +370,12 @@ export function createSfx(synth) {
     // The phone ringing while the intro zooms in, then Juno picking up.
     phoneRing() {
       if (!synth.ready) return;
-      const R = T.ring, t = synth.ctx.currentTime;
+      const R = T.ring, t = synth.ctx!.currentTime;
       for (let r = 0; r < R.rings; r++) for (let k = 0; k < R.pulses; k++) for (const f of R.freqs) ringNodes.push(synth.tone({ freq: f, type: 'triangle', t: t + r * R.period + k * R.pulseGap, dur: R.pulseDur, vol: R.vol, release: 0.01 }));
     },
     phoneAnswer() {
       if (!synth.ready) return;
-      const now = synth.ctx.currentTime; // the ring is scheduled ahead, so cut every queued pulse
+      const now = synth.ctx!.currentTime; // the ring is scheduled ahead, so cut every queued pulse
       for (const n of ringNodes) if (n) { n.gain.gain.cancelScheduledValues(now); n.gain.gain.setValueAtTime(0.0001, now); try { n.osc.stop(now + 0.01); } catch { /* already stopped */ } }
       ringNodes.length = 0;
       synth.noise({ dur: 0.04, vol: 0.1, attack: 0.002, release: 0.03, filter: { type: 'highpass', freq: 1500 } });
@@ -356,7 +384,7 @@ export function createSfx(synth) {
     // The forced call at the end of chapter 1: a sub thud, a static burst, then harsh two-tone square alarm pulses (a tritone apart).
     override(seconds = 2.4) {
       if (!synth.ready) return;
-      const O = T.override, t = synth.ctx.currentTime, gap = Math.min(O.gap, seconds / O.pulses);
+      const O = T.override, t = synth.ctx!.currentTime, gap = Math.min(O.gap, seconds / O.pulses);
       synth.tone({ freq: O.sub, type: 'sine', t, dur: 1.2, vol: O.subVol, slide: 30, attack: 0.005, release: 0.8 });
       synth.noise({ t, dur: 0.25, vol: O.vol * 0.8, attack: 0.002, release: 0.2, filter: { type: 'bandpass', freq: 2500, q: 0.6 } });
       for (let k = 0; k < O.pulses; k++) {
@@ -369,7 +397,7 @@ export function createSfx(synth) {
     carDrive(seconds = 5.5) {
       if (!synth.ready) return;
       const D = T.drive, t = synth.now, end = t + seconds;
-      const door = (at) => { synth.noise({ t: at, dur: 0.16, vol: D.door, attack: 0.002, release: 0.12, filter: { type: 'lowpass', freq: 380 } }); synth.tone({ freq: 90, t: at, dur: 0.22, vol: D.door, slide: 42, attack: 0.002, release: 0.15 }); synth.noise({ t: at + 0.02, dur: 0.05, vol: D.door * 0.4, attack: 0.001, release: 0.04, filter: { type: 'highpass', freq: 2500 } }); };
+      const door = (at: number) => { synth.noise({ t: at, dur: 0.16, vol: D.door, attack: 0.002, release: 0.12, filter: { type: 'lowpass', freq: 380 } }); synth.tone({ freq: 90, t: at, dur: 0.22, vol: D.door, slide: 42, attack: 0.002, release: 0.15 }); synth.noise({ t: at + 0.02, dur: 0.05, vol: D.door * 0.4, attack: 0.001, release: 0.04, filter: { type: 'highpass', freq: 2500 } }); };
       door(t + 0.1);                                                   // she shuts the door
       synth.tone({ freq: D.whine.from, t: t + 0.9, dur: seconds - 1.6, vol: D.whine.vol, slide: D.whine.to, attack: 0.6, release: 1.4, type: 'sine' }); // the electric pull-away, barely there
       synth.noise({ t: t + 0.8, dur: seconds - 0.8, vol: D.roadVol, attack: 1.2, release: 1.4, filter: { type: 'lowpass', freq: D.hissFreq, sweepTo: D.hissFreq * 0.55 } });     // tyres hissing on the wet road, easing as she brakes
@@ -395,12 +423,12 @@ export function createSfx(synth) {
     // Hale on comms.
     comms() {
       if (!synth.ready) return;
-      const C = T.comms, t = synth.ctx.currentTime;
+      const C = T.comms, t = synth.ctx!.currentTime;
       C.freqs.forEach((f, i) => synth.tone({ freq: f, type: 'sine', t: t + i * C.gap, dur: 0.1, vol: C.vol, release: 0.05 }));
     },
 
     // ---- Voice blips: one per two letters, pitch from the speaker and the letter ----
-    voice(ch, speaker) {
+    voice(ch: string, speaker: string) {
       if (!synth.ready || /[\s.,!?;:'"“”…\-—()]/.test(ch)) return;
       if (++voiceCount % T.voice.every) return;
       const [base, type] = T.voices[speaker] ?? T.voices.juno;

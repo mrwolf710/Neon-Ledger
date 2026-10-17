@@ -21,7 +21,22 @@ export const CAMERA = {
 const d2r = THREE.MathUtils.degToRad, clamp = THREE.MathUtils.clamp;
 
 // Orbit camera around `target` (the player, via follow). Inputs change goals; update() eases toward them.
-export function createCamera(aspect) {
+export interface CameraRig {
+  camera: THREE.PerspectiveCamera;
+  target: THREE.Vector3;
+  readonly yaw: number;
+  reset(snap?: boolean): void;
+  orbit(dx: number, dy: number): void;
+  follow(p: THREE.Vector3, snap?: boolean): void;
+  set(v: { yaw?: number; pitch?: number; distance?: number }): void;
+  snap(): void;
+  rotate(dir: number, dt: number): void;
+  tilt(dir: number, dt: number): void;
+  zoom(factor: number): void;
+  update(dt: number): void;
+}
+
+export function createCamera(aspect: number): CameraRig {
   const camera = new THREE.PerspectiveCamera(CAMERA.fov, aspect, CAMERA.near, CAMERA.far);
   const goal = { target: new THREE.Vector3(), yaw: 0, pitch: 0, distance: 0 };
   const target = new THREE.Vector3();
@@ -42,27 +57,27 @@ export function createCamera(aspect) {
     get yaw() { return yaw; },
     reset,
     // Mouse drag in pixels: x turns, y tilts.
-    orbit(dx, dy) {
+    orbit(dx: number, dy: number) {
       goal.yaw -= d2r(dx * CAMERA.orbitSpeed);
       goal.pitch = clamp(goal.pitch + d2r(dy * CAMERA.orbitSpeed), d2r(CAMERA.minPitchDeg), d2r(CAMERA.maxPitchDeg));
     },
     // Look at p (the player); the view catches up with a slight lag. snap = jump there now.
-    follow(p, snap = false) {
+    follow(p: THREE.Vector3, snap = false) {
       goal.target.set(p.x, p.y + CAMERA.followHeight, p.z);
       if (snap) target.copy(goal.target);
     },
     // Scripted shots (trailer): set the view goals directly (radians); snap() makes the view jump there.
-    set({ yaw = goal.yaw, pitch = goal.pitch, distance = goal.distance }) { goal.yaw = yaw; goal.pitch = pitch; goal.distance = distance; }, // any field may be left out
+    set({ yaw = goal.yaw, pitch = goal.pitch, distance = goal.distance }: { yaw?: number; pitch?: number; distance?: number }) { goal.yaw = yaw; goal.pitch = pitch; goal.distance = distance; }, // any field may be left out
     snap() { target.copy(goal.target); yaw = goal.yaw; pitch = goal.pitch; distance = goal.distance; },
     // dir: -1 / +1 per second (Q/E held).
-    rotate(dir, dt) { goal.yaw += dir * d2r(CAMERA.rotateSpeed) * dt; },
+    rotate(dir: number, dt: number) { goal.yaw += dir * d2r(CAMERA.rotateSpeed) * dt; },
     // dir -1 looks up (flatter), +1 looks down (steeper).
-    tilt(dir, dt) {
+    tilt(dir: number, dt: number) {
       goal.pitch = clamp(goal.pitch + dir * d2r(CAMERA.tiltSpeed) * dt, d2r(CAMERA.minPitchDeg), d2r(CAMERA.maxPitchDeg));
     },
     // factor > 1 zooms out.
-    zoom(factor) { goal.distance = clamp(goal.distance * factor, CAMERA.minDistance, CAMERA.maxDistance); },
-    update(dt) {
+    zoom(factor: number) { goal.distance = clamp(goal.distance * factor, CAMERA.minDistance, CAMERA.maxDistance); },
+    update(dt: number) {
       const k = 1 - Math.exp(-CAMERA.smooth * dt);
       target.lerp(goal.target, 1 - Math.exp(-CAMERA.follow * dt));
       yaw += (goal.yaw - yaw) * k;

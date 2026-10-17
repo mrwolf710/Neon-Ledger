@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import type { Rng } from '../core/rng.ts';
 import { DISTRICT, groundY } from './district.ts';
 
 export const PARTICLES = {
@@ -9,12 +10,12 @@ export const PARTICLES = {
 };
 
 const D = DISTRICT;
-const onStreet = (x, z) => Math.abs(x) < D.length / 2 && Math.abs(z) < D.roadWidth / 2 + D.sidewalkWidth;
+const onStreet = (x: number, z: number) => Math.abs(x) < D.length / 2 && Math.abs(z) < D.roadWidth / 2 + D.sidewalkWidth;
 
 // Round puff: brightness falls off from the centre, Bayer-dithered to stay pixel-art (additive, so black = clear).
-function puffTexture(n) {
+function puffTexture(n: number) {
   const cv = Object.assign(document.createElement('canvas'), { width: n, height: n });
-  const ctx = cv.getContext('2d'), img = ctx.createImageData(n, n);
+  const ctx = cv.getContext('2d')!, img = ctx.createImageData(n, n);
   const bayer = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
   for (let y = 0; y < n; y++) {
     for (let x = 0; x < n; x++) {
@@ -32,11 +33,11 @@ function puffTexture(n) {
   return t;
 }
 
-const additive = (color, opacity = 1) => new THREE.MeshBasicMaterial({
+const additive = (color: number, opacity = 1) => new THREE.MeshBasicMaterial({
   color, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false, fog: false,
 });
 
-function instanced(geo, mat, count, colored) {
+function instanced(geo: THREE.BufferGeometry, mat: THREE.Material, count: number, colored?: boolean) {
   const mesh = new THREE.InstancedMesh(geo, mat, count);
   mesh.frustumCulled = false; // instances move around the focus; the bounding sphere would be stale
   mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -46,7 +47,13 @@ function instanced(geo, mat, count, colored) {
 
 // Rain streaks, splash rings, steam puffs from vents, floating motes. Four InstancedMeshes, one update loop.
 // steamVents: Vector3[] (district userData.steam). Fades use per-instance colour (additive: black = invisible).
-export function createParticles(scene, rng, rainCount, steamVents) {
+export interface Particles {
+  rainScale: number; active: boolean; steamOn: boolean; motes: boolean; center: { x: number; z: number };
+  puff(x: number, y: number, z: number, k?: number, dx?: number): void;
+  update(dt: number, focus: THREE.Vector3, camera: THREE.Camera): void;
+}
+
+export function createParticles(scene: THREE.Scene, rng: Rng, rainCount: number, steamVents: THREE.Vector3[]): Particles {
   const P = PARTICLES, R = P.rain, S = P.splash, St = P.steam, Mo = P.motes;
   const m = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), s = new THREE.Vector3(), c = new THREE.Color();
 
@@ -65,16 +72,16 @@ export function createParticles(scene, rng, rainCount, steamVents) {
   const [ax, ay, az] = R.area;
   const drops = Array.from({ length: rainCount }, () => ({ x: rng.range(-ax, ax) / 2, y: rng.range(0, ay), z: rng.range(-az, az) / 2 }));
   const splashes = Array.from({ length: S.max }, () => ({ t: 1, x: 0, y: 0, z: 0 }));
-  const puffs = Array.from({ length: St.max }, () => ({ t: 1, x: 0, y: 0, z: 0, dx: 0 }));
+  const puffs = Array.from({ length: St.max }, () => ({ t: 1, x: 0, y: 0, z: 0, dx: 0, k: 1 as number | undefined }));
   const moteList = Array.from({ length: Mo.count }, () => ({
     x: rng.range(-1, 1), y: rng.range(0, 1), z: rng.range(-1, 1), p: rng.range(0, 6.28),
   }));
   let nextSplash = 0, nextPuff = 0, steamAcc = 0, time = 0;
-  const api = { rainScale: 1, active: true, steamOn: false, motes: true, center: { x: 0, z: 0 } }; // center: the outdoor area the shower covers // 0..1 fraction of drops shown (time of day can lighten the rain)
+  const api = { rainScale: 1, active: true, steamOn: false, motes: true, center: { x: 0, z: 0 } } as Particles; // center: the outdoor area the shower covers // 0..1 fraction of drops shown (time of day can lighten the rain)
 
   // One extra puff on demand (the platform train): scale k times a vent's puff.
-  api.puff = (x, y, z, k = 1, dx = rng.range(-0.3, 0.3)) => { Object.assign(puffs[nextPuff], { t: 0, x, y, z, dx, k }); nextPuff = (nextPuff + 1) % St.max; };
-  api.update = (dt, focus, camera) => {
+  api.puff = (x: number, y: number, z: number, k = 1, dx = rng.range(-0.3, 0.3)) => { Object.assign(puffs[nextPuff], { t: 0, x, y, z, dx, k }); nextPuff = (nextPuff + 1) % St.max; };
+  api.update = (dt: number, focus: THREE.Vector3, camera: THREE.Camera) => {
     for (const mesh of [rain, splash, motes]) mesh.visible = api.active;
     steam.visible = api.active || api.steamOn;
     motes.visible = api.active && api.motes;
@@ -112,7 +119,7 @@ export function createParticles(scene, rng, rainCount, steamVents) {
     });
 
     // Steam: spawn from vents near the focus, rise, swell, fade.
-    const near = steamVents.filter((e) => Math.abs(e.x - focus.x) < St.range && Math.abs(e.z - focus.z) < St.range);
+    const near = steamVents.filter((e: THREE.Vector3) => Math.abs(e.x - focus.x) < St.range && Math.abs(e.z - focus.z) < St.range);
     steamAcc += dt * St.rate * Math.min(1, near.length / 4);
     while (near.length && steamAcc >= 1) {
       steamAcc -= 1;
@@ -138,7 +145,7 @@ export function createParticles(scene, rng, rainCount, steamVents) {
     });
 
     for (const mesh of [rain, splash, steam, motes]) mesh.instanceMatrix.needsUpdate = true;
-    splash.instanceColor.needsUpdate = steam.instanceColor.needsUpdate = true;
+    splash.instanceColor!.needsUpdate = steam.instanceColor!.needsUpdate = true;
   };
   return api;
 }

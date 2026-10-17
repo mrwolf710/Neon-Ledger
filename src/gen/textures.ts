@@ -1,5 +1,11 @@
 import * as THREE from 'three';
 import { PALETTE as P } from './palette.ts';
+import type { Rng } from '../core/rng.ts';
+
+export interface TexturePair { map: THREE.CanvasTexture; roughnessMap: THREE.CanvasTexture }
+type Sampler = (x: number, y: number) => number;
+type PixelFn = (x: number, y: number) => [number, number, number[]];
+type Generator = (rng: Rng, wu: number, hu: number) => TexturePair;
 
 // Procedural surface textures. Each generator takes (rng, widthUnits, heightUnits) and returns
 // { map, roughnessMap } as seamless tiles at 16 px per unit. Colours come from palette ramps
@@ -14,23 +20,23 @@ export const TEXTURES = {
   wetAsphalt: { ramp: [P.ink, P.night, P.grey0, P.grey1, P.grey2], puddle: [P.ink, P.night, P.indigo], puddleLevel: 0.38, rough: [0.05, 0.9] },
   awning: { stripe: 4, pairs: [[P.magentaDeep, P.magenta], [P.cyanDeep, P.seaGlass], [P.sodium0, P.amber], [P.indigo, P.violet]], rough: 0.9 },
   // Lit shop interior seen through the glass: light strip, shelves of goods, dark counter. Tile 4 x 2 units.
-  shop: { light: 2, lamps: [2, 4], poolW: 22, poolH: 20, pool: 0.3, back: 0.1, counter: [7, 10],
-    sectionW: [12, 32], sections: { shelves: 6, fridge: 2, door: 1, menu: 1, empty: 1 },
-    shelfGap: [4, 7], itemW: [2, 6], emptyChance: 0.3, fridgeDoor: 8, keeperChance: 0.5,
+  shop: { light: 2, lamps: [2, 4] as [number, number], poolW: 22, poolH: 20, pool: 0.3, back: 0.1, counter: [7, 10] as [number, number],
+    sectionW: [12, 32] as [number, number], sections: { shelves: 6, fridge: 2, door: 1, menu: 1, empty: 1 },
+    shelfGap: [4, 7] as [number, number], itemW: [2, 6] as [number, number], emptyChance: 0.3, fridgeDoor: 8, keeperChance: 0.5,
     warm: [P.rust0, P.rust2, P.sodium0, P.amber, P.amberLight], cool: [P.deepTeal, P.cyanDeep, P.teal, P.cyan, P.cyanLight] },
   sidewalk: { slab: 16, ramp: [P.grey2, P.grey3, P.grey4, P.grey5], seam: [P.grey0, P.grey1], rough: [0.4, 0.75] },
 };
 
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) => v / 16 - 0.5);
-const smooth = (t) => t * t * (3 - 2 * t);
-const lerp = (a, b, t) => a + (b - a) * t;
-const wrap = (i, n) => ((i % n) + n) % n;
+const smooth = (t: number) => t * t * (3 - 2 * t);
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+const wrap = (i: number, n: number) => ((i % n) + n) % n;
 
 // Periodic value noise over a w x h pixel tile, lattice cells of cx x cy pixels.
-function noise(rng, w, h, cx, cy = cx) {
+function noise(rng: Rng, w: number, h: number, cx: number, cy = cx): Sampler {
   const gw = Math.max(1, Math.round(w / cx)), gh = Math.max(1, Math.round(h / cy));
   const g = Array.from({ length: gw * gh }, () => rng.rand());
-  const at = (i, j) => g[wrap(j, gh) * gw + wrap(i, gw)];
+  const at = (i: number, j: number) => g[wrap(j, gh) * gw + wrap(i, gw)];
   return (x, y) => {
     const fx = (x * gw) / w, fy = (y * gh) / h;
     const x0 = Math.floor(fx), y0 = Math.floor(fy);
@@ -39,19 +45,19 @@ function noise(rng, w, h, cx, cy = cx) {
   };
 }
 
-function fbm(rng, w, h, cells) {
+function fbm(rng: Rng, w: number, h: number, cells: number[]): Sampler {
   const ns = cells.map((c) => noise(rng, w, h, c));
   const total = ns.reduce((s, _, i) => s + 0.5 ** i, 0);
   return (x, y) => ns.reduce((s, n, i) => s + n(x, y) * 0.5 ** i, 0) / total;
 }
 
 // Per-cell random values on a wrapped grid (one value per brick / tile / slab).
-function cells(rng, nx, ny) {
+function cells(rng: Rng, nx: number, ny: number): (i: number, j: number) => number {
   const v = Array.from({ length: nx * ny }, () => rng.rand());
   return (i, j) => v[wrap(j, ny) * nx + wrap(i, nx)];
 }
 
-function makeTexture(canvas, srgb) {
+function makeTexture(canvas: HTMLCanvasElement, srgb: boolean) {
   const t = new THREE.CanvasTexture(canvas);
   t.magFilter = t.minFilter = THREE.NearestFilter;
   t.generateMipmaps = false;
@@ -61,11 +67,11 @@ function makeTexture(canvas, srgb) {
 }
 
 // px(x, y) -> [v 0..1 along ramp, roughness 0..1, ramp]. Runs row-major so rng use is deterministic.
-function paint(wu, hu, px) {
+function paint(wu: number, hu: number, px: PixelFn): TexturePair {
   const w = wu * TEXTURES.pxPerUnit, h = hu * TEXTURES.pxPerUnit;
   const make = () => Object.assign(document.createElement('canvas'), { width: w, height: h });
   const cc = make(), rc = make();
-  const cctx = cc.getContext('2d'), rctx = rc.getContext('2d');
+  const cctx = cc.getContext('2d')!, rctx = rc.getContext('2d')!;
   const col = cctx.createImageData(w, h), rough = rctx.createImageData(w, h);
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
@@ -90,31 +96,31 @@ function paint(wu, hu, px) {
 // Lit shop interior seen through the glass. Built as a pixel buffer: dark back wall, ceiling lamps with light pools,
 // then random sections across the width (shelves of mixed goods, a fridge in the other ramp, a doorway, a menu board,
 // empty wall), a counter along the bottom and maybe a shopkeeper silhouette. alt = the contrasting ramp.
-function shopInterior(rng, wu, hu, ramp, alt) {
+function shopInterior(rng: Rng, wu: number, hu: number, ramp: number[], alt: number[]): TexturePair {
   const S = TEXTURES.shop, w = wu * 16, h = hu * 16;
   const val = new Float32Array(w * h), useAlt = new Uint8Array(w * h);
-  const rect = (x0, y0, x1, y1, v, other = 0) => {
+  const rect = (x0: number, y0: number, x1: number, y1: number, v: number, other = 0) => {
     for (let y = Math.max(0, y0); y < Math.min(h, y1); y++) {
       for (let x = Math.max(0, x0); x < Math.min(w, x1); x++) { val[y * w + x] = v; useAlt[y * w + x] = other; }
     }
   };
   const haze = noise(rng, w, h, 16, 8);
-  const lamps = Array.from({ length: rng.int(...S.lamps) }, () => rng.int(4, w - 4));
+  const lamps = Array.from({ length: rng.int(S.lamps[0], S.lamps[1]) }, () => rng.int(4, w - 4));
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const pool = lamps.reduce((m, lx) => Math.max(m, 1 - Math.hypot((x - lx) / S.poolW, y / S.poolH)), 0);
       val[y * w + x] = S.back + haze(x, y) * 0.08 + Math.max(0, pool) * S.pool;
     }
   }
-  const counterY = h - rng.int(...S.counter);
+  const counterY = h - rng.int(S.counter[0], S.counter[1]);
   for (let x = 0; x < w;) {
-    const sw = Math.min(w - x, rng.int(...S.sectionW)), kind = rng.weighted(S.sections);
+    const sw = Math.min(w - x, rng.int(S.sectionW[0], S.sectionW[1])), kind = rng.weighted(S.sections);
     if (kind === 'shelves') {
       for (let y = S.light + 1; y < counterY - 2;) {
-        const gap = rng.int(...S.shelfGap);
+        const gap = rng.int(S.shelfGap[0], S.shelfGap[1]);
         rect(x, y + gap, x + sw, y + gap + 1, 0.08);                       // plank
         for (let gx = x + 1; gx < x + sw - 1;) {
-          const iw = rng.int(...S.itemW), ih = rng.int(1, gap - 1);
+          const iw = rng.int(S.itemW[0], S.itemW[1]), ih = rng.int(1, gap - 1);
           if (rng.rand() > S.emptyChance) rect(gx, y + gap - ih, Math.min(gx + iw, x + sw - 1), y + gap, rng.range(0.45, 0.95));
           gx += iw + rng.int(0, 1);
         }
@@ -146,10 +152,10 @@ function shopInterior(rng, wu, hu, ramp, alt) {
 }
 
 const GENERATORS = {
-  shopWarm: (rng, wu, hu) => shopInterior(rng, wu, hu, TEXTURES.shop.warm, TEXTURES.shop.cool),
-  shopCool: (rng, wu, hu) => shopInterior(rng, wu, hu, TEXTURES.shop.cool, TEXTURES.shop.warm),
+  shopWarm: (rng: Rng, wu: number, hu: number) => shopInterior(rng, wu, hu, TEXTURES.shop.warm, TEXTURES.shop.cool),
+  shopCool: (rng: Rng, wu: number, hu: number) => shopInterior(rng, wu, hu, TEXTURES.shop.cool, TEXTURES.shop.warm),
 
-  brick(rng, wu, hu) {
+  brick(rng: Rng, wu: number, hu: number) {
     const B = TEXTURES.brick, w = wu * 16, h = hu * 16;
     const shade = cells(rng, w / B.w, h / B.h), grit = fbm(rng, w, h, [8, 2]);
     const streak = noise(rng, w, h, 3, h);
@@ -161,7 +167,7 @@ const GENERATORS = {
     });
   },
 
-  concrete(rng, wu, hu) {
+  concrete(rng: Rng, wu: number, hu: number) {
     const C = TEXTURES.concrete, w = wu * 16, h = hu * 16;
     const base = fbm(rng, w, h, [16, 6, 2]), stain = noise(rng, w, h, 4, 24);
     return paint(wu, hu, (x, y) => {
@@ -172,7 +178,7 @@ const GENERATORS = {
     });
   },
 
-  tiles(rng, wu, hu) {
+  tiles(rng: Rng, wu: number, hu: number) {
     const T = TEXTURES.tiles, w = wu * 16, h = hu * 16;
     const shade = cells(rng, w / T.size, h / T.size), grime = fbm(rng, w, h, [16, 4]);
     return paint(wu, hu, (x, y) => {
@@ -184,7 +190,7 @@ const GENERATORS = {
     });
   },
 
-  metalPanel(rng, wu, hu) {
+  metalPanel(rng: Rng, wu: number, hu: number) {
     const M = TEXTURES.metalPanel, w = wu * 16, h = hu * 16;
     const shade = cells(rng, w / M.w, h / M.h), rust = noise(rng, w, h, 2, 20), grit = fbm(rng, w, h, [8, 2]);
     return paint(wu, hu, (x, y) => {
@@ -197,7 +203,7 @@ const GENERATORS = {
     });
   },
 
-  wetAsphalt(rng, wu, hu) {
+  wetAsphalt(rng: Rng, wu: number, hu: number) {
     const A = TEXTURES.wetAsphalt, w = wu * 16, h = hu * 16;
     const base = fbm(rng, w, h, [12, 3, 1]), wet = fbm(rng, w, h, [32, 12]);
     return paint(wu, hu, (x, y) => {
@@ -210,13 +216,13 @@ const GENERATORS = {
   },
 
   // Striped cloth; colour pair picked from the seed, so different forks give different awnings.
-  awning(rng, wu, hu) {
+  awning(rng: Rng, wu: number, hu: number) {
     const A = TEXTURES.awning, w = wu * 16, h = hu * 16;
     const ramp = rng.pick(A.pairs), grime = fbm(rng, w, h, [8, 2]);
     return paint(wu, hu, (x, y) => [(Math.floor(x / A.stripe) & 1) * 0.8 + (grime(x, y) - 0.5) * 0.6 + 0.1, A.rough, ramp]);
   },
 
-  sidewalk(rng, wu, hu) {
+  sidewalk(rng: Rng, wu: number, hu: number) {
     const S = TEXTURES.sidewalk, w = wu * 16, h = hu * 16;
     const shade = cells(rng, w / S.slab, h / S.slab), grit = fbm(rng, w, h, [8, 2]);
     return paint(wu, hu, (x, y) => {
@@ -227,11 +233,12 @@ const GENERATORS = {
   },
 };
 
-const cache = new Map();
+export type TextureName = keyof typeof GENERATORS;
+const cache = new Map<string, TexturePair>();
 
 // Cached by (name, seed, size); output depends only on that key. Tile sizes must be whole units.
-export function getTexture(name, rng, wu, hu) {
+export function getTexture(name: TextureName, rng: Rng, wu: number, hu: number): TexturePair {
   const key = `${name}:${rng.seed}:${wu}x${hu}`;
   if (!cache.has(key)) cache.set(key, GENERATORS[name](rng.fork(key), wu, hu));
-  return cache.get(key);
+  return cache.get(key)!;
 }

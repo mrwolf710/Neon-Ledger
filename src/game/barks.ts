@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import type { Cast, CastMember } from './npc.ts';
 
 export const BARKS = {
   range: 4.5,        // units: an NPC notices Juno inside this, looks at her, and may speak
@@ -12,7 +13,8 @@ export const BARKS = {
 
 // Short lines said when Juno walks up. Each entry: { lines, flag?, notFlag? } (first matching entry wins); ambient walkers use `walker`.
 // Flags are case-file flags (visited_<area>, miso_joined, kit_named, seen_backroom, ex_<id>...).
-const LINES = {
+interface BarkEntry { lines: string[]; flag?: string; notFlag?: string }
+const LINES: Record<string, BarkEntry[]> = {
   vendor: [
     { flag: 'miso_joined', lines: ['That cat likes you. Cats know.', 'Feed him, he stays.'] },
     { lines: ['Hot skewers. Rain keeps them warm.', 'Eat. Lowmarket is cold tonight.', 'You look lost, detective.'] },
@@ -33,18 +35,20 @@ const LINES = {
 };
 
 // Look-at and barks. Nearby people turn to face Juno (then back to where they stood) and sometimes say a line in a bubble above their head.
-export function createBarks({ cast, caseFile, player, camera }) {
+export interface BarksDeps { cast: Cast; caseFile: { hasFlag(name: string): boolean }; player: { position: THREE.Vector3 }; camera: THREE.Camera }
+export interface Barks { update(dt: number, areaId: string, active: boolean): void }
+export function createBarks({ cast, caseFile, player, camera }: BarksDeps): Barks {
   const el = Object.assign(document.createElement('div'), { className: 'bark' });
   document.body.appendChild(el);
-  const base = new Map(), last = new Map(), was = new Set(), v = new THREE.Vector3();
-  let clock = 0, gap = 0, speaker = null, left = 0, area = null;
-  const rnd = (a) => a[Math.floor(Math.random() * a.length)]; // cosmetic only: does not touch the seeded city
-  const pick = (id, ambient) => (LINES[ambient ? 'walker' : id] ?? []).find((e) => (!e.flag || caseFile.hasFlag(e.flag)) && (!e.notFlag || !caseFile.hasFlag(e.notFlag)));
-  const turn = (a, to, k) => a + Math.atan2(Math.sin(to - a), Math.cos(to - a)) * Math.min(1, k);
+  const base = new Map<CastMember, number>(), last = new Map<string, number>(), was = new Set<CastMember>(), v = new THREE.Vector3();
+  let clock = 0, gap = 0, speaker: CastMember | null = null, left = 0, area: string | null = null;
+  const rnd = (a: string[]) => a[Math.floor(Math.random() * a.length)]; // cosmetic only: does not touch the seeded city
+  const pick = (id: string, ambient: boolean) => (LINES[ambient ? 'walker' : id] ?? []).find((e) => (!e.flag || caseFile.hasFlag(e.flag)) && (!e.notFlag || !caseFile.hasFlag(e.notFlag)));
+  const turn = (a: number, to: number, k: number) => a + Math.atan2(Math.sin(to - a), Math.cos(to - a)) * Math.min(1, k);
 
   return {
     // active: false while a menu, dialogue or cutscene has the screen (the bubble is hidden).
-    update(dt, areaId, active) {
+    update(dt: number, areaId: string, active: boolean) {
       clock += dt; gap -= dt;
       if (areaId !== area) { area = areaId; was.clear(); speaker = null; }
       const p = player.position;
@@ -53,7 +57,7 @@ export function createBarks({ cast, caseFile, player, camera }) {
         const d = Math.hypot(p.x - b.position.x, p.z - b.position.z), near = d < BARKS.range;
         if (!b.ambient && b.id !== 'miso' && b.id !== 'dex' && !b.follow && b.anim !== 'slump' && b.anim !== 'walk') { // look at Juno, return when she leaves
           if (!base.has(b)) base.set(b, b.facing);
-          b.facing = turn(b.facing, near ? Math.atan2(p.x - b.position.x, p.z - b.position.z) : base.get(b), dt * BARKS.turnRate);
+          b.facing = turn(b.facing, near ? Math.atan2(p.x - b.position.x, p.z - b.position.z) : base.get(b)!, dt * BARKS.turnRate);
         }
         if (!near) { was.delete(b); continue; }
         if (was.has(b)) continue;

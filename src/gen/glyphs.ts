@@ -1,19 +1,20 @@
 import * as THREE from 'three';
 import { PALETTE as P } from './palette.ts';
+import type { Rng } from '../core/rng.ts';
 
 // Invented sign script: pseudo-kanji built from 3-7 strokes on a 12 px grid, one glyph per world unit.
 export const GLYPHS = {
   cell: 16,              // px per glyph (= 1 world unit)
   pad: 2,                // px border inside each cell
   stops: [0, 3, 6, 9, 11], // stroke endpoints inside the 12 px glyph box
-  strokes: [3, 7],
+  strokes: [3, 7] as [number, number],
   background: P.night,
   border: true,
 };
 
-const hex = (c) => '#' + c.toString(16).padStart(6, '0');
+const hex = (c: number) => '#' + c.toString(16).padStart(6, '0');
 
-function twoStops(rng) {
+function twoStops(rng: Rng) {
   const S = GLYPHS.stops;
   let a = rng.int(0, S.length - 1), b = rng.int(0, S.length - 1);
   if (a === b) b = a < S.length - 1 ? a + 1 : a - 1;
@@ -21,9 +22,9 @@ function twoStops(rng) {
 }
 
 // Draws one glyph with its top-left at (ox, oy).
-function drawGlyph(ctx, rng, ox, oy) {
-  const S = GLYPHS.stops, n = rng.int(...GLYPHS.strokes);
-  const line = (x, y, w, h) => ctx.fillRect(ox + x, oy + y, w, h);
+function drawGlyph(ctx: CanvasRenderingContext2D, rng: Rng, ox: number, oy: number) {
+  const S = GLYPHS.stops, n = rng.int(GLYPHS.strokes[0], GLYPHS.strokes[1]);
+  const line = (x: number, y: number, w: number, h: number) => ctx.fillRect(ox + x, oy + y, w, h);
   for (let i = 0; i < n; i++) {
     const kind = rng.pick(['h', 'h', 'v', 'v', 'hook', 'box']);
     const [a, b] = twoStops(rng), p = rng.pick(S);
@@ -42,11 +43,11 @@ function drawGlyph(ctx, rng, ox, oy) {
 }
 
 // Texture for a sign of `count` glyphs, vertical (1 x count units) or horizontal (count x 1).
-export function signTexture(rng, count, vertical, color) {
+export function signTexture(rng: Rng, count: number, vertical: boolean, color: number) {
   const G = GLYPHS;
   const w = vertical ? G.cell : G.cell * count, h = vertical ? G.cell * count : G.cell;
   const canvas = Object.assign(document.createElement('canvas'), { width: w, height: h });
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d')!;
   ctx.fillStyle = hex(G.background);
   ctx.fillRect(0, 0, w, h);
   ctx.fillStyle = hex(color);

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { SPRITES, DIRS } from '../gen/sprites.ts';
 import { CAST, groundY } from '../world/district.ts';
+import type { Spot } from '../types.ts';
 
 export const NPC = {
   brightness: 0.85,   // overall sprite brightness (sprites are unlit)
@@ -51,11 +52,11 @@ const FRAG = /* glsl */`
     gl_FragColor = vec4(col, ghost > 0.5 ? 0.62 : 1.0);
   }`;
 
-let shadowMat = null;
-function shadowMaterial() {
+let shadowMat: THREE.MeshBasicMaterial | null = null;
+function shadowMaterial(): THREE.MeshBasicMaterial {
   if (shadowMat) return shadowMat;
   const n = NPC.shadow.texPx, cv = Object.assign(document.createElement('canvas'), { width: n, height: n });
-  const ctx = cv.getContext('2d'), img = ctx.createImageData(n, n);
+  const ctx = cv.getContext('2d')!, img = ctx.createImageData(n, n);
   for (let y = 0; y < n; y++) {
     for (let x = 0; x < n; x++) {
       const d = Math.hypot(x + 0.5 - n / 2, y + 0.5 - n / 2) / (n / 2);
@@ -75,8 +76,26 @@ function shadowMaterial() {
 
 const NAMES8 = ['south', 'south-east', 'east', 'north-east', 'north', 'north-west', 'west', 'south-west']; // clockwise on screen, from facing the camera
 
+// A sprite sheet as built by src/gen/sprites.ts (typed structurally here: only what the billboard reads).
+export interface Sheet {
+  texture: THREE.Texture; canvas: { width: number; height: number };
+  frameW: number; frameH: number; pxPerUnit: number;
+  rows: Record<string, number>;
+  animRows?: Record<string, Record<string, number>>;
+  anims: Record<string, { start: number; frames: number }>;
+  small?: boolean; footPx?: number; dirs?: number; fps?: number; walkFps?: number;
+}
+// A registered scene light as the sprite shader sees it.
+export interface SpriteLight { color: number; intensity: number; base: number; position: THREE.Vector3 }
+export interface BillboardOpts { x?: number; z?: number; facing?: number; pose?: string; path?: [number, number][]; speed?: number; ghost?: boolean | number }
+export interface Billboard {
+  root: THREE.Group; position: THREE.Vector3; facing: number; anim: string; fpsScale: number;
+  follow: { target: { position: THREE.Vector3 }; dist: number; speed: number } | null;
+  away?: boolean; onStep?: (frame: number, anim: string) => void;
+  update(dt: number, camYaw: number, lights: SpriteLight[]): void;
+}
 // One character: sheet from getSheets(), opts { x, z, facing, pose, path, speed, ghost }.
-export function createBillboard(sheet, opts) {
+export function createBillboard(sheet: Sheet, opts: BillboardOpts): Billboard {
   const fw = sheet.frameW, fh = sheet.frameH, W = sheet.canvas.width, H = sheet.canvas.height;
   const isCat = fw === SPRITES.cat.w || !!sheet.small;
   const mat = new THREE.ShaderMaterial({
@@ -105,15 +124,15 @@ export function createBillboard(sheet, opts) {
   const path = opts.path, speed = opts.speed ?? 2;
   if (path) pos.set(path[0][0], 0, path[0][1]);
 
-  function setFrame(row, col) {
+  function setFrame(row: number, col: number) {
     mat.uniforms.frame.value.set((col * fw) / W, 1 - ((row + 1) * fh) / H, fw / W, fh / H);
   }
 
   // facing (radians, 0 = +z), anim (idle | walk | pose name) and fpsScale can be driven from outside (player.js).
-  const api = {
+  const api: Billboard = {
     root, position: pos, facing: opts.facing ?? 0, anim: opts.pose ?? 'idle', fpsScale: 1, follow: null, // follow: { target, dist, speed }
     // camYaw: camera yaw (radians); lights: registered lights [{ color, intensity, base, position }].
-    update(dt, camYaw, lights) {
+    update(dt: number, camYaw: number, lights: SpriteLight[]) {
       time += dt * api.fpsScale;
       mat.uniforms.uTime.value = performance.now() / 1000;
       let { anim, facing } = api;
@@ -144,7 +163,7 @@ export function createBillboard(sheet, opts) {
         const dir = eight ? NAMES8[Math.floor(rel / (Math.PI / 4))] : ['down', 'right', 'up', 'left'][Math.floor(rel / (Math.PI / 2))];
         const key = sheet.anims[anim] ? anim : anim === 'run' ? 'walk' : 'idle'; // sheets without run art walk
         const A = sheet.anims[key];
-        const fps = (key === 'idle' && sheet.fps) || (key === 'walk' && sheet.walkFps) || (SPRITES.fps[key] ?? SPRITES.fps.idle);
+        const fps = (key === 'idle' && sheet.fps) || (key === 'walk' && sheet.walkFps) || ((SPRITES.fps as Record<string, number>)[key] ?? SPRITES.fps.idle);
         const fi = Math.floor(time * fps) % A.frames, stepping = anim === 'walk' || anim === 'run' || anim === 'sneak';
         setFrame(sheet.animRows?.[key]?.[dir] ?? sheet.rows[dir], A.start + fi);
         if (stepping && fi !== lastStep) { lastStep = fi; if (fi % (A.frames / 2) === 0) api.onStep?.(fi, anim); } // footfall
@@ -154,7 +173,7 @@ export function createBillboard(sheet, opts) {
       // Nearby lights (summed, squared falloff) tint the sprite; the strongest one colours the rim on its side.
       const lc = mat.uniforms.lightColor.value.setRGB(0, 0, 0);
       const rx = Math.cos(camYaw), rz = -Math.sin(camYaw); // camera right on the ground
-      let side = 0, best = null, bestW = 0;
+      let side = 0, best: SpriteLight | null = null, bestW = 0;
       for (const l of lights) {
         const d = l.position.distanceTo(pos);
         if (d >= NPC.lightRange || !l.base) continue;
@@ -173,28 +192,35 @@ export function createBillboard(sheet, opts) {
 }
 
 // Places CAST in the scene. areas: { id: { spots } } from the world. Returns { list, byId, update, setArea, setHidden }.
-export function createCast(scene, sheets, areas) {
-  const list = CAST.map((c) => {
+export interface CastMember extends Billboard { id: string; area: string; ambient: boolean; booth: boolean }
+export interface Cast {
+  list: CastMember[]; byId: Record<string, CastMember>; apply(): void;
+  update(dt: number, camYaw: number, lights: SpriteLight[]): void;
+  setArea(id: string): void; setHidden(h: boolean): void;
+}
+interface CastDef { id: string; area?: string; at: string | [number, number]; facing?: number; pose?: string; path?: [number, number][]; speed?: number; ghost?: boolean | number; sheet?: string; ambient?: boolean; booth?: boolean }
+export function createCast(scene: THREE.Object3D, sheets: Record<string, Sheet>, areas: Record<string, { spots: Spot[] }>): Cast {
+  const list = (CAST as CastDef[]).map((c) => {
     const spots = areas[c.area ?? 'street']?.spots ?? [];
-    let x, z, facing = c.facing ?? 0;
+    let x: number, z: number, facing = c.facing ?? 0;
     if (typeof c.at === 'string') {
       const s = spots.find((p) => p.name === c.at);
       if (!s) console.warn('cast: no spot', c.at, 'in', c.area);
       [x, z] = s ? [s.x, s.z] : [0, 0];
-      if (s && c.facing === undefined) facing = s.facing;
+      if (s && c.facing === undefined) facing = s.facing!;
     } else [x, z] = c.at;
-    const b = createBillboard(sheets[c.sheet ?? c.id], { x, z, facing, pose: c.pose, path: c.path, speed: c.speed, ghost: c.ghost });
+    const b = createBillboard(sheets[c.sheet ?? c.id], { x, z, facing, pose: c.pose, path: c.path, speed: c.speed, ghost: c.ghost }) as CastMember;
     b.id = c.id; b.area = c.area ?? 'street'; b.ambient = !!c.ambient; b.booth = !!c.booth;
     scene.add(b.root);
     return b;
   });
   const byId = Object.fromEntries(list.map((b) => [b.id, b]));
-  let areaId = null, hidden = false;
+  let areaId: string | null = null, hidden = false;
   const apply = () => list.forEach((b) => { b.root.visible = !hidden && !b.away && b.area === areaId; }); // away: held back by the story (Juno before the train arrives)
   return {
     list, byId, apply,
-    update: (dt, camYaw, lights) => list.forEach((b) => { if (b.root.visible) b.update(dt, camYaw, lights); }),
-    setArea(id) { areaId = id; apply(); },     // only characters of the current area are drawn
-    setHidden(h) { hidden = h; apply(); },     // echo mode hides the real people
+    update: (dt: number, camYaw: number, lights: SpriteLight[]) => list.forEach((b) => { if (b.root.visible) b.update(dt, camYaw, lights); }),
+    setArea(id: string) { areaId = id; apply(); },     // only characters of the current area are drawn
+    setHidden(h: boolean) { hidden = h; apply(); },     // echo mode hides the real people
   };
 }

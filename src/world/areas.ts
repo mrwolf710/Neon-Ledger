@@ -6,9 +6,18 @@ import { PALETTE as P } from '../gen/palette.ts';
 import { drawText } from '../gen/pixelfont.ts';
 import { buildDistrict, zoneAt as streetZone } from './district.ts';
 import { streetBounds } from './collision.ts';
+import type { Rng } from '../core/rng.ts';
+import type { Batch, BatchSign, BatchLight } from '../gen/batch.ts';
+import type { Materials } from '../gen/buildings.ts';
+import type { PropMaterials } from '../gen/props.ts';
+import type { Block, Spot, Bounds, AreaMeta } from '../types.ts';
 
 // Places the player can be. They sit far apart on the X axis so each keeps its own lights, fog and shadows.
 // outdoor: rain falls. surface: footstep sound (null = decided by position, as on the street). mood: music.
+export interface AreaDef extends Omit<AreaMeta, 'surface'> {
+  surface: string | null;
+  zones?: { name: string; box: [number, number, number, number]; mood: string }[];
+}
 export const AREAS = {
   street:   { origin: [0, 0],    name: 'Lowmarket Street',       district: 'Lowmarket', outdoor: true,  mood: 'street', surface: null },
   platform: { origin: [-150, 0], name: 'Line 9 Platform',        district: 'Lowmarket', outdoor: false, mood: 'station', surface: 'tile' },
@@ -20,12 +29,14 @@ export const AREAS = {
   bureau:   { origin: [1050, 0], name: 'Civic Audit Bureau',     district: 'Civic Centre', outdoor: false, mood: 'bureau', surface: 'tile' }, // chapter 3 hub (docs/chapter-3.md)
   dealer:   { origin: [900, 0],  name: 'Implants',               district: 'Undercity', outdoor: false, mood: 'dealer',  surface: 'tile' }, // chapter 2: the implant dealer's shop (docs/chapter-2.md)
   exchange: { origin: [750, 0],  name: 'The Echo Exchange',      district: 'Undercity', outdoor: true,  mood: 'bazaar', surface: 'asphalt' }, // chapter 2 hub (docs/chapter-2.md)
-};
-const at = (id, x, z) => [AREAS[id].origin[0] + x, AREAS[id].origin[1] + z];
+} satisfies Record<string, AreaDef>;
+export type AreaId = keyof typeof AREAS;
+const at = (id: AreaId, x: number, z: number): [number, number] => [AREAS[id].origin[0] + x, AREAS[id].origin[1] + z];
 const H = Math.PI / 2;
 
 // Doors between areas. facing: radians (0 = +z). Positions are world coordinates; interact near `at` to go through.
-const EXIT_DEFS = [
+export interface ExitDef { id: string; area: AreaId; at: [number, number]; to: AreaId; spawn: [number, number, number]; verb: string }
+const EXIT_DEFS: ExitDef[] = [
   { id: 'platform-down', area: 'platform', at: at('platform', 8.6, 0), to: 'street', spawn: [13.8, 1.3, -H], verb: 'Take the stairs down' },
   { id: 'street-up', area: 'street', at: [15.6, 0.9], to: 'platform', spawn: [...at('platform', 7.6, 0), -H], verb: 'Climb to Line 9' },
   { id: 'sable-door', area: 'street', at: [-0.3, -4.15], to: 'sable', spawn: [...at('sable', -4.6, 0), H], verb: 'Enter the Sable' },
@@ -44,48 +55,49 @@ export const EXITS = EXIT_DEFS;
 // ---------- small building helpers (all coordinates are local to the area origin) ----------
 const T = 0.3, WALL_H = 1.0;   // low "dollhouse" walls so the near ones never hide people standing behind them
 
-function wallPiece(b, M, cx, cz, w, d, h = WALL_H, mat = M.walls[0]) {
+function wallPiece(b: Batch, M: Materials, cx: number, cz: number, w: number, d: number, h = WALL_H, mat: THREE.Material = M.walls[0]) {
   b.box(mat, w, h, d, cx, h / 2, cz);
   b.box(M.roof, w + 0.08, 0.08, d + 0.08, cx, h + 0.04, cz); // cap
 }
 // A wall along X at z, from xa to xb, with door gaps [[g0, g1]]. block: also solid for collision.
-function wallX(b, M, z, xa, xb, gaps = [], o = {}) {
+interface WallOpts { t?: number; h?: number; mat?: THREE.Material; block?: boolean }
+function wallX(b: Batch, M: Materials, z: number, xa: number, xb: number, gaps: [number, number][] = [], o: WallOpts = {}) {
   let a = xa;
-  for (const [g0, g1] of [...gaps, [xb, xb]].sort((p, q) => p[0] - q[0])) {
+  for (const [g0, g1] of [...gaps, [xb, xb] as [number, number]].sort((p, q) => p[0] - q[0])) {
     if (g0 - a > 0.02) { wallPiece(b, M, (a + g0) / 2, z, g0 - a, o.t ?? T, o.h, o.mat); if (o.block) b.block((a + g0) / 2, z, g0 - a, o.t ?? T); }
     a = g1;
   }
 }
-function wallZ(b, M, x, za, zb, gaps = [], o = {}) {
+function wallZ(b: Batch, M: Materials, x: number, za: number, zb: number, gaps: [number, number][] = [], o: WallOpts = {}) {
   let a = za;
-  for (const [g0, g1] of [...gaps, [zb, zb]].sort((p, q) => p[0] - q[0])) {
+  for (const [g0, g1] of [...gaps, [zb, zb] as [number, number]].sort((p, q) => p[0] - q[0])) {
     if (g0 - a > 0.02) { wallPiece(b, M, x, (a + g0) / 2, o.t ?? T, g0 - a, o.h, o.mat); if (o.block) b.block(x, (a + g0) / 2, o.t ?? T, g0 - a); }
     a = g1;
   }
 }
-const floor = (b, mat, x0, z0, x1, z1) => b.box(mat, x1 - x0, 0.1, z1 - z0, (x0 + x1) / 2, -0.05, (z0 + z1) / 2);
-const doorMat = (b, M, x, z, w, d) => b.box(M.litCool, w, 0.03, d, x, 0.02, z); // glowing mat where an exit is
+const floor = (b: Batch, mat: THREE.Material, x0: number, z0: number, x1: number, z1: number) => b.box(mat, x1 - x0, 0.1, z1 - z0, (x0 + x1) / 2, -0.05, (z0 + z1) / 2);
+const doorMat = (b: Batch, M: Materials, x: number, z: number, w: number, d: number) => b.box(M.litCool, w, 0.03, d, x, 0.02, z); // glowing mat where an exit is
 
-function table(b, PM, x, z, w = 1.5, d = 0.9) {
+function table(b: Batch, PM: PropMaterials, x: number, z: number, w = 1.5, d = 0.9) {
   b.box(PM.wood, w, 0.07, d, x, 0.78, z);
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) b.box(PM.pole, 0.07, 0.76, 0.07, x + sx * (w / 2 - 0.1), 0.38, z + sz * (d / 2 - 0.1));
   b.block(x, z, w, d);
 }
-function stool(b, PM, x, z) {
+function stool(b: Batch, PM: PropMaterials, x: number, z: number) {
   b.add(PM.pole, new THREE.CylinderGeometry(0.2, 0.2, 0.08, 8).translate(x, 0.5, z));
   b.add(PM.pole, new THREE.CylinderGeometry(0.05, 0.05, 0.5, 6).translate(x, 0.25, z));
   b.block(x, z, 0.4, 0.4);
 }
-function crates(b, PM, x, z, n = 2) {
+function crates(b: Batch, PM: PropMaterials, x: number, z: number, n = 2) {
   for (let i = 0; i < n; i++) b.box(PM.crates[i % PM.crates.length], 0.7, 0.6, 0.7, x, 0.3 + i * 0.6, z);
   b.block(x, z, 0.7, 0.7);
 }
 
 // A pixel-font sign texture: dark backing, bright letters.
-function textSign(text, color, bg = P.ink) {
+function textSign(text: string, color: number, bg = P.ink) {
   const w = text.length * 4 + 3, h = 9;
   const cv = Object.assign(document.createElement('canvas'), { width: w, height: h });
-  const ctx = cv.getContext('2d');
+  const ctx = cv.getContext('2d')!;
   ctx.fillStyle = `#${bg.toString(16).padStart(6, '0')}`; ctx.fillRect(0, 0, w, h);
   ctx.fillStyle = `#${color.toString(16).padStart(6, '0')}`;
   ctx.fillRect(0, 0, w, 1); ctx.fillRect(0, h - 1, w, 1); ctx.fillRect(0, 0, 1, h); ctx.fillRect(w - 1, 0, 1, h); // border
@@ -94,20 +106,31 @@ function textSign(text, color, bg = P.ink) {
   t.magFilter = t.minFilter = THREE.NearestFilter; t.generateMipmaps = false; t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
-const signMat = (text, color, noCut = false, minLum = 0) => { // noCut: the see-through circle around Juno never removes this sign; minLum: brighten dark colours (blue, red, purple) until the text is this bright, so every sign blooms
+const signMat = (text: string, color: number, noCut = false, minLum = 0) => { // noCut: the see-through circle around Juno never removes this sign; minLum: brighten dark colours (blue, red, purple) until the text is this bright, so every sign blooms
   const c = new THREE.Color(color), lum = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
   const m = new THREE.MeshBasicMaterial({ map: textSign(text, color), color: new THREE.Color().setScalar(Math.min(EXCHANGE.signBoostMax, Math.max(BUILDINGS.signGlow, minLum / lum))) });
   m.userData.noCut = noCut;
   return m;
 };
 
-function begin(id) {
+function begin(id: AreaId) {
   const b = createBatch();
   b.setTransform(AREAS[id].origin[0], AREAS[id].origin[1], 0);
   return b;
 }
 // Finish an area: bounds are local floor rectangles; returns the common record.
-function finish(id, b, bounds, extra = {}) {
+export interface AreaExtra {
+  train?: THREE.Group; trainGlow?: THREE.MeshBasicMaterial[]; trainStop?: [number, number];
+  labDoor?: THREE.Mesh; labLed?: THREE.Mesh;
+}
+export interface AreaRecord extends AreaExtra {
+  id: AreaId; meta: AreaDef; group: THREE.Group; extra: AreaExtra;
+  blocks: Block[]; spots: Spot[]; lights: BatchLight[]; signs: BatchSign[]; steam: THREE.Vector3[];
+  bounds: Bounds;
+  road?: [number, number];
+  exits?: ExitDef[];
+}
+function finish(id: AreaId, b: Batch, bounds: [number, number, number, number], extra: AreaExtra = {}): AreaRecord {
   const [ox, oz] = AREAS[id].origin, group = b.build();
   group.name = id;
   return {
@@ -120,7 +143,7 @@ function finish(id, b, bounds, extra = {}) {
 
 // The discarded glove: the owner's pixel art (public/sprites/glove/glove.png) lying flat on the alley floor. Skipped where there is no browser (node checks).
 const GLOVE = { size: 1.0, y: 0.05, turn: -0.5 }; // size in world units; turn = rotation on the floor, radians
-function gloveSprite(x, z) {
+function gloveSprite(x: number, z: number) {
   if (typeof Image === 'undefined') return null;
   const map = new THREE.TextureLoader().load(`${import.meta.env?.BASE_URL ?? '/'}sprites/glove/glove.png`);
   map.magFilter = map.minFilter = THREE.NearestFilter; map.generateMipmaps = false; map.colorSpace = THREE.SRGBColorSpace;
@@ -130,7 +153,7 @@ function gloveSprite(x, z) {
 }
 
 // ---------- Line 9 platform ----------
-function platform(M) {
+function platform(M: Materials) {
   const b = begin('platform'), PM = propMats(M);
   floor(b, M.sidewalk, -10, -3, 10, 3);
   b.box(M.litWarm, 20, 0.03, 0.18, 0, 0.02, -2.85);                       // safety line at the platform edge
@@ -153,7 +176,7 @@ function platform(M) {
   b.spot('start', -1.0, -2.0); b.spot('exit', 8.6, 0); b.spot('trainstop', 0, -4.6);
   // The train: its own group so it can roll in. Body faces the platform at z = -3.
   const tb = createBatch(); tb.setTransform(0, 0, 0);
-  const glow = (hex) => { const m = new THREE.MeshBasicMaterial({ color: new THREE.Color(hex).multiplyScalar(BUILDINGS.windowGlow) }); m.userData.base = m.color.clone(); return m; };
+  const glow = (hex: number) => { const m = new THREE.MeshBasicMaterial({ color: new THREE.Color(hex).multiplyScalar(BUILDINGS.windowGlow) }); m.userData.base = m.color.clone(); return m; };
   const trainWarm = glow(P.amber), trainCool = glow(P.cyan);          // window and door light; beats fades them in
   const L = 14;
   tb.box(M.walls[1], L, 2.7, 2.6, 0, 1.55, 0);                         // body: pale concrete panels so the platform lamps show it
@@ -173,13 +196,13 @@ function platform(M) {
   tb.box(trainHead, 0.1, 0.22, 1.7, L / 2 + 2.57, 1.2, 0);              // headlight bar across the nose
   for (const sz of [-1, 1]) { tb.box(trainHead, 0.14, 0.34, 0.34, L / 2 + 2.56, 1.2, sz * 0.78); tb.box(trainTail, 0.06, 0.18, 0.5, -L / 2 - 0.02, 1.1, sz * 0.7); }
   const train = tb.build();
-  train.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  train.traverse((o) => { if ((o as THREE.Mesh).isMesh) o.castShadow = true; });
   train.position.set(AREAS.platform.origin[0] - 40, 0, AREAS.platform.origin[1] - 4.6);
   return finish('platform', b, [-10, -3, 10, 3], { train, trainGlow: [trainWarm, trainCool, trainHead, trainTail], trainStop: [AREAS.platform.origin[0] - 0.5, -4.6] });
 }
 
 // ---------- Sable Noodle House: front counter (west) and the back room (east) ----------
-function sable(M) {
+function sable(M: Materials) {
   const b = begin('sable'), PM = propMats(M);
   floor(b, M.walls[2], -6, -3, 2, 3);
   floor(b, M.sidewalk, 2, -3, 8, 3);                       // lighter slabs so the scene reads
@@ -212,7 +235,7 @@ function sable(M) {
 }
 
 // ---------- Alley behind the Sable (runs along Z; the Sable's back door is at the north end) ----------
-function alley(M) {
+function alley(M: Materials) {
   const b = begin('alley'), PM = propMats(M);
   floor(b, M.road, -1.6, -8, 1.6, 8);
   for (const sx of [-1, 1]) { const h = sx < 0 ? 2.6 : 1.3; b.box(M.walls[0], 1.0, h, 17, sx * 2.1, h / 2, 0); b.box(M.roof, 1.1, 0.1, 17.1, sx * 2.1, h + 0.05, 0); }
@@ -233,7 +256,7 @@ function alley(M) {
 }
 
 // ---------- capsule hostel ----------
-function hostel(M) {
+function hostel(M: Materials) {
   const b = begin('hostel'), PM = propMats(M);
   floor(b, M.walls[1], -5, -3.5, 5, 3.5);
   wallX(b, M, -3.5 - T / 2, -5 - T, 5 + T); wallX(b, M, 3.5 + T / 2, -5 - T, 5 + T, [[-0.9, 0.9]]);
@@ -263,7 +286,7 @@ function hostel(M) {
 
 // ---------- Chapter 2: the implant dealer's shop (the only interior of the Exchange). Locker 9 is Dex's. Spots: door, dealer (behind the counter), locker (in front of Locker 9), locker7 / 8 / 10 / 11, fixer (where the suit steps in). ----------
 const DEALER = { numbers: [7, 8, 9, 10, 11], dexLocker: 9, step: 1.75 }; // five lockers along the back wall, each numbered above it; Locker 9 (Dex's) is the middle one
-function dealer(M) {
+function dealer(M: Materials) {
   const b = begin('dealer'), PM = propMats(M);
   floor(b, M.walls[1], -5, -3.5, 5, 3.5);
   wallX(b, M, -3.5 - T / 2, -5 - T, 5 + T); wallX(b, M, 3.5 + T / 2, -5 - T, 5 + T, [[-0.9, 0.9]]);
@@ -286,7 +309,7 @@ function dealer(M) {
 }
 
 // ---------- Juno's car (the board lives here) ----------
-function car(M) {
+function car(M: Materials) {
   const b = begin('car'), PM = propMats(M);
   floor(b, M.rail, -3, -1.6, 3, 1.6);
   wallX(b, M, -1.6 - T / 2, -3 - T, 3 + T, [], { h: 1.1, mat: M.rail }); wallX(b, M, 1.6 + T / 2, -3 - T, 3 + T, [[-0.7, 0.7]], { h: 1.1, mat: M.rail });
@@ -316,9 +339,9 @@ export const BUREAU = {
   skyline: { towers: 70, from: 3.5, to: 30, minH: 12, maxH: 40, lit: 0.85 },   // how many towers and how far out (outside the window walls)
   colors: { cool: 0x1fd6e8, white: 0xdfeaff, alarm: 0xff3b4c, warm: 0xf2a93b },
 };
-function bureau(M, rng) {
+function bureau(M: Materials, rng: Rng) {
   const b = begin('bureau'), PM = propMats(M), [hx0, hz0, hx1, hz1] = BUREAU.hall, [wx0, wx1] = BUREAU.wing, R = BUREAU.rooms, C = BUREAU.colors;
-  const lit = (c) => new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(BUILDINGS.windowGlow) });
+  const lit = (c: number) => new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(BUILDINGS.windowGlow) });
   const cool = lit(C.cool), alarm = lit(C.alarm), warm = lit(C.warm), floorMat = M.walls[2];
   floor(b, floorMat, hx0, hz0, wx1, hz1);
   // --- Tall window walls on the far sides (north z = hz0, west x = hx0): piers, a sill, a head beam and a mullion in each bay. Open between, so the skyline shows.
@@ -416,6 +439,8 @@ const P_COOL = BUREAU.colors.cool;
 
 // ---------- Chapter 2 hub: the Echo Exchange (open market square; docs/chapter-2.md) ----------
 // The implant dealer's shopfront sits in the north-middle gap. First pass: placeholder booths with sign text, lights and collision. Vendors are cast later (spots 'v_<id>', each facing its counter's customer side).
+// id, sign text, x, z, side, width, yaw offset, style, [off = abandoned]
+type Booth = [string, string, number, number, number, number, number, string, boolean?];
 export const EXCHANGE = {
   half: [15, 10.5],                 // square half-size (x, z)
   neon: { red: 0xff3b2f, orange: 0xff8a1f, yellow: 0xffd23a, blue: 0x2f8bff, green: 0x2fe07a, purple: 0xa43bff },   // the palette of the whole square; booths cycle through `order`
@@ -430,7 +455,7 @@ export const EXCHANGE = {
     ['cables', 'CABLE GUY', -4.6, -2.9, -1, 3.0, 0.42, 'awning'], ['stim', 'STIMULATING STIMS', 4.0, -2.0, -1, 2.5, -0.34, 'cart'], ['drones', 'DRONE ZONE', -3.4, 3.4, 1, 3.5, 0.19, 'kiosk'], ['flowers', 'FLOWERS FOR HOURS', 5.2, 3.2, 1, 2.8, 0.22, 'cart'],
     ['abandoned', 'BACK SOON', -9.0, 3.0, 1, 3.0, -0.08, 'kiosk', true],
     ['closed', 'CLOSED FOREVER', 10.8, -3.6, -1, 3.0, 0.05, 'kiosk', true],   // a second dead booth at the east end of the middle aisle, against the wall behind Stim (from the owner's screenshot circle): sign off, no vendor   // an abandoned booth in the nook off the aisle's west end (from screenshots/abandoned_booth.png): sign and neon off, no vendor, stock left on the shelves
-  ],
+  ] as Booth[],
   // Back-alley debris walls (x0, z0, x1, z1), drawn by the owner on screenshots/path.png: solid piles of crates, barrels and pallets that force one route (view: camera yaw 270, the entrance at the bottom,
   // up = east, right = south). From the west entrance the only way is south, then east along the south lane, up the east end (between the walls' east end and the east wall), back west through the middle aisle,
   // north up the left lane, then east along the north lane (booths, the dealer's door) to a dead end in the north-east corner.
@@ -444,21 +469,21 @@ export const EXCHANGE = {
   junk: { small: 90, large: 14, seedLabel: 'junk' },            // how much loose clutter litters the square (placed with the seeded rng, so it is the same every run)
   scatter: [[-12.4, -4.5, 3], [-12.6, 5.4, 2], [12.8, -3.6, 2], [13.2, 3.8, 3], [0.6, 5.7, 1], [-0.8, -5.6, 2], [8.2, 0.6, 1]],   // loose crate stacks: x, z, height in crates
 };
-function exchange(M, rng) {
+function exchange(M: Materials, rng: Rng) {
   const b = begin('exchange'), PM = propMats(M), [hx, hz] = EXCHANGE.half, glow = BUILDINGS.windowGlow;
   const neon = Object.fromEntries(Object.entries(EXCHANGE.neon).map(([k, c]) => [k, new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(glow) })]));
-  const cycle = EXCHANGE.order.map((k) => neon[k]), tint = EXCHANGE.order.map((k) => EXCHANGE.neon[k]), N = cycle.length;
+  const cycle = EXCHANGE.order.map((k) => neon[k]), tint = EXCHANGE.order.map((k) => EXCHANGE.neon[k as keyof typeof EXCHANGE.neon]), N = cycle.length;
   const sr = rng.fork('stock'), stock = [P.rust2, P.sodium0, P.rust1, P.magentaDeep, P.grey3, 0x2a4f8a, 0x2c6b4a].map((c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.8 })); // goods piled behind and on every booth
   const deadMat = new THREE.MeshStandardMaterial({ color: EXCHANGE.deadFrame, roughness: 0.9 }); // frame of a booth whose neon is off
   floor(b, M.sidewalk, -hx, -hz, hx, hz);
   for (const z of [-hz - T / 2, hz + T / 2]) wallX(b, M, z, -hx - T, hx + T, [], { h: 1.2, mat: M.walls[0] });
   wallZ(b, M, -hx - T / 2, -hz, hz, [[-1.2, 1.2]], { h: 1.2, mat: M.walls[0] });                   // west: the way in (from the car)
-  for (const [x, z, ry, len, col] of [[-6, 1, 0.5, 6, neon.blue], [3, -5.5, -0.35, 5, neon.purple], [7, 6, 0.8, 4, neon.green]]) b.box(col, len, 0.04, 0.05, x, 0.02, z, 0, ry); // a few glowing floor strips at odd angles
+  for (const [x, z, ry, len, col] of [[-6, 1, 0.5, 6, neon.blue], [3, -5.5, -0.35, 5, neon.purple], [7, 6, 0.8, 4, neon.green]] as [number, number, number, number, THREE.Material][]) b.box(col, len, 0.04, 0.05, x, 0.02, z, 0, ry); // a few glowing floor strips at odd angles
   EXCHANGE.booths.forEach(([id, text, x, z, side, w, rot, style, off], i) => {
     const yaw = rot + (side === 1 ? Math.PI : 0), c = Math.cos(yaw), sn = Math.sin(yaw), mat = off ? deadMat : cycle[i % N], sgn = () => (off ? signMat(text, EXCHANGE.deadSign) : signMat(text, tint[i % N], false, EXCHANGE.signLum)); // an abandoned booth (off) has a dull frame and an unlit sign
     // part in the booth's own frame: lx along the counter, lz toward the customer (+z), rotated into the world with the booth.
-    const part = (m, sx, sy, sz, lx, ly, lz, ry = 0, uv = true) => b.box(m, sx, sy, sz, x + lx * c + lz * sn, ly, z - lx * sn + lz * c, 0, yaw + ry, uv); // uv false = the texture fills each face (sign text)
-    const fit = (aw, ah) => { const a = (text.length * 4 + 3) / 9, sw = Math.min(aw, ah * a); return [sw, sw / a]; }; // sign size that keeps the text's proportions, so long names get smaller instead of squashed
+    const part = (m: THREE.Material, sx: number, sy: number, sz: number, lx: number, ly: number, lz: number, ry = 0, uv = true) => b.box(m, sx, sy, sz, x + lx * c + lz * sn, ly, z - lx * sn + lz * c, 0, yaw + ry, uv); // uv false = the texture fills each face (sign text)
+    const fit = (aw: number, ah: number): [number, number] => { const a = (text.length * 4 + 3) / 9, sw = Math.min(aw, ah * a); return [sw, sw / a]; }; // sign size that keeps the text's proportions, so long names get smaller instead of squashed
     const cd = style === 'cart' ? 0.8 : 0.9, ch = style === 'cart' ? 0.85 : 1.0, cz = 0.9;               // counter depth, height, distance from the vendor
     part(PM.wood, w, ch, cd, 0, ch / 2, cz); part(mat, w, 0.05, 0.06, 0, ch + 0.02, cz + cd / 2);          // counter + thin neon edge on the customer side
     const hw = Math.abs(c) * w / 2 + Math.abs(sn) * cd / 2, hd = Math.abs(sn) * w / 2 + Math.abs(c) * cd / 2; // axis-aligned bounds of the rotated counter
@@ -492,14 +517,14 @@ function exchange(M, rng) {
   });
   for (const [x, z, n] of EXCHANGE.scatter) if (!EXCHANGE.lanes.some(([x0, z0, x1, z1]) => x > x0 - 0.8 && x < x1 + 0.8 && z > z0 - 0.8 && z < z1 + 0.8)) crates(b, PM, x, z, n); // loose stacks never stand in the walking lanes (the debris walls are the only thing in the way)
   // Random junk: the square should feel chaotic. Clutter keeps out of the booths, the entrance and the dealer's doorway; small pieces never block, large ones do.
-  const jr = rng.fork(EXCHANGE.junk.seedLabel), jstd = (color, rough = 0.8) => new THREE.MeshStandardMaterial({ color, roughness: rough });
+  const jr = rng.fork(EXCHANGE.junk.seedLabel), jstd = (color: number, rough = 0.8) => new THREE.MeshStandardMaterial({ color, roughness: rough });
   const JM = { tarp: [jstd(P.rust2), jstd(P.sodium0), jstd(0x2a4f8a), jstd(P.magentaDeep), jstd(0x2c6b4a)], barrel: jstd(P.rust1, 0.6), drum: jstd(P.sodium0, 0.5), can: jstd(P.grey3, 0.4) };
   const booths = EXCHANGE.booths.map(([, , x, z, , w]) => [x, z, w / 2 + 1.5]);
-  const free = (x, z, r) => Math.abs(x) < hx - 0.7 && Math.abs(z) < hz - 0.7 && !(x < -11 && Math.abs(z) < 3) && !(Math.abs(x) < 3.2 && z < -hz + 3.4)
+  const free = (x: number, z: number, r: number) => Math.abs(x) < hx - 0.7 && Math.abs(z) < hz - 0.7 && !(x < -11 && Math.abs(z) < 3) && !(Math.abs(x) < 3.2 && z < -hz + 3.4)
     && booths.every(([bx, bz, br]) => Math.hypot(x - bx, z - bz) > br + r)
     && (r < 0.5 || !EXCHANGE.lanes.some(([x0, z0, x1, z1]) => x > x0 - r && x < x1 + r && z > z0 - r && z < z1 + r)); // big (solid) junk keeps out of the lanes, so the debris walls are the only thing in the way
-  const spot = (r) => { for (let t = 0; t < 40; t++) { const x = jr.range(-hx + 0.8, hx - 0.8), z = jr.range(-hz + 0.8, hz - 0.8); if (free(x, z, r)) return [x, z]; } return null; };
-  const bigAt = [];
+  const spot = (r: number): [number, number] | null => { for (let t = 0; t < 40; t++) { const x = jr.range(-hx + 0.8, hx - 0.8), z = jr.range(-hz + 0.8, hz - 0.8); if (free(x, z, r)) return [x, z]; } return null; };
+  const bigAt: [number, number][] = [];
   for (let i = 0; i < EXCHANGE.junk.large; i++) {
     const p = spot(0.9); if (!p || bigAt.some(([qx, qz]) => Math.hypot(p[0] - qx, p[1] - qz) < 2.2)) continue;
     bigAt.push(p);
@@ -551,11 +576,11 @@ const CAR = {
   at: [-13.5, -1.9], length: 3.3, width: 1.55,        // world position of the centre and the footprint (the first version was 3.0 x 1.4: about 10% bigger now)
   blue: 0x2d4f8f, steel: 0xb4bac4, trim: 0x0b0b12, rim: 0xc9ccd4, tail: 0xff2a3a, head: 0xdff6ff,
 };
-function junoCar(b, M) {
-  const [cx, cz] = CAR.at, L = CAR.length, W = CAR.width, std = (color, metalness, roughness) => new THREE.MeshStandardMaterial({ color, metalness, roughness, emissive: color, emissiveIntensity: 0.18 }); // a faint self-glow so the dark paint still reads at night
+function junoCar(b: Batch, M: Materials) {
+  const [cx, cz] = CAR.at, L = CAR.length, W = CAR.width, std = (color: number, metalness: number, roughness: number) => new THREE.MeshStandardMaterial({ color, metalness, roughness, emissive: color, emissiveIntensity: 0.18 }); // a faint self-glow so the dark paint still reads at night
   const blue = std(CAR.blue, 0.55, 0.35), steel = std(CAR.steel, 0.8, 0.4), trim = std(CAR.trim, 0.3, 0.6), rim = std(CAR.rim, 0.9, 0.3);
-  const glow = (hex) => new THREE.MeshBasicMaterial({ color: new THREE.Color(hex).multiplyScalar(BUILDINGS.windowGlow) }), tail = glow(CAR.tail), head = glow(CAR.head);
-  const part = (m, sx, sy, sz, x, y, z) => b.box(m, sx, sy, sz, cx + x, y, cz + z, 0, 0, false); // x along the car (front +x), z across
+  const glow = (hex: number) => new THREE.MeshBasicMaterial({ color: new THREE.Color(hex).multiplyScalar(BUILDINGS.windowGlow) }), tail = glow(CAR.tail), head = glow(CAR.head);
+  const part = (m: THREE.Material, sx: number, sy: number, sz: number, x: number, y: number, z: number) => b.box(m, sx, sy, sz, cx + x, y, cz + z, 0, 0, false); // x along the car (front +x), z across
   part(steel, L, 0.4, W, 0, 0.42, 0);                                   // lower body, steel
   part(trim, L - 0.5, 0.1, W - 0.2, 0, 0.22, 0);                         // dark sill under it
   part(blue, L - 0.4, 0.34, W - 0.02, -0.1, 0.8, 0);                     // blue shoulder line
@@ -585,7 +610,7 @@ function junoCar(b, M) {
   b.light(P.cyan, 3, cx, 1.6, cz); b.light(0xdff6ff, 3, cx + L / 2 + 0.6, 0.8, cz);
 }
 
-function streetExtras(M) {
+function streetExtras(M: Materials) {
   const b = createBatch(), PM = propMats(M);
   b.setTransform(0, 0, 0);
   b.box(signMat('SABLE', P.amber), 6, 1.2, 0.1, 0, 3.1, -4.82, 0, 0, false);          // covers the random shop sign on that building
@@ -598,25 +623,25 @@ function streetExtras(M) {
 }
 
 // Builds every area. rng: the world rng; returns { id: area }.
-export function buildAreas(rng) {
+export function buildAreas(rng: Rng) {
   const M = getMaterials(rng.fork('district').fork('textures'));   // same shared materials the street uses
   const d = buildDistrict(rng.fork('district'));
   const ex = streetExtras(M);
   d.add(ex.group);
-  const street = {
+  const street: AreaRecord = {
     id: 'street', meta: AREAS.street, group: d, extra: {},
     blocks: [...d.userData.blocks, ...ex.blocks], spots: d.userData.spots, lights: [...d.userData.lights, ...ex.lights],
     signs: d.userData.signs, steam: d.userData.steam, bounds: streetBounds(), road: [-3, 3],
   };
-  const areas = { street, platform: platform(M), sable: sable(M), alley: alley(M), hostel: hostel(M), car: car(M), dealer: dealer(M), bureau: bureau(M, rng.fork('bureau')), exchange: exchange(M, rng.fork('exchange')) };
+  const areas: Record<AreaId, AreaRecord> = { street, platform: platform(M), sable: sable(M), alley: alley(M), hostel: hostel(M), car: car(M), dealer: dealer(M), bureau: bureau(M, rng.fork('bureau')), exchange: exchange(M, rng.fork('exchange')) };
   // The train is a child of the platform group so it shows and hides with it.
-  areas.platform.group.add(areas.platform.train);
+  areas.platform.group.add(areas.platform.train!);
   for (const e of EXIT_DEFS) (areas[e.area].exits ??= []).push(e);
   return areas;
 }
 
 // Which named place (for the banner) and music mood the player is in.
-export function placeAt(area, x, z) {
+export function placeAt(area: AreaRecord, x: number, z: number) {
   if (area.id === 'street') return { ...streetZone(x, z), mood: 'street' };
   const [ox, oz] = area.meta.origin, lx = x - ox, lz = z - oz;
   const zone = [...(area.meta.zones ?? [])].reverse().find((q) => lx >= q.box[0] && lx <= q.box[2] && lz >= q.box[1] && lz <= q.box[3]);

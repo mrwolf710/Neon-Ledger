@@ -71,7 +71,7 @@ const FRAG = /* glsl */`
   gl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, clamp(fogFactor, 0.0, 1.0));
 #endif`;
 
-function onBeforeCompile(shader) { // material.userData.noCut = a sign or prop the see-through circle must never remove
+function onBeforeCompile(this: THREE.Material, shader: THREE.WebGLProgramParametersWithUniforms) { // material.userData.noCut = a sign or prop the see-through circle must never remove
   Object.assign(shader.uniforms, uniforms);
   if (this.userData.noCut) shader.fragmentShader = '#define NO_CUT\n' + shader.fragmentShader;
   shader.vertexShader = shader.vertexShader
@@ -84,15 +84,17 @@ function onBeforeCompile(shader) { // material.userData.noCut = a sign or prop t
 
 const v = new THREE.Vector3();
 
-export function createHeightFog(scene) {
+export type HeightFog = ReturnType<typeof createHeightFog>;
+
+export function createHeightFog(scene: THREE.Scene) {
   scene.fog = new THREE.FogExp2(FOG.color, FOG.density);
   const done = new WeakSet();
   return {
     uniforms,
     // Distance fog starts just in front of what the camera looks at, so zoom does not change the haze much.
-    update(camera, focus) { uniforms.fogStart.value = camera.position.distanceTo(focus) - FOG.startOffset; },
+    update(camera: THREE.Camera, focus: THREE.Vector3) { uniforms.fogStart.value = camera.position.distanceTo(focus) - FOG.startOffset; },
     // Centres the cutaway on the player. bufferW/H: drawing-buffer pixels (gl_FragCoord space).
-    cutaway(camera, playerPos, bufferW, bufferH) {
+    cutaway(camera: THREE.PerspectiveCamera, playerPos: THREE.Vector3, bufferW: number, bufferH: number) {
       camera.updateMatrixWorld(); // the camera moved this frame; the renderer would only refresh its matrix after this runs, which left the circle a frame behind (off-centre while moving)
       v.copy(playerPos).setY(playerPos.y + 1).applyMatrix4(camera.matrixWorldInverse);
       const depth = -v.z;
@@ -107,9 +109,10 @@ export function createHeightFog(scene) {
       uniforms.cutCenter.value.set((v.x + 1) / 2 * bufferW, (v.y + 1) / 2 * bufferH);
     },
     // Patches every fogged material under root (call once per built group).
-    patch(root) {
-      root.traverse((o) => {
-        if (!o.isMesh || !o.material.fog || done.has(o.material)) return;
+    patch(root: THREE.Object3D) {
+      root.traverse((obj) => {
+        const o = obj as THREE.Mesh<THREE.BufferGeometry, THREE.Material>;
+        if (!o.isMesh || !(o.material as THREE.MeshBasicMaterial).fog || done.has(o.material)) return;
         done.add(o.material);
         o.material.onBeforeCompile = onBeforeCompile;
         const noCut = !!o.material.userData.noCut;

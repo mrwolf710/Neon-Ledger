@@ -20,7 +20,7 @@ export const PALETTE = {
 const ENTRIES = Object.values(PALETTE).map((c) => [(c >> 16) & 255, (c >> 8) & 255, c & 255]);
 
 // Nearest palette colour (squared RGB distance). Takes and returns 0xRRGGBB.
-export function snap(color) {
+export function snap(color: number): number {
   const r = (color >> 16) & 255, g = (color >> 8) & 255, b = color & 255;
   let best = 0, bestD = Infinity;
   for (let i = 0; i < ENTRIES.length; i++) {
