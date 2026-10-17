@@ -103,6 +103,7 @@ export const EXAMINABLES = [
   { id: 'lamp', area: 'sable', spot: 'lamp', verb: 'Examine', conv: 'ex_lamp' },
   { id: 'capsule', area: 'hostel', spot: 'capsule3f', verb: 'Search', conv: 'ex_capsule' },
   { id: 'glove', area: 'alley', spot: 'glove', verb: 'Examine', conv: 'ex_glove' },
+  { id: 'kitgear', area: 'hostel', spot: 'gear', verb: 'Examine', conv: 'ex_kitgear' },   // Kit's shelf of rare cyber gear (sets up the finale)
 ];
 
 // One-line examine conversation: Juno speaks, adds the fact and sets the flag ex_<id>; examining again gives a shorter line.
@@ -166,6 +167,7 @@ export const CONVERSATIONS = {
   ex_cups: examine('cups', null, 'Two cups on the table. Both used, and one is still warm. Dex had company.', 'Two cups. Two people.'),
   ex_terminal: examine('terminal', null, "The back door terminal. One entry logged tonight. Zero exits. Whoever came in never left, or the log is lying.", 'One in, none out. That log is wrong or somebody is still here.'),
   ex_lamp: examine('lamp', null, 'The corner lamp is smashed, glass swept toward the door. Someone wanted the room dark.', 'Smashed on purpose. Dark room, quiet exit.'),
+  ex_kitgear: examine('kitgear', null, "A locked shelf behind the desk. Signal jammers, a stripped implant reader, an override damper, Bureau-grade, and a door-breaker with the serial filed off. Collector's pieces, and none of it cheap.", "Kit's collection. He's proud of it."),
   ex_glove: examine('glove', null, "A grey glove. Bureau issue. I have a pair just like it.", 'Bureau grey. Same as mine.'),
   vendor: { start: 'a', nodes: {
     a: { speaker: 'vendor', text: "You smell like rain and Bureau paperwork. The Sable is up the street on the left, under the red awning. They found a broker in the back.", next: 'b' },
@@ -190,8 +192,11 @@ export const CONVERSATIONS = {
       feed3: { speaker: 'miso', text: 'Mrrp!', next: 'hello' },
       feedLate: { speaker: 'mamaTeo', text: "And you brought the cat. Here, little one, fish heads from the pot. Eat.", effects: [{ setFlag: 'teo_fed_miso' }], next: 'feed3late' },
       feed3late: { speaker: 'miso', text: 'Mrrp!', next: 'again' },
-      hello: { speaker: 'mamaTeo', text: "You're the auditor. Sit, eat, and keep your hands off my counter.",
-        effects: [{ addPerson: 'mamaTeo' }, { setFlag: 'teo_met' }],
+      // Chapter 3 setup (docs/story-bible.md): Teo and Juno know and like each other, and Teo wishes Juno would leave auditing for her own good.
+      hello: { speaker: 'mamaTeo', text: "Juno Vale. Sit, eat, keep your hands off my counter. You've gone thin again.",
+        effects: [{ addPerson: 'mamaTeo' }, { setFlag: 'teo_met' }], next: 'hello2' },
+      hello2: { speaker: 'juno', text: 'Good to see you too, Teo.', next: 'hello3' },
+      hello3: { speaker: 'mamaTeo', text: "They send you every time. A body in my back room, and who do they send? You. That job is eating you alive, girl. I wish you'd go find honest work.",
         choices: [{ text: "I'm here about Dex Morrow.", next: 'knows' }] },
       knows: { speaker: 'mamaTeo', text: "Dex. Everyone on Lowmarket knew Dex. Two years in my corner booth, selling other people's memories, and never once skipped paying for his bowl.", next: 'ask' },
       ask: { speaker: 'mamaTeo', text: "I saw Dex twice tonight. The second time was after close. He wanted the back room, said a client was coming, and he needed the privacy. He kept a hand on his temple the whole time - looked like he was in pain. I didn't ask. His business. I just locked the door behind him, like always.",
@@ -215,7 +220,7 @@ export const CONVERSATIONS = {
   },
   // Kit (the hostel worker). Out on the street until the key deduction (flag key_deduced) he only says hello (kit_hey). Before the board names him he only says capsule 3F is open (kit_wait). After the deduction (flag kit_named) Juno calls him Kit,
   // he claims he left capsule 3F at 23:00 ; present kit_outside (his echo) to break the story, then kit_saw_them for the coat.
-  kit_wait: { start: 'a', nodes: { a: { speaker: 'kit', text: 'Capsule 3F is open, like I said. Come back when you know something worth another 30 credits.', end: true } } },
+  kit_wait: { start: 'a', nodes: { a: { speaker: 'kit', text: 'Capsule 3F is open, like I said. Thanks for the credits, they go straight to the collection. There is a Gen-3 interface arm coming up at auction. Come back when you know something worth another 30.', end: true } } },
   kit_hey: { start: 'a', nodes: { a: { speaker: 'kit', text: "Hey, what's up?", end: true } } },
   // Mama Teo names the worker from the alley echo (the only way Juno learns his name; sets kit_named so he is called Kit from here on).
   teo_worker: { start: [{ if: { flag: 'teo_pointed' }, node: 'a2' }, { node: 'a' }], nodes: {

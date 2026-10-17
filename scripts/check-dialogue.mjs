@@ -29,7 +29,11 @@ d.start('teo');
 run(0.2);                                    // the opening press is ignored, text starts typing
 assert.ok(d.active && log.text.length > 0 && log.text.length < 20, 'typewriter in progress');
 run(10);                                     // finishes by itself; no choices on this node
-assert.ok(log.text.startsWith("You're the auditor"));
+assert.ok(log.text.startsWith('Juno Vale. Sit, eat'), 'Teo greets her by name');
+run(0.1, 'interact'); run(10);               // Juno answers
+assert.ok(log.text.startsWith('Good to see you too'));
+run(0.1, 'interact'); run(10);               // Teo's hint that Juno should leave auditing
+assert.ok(log.text.startsWith('They send you every time') && log.text.includes('honest work'));
 run(0.1, 'interact');                        // say "I'm here about Dex"
 run(10);                                     // she shows she knew him
 assert.ok(log.text.startsWith('Dex. Everyone on Lowmarket'));
