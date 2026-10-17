@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { PALETTE as P } from './palette.js';
+import { PALETTE as P } from './palette.ts';
 
 // Procedural surface textures. Each generator takes (rng, widthUnits, heightUnits) and returns
 // { map, roughnessMap } as seamless tiles at 16 px per unit. Colours come from palette ramps

@@ -1,9 +1,9 @@
 // node scripts/check-audio.mjs — runs every music mood and the SFX functions against a fake synth (no sound, no browser).
 import assert from 'node:assert';
 globalThis.window = globalThis; globalThis.localStorage = undefined;
-const { createMusic, TUNING: MT } = await import('../src/audio/music.js');
-const { createSfx, surfaceAt, TUNING: ST } = await import('../src/audio/sfx.js');
-const { midiToFreq } = await import('../src/audio/synth.js');
+const { createMusic, TUNING: MT } = await import('../src/audio/music.ts');
+const { createSfx, surfaceAt, TUNING: ST } = await import('../src/audio/sfx.ts');
+const { midiToFreq } = await import('../src/audio/synth.ts');
 
 assert.ok(Math.abs(midiToFreq(69) - 440) < 1e-9 && Math.abs(midiToFreq(57) - 220) < 1e-9, 'midi to Hz');
 assert.equal(surfaceAt(0, 0), 'asphalt'); assert.equal(surfaceAt(-10, 4), 'tile'); assert.equal(surfaceAt(17, 4), 'metal');

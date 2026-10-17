@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { PALETTE as P } from './palette.js';
-import { getTexture } from './textures.js';
-import { signTexture } from './glyphs.js';
+import { PALETTE as P } from './palette.ts';
+import { getTexture } from './textures.ts';
+import { signTexture } from './glyphs.ts';
 
 // Rule-based tenements. Local frame: footprint centred on origin, ground at y=0, facade faces +z.
 export const BUILDINGS = {

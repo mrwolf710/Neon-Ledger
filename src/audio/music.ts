@@ -1,4 +1,4 @@
-import { midiToFreq } from './synth.js';
+import { midiToFreq } from './synth.ts';
 
 // Step sequencer: slow synthwave / lo-fi built from oscillators and filtered noise. One mood plays at a time;
 // setMood cross-fades. All numbers are in TUNING (midi note numbers, volumes 0..1, cutoffs in Hz).

@@ -1,5 +1,5 @@
-import { drawText } from '../gen/pixelfont.js';
-import { getSheets } from '../gen/sprites.js';
+import { drawText } from '../gen/pixelfont.ts';
+import { getSheets } from '../gen/sprites.ts';
 
 export const HUD = {
   bannerMs: 4000,        // how long the location banner stays

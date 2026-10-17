@@ -1,5 +1,5 @@
-import { drawText, measure } from '../gen/pixelfont.js';
-import { TIERS, settings, QUALITY_KEY } from '../core/settings.js';
+import { drawText, measure } from '../gen/pixelfont.ts';
+import { TIERS, settings, QUALITY_KEY } from '../core/settings.ts';
 
 // Title screen with the main menu: New Game, Continue Game, Load Save Game, Options, Quit. Keyboard, mouse, touch and gamepad.
 // Choosing New / Continue / a save starts the game: title.started resolves then and onStart runs inside that gesture

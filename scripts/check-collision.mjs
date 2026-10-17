@@ -1,6 +1,6 @@
 // node scripts/check-collision.mjs — sanity check for the walk grid and wall sliding.
 import assert from 'node:assert';
-import { createCollision } from '../src/world/collision.js';
+import { createCollision } from '../src/world/collision.ts';
 
 const col = createCollision([{ x0: 0, z0: -1, x1: 1, z1: 1 }]); // one crate-sized block
 const p = { x: -1, z: 0 };

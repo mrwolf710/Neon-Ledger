@@ -1,7 +1,7 @@
 // node scripts/check-board.mjs — link logic of the deduction board (pairs, trios, wrong links, hints).
 import assert from 'node:assert';
-import { createBoardLogic } from '../src/game/board.js';
-import { BOARD } from '../src/game/story.js';
+import { createBoardLogic } from '../src/game/board.ts';
+import { BOARD } from '../src/game/story.ts';
 
 const known = new Set(['a', 'b', 'c', 'x', 'door_unlocked', 'two_voices', 'junk']);
 const data = {

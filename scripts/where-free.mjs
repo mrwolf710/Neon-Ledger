@@ -1,9 +1,9 @@
 // node scripts/where-free.mjs — prints the free stretches of each street sidewalk (where a door marker can go).
 const ctx = new Proxy({}, { get: (t, k) => (k === 'createImageData' ? (w, h) => ({ data: new Uint8ClampedArray(w * h * 4), width: w, height: h }) : k === 'measureText' ? () => ({ width: 10 }) : () => ctx), set: () => true });
 globalThis.document = { createElement: () => ({ width: 0, height: 0, getContext: () => ctx, style: {} }) };
-const { rng } = await import('../src/core/rng.js');
-const { buildAreas } = await import('../src/world/areas.js');
-const { createCollision } = await import('../src/world/collision.js');
+const { rng } = await import('../src/core/rng.ts');
+const { buildAreas } = await import('../src/world/areas.ts');
+const { createCollision } = await import('../src/world/collision.ts');
 const a = buildAreas(rng).street, c = createCollision(a.blocks, a.bounds);
 for (const z of [-4.15, 4.15]) {
   const runs = []; let start = null;

@@ -1,4 +1,4 @@
-import { rng } from '../core/rng.js';
+import { rng } from '../core/rng.ts';
 
 // Web Audio core. Everything is synthesized; no sample files. start() must run from a user gesture
 // (the "Tap to start" screen), which is what unlocks audio on iOS. Before that every helper is a no-op.

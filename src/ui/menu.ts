@@ -1,5 +1,5 @@
-import { frame } from './hud.js';
-import { TIERS, settings, QUALITY_KEY } from '../core/settings.js';
+import { frame } from './hud.ts';
+import { TIERS, settings, QUALITY_KEY } from '../core/settings.ts';
 
 export const MENU = { step: 0.1, z: 20 }; // step = volume change per press
 

@@ -1,6 +1,6 @@
 // node scripts/check-clock.mjs — phases and formatting of the game clock.
 import assert from 'node:assert';
-import { createClock } from '../src/game/clock.js';
+import { createClock } from '../src/game/clock.ts';
 
 const c = createClock();
 assert.equal(c.text, '22:40'); assert.equal(c.phase.id, 'lateEvening');

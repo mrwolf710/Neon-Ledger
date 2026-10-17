@@ -1,5 +1,5 @@
-import { ENTRIES } from './story.js';
-import { frame } from '../ui/hud.js';
+import { ENTRIES } from './story.ts';
+import { frame } from '../ui/hud.ts';
 
 const TABS = [['people', 'People'], ['facts', 'Facts'], ['echoes', 'Echoes']];
 

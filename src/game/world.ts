@@ -1,5 +1,5 @@
-import { buildAreas, EXITS, placeAt } from '../world/areas.js';
-import { createCollision } from '../world/collision.js';
+import { buildAreas, EXITS, placeAt } from '../world/areas.ts';
+import { createCollision } from '../world/collision.ts';
 
 // Owns every area. Areas are built once and sit far apart in world space; entering one hides the others,
 // swaps collision and moves the player. onEnter(area, spawn) lets main re-point everything else.

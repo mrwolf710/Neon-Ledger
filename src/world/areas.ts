@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { createBatch, boxGeo } from '../gen/batch.js';
-import { getMaterials, BUILDINGS } from '../gen/buildings.js';
-import { propMats } from '../gen/props.js';
-import { PALETTE as P } from '../gen/palette.js';
-import { drawText } from '../gen/pixelfont.js';
-import { buildDistrict, zoneAt as streetZone } from './district.js';
-import { streetBounds } from './collision.js';
+import { createBatch, boxGeo } from '../gen/batch.ts';
+import { getMaterials, BUILDINGS } from '../gen/buildings.ts';
+import { propMats } from '../gen/props.ts';
+import { PALETTE as P } from '../gen/palette.ts';
+import { drawText } from '../gen/pixelfont.ts';
+import { buildDistrict, zoneAt as streetZone } from './district.ts';
+import { streetBounds } from './collision.ts';
 
 // Places the player can be. They sit far apart on the X axis so each keeps its own lights, fog and shadows.
 // outdoor: rain falls. surface: footstep sound (null = decided by position, as on the street). mood: music.

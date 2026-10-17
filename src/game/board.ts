@@ -1,6 +1,6 @@
-import { BOARD, ENTRIES } from './story.js';
-import { frame } from '../ui/hud.js';
-import { createRng } from '../core/rng.js';
+import { BOARD, ENTRIES } from './story.ts';
+import { frame } from '../ui/hud.ts';
+import { createRng } from '../core/rng.ts';
 
 export const BOARDUI = {
   lineSeconds: 4.5,               // how long Juno's line stays up

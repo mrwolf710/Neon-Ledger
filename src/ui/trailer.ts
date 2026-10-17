@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { CUTAWAY } from '../render/fog.js';
+import { CUTAWAY } from '../render/fog.ts';
 
 // ?trailer: a scripted ~38 s teaser. Click once to start (browsers need the tap for audio), then record the screen. Esc stops it.
 // ?trailer=4 starts at shot 4 (1-based) to check one shot quickly.

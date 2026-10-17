@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { POST } from '../render/post.js';
-import { BUILDINGS } from '../gen/buildings.js';
+import { POST } from '../render/post.ts';
+import { BUILDINGS } from '../gen/buildings.ts';
 import SCENE_EDITS from './scene-edits.json' with { type: 'json' };
 
 // Lighting moods. Colours are 0xRRGGBB; grade arrays are RGB. signs = sign brightness, flicker = chance a sign

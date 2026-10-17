@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { PALETTE as P } from './palette.js';
+import { PALETTE as P } from './palette.ts';
 
 // Invented sign script: pseudo-kanji built from 3-7 strokes on a 12 px grid, one glyph per world unit.
 export const GLYPHS = {

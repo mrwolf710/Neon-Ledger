@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { EXAMINABLES, TALK, FALLBACK, ENTRIES, BOARD, MAIL, conversationFor } from './story.js';
-import { rng } from '../core/rng.js';
+import { EXAMINABLES, TALK, FALLBACK, ENTRIES, BOARD, MAIL, conversationFor } from './story.ts';
+import { rng } from '../core/rng.ts';
 
 // The beat manager: the cold open cutscene, the objective line / minimap mark, and the things you can interact with.
 // Beats 1-3 live here (Stage 9A); later beats add steps to STEPS and conversations to story.js.

@@ -1,7 +1,7 @@
 // node scripts/check-dialogue.mjs — runs the Mama Teo test conversation against stub UI / case file.
 import assert from 'node:assert';
 globalThis.document = { body: { classList: { add() {}, remove() {}, toggle() {} } } };
-const { createDialogue } = await import('../src/game/dialogue.js');
+const { createDialogue } = await import('../src/game/dialogue.ts');
 
 const log = { text: '', choices: [], shown: false };
 let clickFn = () => {};

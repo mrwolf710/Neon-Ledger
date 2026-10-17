@@ -1,5 +1,5 @@
-import { drawText, measure } from '../gen/pixelfont.js';
-import { CRT_FRAME } from './crtframe.js';
+import { drawText, measure } from '../gen/pixelfont.ts';
+import { CRT_FRAME } from './crtframe.ts';
 
 // Full-screen black fade (area changes) and a pixel-font title card (cold open, end card).
 export const FADE = { seconds: 0.35, cardY: 50, cardGap: 5 }; // cardY: % from the top where a split title's row is centred (where Juno stands in the cold open); cardGap: vh between its words

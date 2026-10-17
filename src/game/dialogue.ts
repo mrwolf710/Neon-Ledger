@@ -1,4 +1,4 @@
-import { SPEAKERS, speakerName, CONVERSATIONS, FALLBACK, ALARM_CONVS } from './story.js';
+import { SPEAKERS, speakerName, CONVERSATIONS, FALLBACK, ALARM_CONVS } from './story.ts';
 
 export const DIALOGUE = { cps: 40 }; // typewriter characters per second
 

@@ -1,4 +1,4 @@
-import { CONVERSATIONS, SPEAKERS, ENTRIES } from '../game/story.js';
+import { CONVERSATIONS, SPEAKERS, ENTRIES } from '../game/story.ts';
 import EDITS from '../game/dialogue-edits.json';
 
 // Flowchart editor for conversations (Neon Editor, "Story flow" tab). Every dialogue box is a card; every way out of a box

@@ -3,9 +3,9 @@ import assert from 'node:assert';
 const ctx = new Proxy({}, { get: (t, k) => (k === 'createImageData' ? (w, h) => ({ data: new Uint8ClampedArray(w * h * 4), width: w, height: h })
   : k === 'measureText' ? () => ({ width: 10 }) : () => ctx), set: () => true });
 globalThis.document = { createElement: () => ({ width: 0, height: 0, getContext: () => ctx, style: {} }) };
-const { getSheets } = await import('../src/gen/sprites.js');
-const { createBillboard } = await import('../src/game/npc.js');
-const { PLAYER } = await import('../src/game/player.js');
+const { getSheets } = await import('../src/gen/sprites.ts');
+const { createBillboard } = await import('../src/game/npc.ts');
+const { PLAYER } = await import('../src/game/player.ts');
 
 const sheet = getSheets().juno;
 const b = createBillboard(sheet, { x: 0, z: 0 });

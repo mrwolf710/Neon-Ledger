@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { PALETTE as P } from '../gen/palette.js';
-import { drawText, measure } from '../gen/pixelfont.js';
+import { PALETTE as P } from '../gen/palette.ts';
+import { drawText, measure } from '../gen/pixelfont.ts';
 
 export const INTERACT = {
   range: 1.6,         // units from the player (an interactable can set its own `range`)

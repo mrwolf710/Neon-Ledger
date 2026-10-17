@@ -7,9 +7,12 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "itch": "powershell -ExecutionPolicy Bypass -File scripts/make-itch.ps1"
+    "itch": "powershell -ExecutionPolicy Bypass -File scripts/make-itch.ps1",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@types/three": "^0.186.0",
+    "typescript": "^7.0.2",
     "vite": "^8.3.2"
   },
   "dependencies": {

@@ -1,11 +1,11 @@
-import { CONVERSATIONS, SPEAKERS, TALK, ENTRIES } from '../game/story.js';
+import { CONVERSATIONS, SPEAKERS, TALK, ENTRIES } from '../game/story.ts';
 import EDITS from '../game/dialogue-edits.json';
 const hearers = (e) => e.filter(([id]) => !['hale', 'unknown'].includes(id)); // people Juno can talk to
 const rules = () => pending._rules ?? EDITS._rules ?? [];  // who says which conversation, on which visit, under which conditions
 const facts = Object.entries(ENTRIES).filter(([, e]) => e.kind === 'facts').map(([id, e]) => [id, e.title]);
-import { createFlow } from './flow-editor.js';
+import { createFlow } from './flow-editor.ts';
 import SCENE_EDITS from '../world/scene-edits.json';
-import { SCENES, SCENE_KEYS } from '../world/scenes.js';
+import { SCENES, SCENE_KEYS } from '../world/scenes.ts';
 
 // Dev tool (open /editor.html on the dev server). The list is built from CONVERSATIONS, so every conversation added to story.js shows up by itself.
 // Edits text, speaker and choice labels; "New conversation" adds one of your own (who Juno talks to + what each side says).

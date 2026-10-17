@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { PALETTE as P, snap } from './palette.js';
+import { PALETTE as P, snap } from './palette.ts';
 
 // Layered pixel characters, realistic proportions (~6 heads), drawn at double density (32 px per unit; the
 // street is 16). Each frame is a grid of material keys built from smooth shapes (ovals, tapered limbs, polygons)

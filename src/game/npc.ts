@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { SPRITES, DIRS } from '../gen/sprites.js';
-import { CAST, groundY } from '../world/district.js';
+import { SPRITES, DIRS } from '../gen/sprites.ts';
+import { CAST, groundY } from '../world/district.ts';
 
 export const NPC = {
   brightness: 0.85,   // overall sprite brightness (sprites are unlit)

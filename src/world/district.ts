@@ -1,6 +1,6 @@
-import { createBatch } from '../gen/batch.js';
-import { building, getMaterials } from '../gen/buildings.js';
-import { PROPS, PROP_BUILDERS } from '../gen/props.js';
+import { createBatch } from '../gen/batch.ts';
+import { building, getMaterials } from '../gen/buildings.ts';
+import { PROPS, PROP_BUILDERS } from '../gen/props.ts';
 
 // Lowmarket street. Street runs along X; Z is across it. Everything is merged by material.
 export const DISTRICT = {

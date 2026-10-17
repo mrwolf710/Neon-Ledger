@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { DISTRICT, groundY } from './district.js';
+import { DISTRICT, groundY } from './district.ts';
 
 export const PARTICLES = {
   rain: { color: 0x8fa8d8, size: [0.02, 0.5], speed: 22, wind: [2, 0.6], area: [52, 18, 28], intensity: 0.35 }, // area: x/y/z box centred on the district

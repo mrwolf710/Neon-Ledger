@@ -1,4 +1,4 @@
-import { DISTRICT } from './district.js';
+import { DISTRICT } from './district.ts';
 
 export const COLLISION = { cell: 0.5 }; // grid cell size in world units
 

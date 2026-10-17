@@ -3,9 +3,9 @@ import assert from 'node:assert';
 const ctx = new Proxy({}, { get: (t, k) => (k === 'createImageData' ? (w, h) => ({ data: new Uint8ClampedArray(w * h * 4), width: w, height: h })
   : k === 'measureText' ? () => ({ width: 10 }) : () => ctx), set: () => true });
 globalThis.document = { createElement: () => ({ width: 0, height: 0, getContext: () => ctx, style: {} }) };
-const { rng } = await import('../src/core/rng.js');
-const { buildAreas, EXITS, AREAS } = await import('../src/world/areas.js');
-const { createCollision } = await import('../src/world/collision.js');
+const { rng } = await import('../src/core/rng.ts');
+const { buildAreas, EXITS, AREAS } = await import('../src/world/areas.ts');
+const { createCollision } = await import('../src/world/collision.ts');
 
 const areas = buildAreas(rng);
 const R = 0.3; // Juno's radius

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { createBatch } from '../gen/batch.js';
-import { DISTRICT } from './district.js';
+import { createBatch } from '../gen/batch.ts';
+import { DISTRICT } from './district.ts';
 
 export const TRAIN = {
   cars: 4, carLen: 5, gap: 0.25, width: 2, height: 2.2,

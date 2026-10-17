@@ -1,4 +1,4 @@
-import { frame } from './hud.js';
+import { frame } from './hud.ts';
 
 // A one-off help window. open() pauses the game (main treats isOpen as modal); Space / Enter / Esc / click / tap closes it.
 export const TUTORIALS = {

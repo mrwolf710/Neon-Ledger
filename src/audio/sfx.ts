@@ -1,4 +1,4 @@
-import { DISTRICT } from '../world/district.js';
+import { DISTRICT } from '../world/district.ts';
 
 // Sound effects. All numbers live in TUNING so they can be tweaked without touching the code.
 export const TUNING = {

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { PALETTE as P } from './palette.js';
+import { PALETTE as P } from './palette.ts';
 
 // Street props from primitives. Local frame: base centred on origin, front faces +z (towards the road).
 // Each adds to the batch (transform already set) using shared materials, so props cost ~1 draw per material.

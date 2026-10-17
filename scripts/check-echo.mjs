@@ -1,7 +1,7 @@
 // node scripts/check-echo.mjs — keyframe sampling and data sanity for the echoes in story.js.
 import assert from 'node:assert';
-import { sample } from '../src/game/echo.js';
-import { ECHOES, ENTRIES, SPEAKERS } from '../src/game/story.js';
+import { sample } from '../src/game/echo.ts';
+import { ECHOES, ENTRIES, SPEAKERS } from '../src/game/story.ts';
 
 const track = { keys: [{ t: 0, x: 0, z: 0, anim: 'walk' }, { t: 2, x: 4, z: 0, anim: 'idle' }, { t: 2.01, x: 9, z: 1, facing: 1, anim: 'idle' }] };
 assert.equal(sample(track, -1).x, 0); assert.equal(sample(track, 9).x, 9);

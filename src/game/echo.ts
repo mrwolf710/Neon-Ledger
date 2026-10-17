@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { ECHOES, HOTSPOTS, speakerName } from './story.js';
-import { createBillboard } from './npc.js';
-import { frame } from '../ui/hud.js';
+import { ECHOES, HOTSPOTS, speakerName } from './story.ts';
+import { createBillboard } from './npc.ts';
+import { frame } from '../ui/hud.ts';
 
 export const ECHO = {
   fadeSeconds: 0.5,     // world fades to / from the echo grade
