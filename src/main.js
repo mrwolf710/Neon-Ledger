@@ -123,6 +123,7 @@ for (const h of echo.hotspots.filter((q) => !q.hidden)) {
 }
 echo.onCue = (name) => { if (name === 'stinger') sfx.stinger(); };
 const board = createBoard({ caseFile, hud });
+caseFile.setSpent((id) => board.spent().has(id));
 const barks = createBarks({ cast, caseFile, player, camera: cam.camera });
 // The platform train stops: from then on, for as long as Juno is on the platform, little bursts of steam (each with a hiss) come out of its rear section. particles.steamOn draws steam on the (indoor) platform.
 const STEAM = { hisses: 2, first: 0.4, every: [1.8, 3.6], puffs: 8, scale: 1.7, back: 6.1, z: [1.45, 2.0], y: [0.5, 2.6] }; // hisses = how many of the first bursts make a sound (later ones are silent); seconds before the first burst and between bursts (min, max); puffs per burst; how much bigger than a street vent's; where on the train's rear end they come out (back = distance behind its centre, z = distance out from its centre line, on the platform side, y = height; they drift along its rear car)

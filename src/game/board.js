@@ -96,6 +96,7 @@ export function createBoard({ caseFile, hud }) {
   const sparkRng = createRng(7).fork('sparks'), slots = [null, null], failed = new Map(); // failed: "a|b" -> how many facts Juno held when it failed; a new clue can make an old pair work, so only an unchanged board counts as "already tried"
   const hintCount = new Map();
   const api = {
+    spent: () => spentClues(), // clues the solved conclusions have used up (the case file's picker leaves them out)
     get isOpen() { return isOpen; },
     onLock: null,   // (conclusion) when a link locks in; Stage 8 plays the ticking / chime
     onWrong: null,  // () when a link snaps back

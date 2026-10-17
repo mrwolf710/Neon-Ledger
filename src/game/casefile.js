@@ -30,7 +30,9 @@ export function createCaseFile(hud, clock) {
   const chapterNow = () => (flags.has('auditors_done') ? 3 : flags.has('chapter1_done') ? 2 : 1);
   const chapterOf = (e) => (e.ch ?? (e.ch2 ? 2 : 1));
   // While presenting evidence in a conversation, only this chapter's facts are offered, so older chapters never crowd the list.
-  const entries = (kind) => (present && kind === 'facts' ? all(kind).filter((e) => chapterOf(e) === chapterNow()) : all(kind));
+  // Spent clues (the board has used them) are left out too, so the list is just what is still in play, unless this person reacts to that fact (opts.keys).
+  let isSpent = () => false;
+  const entries = (kind) => (present && kind === 'facts' ? all(kind).filter((e) => chapterOf(e) === chapterNow() && (!isSpent(e.id) || present.keys?.includes(e.id))) : all(kind));
 
   function render() {
     tabsEl.replaceChildren(...TABS.map(([k, label]) => {
@@ -72,6 +74,7 @@ export function createCaseFile(hud, clock) {
   }
 
   const api = {
+    setSpent(fn) { isSpent = fn; }, // the board tells the case file which clues it has used up
     get isOpen() { return isOpen; },
     // Knowledge.
     has: (id) => known.has(id),

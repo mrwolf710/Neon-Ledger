@@ -38,7 +38,7 @@ export function createDialogue({ hud, caseFile, clock }) {
     if (o.present) {
       ui.setChoices([], 0);
       caseFile.open({
-        present: true,
+        present: true, keys: Object.keys(node.present), // the facts this person reacts to: always offered, even once the board has used them up
         onPick: (fact) => { const hit = node.present[fact]; backTo = hit ? null : nodeId; run(hit ?? node.presentWrong ?? nodeId); }, // a wrong item answers, then returns to the question menu
         onCancel: () => buildOptions(),
       });
