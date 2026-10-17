@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { EXAMINABLES, TALK, FALLBACK, ENTRIES, BOARD, conversationFor } from './story.js';
+import { EXAMINABLES, TALK, FALLBACK, ENTRIES, BOARD, MAIL, conversationFor } from './story.js';
+import { rng } from '../core/rng.js';
 
 // The beat manager: the cold open cutscene, the objective line / minimap mark, and the things you can interact with.
 // Beats 1-3 live here (Stage 9A); later beats add steps to STEPS and conversations to story.js.
@@ -14,8 +15,11 @@ export const BEATS = {
   zoomSeconds: 3,         // after the title card: the CRT frame zooms away and the VHS noise fades out
   settle: 1.5,            // seconds Juno stands still before the title card, so the camera is centred on her
   boothRange: 3.0,     // vendors in the Echo Exchange stand behind a counter
-  talkRange: { mamaTeo: 3.0 }, // bigger Talk reach for people behind a counter (default INTERACT.range 1.6)
+  talkRange: { mamaTeo: 3.0, prisoner: 3.0 }, // bigger Talk reach for people behind a counter (default INTERACT.range 1.6)
   kitStreet: { x: 8.8, z: 3.3, facing: 0 }, // where the worker stands on the street (hostel side, near its door) until the key deduction (then he is at the hostel desk)
+  patrol: { speed: 1.0, pause: 2.2 },   // chapter 3: the auditors pacing the desk aisles (local station coordinates)
+  routes: { aud1: [[-12, 0.5], [4.5, 0.5]], aud2: [[4.5, 4.7], [-5, 4.7]], aud3: [[-4.5, -3.1], [5.5, -3.1]] },
+  callWalk: 3.6,          // seconds the auditors take to hurry out of the station after the fake threat
   ringEvery: 4,           // seconds between rings while Juno's phone waits to be answered
   cardHold: 2.4,          // title card hold, seconds
   mislaid: 0.6,           // pause before Juno steps out
@@ -24,7 +28,7 @@ export const BEATS = {
   dark: { exposure: 0.06, lampsFrom: 0.3 }, // the opening starts almost black; station lamps fade up once the train is 30% of the way in
 };
 
-export function createBeats({ input, world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, echo, deadHour = () => {}, endDeadHour = () => {}, trainSteam = () => {}, setExposure = () => {}, setVhs = () => {}, setCrt = () => {} }) {
+export function createBeats({ terminal, input, world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, echo, deadHour = () => {}, endDeadHour = () => {}, trainSteam = () => {}, setExposure = () => {}, setVhs = () => {}, setCrt = () => {} }) {
   const timers = [], tweens = [];
   let ringing = null, answerWait = null, callHint = 0;                          // the intro phone: ring loop + the pending answer
   const callEl = document.createElement('div'); callEl.className = 'callprompt'; document.body.appendChild(callEl);
@@ -210,6 +214,65 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     await bureauArrival();
   }
 
+  // Chapter 3: auditors pace their aisles until Juno phones in a fake threat; the desk computers, the lab keypad and the fake call.
+  const patrols = [];
+  function startPatrol(npc, route) { npc.follow = null; patrols.push({ npc, route, i: 1, pause: 0 }); }
+  function updatePatrols(dt) {
+    if (flag('aud_gone') || locked || dialogue.active) { for (const p of patrols) if (p.npc.anim === 'walk') p.npc.anim = 'idle'; return; }
+    const [ox, oz] = origin('bureau');
+    for (const p of patrols) {
+      if (p.pause > 0) { p.pause -= dt; p.npc.anim = 'idle'; continue; }
+      const [tx, tz] = p.route[p.i], dx = ox + tx - p.npc.position.x, dz = oz + tz - p.npc.position.z, d = Math.hypot(dx, dz);
+      if (d < 0.15) { p.i = (p.i + 1) % p.route.length; p.pause = BEATS.patrol.pause; continue; }
+      const step = Math.min(d, BEATS.patrol.speed * dt);
+      p.npc.position.x += dx / d * step; p.npc.position.z += dz / d * step; p.npc.facing = Math.atan2(dx, dz); p.npc.anim = 'walk';
+    }
+  }
+  const fillers = (() => { const r = rng.fork('mail'), a = [...MAIL.filler]; for (let i = a.length - 1; i > 0; i--) { const j = r.int(0, i); [a[i], a[j]] = [a[j], a[i]]; } return a; })();
+  function useComputer(n) {
+    if (locked) return;
+    if (!flag('aud_gone')) { dialogue.start('aud_block').then(() => { if (flag('make_call') && !flag('aud_gone')) fakeCall(); }); return; }
+    const ranks = [1, 2, 3, 4], have = (k) => ranks.find((r) => flag(`pc${k}_r${r}`));
+    let rank = have(n);
+    if (!rank) { rank = 1 + ranks.filter((k) => have(k)).length; caseFile.setFlag(`pc${n}_r${rank}`); }   // the 1st and 2nd computer she opens are filler, the 3rd always holds the code
+    const mail = rank === 3 ? MAIL.code : fillers[n - 1];
+    terminal.mail(mail.owner, mail.items).then(() => { if (rank === 3 && !flag('lab_code_found')) dialogue.start('code_found'); });
+  }
+  async function fakeCall() {
+    locked = true;
+    await dialogue.start('fake_call');
+    const fd = world.spot('bureau', 'frontdoor'), auds = ['aud1', 'aud2', 'aud3'].map((id) => cast.byId[id]);
+    patrols.length = 0;
+    const from = auds.map((a) => [a.position.x, a.position.z]);
+    await tween(BEATS.callWalk, (u) => auds.forEach((a, i) => {
+      const x = from[i][0] + (fd.x + (i - 1) * 0.8 - from[i][0]) * u, z = from[i][1] + (fd.z - from[i][1]) * u;
+      a.facing = Math.atan2(x - a.position.x, z - a.position.z) || a.facing; a.position.x = x; a.position.z = z; a.anim = 'walk';
+    }));
+    auds.forEach((a) => { a.away = true; a.anim = 'idle'; });
+    cast.apply();
+    caseFile.setFlag('aud_gone');
+    locked = false;
+  }
+  // The lab door is a doorway in the wall that the story keeps shut: a slab mesh plus solid cells in the collision grid, until the code is typed.
+  let labState = null;
+  function syncLabDoor() {
+    const open = flag('lab_open');
+    if (open === labState) return;
+    labState = open;
+    const a = world.areas.bureau, g = a.collision?.grid, [ox, oz] = origin('bureau');
+    a.labDoor.visible = !open; a.labLed.material.color.set(open ? 0x5cf0a0 : 0xff3b4c);
+    if (!g) return;
+    for (let j = 0; j < g.nz; j++) for (let i = 0; i < g.nx; i++) {
+      const cx = g.x0 + (i + 0.5) * g.cell, cz = g.z0 + (j + 0.5) * g.cell;
+      if (cx > ox + 6.5 && cx < ox + 7.5 && cz > oz + 5.4 && cz < oz + 6.6) g.solid[j * g.nx + i] = open ? 0 : 1;
+    }
+  }
+  async function labKeypad() {
+    if (locked || flag('lab_open')) return;
+    if (!flag('lab_code_found')) { dialogue.start('lab_sealed'); return; }
+    if (await terminal.keypad('Memory-audit lab', MAIL.code.items[0].body.match(/\{\{(\d+)\}\}/)[1])) caseFile.setFlag('lab_open');
+  }
+
   // Chapter 3: the three auditors walk Juno straight through the station to Hale's office. Slow, serious music (the area's own); the auditors stop at the office door.
   const origin = (id) => world.areas[id].meta.origin;
   async function bureauArrival() {
@@ -235,7 +298,7 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     caseFile.setFlag('bureau_arrived');
     await wait(0.4);
     await dialogue.start('hale_office');
-    auds.forEach((a, i) => { const [x, z] = at(3.6 + i * 0.7, -3.2 + (i - 1) * 0.6); a.position.set(x, 0, z); a.facing = 0; });   // told to wait outside: they step back into the hall
+    auds.forEach((a, i) => { const r = BEATS.routes[a.id], [x, z] = at(...r[0]); a.position.set(x, 0, z); startPatrol(a, r); });   // told to wait outside: they go back to pacing the desks
     caseFile.setFlag('hale_met');
     locked = false;                                              // the station is hers to walk
   }
@@ -276,6 +339,13 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
       const l = world.spot('dealer', `locker${n}`);
       interactions.add({ id: `locker${n}`, area: 'dealer', position: new THREE.Vector3(l.x, 0, l.z), height: 1.2, verb: `Look at Locker ${n}`, onInteract: () => { if (!locked) dialogue.start(`locker_${n}`); } });
     }
+    for (let n = 1; n <= 4; n++) {                              // desk computers Juno can snoop on (chapter 3)
+      const c = world.spot('bureau', `pc${n}`);
+      interactions.add({ id: `pc${n}`, area: 'bureau', position: new THREE.Vector3(c.x, 0, c.z), height: 1.0, verb: 'Use the computer', onInteract: () => useComputer(n) });
+    }
+    const ld = world.spot('bureau', 'labdoor');
+    interactions.add({ id: 'labdoor', area: 'bureau', position: new THREE.Vector3(ld.x, 0, ld.z), height: 1.2, verb: 'Use the keypad', onInteract: labKeypad });
+    syncLabDoor();
     const fd = world.spot('bureau', 'frontdoor');                // the Bureau's front door: locked until the deduction, then Juno slips out
     interactions.add({ id: 'bureau_door', area: 'bureau', position: new THREE.Vector3(fd.x, 0, fd.z), height: 1.2, verb: 'Try the door', onInteract: () => bureauSlip() });
     const seat = world.spot('car', 'seat');
@@ -343,7 +413,7 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     { id: 'locker', text: "Show the dealer Dex's receipt, then open Locker 9", area: 'dealer', pos: () => spotXZ('dealer', flag('locker_ok') ? 'locker' : 'dealer'), done: () => flag('locker_done') },
     { id: 'out', text: 'Leave the shop', area: 'dealer', pos: () => spotXZ('dealer', 'door'), done: () => flag('auditors_done') },
     { id: 'hale', text: 'Face Hale in her office', area: 'bureau', pos: () => spotXZ('bureau', 'hale'), done: () => flag('hale_met') },
-    { id: 'station', text: 'Find out what the Bureau has done to you', area: 'bureau', done: () => flag('bureau_deduced') },
+    { id: 'station', text: () => (flag('lab_open') ? 'Find out what the Bureau has done to you' : flag('lab_code_found') ? 'Open the memory-audit lab (the keypad, east side)' : flag('aud_gone') ? 'Search the desk computers for the lab code' : 'Get the auditors away from the desks'), area: 'bureau', done: () => flag('bureau_deduced') },
     { id: 'slip', text: 'Slip out through the front door', area: 'bureau', pos: () => spotXZ('bureau', 'frontdoor'), done: () => false },
   ];
   function markFor(step) {
@@ -392,6 +462,7 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     },
     update(dt) {
       placeKit();
+      syncLabDoor(); updatePatrols(dt);
       if (ringing && (ringing.t += dt) >= BEATS.ringEvery) { ringing.t = 0; sfx.phoneRing?.(); }
       if (answerWait && (input.pressed('interact') || input.click)) api.answerCall();
       if (!locked) beatTimes[api.beatNo - 1] += dt;

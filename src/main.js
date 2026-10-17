@@ -16,6 +16,7 @@ import { createEcho } from './game/echo.js';
 import { createBoard } from './game/board.js';
 import { createWorld } from './game/world.js';
 import { createBeats } from './game/beats.js';
+import { createTerminal } from './ui/terminal.js';
 import { ENTRIES, BOARD } from './game/story.js';
 import { createFade } from './ui/fade.js';
 import { synth } from './audio/synth.js';
@@ -142,7 +143,8 @@ function platformSteam(dt, areaId) {
   for (let j = 0; j < STEAM.puffs; j++) setTimeout(() => particles.puff(sx - STEAM.back + steamRng.range(-0.8, 0.8), steamRng.range(STEAM.y[0], STEAM.y[1]), sz + steamRng.range(STEAM.z[0], STEAM.z[1]), STEAM.scale, steamRng.range(-0.5, 0.05)), j * 110); // out of the rear section, on the platform side where the camera sees it
 }
 let deadTone = null; // the low tone held under the cliffhanger
-const beats = createBeats({ trainSteam, input, world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, echo,
+const terminal = createTerminal({ sfx });
+const beats = createBeats({ terminal, trainSteam, input, world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, echo,
   deadHour: () => { tod.setTimeOfDay('blackout', 0.5); lights.scale = 0.3; deadTone = synth.tone({ freq: 55, type: 'sine', dur: 40, vol: 0.3, attack: 2.5, release: 4, bus: 'music' }); }, // beat 7: signs die
   endDeadHour: () => { tod.setTimeOfDay('night', 1.5); lights.scale = 1; deadTone?.gain.gain.setTargetAtTime(0.0001, synth.now, 0.5); deadTone?.osc.stop(synth.now + 3); deadTone = null; }, // chapter 2: she decides to go, the signs and music return, one low tone
 
@@ -242,7 +244,7 @@ tod.onFlicker = (i) => sfx.crackle(street.signs[i].light.position);
 
 // ?hooks exposes the game objects for the headless test driver (scripts/drive.mjs eval: steps).
 if (new URLSearchParams(location.search).has('hooks')) {
-  const nl = window.__nl = { trainSteam, CUTAWAY, fade, crtFrame, music, input, tutorial, menu, title, snapshotGame, loadGame, saves, menu, sfx, synth, cam, world, player, beats, caseFile, dialogue, cast, echo, hud, clock, board, THREE };
+  const nl = window.__nl = { terminal, interactions, trainSteam, CUTAWAY, fade, crtFrame, music, input, tutorial, menu, title, snapshotGame, loadGame, saves, menu, sfx, synth, cam, world, player, beats, caseFile, dialogue, cast, echo, hud, clock, board, THREE };
   // Visual tour helpers: stand the player d units from a point (camera side) in any area, as in play, so the cutaway applies.
   nl.look = (areaId, x, z, d = 1.8) => {
     const b = world.areas[areaId].bounds, dx = (b.x0 + b.x1) / 2 - x, dz = (b.z0 + b.z1) / 2 - z, len = Math.hypot(dx, dz) || 1;
@@ -358,11 +360,12 @@ renderer.setAnimationLoop((now) => {
   // First time Juno holds 3 clues inside the Sable: explain the board.
   if (!trailer.active && world.current.id === 'sable' && !dialogue.active && !tutorial.isOpen && !caseFile.hasFlag('tut_board') && caseFile.facts().length >= 2) { caseFile.setFlag('tut_board'); tutorial.open('board'); }
   if (!trailer.active && echo.active && !tutorial.isOpen && !caseFile.hasFlag('tut_echo')) { caseFile.setFlag('tut_echo'); tutorial.open('echo'); } // first echo: explain it (the echo waits)
+  terminal.update(dt, input);
   const paused = menu.isOpen || menuWasOpen; // the menu freezes cutscenes and conversations too (it opens during both)
-  const modal = issues.isOpen || trailer.active || tutorial.isOpen || tutWasOpen || !title.done || beats.locked || world.busy || dialogue.active || caseFile.isOpen || echo.active || board.isOpen || menu.isOpen || menuWasOpen;
+  const modal = issues.isOpen || trailer.active || tutorial.isOpen || tutWasOpen || !title.done || beats.locked || world.busy || dialogue.active || caseFile.isOpen || echo.active || board.isOpen || terminal.isOpen || menu.isOpen || menuWasOpen;
   if (input.click && beats.calling && !paused) beats.answerCall(); // a click or tap answers Hale's call (it is locked, so the click would otherwise be thrown away below)
   if (modal) { input.click = null; input.moveX = input.moveY = 0; }
-  if (!trailer.active && !menuWasOpen && !tutorial.isOpen && !tutWasOpen && title.done && !world.busy && !caseFile.isOpen && !echo.active && !board.isOpen && input.pressed('pause')) menu.open();
+  if (!trailer.active && !menuWasOpen && !tutorial.isOpen && !tutWasOpen && title.done && !world.busy && !caseFile.isOpen && !echo.active && !board.isOpen && !terminal.isOpen && input.pressed('pause')) menu.open();
   cam.tilt((input.held('tiltDown') ? 1 : 0) - (input.held('tiltUp') ? 1 : 0), dt);
 
   // Click: a person/object walks there then interacts; the ground walks there.
@@ -378,7 +381,7 @@ renderer.setAnimationLoop((now) => {
   }
   player.update(dt, input, cam.yaw, !modal);
   const cfWasOpen = caseFile.isOpen, bdWasOpen = board.isOpen;
-  const free = title.done && !beats.locked && !world.busy && !tutorial.isOpen && !tutWasOpen; // nothing scripted is running
+  const free = title.done && !beats.locked && !world.busy && !tutorial.isOpen && !tutWasOpen && !terminal.isOpen; // nothing scripted is running
   // First time Juno is free to move on a touch screen: how to move.
   if ((input.lastDevice === 'touch' || matchMedia('(pointer: coarse)').matches) && free && !trailer.active && !dialogue.active && !menu.isOpen && !caseFile.hasFlag('tut_move')) { caseFile.setFlag('tut_move'); tutorial.open('move'); }
   board.update(input);
@@ -389,7 +392,7 @@ renderer.setAnimationLoop((now) => {
   if (paused) { /* frozen */ }
   else if (echoWas && !tutorial.isOpen && !tutWasOpen) echo.update(dt, input, cam.yaw, area.lights, scrubAxis, player.position);
   else if (dialogue.active) { if (!cfWasOpen) dialogue.update(dt, input); }
-  else if (!cfWasOpen && !bdWasOpen && !board.isOpen && free) {
+  else if (!cfWasOpen && !bdWasOpen && !board.isOpen && !terminal.isOpen && free) {
     if (input.pressed('echo')) echo.tryStart(player.position);
     else if (input.pressed('interact')) interactions.current?.onInteract();
   }

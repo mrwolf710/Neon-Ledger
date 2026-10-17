@@ -12,6 +12,7 @@ export const SPEAKERS = {
   miso: { name: 'Miso', color: '#d9771c' },
   vending: { name: 'Vending machine', color: '#9ff4ff' },
   unknown: { name: 'Unknown voice', color: '#e0217d' },
+  prisoner: { name: 'Prisoner', color: '#ff6b6b' },
   hale: { name: 'Hale (comms)', alias: { flag: 'bureau_arrived', name: 'Hale' }, color: '#f2a93b' }, // in person from chapter 3
   preacher: { name: 'Holo-preacher', color: '#9ff4ff' },
   // Chapter 2: the Echo Exchange vendors (docs/chapter-2.md)
@@ -67,9 +68,23 @@ export const ENTRIES = {
 };
 
 // Which conversation each talkable thing starts. Missing ids fall back to FALLBACK.
-export const TALK = { dealer: 'dealer_talk', mamaTeo: 'teo', vending: 'vending', miso: 'miso', vendor: 'vendor', preacher: 'preacher', kit: 'kit',
+export const TALK = { prisoner: 'prisoner_talk', dealer: 'dealer_talk', mamaTeo: 'teo', vending: 'vending', miso: 'miso', vendor: 'vendor', preacher: 'preacher', kit: 'kit',
   vesper: 'vend_vesper', mari: 'vend_mari', lux: 'vend_lux', tobbo: 'vend_tobbo', gutter: 'vend_gutter', pim: 'vend_pim', oyo: 'vend_oyo', ruth: 'vend_ruth', slate: 'vend_slate', jinx: 'vend_jinx', bolt: 'vend_bolt', petra: 'vend_petra' };
 export const FALLBACK = 'nobody';
+// Desk computers (chapter 3). The first two Juno opens show filler mail, the third holds the lab code, later ones are filler again (beats.js decides by order).
+export const LAB_CODE = '4719';
+export const MAIL = {
+  filler: [
+    { owner: 'AUD. R. PELL', items: [{ from: 'Records', subject: 'Q3 closure targets', body: "Pell,\n\nThe Q3 closure rate is 94 percent. Records would like 96 percent. Please do not reopen anything.\n\nRecords" }, { from: 'Mother', subject: 'Sunday', body: "Are you eating? I made too much soup again. Come by after your shift, whatever hour it is." }] },
+    { owner: 'AUD. T. OKAFOR', items: [{ from: 'Payroll', subject: 'Overtime approved', body: "Okafor, your overtime for the month is approved. Please stop sleeping at your desk. The chairs are not rated for it." }, { from: 'Dani', subject: 're: the thing', body: "I said I was sorry. You said you were fine. Which is it? Call me, don't just ignore me." }] },
+    { owner: 'AUD. M. SZABO', items: [{ from: 'Facilities', subject: 'Third floor heating', body: "The third floor heating is broken again. A technician has been called. Please dress warmly." }, { from: 'Szabo, L.', subject: 'Birthday', body: "Don't forget Pap's birthday on Friday. He wants noodles from the Exchange, the red stall." }] },
+    { owner: 'AUD. D. VERRILL', items: [{ from: 'Training', subject: 'Mandatory: ethics refresher', body: "Reminder: the annual ethics refresher is overdue. Estimated time: 12 minutes. Please do not skip the final quiz." }, { from: 'Gym', subject: 'Your membership', body: "Your membership has lapsed. We miss you!" }] },
+  ],
+  code: { owner: 'FACILITIES · T. NARDO', items: [
+    { from: 'Facilities', subject: 'Lab access reset', body: `All lab staff,\n\nThe memory-audit lab keypad has been reset after the audit. New code: {{${LAB_CODE}}}\n\nEffective now. Please delete this message once you have memorised it.\n\nT. Nardo, Facilities` },
+    { from: 'Facilities', subject: 'Reminder: cleaning rota', body: "The cleaners will not enter the lab or the cells. Please keep your own area tidy." },
+  ] },
+};
 export const ALARM_CONVS = new Set(['hale_end', 'car_reply']); // Hale's forced call at the end of chapter 1: the dialogue and portrait boxes turn red
 // What a speaker is called right now: an alias replaces the name once its flag is set.
 export const speakerName = (id, flag) => { const s = SPEAKERS[id]; return !s ? id : s.alias && flag?.(s.alias.flag) ? s.alias.name : s.name; };
@@ -383,6 +398,38 @@ export const CONVERSATIONS = {
     g2: { speaker: 'juno', text: "(Locked in. For my protection. She smiles like she's tucking me in, and every door in this building has just become a wall.)", next: 'g3' },
     g3: { speaker: 'juno', text: "(Something is very wrong here. Whatever happened to Dex, she is part of it. I need proof before dawn.)", end: true },
   } },
+  // Chapter 3: the man in the middle cell. He sounds mad; Juno does not buy it, but it stays with her.
+  prisoner_talk: { start: [{ if: { flag: 'prisoner_met' }, node: 'again' }, { node: 'a' }], nodes: {
+    a: { speaker: 'prisoner', text: "Another one with a badge. You still have your badge. They always let you keep the badge.", next: 'b', effects: [{ setFlag: 'prisoner_met' }] },
+    b: { speaker: 'juno', text: 'Who are you?', next: 'c' },
+    c: { speaker: 'prisoner', text: "Nobody. That's the job. Count the desks upstairs, lady. Every desk, an assassin. Pretty little auditors with a licence and a smile.", next: 'd' },
+    d: { speaker: 'prisoner', text: "And they're for sale. Highest bidder, always has been. You think the Bureau answers to the city? The city is just the customer who pays last.", next: 'e' },
+    e: { speaker: 'juno', text: "(He rocks on the bench, whispering numbers. Whatever they did to him, it broke something. Assassins in the Civic Audit Bureau. Right.)", next: 'f' },
+    f: { speaker: 'prisoner', text: "She'll tell you to rest. Soft voice. Locks the door and tells you to rest. They all say rest.", next: 'g' },
+    g: { speaker: 'juno', text: "(Rest. Hale said rest. It's only a word. Everyone says it.)", next: 'h' },
+    h: { speaker: 'juno', text: "(He's cracked, locked up for a reason. So why am I cold?)", end: true },
+    again: { speaker: 'prisoner', text: "Count them. Who sleeps? Nobody sleeps. Somebody always sells.", end: true },
+  } },
+  // The desk computers: the auditors still walk the floor and will not let her at a screen; she thinks of the phone, then makes the call.
+  aud_block: { start: [{ if: { flag: 'call_idea' }, node: 'b' }, { node: 'a' }], nodes: {
+    a: { speaker: 'aud2', text: "Hey, that's not your computer, Auditor Juno.", next: 'a2' },
+    a2: { speaker: 'juno', text: "(Three of them circling the desks, watching every screen. Hale's idea of rest.)", next: 'a3' },
+    a3: { speaker: 'juno', text: "(I'll never get at a screen with them here. They jump at anything on the emergency line. A threat, called in, from somewhere they have to go.)", end: true, effects: [{ setFlag: 'call_idea' }] },
+    b: { speaker: 'aud1', text: 'Step away from the desk, Auditor Juno.', next: 'b2' },
+    b2: { speaker: 'juno', text: '(Still watching. Time to make that call?)', choices: [{ text: 'Call in a fake threat.', end: true, effects: [{ setFlag: 'make_call' }] }, { text: 'Not yet.', end: true }] },
+  } },
+  fake_call: { start: 'a', nodes: {
+    a: { speaker: 'juno', text: "(Dial the emergency line. Keep my voice thin and scared.)", next: 'b' },
+    b: { speaker: 'juno', text: "Civic Audit Bureau? There's a man on the Line 9 platform with a case. It's ticking. He says it's for the Bureau. No. I won't give my name.", next: 'c' },
+    c: { speaker: 'aud1', text: 'All units. Possible device at the Line 9 platform. Move. Move.', next: 'd' },
+    d: { speaker: 'aud2', text: 'Leave the floor. Now.', next: 'e' },
+    e: { speaker: 'juno', text: "(Boots on the stairs, then nothing. The floor is mine, for a while.)", end: true },
+  } },
+  mail_cold: { start: 'a', nodes: { a: { speaker: 'juno', text: '(Nothing there but work and weather. Try another desk.)', end: true } } },
+  code_found: { start: 'a', nodes: {
+    a: { speaker: 'juno', text: "(There. The memory-audit lab: a door code, in a facilities e-mail, with a polite note to destroy it after reading. Nobody ever does.)", end: true, effects: [{ setFlag: 'lab_code_found' }] },
+  } },
+  lab_sealed: { start: 'a', nodes: { a: { speaker: 'juno', text: '(The memory-audit lab. Four digits and a red light. Someone in this building must have written the code down.)', end: true } } },
   hale_talk: { start: 'a', nodes: { a: { speaker: 'hale', text: "Rest, Juno. The doors are locked until dawn. It's for your own good.", end: true } } },
   // Chapter 3 end: Juno slips out through the front door once she has put it together.
   bureau_slip: { start: 'a', nodes: {
