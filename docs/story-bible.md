@@ -13,14 +13,14 @@ The Civic Audit Bureau runs an **off-book program**: it lends memory auditors to
 ## Ending (chosen): C, she wipes herself
 Juno destroys the proof and her own memory together, to protect Teo, Kit and the others. Hale falls or does not (to be decided), but Juno is back where she started. The game ends on the opening: a train arrives and Juno says "I think I lost an hour on that train." (Bleak, closes the loop.)
 
-## Chapter plan (4 more locations before the end; the Bureau is built)
+## Chapter plan (5 more locations before the end; the Bureau is built)
 1. **The Bureau (built): interrogation and the memory-audit lab.** Hale tries to close it; the lab shows a wipe signature in Juno's own implant.
 2. **Lowmarket at dawn** (a visit back; rain stopped). The Sable, Teo, Kit; someone saw her leave Dex's room; a clue on the Line 9 platform ties her lost hours to Hale.
-3. **The fixer's place, a corporate tower.** His real offer: her memory back in exchange for the echo.
-4. **The empty Line 9 platform** where the game began: the ending.
-(The owner asked to add or remove one location: still to be decided.)
+3. **An arcade / casino / pachinko parlor** (owner's addition, to show off the graphics): a quick scene. Juno walks in, talks to **one intermediary** who points her to where she must go next (proposed: the fixer's go-between, who tells her where the fixer will meet her). Loud, colourful, packed with flashing machines, in strong contrast to the dark empty Bureau.
+4. **The fixer's place, a corporate tower.** His real offer: her memory back in exchange for the echo.
+5. **The empty Line 9 platform** where the game began: the ending.
 
 ## Open
-- Which location to add or remove; what each chapter's clues, deductions and set pieces are.
+- What each chapter's clues, deductions and set pieces are; who the parlor intermediary is and what they say; whether Hale's safe house or Juno's flat is worth a scene.
 - Does Hale fall? What happens to Teo and Kit?
 - The fixer's name and his corporation.
