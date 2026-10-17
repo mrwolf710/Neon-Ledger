@@ -1,6 +1,8 @@
 import { BOARD, ENTRIES } from './story.ts';
 import { frame } from '../ui/hud.ts';
 import { createRng } from '../core/rng.ts';
+import type { CaseFile } from './casefile.ts';
+import type { BoardConclusion, BoardData } from '../types.ts';
 
 export const BOARDUI = {
   lineSeconds: 4.5,               // how long Juno's line stays up
@@ -16,21 +18,26 @@ export const BOARDUI = {
 };
 
 // --- Pure link logic (no DOM; see scripts/check-board.mjs) ---
-const touches = (c, a, b) => c.needs.includes(a) || c.needs.includes(b);
-function connected(needs, edges) {
-  const group = new Map(needs.map((n) => [n, n]));
-  const find = (x) => (group.get(x) === x ? x : find(group.get(x)));
+export interface LinkResult { kind: 'same' | 'wrong' | 'partial' | 'solved'; conclusion?: BoardConclusion; line?: string; hint?: string | null }
+export interface BoardLogic {
+  solved: Set<string>; edges: Map<string, [string, string][]>; tries: Map<string, number>;
+  link(a: string, b: string): LinkResult;
+}
+const touches = (c: BoardConclusion, a: string, b: string) => c.needs.includes(a) || c.needs.includes(b);
+function connected(needs: string[], edges: [string, string][]) {
+  const group = new Map<string, string>(needs.map((n): [string, string] => [n, n]));
+  const find = (x: string): string => (group.get(x) === x ? x : find(group.get(x)!));
   for (const [a, b] of edges) if (group.has(a) && group.has(b)) group.set(find(a), find(b));
   return new Set(needs.map(find)).size === 1;
 }
 
-export function createBoardLogic(data, hasFact) {
-  const solved = new Set(), edges = new Map(), tries = new Map();
+export function createBoardLogic(data: BoardData, hasFact: (id: string) => boolean): BoardLogic {
+  const solved = new Set<string>(), edges = new Map<string, [string, string][]>(), tries = new Map<string, number>();
   let wrongIdx = 0;
   return {
     solved, edges, tries,
     // Returns { kind: 'same' | 'wrong' | 'partial' | 'solved', conclusion?, line?, hint? }.
-    link(a, b) {
+    link(a: string, b: string): LinkResult {
       if (a === b) return { kind: 'same' };
       const open = data.conclusions.filter((c) => !solved.has(c.id) && (c.requires ?? []).every(hasFact));
       const match = open.find((c) => c.needs.includes(a) && c.needs.includes(b));
@@ -42,7 +49,7 @@ export function createBoardLogic(data, hasFact) {
         return { kind: 'partial', conclusion: match, line: data.partialLine };
       }
       const owner = open.find((c) => touches(c, a, b));
-      let hint = null;
+      let hint: string | null = null;
       if (owner) {
         const n = (tries.get(owner.id) ?? 0) + 1;
         tries.set(owner.id, n);
@@ -53,7 +60,7 @@ export function createBoardLogic(data, hasFact) {
   };
 }
 
-const el = (tag, cls, parent, text) => {
+const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, parent?: Node | null, text?: string): HTMLElementTagNameMap[K] => {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
   if (text !== undefined) e.textContent = text;
@@ -63,7 +70,19 @@ const el = (tag, cls, parent, text) => {
 
 // Deduction board: clue cards sit either side of a central ring. Put two cards in its slots (click/tap, drag, or Space) and press DEDUCE.
 // Spent clues (used in a solved conclusion) fade into the archive row; conclusion cards stay on the sides, display only.
-export function createBoard({ caseFile, hud }) {
+export interface Board {
+  spent: () => Set<string>;
+  readonly isOpen: boolean;
+  onLock: ((conclusion: BoardConclusion) => void) | null;
+  onWrong: (() => void) | null;
+  onUi: ((kind: string) => void) | null;
+  logic: BoardLogic;
+  open(): void;
+  close(): void;
+  toggle(): void;
+  update(input: { pressed(action: string): boolean; lastDevice?: string }): void;
+}
+export function createBoard({ caseFile, hud }: { caseFile: CaseFile; hud?: unknown }): Board {
   const logic = createBoardLogic(BOARD, (id) => caseFile.has(id));
   const root = el('div', '', document.body); root.id = 'board';
   const box = frame(el('div', 'bd-box', root));
@@ -91,41 +110,41 @@ export function createBoard({ caseFile, hud }) {
   const foot = el('div', 'bd-foot', box);
   foot.innerHTML = '<span class="keycap">Click</span><span class="keycap">Drag</span>card into the ring <span class="keycap">Arrows</span><span class="keycap">Space</span>pick / deduce <span class="keycap">H</span><span class="keycap">Y</span>hint <span class="keycap">RT</span>solve <span class="keycap">Esc</span>clear / close';
 
-  let isOpen = false, cursor = 0, drag = null, temp = null, lineTimer = 0, cards = [], newId = null;
-  let arriving = null, misses = 0, hinted = new Set(), hintTimer = 0, solving = false, busy = false;
-  const sparkRng = createRng(7).fork('sparks'), slots = [null, null], failed = new Map(); // failed: "a|b" -> how many facts Juno held when it failed; a new clue can make an old pair work, so only an unchanged board counts as "already tried"
-  const hintCount = new Map();
+  let isOpen = false, cursor = 0, drag: { from: string; x0: number; y0: number; moved: boolean } | null = null, temp: { from: string; x: number; y: number } | null = null, lineTimer: ReturnType<typeof setTimeout> | 0 = 0, cards: string[] = [], newId: string | null = null;
+  let arriving: string | null = null, misses = 0, hinted = new Set<string>(), hintTimer = 0, solving = false, busy = false;
+  const sparkRng = createRng(7).fork('sparks'), slots: (string | null)[] = [null, null], failed = new Map<string, number>(); // failed: "a|b" -> how many facts Juno held when it failed; a new clue can make an old pair work, so only an unchanged board counts as "already tried"
+  const hintCount = new Map<string, number>();
   const api = {
     spent: () => spentClues(), // clues the solved conclusions have used up (the case file's picker leaves them out)
     get isOpen() { return isOpen; },
-    onLock: null,   // (conclusion) when a link locks in; Stage 8 plays the ticking / chime
-    onWrong: null,  // () when a link snaps back
-    onUi: null,     // (kind) open / close sounds
+    onLock: null as Board['onLock'],   // (conclusion) when a link locks in; Stage 8 plays the ticking / chime
+    onWrong: null as Board['onWrong'],  // () when a link snaps back
+    onUi: null as Board['onUi'],     // (kind) open / close sounds
     logic,
-  };
+  } as Board;
 
-  const center = (node) => {
+  const center = (node: Element) => {
     const b = box.getBoundingClientRect(), r = node.getBoundingClientRect();
     return [r.left - b.left + r.width / 2, r.top - b.top + r.height / 2];
   };
-  const cardEl = (id) => main.querySelector(`.bd-card[data-id="${id}"]`);
-  const title = (id) => caseFile.facts().find((f) => f.id === id)?.title;
+  const cardEl = (id: string) => main.querySelector(`.bd-card[data-id="${id}"]`);
+  const title = (id: string) => caseFile.facts().find((f) => f.id === id)?.title;
 
   // Threads from each filled slot to the DEDUCE button, plus the line trailing a dragged card.
   function drawStrings() {
     svg.replaceChildren();
-    const line = (x1, y1, x2, y2, cls) => {
+    const line = (x1: number, y1: number, x2: number, y2: number, cls: string) => {
       const l = document.createElementNS(svgNS, 'line');
-      for (const [k, v] of Object.entries({ x1, y1, x2, y2, class: cls })) l.setAttribute(k, v);
+      for (const [k, v] of Object.entries({ x1, y1, x2, y2, class: cls })) l.setAttribute(k, String(v));
       svg.appendChild(l);
     };
     const cls = ring.dataset.state === 'bad' ? 'wrong' : 'locked';
-    if (slots[0] && slots[1] && !['ok', 'merge'].includes(ring.dataset.state)) { const [x1, y1] = center(slotEls[0]), [x2, y2] = center(slotEls[1]), hw = slotEls[0].offsetWidth / 2; line(x1 + hw, y1, x2 - hw, y2, cls); /* edge to edge, never across the text */ }
+    if (slots[0] && slots[1] && !['ok', 'merge'].includes(ring.dataset.state!)) { const [x1, y1] = center(slotEls[0]), [x2, y2] = center(slotEls[1]), hw = slotEls[0].offsetWidth / 2; line(x1 + hw, y1, x2 - hw, y2, cls); /* edge to edge, never across the text */ }
     const A = temp && cardEl(temp.from);
-    if (A) { const [x1, y1] = center(A), b = box.getBoundingClientRect(); line(x1, y1, temp.x - b.left, temp.y - b.top, 'temp'); }
+    if (A) { const [x1, y1] = center(A), b = box.getBoundingClientRect(); line(x1, y1, temp!.x - b.left, temp!.y - b.top, 'temp'); }
   }
 
-  function say(text) {
+  function say(text: string) {
     lineTxt.textContent = text;
     lineEl.classList.add('on');
     clearTimeout(lineTimer);
@@ -133,14 +152,14 @@ export function createBoard({ caseFile, hud }) {
   }
 
   // Long titles get a smaller font so they always fit the slot (size in cqw of the ring).
-  const fit = (node, text) => { node.textContent = text; node.style.fontSize = `${Math.max(2.2, Math.min(4.4, Math.sqrt(560 / Math.max(1, text.length))))}cqw`; };
+  const fit = (node: HTMLElement, text: string) => { node.textContent = text; node.style.fontSize = `${Math.max(2.2, Math.min(4.4, Math.sqrt(560 / Math.max(1, text.length))))}cqw`; };
   const clearSlots = () => {
     slots[0] = slots[1] = null; ring.dataset.state = ''; busy = false;
     for (const n of [...slotEls, fused]) { n.getAnimations().forEach((a) => a.cancel()); n.style.visibility = ''; }
     render();
   };
 
-  function place(id) {
+  function place(id: string) {
     if (busy || slots.includes(id)) return;
     const i = slots.indexOf(null);
     if (i < 0) return;
@@ -183,26 +202,26 @@ export function createBoard({ caseFile, hud }) {
     else {
       const r = logic.link(a, b);
       if (r.kind === 'solved') {
-        ring.dataset.state = 'merge'; say(r.line);
-        caseFile.apply(r.conclusion.effects);
-        fit(fused, title(r.conclusion.result) ?? '');
+        ring.dataset.state = 'merge'; say(r.line!);
+        caseFile.apply(r.conclusion!.effects);
+        fit(fused, title(r.conclusion!.result) ?? '');
         misses = 0; hintCount.clear(); hinted.clear();
-        newId = arriving = r.conclusion.result;
-        api.onLock?.(r.conclusion);
+        newId = arriving = r.conclusion!.result;
+        api.onLock?.(r.conclusion!);
         render(); merge(); return;
       } else {
         failed.set(key, caseFile.facts().length); misses++; ring.dataset.state = 'bad'; api.onWrong?.();
-        say(r.hint ? `${r.line} ${BOARD.hintLine.replace('{fact}', title(r.hint) ?? '…')}` : r.line);
+        say(r.hint ? `${r.line} ${BOARD.hintLine.replace('{fact}', title(r.hint) ?? '…')}` : r.line!);
       }
     }
     render();
     setTimeout(clearSlots, BOARDUI.snapMs);
   }
 
-  const isResult = (f) => f.source === 'Deduction board';
+  const isResult = (f: { source: string }) => f.source === 'Deduction board';
   // A clue is spent once a solved conclusion used it, unless another unsolved conclusion still needs it (gloved_hand serves two).
   const spentClues = () => {
-    const spent = new Set(), later = new Set(BOARD.conclusions.filter((c) => !logic.solved.has(c.id)).flatMap((c) => c.needs));
+    const spent = new Set<string>(), later = new Set(BOARD.conclusions.filter((c) => !logic.solved.has(c.id)).flatMap((c) => c.needs));
     for (const c of BOARD.conclusions) if (logic.solved.has(c.id)) c.needs.forEach((n) => { if (!later.has(n)) spent.add(n); });
     return spent;
   };
@@ -212,7 +231,7 @@ export function createBoard({ caseFile, hud }) {
     const spent = spentClues();
     cards = facts.filter((f) => (!isResult(f) || usable.has(f.id)) && !spent.has(f.id) && !slots.includes(f.id)).map((f) => f.id);
     cursor = Math.max(0, Math.min(cursor, cards.length - 1));
-    const side = [[], []];
+    const side: HTMLElement[][] = [[], []];
     // A card sitting in a ring slot leaves an invisible placeholder behind, so every other card keeps its place and a failed pair puts it back exactly where it was.
     facts.filter((f) => !spent.has(f.id)).forEach((f, i) => {
       const d = el('div', 'bd-card', null), live = cards.includes(f.id);
@@ -251,7 +270,7 @@ export function createBoard({ caseFile, hud }) {
     slotEls.forEach((s, i) => {
       s.replaceChildren(); s.classList.toggle('full', !!slots[i]);
       s.onclick = () => { if (!busy && slots[i]) { slots[i] = null; render(); } }; // click a slot to take the card back
-      fit(el('div', 't', s), slots[i] ? title(slots[i]) : i ? 'CLUE B' : 'CLUE A');
+      fit(el('div', 't', s), slots[i] ? title(slots[i]!)! : i ? 'CLUE B' : 'CLUE A');
     });
     const ready = !!(slots[0] && slots[1]);
     ring.classList.toggle('ready', ready); goBtn.disabled = !ready || busy;
@@ -268,7 +287,7 @@ export function createBoard({ caseFile, hud }) {
   // The next conclusion Juno could draw: the first unsolved one whose facts she holds.
   const nextOpen = () => { const spent = spentClues(), ch2 = caseFile.hasFlag('chapter1_done'); // chapter 1's clues leave the board in chapter 2, so those links are no longer offered
     return BOARD.conclusions.find((c) => !logic.solved.has(c.id) && [...c.needs, ...(c.requires ?? [])].every((f) => caseFile.has(f)) && c.needs.every((n) => !spent.has(n) && (!ch2 || ENTRIES[n]?.ch2))); };
-  const factTitle = (id) => title(id) ?? '…';
+  const factTitle = (id: string) => title(id) ?? '…';
 
   // Hint: first press names one clue, the next the pair; those cards glow.
   function hint() {
@@ -296,8 +315,8 @@ export function createBoard({ caseFile, hud }) {
     setTimeout(() => { deduce(); solving = false; }, step * 2);
   }
 
-  function moveCursor(dx, dy) {
-    const nodes = cards.map(cardEl).filter(Boolean);
+  function moveCursor(dx: number, dy: number) {
+    const nodes = cards.map(cardEl).filter(Boolean) as Element[];
     if (nodes.length < 2) return;
     const [cx, cy] = center(nodes[cursor]);
     let best = -1, bestScore = Infinity;
@@ -323,9 +342,9 @@ export function createBoard({ caseFile, hud }) {
     close() { isOpen = false; drag = temp = null; root.classList.remove('on'); api.onUi?.('back'); },
     toggle() { if (isOpen) api.close(); else api.open(); },
     // Every frame while open.
-    update(input) {
+    update(input: { pressed(action: string): boolean; lastDevice?: string }) {
       if (!isOpen) return;
-      const p = (a) => input.pressed(a);
+      const p = (a: string) => input.pressed(a);
       if (p('back') || p('pause')) { if (slots[0] || slots[1]) { if (!busy) { slots[0] = slots[1] = null; render(); } } else api.close(); return; }
       if (p('board')) { api.close(); return; }
       if (p('left') || p('menuLeft')) moveCursor(-1, 0);

@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 import { CUTAWAY } from '../render/fog.ts';
+import type { Fade } from './fade.ts';
+import type { Sfx } from '../audio/sfx.ts';
+import type { Synth } from '../audio/synth.ts';
 
 // ?trailer: a scripted ~38 s teaser. Click once to start (browsers need the tap for audio), then record the screen. Esc stops it.
 // ?trailer=4 starts at shot 4 (1-based) to check one shot quickly.
@@ -15,7 +18,7 @@ export const TRAILER = {
 };
 
 const rad = THREE.MathUtils.degToRad;
-const ease = (t) => t * t * (3 - 2 * t);
+const ease = (t: number) => t * t * (3 - 2 * t);
 const H = Math.PI / 2;
 
 // One shot = one area, one subject the camera looks at (and the see-through circle is centred on), one camera move.
@@ -32,7 +35,23 @@ const H = Math.PI / 2;
 //  card      pixel-font lines;  fx: 'echo' (seam glitch);  ui: sfx.ui kind
 //  mood      music mood at the cut (echo = heartbeat + tension, finale = fast and hard, silent = drop);  hit: boom at the cut;  riser: seconds of rising noise
 //  events    [{ t, hit, mood }] things that happen t seconds into the shot
-const SHOTS = [
+interface ShotEvent { t: number; hit?: string; mood?: string; done?: boolean }
+interface Shot {
+  area: string; subject?: string; both?: boolean;
+  juno: { at: [number, number]; face?: number; walk?: [number, number] };
+  dur: number; from: { yaw: number; pitch: number; dist: number }; to: { yaw: number; pitch: number; dist: number };
+  pan?: [number, number]; lift?: number; margin?: number; train?: number;
+  card?: { text: string; color: string; scale: number }[]; fx?: string; ui?: string; mood?: string; hit?: string; riser?: number; end?: boolean;
+  events?: ShotEvent[];
+}
+interface CamLike { set(v: { yaw?: number; pitch?: number; distance?: number }): void; follow(p: THREE.Vector3, snap?: boolean): void; snap(): void }
+interface WorldLike { areas: Record<string, { meta: { origin: [number, number] } }>; jump(area: string, pos: [number, number, number]): void }
+interface PlayerLike { position: THREE.Vector3; cancel(): void; walkTo(point: { x: number; z: number }, reach?: number): void }
+interface PostLike { setEcho(a: number): void; setGlitch(a: number): void }
+export interface TrailerState { active: boolean; focus: THREE.Vector3 | null; subject: THREE.Vector3 | null; mood: string }
+export interface Trailer extends TrailerState { start(first?: number): Promise<void>; trainZ(): number | null | undefined; update(dt: number): void }
+
+const SHOTS: Shot[] = [
   { area: 'platform', juno: { at: [-3, -2], face: 0.5, walk: [-1.4, -0.9] }, dur: 3.2, from: { yaw: 35, pitch: 28, dist: 8 }, to: { yaw: 50, pitch: 34, dist: 20 }, ui: 'echoOn', mood: 'echo', riser: 3.2 },
   { area: 'street', juno: { at: [-9, 1.3], face: H, walk: [5, 1.3] }, dur: 4, from: { yaw: 28, pitch: 32, dist: 34 }, to: { yaw: 60, pitch: 38, dist: 38 }, pan: [2, 0], hit: 'small',
     card: [{ text: 'LOWMARKET. 23:40.', color: TRAILER.cyan, scale: 5 }, { text: 'THE RAIN NEVER STOPS.', color: TRAILER.white, scale: 4 }] },
@@ -51,30 +70,33 @@ const SHOTS = [
     events: [{ t: 1.6, mood: 'silent' }, { t: 3.1, hit: 'big', mood: 'finale' }] },
 ];
 
-export function createTrailer({ cam, world, player, post, fade, cast, sfx, synth, onStart }) {
-  const state = { active: false, focus: null, subject: null, mood: 'silent' }; // mood: what main tells the music to play
-  let t = 0, stop = false, resolveWait = null, waitLeft = 0, shot = null;
+export function createTrailer({ cam, world, player, post, fade, cast, sfx, synth, onStart }: {
+  cam: CamLike; world: WorldLike; player: PlayerLike; post: PostLike; fade: Fade; cast: { byId: Record<string, { position: THREE.Vector3 }> };
+  sfx?: Sfx; synth: Synth; onStart?: () => void;
+}): Trailer {
+  const state: TrailerState = { active: false, focus: null, subject: null, mood: 'silent' }; // mood: what main tells the music to play
+  let t = 0, stop = false, resolveWait: (() => void) | null = null, waitLeft = 0, shot = null as Shot | null;
   const focus = new THREE.Vector3(), subj = new THREE.Vector3(), walkPt = new THREE.Vector3();
   const saved = { ...CUTAWAY };
 
   // Waits in game time (frames), so a slow recording still keeps its pacing.
-  const wait = (s) => new Promise((r) => { waitLeft = s; resolveWait = r; });
+  const wait = (s: number) => new Promise<void>((r) => { waitLeft = s; resolveWait = r; });
   const cardY = () => Math.round(window.innerHeight * (TRAILER.bars + 0.04)); // just above the bottom letterbox bar
   // Trailer sound design: booms at the cuts, a rising whoosh before the big moments.
-  function hit(kind) {
+  function hit(kind: string) {
     if (!synth.ready) return;
     const big = kind === 'big', t = synth.now;
     synth.tone({ freq: big ? 78 : 95, slide: big ? 26 : 42, type: 'sine', t, dur: big ? 1.3 : 0.4, vol: big ? 0.9 : 0.55, release: 0.2, bus: 'music' });
     synth.noise({ t, dur: big ? 1.4 : 0.3, vol: big ? 0.3 : 0.14, release: 0.3, filter: { type: 'lowpass', freq: big ? 5000 : 2200, sweepTo: 120 }, bus: 'music' });
     if (big) synth.tone({ freq: 41, type: 'sawtooth', t, dur: 1.6, vol: 0.18, release: 0.6, filter: { type: 'lowpass', freq: 220 }, bus: 'music' });
   }
-  function riser(seconds) {
+  function riser(seconds: number) {
     if (!synth.ready) return;
     synth.noise({ t: synth.now, dur: seconds, attack: seconds * 0.95, vol: 0.2, release: 0.05, filter: { type: 'bandpass', freq: 250, q: 1.2, sweepTo: 7000 }, bus: 'music' });
     synth.tone({ freq: 110, slide: 880, type: 'sawtooth', dur: seconds, attack: seconds * 0.95, vol: 0.05, release: 0.05, filter: { type: 'lowpass', freq: 1800 }, bus: 'music' });
   }
   let fired = 0;
-  const origin = (id) => world.areas[id].meta.origin;
+  const origin = (id: string) => world.areas[id].meta.origin;
 
   const style = document.createElement('style');
   style.textContent = `body.trailer #hud,body.trailer .ring,body.trailer .knob,body.trailer .btn,body.trailer .icons{display:none!important}
@@ -88,17 +110,17 @@ export function createTrailer({ cam, world, player, post, fade, cast, sfx, synth
   bars.append(top, bot);
 
   const subjectPos = () => {
-    const b = shot.subject && shot.subject !== 'juno' ? cast.byId[shot.subject] : null;
+    const b = shot!.subject && shot!.subject !== 'juno' ? cast.byId[shot!.subject!] : null;
     return (b ?? { position: player.position }).position;
   };
 
-  function aim(u) {
-    const k = ease(u), a = shot.from, b = shot.to;
+  function aim(u: number) {
+    const k = ease(u), a = shot!.from, b = shot!.to;
     subj.copy(subjectPos());
-    const [dx, dz] = shot.pan ?? [0, 0], p = player.position, m = shot.both ? 0.5 : 0;
+    const [dx, dz] = shot!.pan ?? [0, 0], p = player.position, m = shot!.both ? 0.5 : 0;
     state.subject = subj;
     state.focus = focus.set(subj.x + (p.x - subj.x) * m + dx * k, subj.y, subj.z + (p.z - subj.z) * m + dz * k);
-    focus.y += shot.lift ?? 0;
+    focus.y += shot!.lift ?? 0;
     cam.set({ yaw: rad(a.yaw + (b.yaw - a.yaw) * k), pitch: rad(a.pitch + (b.pitch - a.pitch) * k), distance: a.dist + (b.dist - a.dist) * k });
   }
 
@@ -122,7 +144,7 @@ export function createTrailer({ cam, world, player, post, fade, cast, sfx, synth
       if (shot.ui) sfx?.ui(shot.ui);
       if (shot.train != null) sfx?.trainNow(shot.train);
       fade.in(); // real-time fade, runs beside the shot
-      if (shot.card) setTimeout(() => fade.card(shot.card, Math.max(0.8, shot.dur - 3.4), cardY()), 500);
+      if (shot.card) setTimeout(() => fade.card(shot!.card!, Math.max(0.8, shot!.dur - 3.4), cardY()), 500);
       if (shot.end) setTimeout(() => fade.card([{ text: TRAILER.title, color: TRAILER.green, scale: 8 }, { text: TRAILER.tagline, color: TRAILER.cyan, scale: 3 }], TRAILER.endHold), (shot.dur - 2.2) * 1000); // once the camera is high and Juno is small
       await wait(shot.dur);
       if (shot.end) { await wait(TRAILER.endHold - 1.5); await fade.out(); } // end card, then fade to black: stop recording when the screen is black
@@ -139,7 +161,7 @@ export function createTrailer({ cam, world, player, post, fade, cast, sfx, synth
     // Train z for the shots that ask for one (driven here, not by the sound, so it shows even if audio is off); undefined = let the game decide.
     trainZ() { if (!state.active || shot?.train == null) return undefined; const u = (shot.train + t) / 8.5; return u < 1 ? -44 + 88 * u : null; },
     // Called each frame by main with the frame time.
-    update(dt) {
+    update(dt: number) {
       if (!state.active) return;
       t += dt;
       if (shot) {
