@@ -14,15 +14,17 @@ The Civic Audit Bureau runs an **off-book program**: it lends memory auditors to
 - **The fixer offers to restore Juno's memories.** They include **many, many assassinations for the Bureau**. It is devastating: her mind has been wiped over and over and over again. (Proposed logic: the fixer's corporation, as a client, **kept copies of every wipe** as insurance, which is the real blackmail material and why his offer is credible.)
 - **The finale: Hale shows up and tries to shoot Juno.** **Kit and Mama Teo work together to take Hale out and save Juno.** (Needs setup earlier: why Teo and Kit are there, and a chance for each to matter.)
 
-## Decided finale (owner, together with the ideas above)
+## Decided finale (owner, revised)
+(The first version had Kit shouting and Teo swinging a cleaver; the game has no audible dialogue and no attack animations, so it changed.)
 1. **The restoration is a playable memory montage:** a short run of echo scenes Juno watches, each a kill in her own hands, faster and faster. She learns she has been wiped over and over and over.
-2. **The showdown is on the empty Line 9 platform** where the game began. Hale steps out of the train and tries to shoot Juno (she knows everything, so she is a liability).
-3. **Teo's cleaver and Kit's distraction:** Kit shouts and runs at Hale; Teo drops her with the heavy kitchen knife. Grubby, human, neo noir.
-4. **Then Juno wipes herself anyway.** She cannot live with hundreds of kills even though she was saved; Teo and Kit watch. The game closes on the opening line: a train arrives and Juno says "I think I lost an hour on that train."
+2. **Juno goes back to Lowmarket to get Kit's and Teo's help.** She asks them because she knows Hale will come for her.
+3. **Kit's rare cyber gear disables Hale.** Kit is a collector of rare cyber gear (that is what he spends the bribe money on). He has what is needed (e.g. an override damper / dead-man jammer that shuts down Hale's weapon and implant). No dialogue shouting, no combat animation: Kit uses the gear, Hale goes down. Teo is there with Kit.
+4. **The showdown is on the empty Line 9 platform** where the game began. Hale steps out of the train and tries to shoot Juno; Kit's gear stops her.
+5. **Then Juno wipes herself anyway.** She cannot live with hundreds of kills even though she was saved; Teo and Kit watch. The game closes on the opening line: a train arrives and Juno says "I think I lost an hour on that train."
 
 ### Setup the earlier chapters must plant
-- Why Teo and Kit are on the platform at the end (the Lowmarket-at-dawn scene: Teo gives Juno something / insists on helping; Kit follows out of loyalty or guilt).
-- Teo's cleaver on screen early (the Sable's kitchen); Kit's nervous, loud, "talks too much" streak pays off as the distraction.
+- **Juno's first conversation with Mama Teo:** they know and like each other, and Teo hints she wishes Juno would get out of the auditing business because it is bad for Juno. (Draft in this file's history; being agreed with the owner.) This gives Teo the desire to help and makes the sad ending hurt more.
+- **Kit collects rare cyber gear:** shown in the hostel (an examinable shelf of gear; a line when Juno has paid him: the credits go to the collection). This gives him the ability to disable Hale.
 - The Bureau scenes must make Hale believably dangerous and personally invested.
 - The fixer's corporation has kept a copy of every wipe: the source of the montage and of his leverage.
 
