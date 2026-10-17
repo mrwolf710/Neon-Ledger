@@ -229,11 +229,13 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     }
   }
   const fillers = (() => { const r = rng.fork('mail'), a = [...MAIL.filler]; for (let i = a.length - 1; i > 0; i--) { const j = r.int(0, i); [a[i], a[j]] = [a[j], a[i]]; } return a; })();
+  const stationClues = () => ['archive', 'roster', 'haledesk', 'cellwall', 'queue'].every((id) => flag(`ex_${id}`)); // the five clues outside the lab
   function useComputer(n) {
     if (locked) return;
     if (!flag('aud_gone')) { dialogue.start('aud_block').then(() => { if (flag('make_call') && !flag('aud_gone')) fakeCall(); }); return; }
     const ranks = [1, 2, 3, 4], have = (k) => ranks.find((r) => flag(`pc${k}_r${r}`));
     let rank = have(n);
+    if (!rank && ranks.filter((k) => have(k)).length === 2 && !stationClues()) { dialogue.start('pc_dark'); return; } // the third screen stays dark until she has the other five clues
     if (!rank) { rank = 1 + ranks.filter((k) => have(k)).length; caseFile.setFlag(`pc${n}_r${rank}`); }   // the 1st and 2nd computer she opens are filler, the 3rd always holds the code
     const mail = rank === 3 ? MAIL.code : fillers[n - 1];
     terminal.mail(mail.owner, mail.items).then(() => { if (rank === 3 && !flag('lab_code_found')) dialogue.start('code_found'); });
@@ -435,7 +437,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     { id: 'locker', text: "Show the dealer Dex's receipt, then open Locker 9", area: 'dealer', pos: () => spotXZ('dealer', flag('locker_ok') ? 'locker' : 'dealer'), done: () => flag('locker_done') },
     { id: 'out', text: 'Leave the shop', area: 'dealer', pos: () => spotXZ('dealer', 'door'), done: () => flag('auditors_done') },
     { id: 'hale', text: 'Face Hale in her office', area: 'bureau', pos: () => spotXZ('bureau', 'hale'), done: () => flag('hale_met') },
-    { id: 'station', text: () => (flag('lab_open') ? 'Use the reader in the memory lab' : flag('lab_code_found') ? 'Open the memory-audit lab (the keypad, east side)' : flag('aud_gone') ? 'Search the desk computers for the lab code' : 'Get the auditors away from the desks'), area: 'bureau', done: () => flag('bureau_deduced') },
+    { id: 'station', text: () => (flag('lab_open') ? 'Use the reader in the memory lab' : flag('lab_code_found') ? 'Open the memory-audit lab (the keypad, east side)' : flag('aud_gone') ? (stationClues() ? 'Search the desk computers for the lab code' : 'Search the station: the archive, the desks and the cells') : 'Get the auditors away from the desks'), area: 'bureau', done: () => flag('bureau_deduced') },
     { id: 'slip', text: 'Slip out through the front door', area: 'bureau', pos: () => spotXZ('bureau', 'frontdoor'), done: () => false },
   ];
   function markFor(step) {

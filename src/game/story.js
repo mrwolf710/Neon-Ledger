@@ -450,6 +450,7 @@ export const CONVERSATIONS = {
     d: { speaker: 'aud2', text: 'Leave the floor. Now.', next: 'e' },
     e: { speaker: 'juno', text: "(Boots on the stairs, then nothing. The floor is mine, for a while.)", end: true },
   } },
+  pc_dark: { start: 'a', nodes: { a: { speaker: 'juno', text: "(Dead screen. The rest of the mail is nothing, so what the lab needs isn't on this floor yet. I need to know more about what they've done before I know what to look for.)", end: true } } },
   mail_cold: { start: 'a', nodes: { a: { speaker: 'juno', text: '(Nothing there but work and weather. Try another desk.)', end: true } } },
   code_found: { start: 'a', nodes: {
     a: { speaker: 'juno', text: "(There. The memory-audit lab: a door code, in a facilities e-mail, with a polite note to destroy it after reading. Nobody ever does.)", end: true, effects: [{ setFlag: 'lab_code_found' }] },
