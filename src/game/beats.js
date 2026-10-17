@@ -29,7 +29,7 @@ export const BEATS = {
 };
 
 export function createBeats({ terminal, input, world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, echo, deadHour = () => {}, endDeadHour = () => {}, trainSteam = () => {}, setExposure = () => {}, setVhs = () => {}, setCrt = () => {} }) {
-  const timers = [], tweens = [];
+  const timers = [], tweens = [], frameHooks = new Set(); // frameHooks: functions run every frame (dt) while a scene needs them
   let ringing = null, answerWait = null, callHint = 0;                          // the intro phone: ring loop + the pending answer
   const callEl = document.createElement('div'); callEl.className = 'callprompt'; document.body.appendChild(callEl);
   const visits = {}; // how many times Juno has talked to each person (picks the conversation, see story.js VISITS)
@@ -282,18 +282,38 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     const [ox, oz] = origin('bureau'), at = (x, z) => [ox + x, oz + z], juno = cast.byId.juno, auds = ['aud1', 'aud2', 'aud3'].map((id) => cast.byId[id]);
     const st = world.spot('bureau', 'start');
     world.jump('bureau', [st.x, st.z, 0]);                       // Juno at the entrance (while the screen is black)
-    auds.forEach((a, i) => { a.area = 'bureau'; a.away = false; a.anim = 'idle'; a.position.set(st.x + (i - 1) * 1.1, 0, st.z + 1.0 + (i === 1 ? 0.5 : 0)); a.facing = Math.PI; a.follow = { target: juno, dist: 1.5 + i * 0.7, speed: 3.2 }; });
+    // The auditors LEAD: they walk ahead along the route (a path of points), Juno follows a few steps behind. Each auditor stays `gap` units ahead of her progress along the path.
+    const route = [[st.x, st.z], at(0.25, -3.2), at(6.2, -3.2), at(6.2, -5.9), at(9.4, -5.9)], cum = [0];
+    for (let k = 1; k < route.length; k++) cum.push(cum[k - 1] + Math.hypot(route[k][0] - route[k - 1][0], route[k][1] - route[k - 1][1]));
+    const pathAt = (d) => { // point and heading at distance d along the route
+      const dd = Math.max(0, Math.min(cum[cum.length - 1], d)); let k = 1; while (k < cum.length - 1 && cum[k] < dd) k++;
+      const [ax, az] = route[k - 1], [bx, bz] = route[k], u = (dd - cum[k - 1]) / (cum[k] - cum[k - 1] || 1);
+      return { x: ax + (bx - ax) * u, z: az + (bz - az) * u, h: Math.atan2(bx - ax, bz - az) };
+    };
+    const progress = (x, z) => { let best = 0, bd = Infinity; for (let k = 1; k < route.length; k++) { const [ax, az] = route[k - 1], [bx, bz] = route[k], l2 = (bx - ax) ** 2 + (bz - az) ** 2 || 1, u = Math.max(0, Math.min(1, ((x - ax) * (bx - ax) + (z - az) * (bz - az)) / l2)), d = Math.hypot(ax + (bx - ax) * u - x, az + (bz - az) * u - z); if (d < bd) { bd = d; best = cum[k - 1] + u * Math.sqrt(l2); } } return best; };
+    const gaps = [1.9, 2.7, 1.9], side = [0.6, 0, -0.6], capD = cum[3] - 0.3;           // aud2 in front, aud1 and aud3 either side behind it; they stop short of Hale's door corner
+    auds.forEach((a, i) => { a.area = 'bureau'; a.away = false; a.follow = null; a.anim = 'idle'; a.facing = Math.PI; });
+    const lead = (dt) => auds.forEach((a, i) => {
+      const jd = progress(juno.position.x, juno.position.z), d = Math.min(jd + gaps[i], capD), q = pathAt(d), end = Math.max(0, Math.min(1, (d - (capD - 1.2)) / 1.2));
+      const nx = Math.cos(q.h), nz = -Math.sin(q.h);                                        // sideways of the heading
+      const x = q.x + nx * side[i] * (1 - end) - 0.9 * end, z = q.z + nz * side[i] * (1 - end) + (i - 1) * 0.8 * end;
+      const moved = Math.hypot(x - a.position.x, z - a.position.z) > 0.002;
+      a.facing = end > 0.95 ? Math.PI / 2 : q.h; a.position.set(x, 0, z); a.anim = moved ? 'walk' : 'idle';
+    });
+    lead(0);                                                    // place them ahead of Juno while the screen is black
+    frameHooks.add(lead);
     cast.apply();
     cam.follow(player.position, true);
     await fade.card([{ text: 'CHAPTER 3', color: '#1fd6e8', scale: 6 }, { text: 'THE BUREAU', color: '#ffffff', scale: 3 }], 1.2);
     await fade.in();
-    await wait(0.6);
+    await wait(1.2);                                            // they set off first
     const leg = (x, z, max = 9) => { const [wx, wz] = at(x, z); return Promise.race([new Promise((res) => player.walkTo(new THREE.Vector3(wx, 0, wz), 0.4, res)), wait(max)]); }; // a leg gives up after `max` s if she snags
     await leg(0.25, -3.2);                                       // up the middle aisle
     await leg(6.2, -3.2);                                        // east along the clear aisle between the desk rows
     await leg(6.2, -5.9);                                        // to Hale's door
     await leg(9.4, -5.9);                                        // into the office
-    auds.forEach((a, i) => { a.follow = null; a.anim = 'idle'; const [x, z] = at(5.2 + (i === 2 ? -1 : 0), -5.9 + (i - 1) * 1.1); a.position.set(x, 0, z); a.facing = Math.PI / 2; });
+    frameHooks.delete(lead);
+    auds.forEach((a, i) => { a.anim = 'idle'; const [x, z] = at(5.2 + (i === 2 ? -1 : 0), -5.9 + (i - 1) * 1.1); a.position.set(x, 0, z); a.facing = Math.PI / 2; });
     juno.facing = Math.PI / 2;
     caseFile.setFlag('bureau_arrived');
     await wait(0.4);
@@ -464,6 +484,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     },
     update(dt) {
       placeKit();
+      for (const h of frameHooks) h(dt);
       syncLabDoor(); updatePatrols(dt);
       if (ringing && (ringing.t += dt) >= BEATS.ringEvery) { ringing.t = 0; sfx.phoneRing?.(); }
       if (answerWait && (input.pressed('interact') || input.click)) api.answerCall();
