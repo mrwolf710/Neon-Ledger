@@ -17,7 +17,7 @@ export const AREAS = {
   alley:    { origin: [300, 0],  name: 'Alley behind the Sable', district: 'Lowmarket', outdoor: true,  mood: 'scene',  surface: 'asphalt' },
   hostel:   { origin: [450, 0],  name: "Capsule Hostel",   district: 'Lowmarket', outdoor: false, mood: 'street', surface: 'tile' },
   car:      { origin: [600, 0],  name: "Juno's Car",             district: 'Lowmarket', outdoor: false, mood: 'scene',  surface: 'tile' },
-  bureau:   { origin: [1050, 0], name: 'Civic Audit Bureau',     district: 'Civic Centre', outdoor: false, mood: 'station', surface: 'tile' }, // chapter 3 hub (docs/chapter-3.md)
+  bureau:   { origin: [1050, 0], name: 'Civic Audit Bureau',     district: 'Civic Centre', outdoor: false, mood: 'bureau', surface: 'tile' }, // chapter 3 hub (docs/chapter-3.md)
   dealer:   { origin: [900, 0],  name: 'Implants',               district: 'Undercity', outdoor: false, mood: 'dealer',  surface: 'tile' }, // chapter 2: the implant dealer's shop (docs/chapter-2.md)
   exchange: { origin: [750, 0],  name: 'The Echo Exchange',      district: 'Undercity', outdoor: true,  mood: 'bazaar', surface: 'asphalt' }, // chapter 2 hub (docs/chapter-2.md)
 };
@@ -309,7 +309,7 @@ export const BUREAU = {
   columns: { xs: [-8, -2, 4], zs: [-4] },                              // the only columns: three, evenly spaced down the middle aisle
   mullion: 3,                                                          // spacing of the thin window bars (no pier columns)
   screenOn: 0.75,                                                      // share of desk monitors that are switched on (night shift, mostly empty)
-  skyline: { towers: 46, from: 7, to: 40 },   // how many towers and how far out (outside the window walls)
+  skyline: { towers: 70, from: 3.5, to: 30, minH: 12, maxH: 40, lit: 0.85 },   // how many towers and how far out (outside the window walls)
   colors: { cool: 0x1fd6e8, white: 0xdfeaff, alarm: 0xff3b4c, warm: 0xf2a93b },
 };
 function bureau(M, rng) {
@@ -328,12 +328,18 @@ function bureau(M, rng) {
   for (let z = hz0 + Mu; z < hz1; z += Mu) b.box(M.frame, 0.08, H5 - 1.3, 0.08, hx0 - 0.15, 0.9 + (H5 - 1.3) / 2, z);
   b.box(cool, 0.04, 0.04, long - 0.4, hx0 - 0.32, 0.93, (hz0 + hz1) / 2);
   // --- The city outside: a skyline of dark towers with lit windows, beyond the north and west window walls.
-  const jr = rng.fork('skyline'), tw = [PM.crates[1], M.walls[1], M.metal];
-  for (let i = 0; i < BUREAU.skyline.towers; i++) {
-    const north = i % 2 === 0, d = jr.range(BUREAU.skyline.from, BUREAU.skyline.to), along = jr.range(-30, 50), w = jr.range(3, 7), h = jr.range(9, 34);
-    const x = north ? along : hx0 - d, z = north ? hz0 - d : jr.range(-40, 30);
+  const jr = rng.fork('skyline'), tw = [PM.crates[1], M.walls[1], M.metal], SK = BUREAU.skyline, pink = lit(0xff6fb5);
+  for (let i = 0; i < SK.towers; i++) {
+    const north = i % 2 === 0, d = jr.range(SK.from, SK.to), w = jr.range(3, 6.5), h = jr.range(SK.minH, SK.maxH);
+    const x = north ? jr.range(hx0 - 24, wx1 + 14) : hx0 - d, z = north ? hz0 - d : jr.range(hz0 - 24, hz1 + 14);
     b.box(tw[i % 3], w, h, w, x, h / 2, z);
-    for (let k = 0; k < Math.floor(h / 2.6); k++) if (jr.rand() < 0.7) b.box(jr.pick([cool, warm, alarm, cool, cool]), jr.range(0.8, w * 0.8), 0.7, 0.06, x + jr.range(-w / 3, w / 3), 1.5 + k * 2.4, north ? z + w / 2 + 0.04 : z + w / 2 + 0.04);
+    const fx = north ? 0 : 1; // windows go on the face that looks at the station (south face of the north towers, east face of the west towers)
+    for (let k = 0; k < Math.floor(h / 2); k++) for (let c = 0; c < 3; c++) {
+      if (jr.rand() > SK.lit) continue;
+      const off = (c - 1) * (w / 3.4), ww = w / 5.5, mat = jr.rand() < 0.08 ? pink : jr.pick([cool, cool, warm, warm, alarm]);
+      if (north) b.box(mat, ww, 0.8, 0.08, x + off, 1.2 + k * 2, z + w / 2 + 0.05); else b.box(mat, 0.08, 0.8, ww, x + w / 2 + 0.05, 1.2 + k * 2, z + off);
+    }
+    if (jr.rand() < 0.2) { const sc = jr.pick([pink, cool, alarm]); if (north) b.box(sc, w * 0.8, 1.6, 0.12, x, h * jr.range(0.4, 0.9), z + w / 2 + 0.08); else b.box(sc, 0.12, 1.6, w * 0.8, x + w / 2 + 0.08, h * jr.range(0.4, 0.9), z); }
   }
   // --- Low (dollhouse) walls on the near sides: south, east, and every partition. Doors are gaps; they block movement.
   const lo = { h: 1.0, mat: M.walls[1], block: true };
@@ -388,7 +394,7 @@ function bureau(M, rng) {
   for (const [x, z] of [[-11, -5.3], [-4, -5.3], [3, -5.3], [-11, -1.3], [-4, -1.3], [3, -1.3]]) b.light(C.cool, 5, x, 1.5, z);
   b.light(C.warm, 6, hx + 2.0, 1.6, hz - 0.75); b.light(C.cool, 3, hx + 1.0, 1.4, hz - 0.5);
   b.light(C.cool, 6, lx, 2.0, lz - 1.0); b.light(C.alarm, 6, wx1 - 2.0, 2.0, (R.cells[0] + R.cells[1]) / 2); b.light(C.cool, 4, -11.5, 2.0, 6.2);
-  b.spot('start', 0, 7.4); b.spot('hale', hx + 1.0, hz + 0.4); b.spot('chair', lx, lz + 0.9); b.spot('cell1', wx1 - 1.2, R.cells[0] + cn / 6); b.spot('archive', -11.5, 5.0);
+  b.spot('start', 0, 7.4); b.spot('hale', hx - 1.0, R.hale[0] + 3.1); b.spot('chair', lx, lz + 0.9); b.spot('cell1', wx1 - 1.2, R.cells[0] + cn / 6); b.spot('archive', -11.5, 5.0);
   return finish('bureau', b, [hx0, hz0, wx1, hz1]);
 }
 const P_COOL = BUREAU.colors.cool;

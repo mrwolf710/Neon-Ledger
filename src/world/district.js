@@ -52,6 +52,8 @@ export const CAST = [
   { id: 'aud1', area: 'exchange', at: [748.5, -7.2], facing: Math.PI / 2, ambient: true },
   { id: 'aud2', area: 'exchange', at: [751.5, -7.2], facing: -Math.PI / 2, ambient: true },
   { id: 'aud3', area: 'exchange', at: [750, -5.9], facing: Math.PI, ambient: true },
+  // Chapter 3: Hale in his office at the Bureau (his own sprite sheet); he stands facing the door. The three auditors (aud1-3) are moved into the Bureau by the arrival scene.
+  { id: 'hale', area: 'bureau', at: 'hale', facing: -Math.PI / 2 },
   { id: 'miso', area: 'street', at: [12.4, 2.4], facing: 2.2 }, // right at the foot of the station stairs (spawn 13.8, 1.3): the first character Juno sees
 ];
 

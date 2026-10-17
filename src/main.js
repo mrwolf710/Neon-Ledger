@@ -265,6 +265,7 @@ debug.button('Play the chapter 1 ending', () => { beats.skipTo(7); solveHeld(); 
 debug.button('Chapter 2: dealer shop, receipt shown (then open Locker 9)', () => { beats.skipTo(10); solveHeld(); caseFile.setFlag('locker_ok'); const s = world.exits.find((e) => e.id === 'dealer-door').spawn; world.jump('dealer', s); });
 debug.heading('Case file');
 debug.button('Give every clue (ch1 + ch2)', () => { for (const id of Object.keys(ENTRIES)) caseFile.add(id); solveHeld(); });
+debug.button('Chapter 3: the auditors walk Juno into the Bureau', () => beats.bureauArrival());
 debug.button('Unlock the dealer door', () => caseFile.setFlag('dealer_open'));
 debug.button('Show a case-file toast', () => hud.toast('Case file updated'));
 debug.extra = () => `beat ${beats.beatNo}  ${beats.beatTimes.map((s, i) => (s ? `${i + 1}:${Math.round(s)}s` : '')).filter(Boolean).join(' ')}`;

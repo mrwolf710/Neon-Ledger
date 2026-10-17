@@ -12,7 +12,7 @@ export const SPEAKERS = {
   miso: { name: 'Miso', color: '#d9771c' },
   vending: { name: 'Vending machine', color: '#9ff4ff' },
   unknown: { name: 'Unknown voice', color: '#e0217d' },
-  hale: { name: 'Hale (comms)', color: '#f2a93b' },
+  hale: { name: 'Hale (comms)', alias: { flag: 'bureau_arrived', name: 'Hale' }, color: '#f2a93b' }, // in person from chapter 3
   preacher: { name: 'Holo-preacher', color: '#9ff4ff' },
   // Chapter 2: the Echo Exchange vendors (docs/chapter-2.md)
   vesper: { name: 'Vesper', color: '#ff5a3c' }, mari: { name: 'Mari', color: '#ff8a1f' }, lux: { name: 'Madame Lux', color: '#ffd23a' },
@@ -341,6 +341,12 @@ export const CONVERSATIONS = {
   dealer_locked: { start: 'a', nodes: { a: { speaker: 'juno', text: "(Shuttered. Whatever is in there, I don't know enough to knock yet.)", end: true } } },
   dealer_next: { start: 'a', nodes: { a: { speaker: 'juno', text: "(The dealer's shop. Dex's echo is in there. Whoever else wants it is closing in.)", end: true } } },
   ...Object.fromEntries(Object.entries(VENDOR_TALK).map(([id, v]) => [`vend_${id}`, vendorTalk(id, v.lines, v.again)])),
+  // Chapter 3: Juno is walked into Hale's office. PLACEHOLDER lines; the real scene is the owner's to write (docs/chapter-3.md).
+  hale_office: { start: 'a', nodes: {
+    a: { speaker: 'hale', text: 'Sit down, Juno.', next: 'b' },
+    b: { speaker: 'hale', text: 'Auditors. Wait outside.', end: true },
+  } },
+  hale_talk: { start: 'a', nodes: { a: { speaker: 'hale', text: 'Not now, Juno. Wait for me here.', end: true } } },
   nobody: { start: 'a', nodes: { a: { speaker: 'juno', text: 'Nothing to say yet.', end: true } } },
 };
 

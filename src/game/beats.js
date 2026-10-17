@@ -207,12 +207,37 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     await wait(0.8);
     await dialogue.start('auditors');
     caseFile.setFlag('auditors_done');
+    await bureauArrival();
+  }
+
+  // Chapter 3: the three auditors walk Juno straight through the station to Hale's office. Slow, serious music (the area's own); the auditors stop at the office door.
+  const origin = (id) => world.areas[id].meta.origin;
+  async function bureauArrival() {
+    locked = true;
     await fade.out();
-    finale = true;                                               // the end of the chapter: fast, hard music, a card that waits for the player
-    fade.card([{ text: 'END OF CHAPTER 2', color: '#ffffff', scale: 5 }, { text: 'CHAPTER 3: THE BUREAU - COMING SOON', color: '#ff8a1f', scale: 3 }, { text: 'TAP OR PRESS ANY BUTTON', color: '#8a8aa8', scale: 2 }], Infinity);
-    await wait(BEATS.finaleGuard);
-    await anyInput(Infinity);
-    location.reload();                                           // back to the title screen
+    finale = false;
+    const [ox, oz] = origin('bureau'), at = (x, z) => [ox + x, oz + z], juno = cast.byId.juno, auds = ['aud1', 'aud2', 'aud3'].map((id) => cast.byId[id]);
+    const st = world.spot('bureau', 'start');
+    world.jump('bureau', [st.x, st.z, 0]);                       // Juno at the entrance (while the screen is black)
+    auds.forEach((a, i) => { a.area = 'bureau'; a.away = false; a.anim = 'idle'; a.position.set(st.x + (i - 1) * 1.1, 0, st.z + 1.0 + (i === 1 ? 0.5 : 0)); a.facing = Math.PI; a.follow = { target: juno, dist: 1.5 + i * 0.7, speed: 3.2 }; });
+    cast.apply();
+    cam.follow(player.position, true);
+    await fade.card([{ text: 'CHAPTER 3', color: '#1fd6e8', scale: 6 }, { text: 'THE BUREAU', color: '#ffffff', scale: 3 }], 1.2);
+    await fade.in();
+    await wait(0.6);
+    const leg = (x, z, max = 9) => { const [wx, wz] = at(x, z); return Promise.race([new Promise((res) => player.walkTo(new THREE.Vector3(wx, 0, wz), 0.4, res)), wait(max)]); }; // a leg gives up after `max` s if she snags
+    await leg(0.25, -3.2);                                       // up the middle aisle
+    await leg(6.2, -3.2);                                        // east along the clear aisle between the desk rows
+    await leg(6.2, -5.9);                                        // to Hale's door
+    await leg(9.4, -5.9);                                        // into the office
+    auds.forEach((a, i) => { a.follow = null; a.anim = 'idle'; const [x, z] = at(5.2 + (i === 2 ? -1 : 0), -5.9 + (i - 1) * 1.1); a.position.set(x, 0, z); a.facing = Math.PI / 2; });
+    juno.facing = Math.PI / 2;
+    caseFile.setFlag('bureau_arrived');
+    await wait(0.4);
+    await dialogue.start('hale_office');
+    auds.forEach((a, i) => { const [x, z] = at(3.6 + i * 0.7, -3.2 + (i - 1) * 0.6); a.position.set(x, 0, z); a.facing = 0; });   // told to wait outside: they step back into the hall
+    caseFile.setFlag('hale_met');
+    locked = false;                                              // the station is hers to walk
   }
 
   // ---- Interactables: doors, clues, people ----
@@ -221,7 +246,7 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
       interactions.add({ id: e.id, area: e.area, position: new THREE.Vector3(e.at[0], 0, e.at[1]), height: 1.2, verb: e.verb,
         onInteract: () => { if (e.id === 'dealer-door' && !flag('dealer_open')) dialogue.start('dealer_locked'); else if (e.id === 'dealer-out' && flag('fixer_done') && !flag('auditors_done')) { if (!locked) outsideScene(); } else world.enter(e.to, e.spawn); } }); // the dealer's door stays shut until the locker deduction
     }
-    for (const id of ['fixer', 'aud1', 'aud2', 'aud3']) cast.byId[id].away = true; // scripted people appear only in dealerScene
+    for (const id of ['fixer', 'aud1', 'aud2', 'aud3']) cast.byId[id].away = true; // scripted people appear only in their scenes
     for (const x of EXAMINABLES) {
       const s = world.spot(x.area, x.spot);
       interactions.add({ id: `ex:${x.id}`, area: x.area, position: new THREE.Vector3(s.x, 0, s.z), height: 1.0, verb: x.verb,
@@ -301,6 +326,8 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     { id: 'dealer', text: "Go into the implant dealer's shop", area: 'exchange', pos: () => spotXZ('exchange', 'dealerDoor'), done: () => flag('visited_dealer') },
     { id: 'locker', text: "Show the dealer Dex's receipt, then open Locker 9", area: 'dealer', pos: () => spotXZ('dealer', flag('locker_ok') ? 'locker' : 'dealer'), done: () => flag('locker_done') },
     { id: 'out', text: 'Leave the shop', area: 'dealer', pos: () => spotXZ('dealer', 'door'), done: () => flag('auditors_done') },
+    { id: 'hale', text: 'Face Hale in his office', area: 'bureau', pos: () => spotXZ('bureau', 'hale'), done: () => flag('hale_met') },
+    { id: 'station', text: 'Look around the station', area: 'bureau', done: () => false },
   ];
   function markFor(step) {
     const here = world.current.id;
@@ -319,7 +346,7 @@ export function createBeats({ input, world, cast, caseFile, dialogue, hud, inter
     get finale() { return finale; },
     get beatNo() { return STEP_BEAT[STEPS.find((s) => !s.done())?.id] ?? 7; },
     beatTimes,
-    cliffhanger, // also for the ?hooks test driver
+    cliffhanger, bureauArrival, // also for the ?hooks test driver
     dealerScene, outsideScene, // debug panel: play the chapter 2 ending
     // Debug. n = 2-7: start of chapter 1 beat n, with every clue Juno would hold by then. 8: Chapter 2 start (all chapter 1 clues). 9: Exchange with all six vendor clues.
     // 10: Exchange with every chapter 2 deduction done (dealer door open).

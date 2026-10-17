@@ -8,6 +8,11 @@ Chapter 2 ends with three auditors taking Juno in. Chapter 3 starts at the Burea
 - Vibe (owner): empty, dark, mostly lit by the computer screens. Hale's office is lit by a monitor and one desk lamp only. At most 3 columns in the whole station (no pier columns on the window walls). Cold steel/cyan palette, the opposite of the red-orange Echo Exchange. Constants in `BUREAU` (areas.js).
 - Spots: start (entrance), hale, chair, cell1, archive.
 
+## Built (headless-checked)
+- The end of chapter 2 no longer shows a "coming soon" card: after the auditors' talk it fades to a CHAPTER 3 / THE BUREAU card, then Juno is at the station entrance with the three auditors, who walk her up the middle aisle and through the aisle between the desks to Hale's office (beats.bureauArrival; each leg gives up after 9 s if she snags). Hale (his own sprite) stands facing the door. PLACEHOLDER dialogue `hale_office` (Hale: "Sit down, Juno." / "Auditors. Wait outside.") and `hale_talk`; the auditors step back into the hall; control returns and the station is hers to walk. Debug panel button runs the scene.
+- The city shows through the windows: dense towers right behind the glass, lit windows in cyan, amber, red and a little pink.
+- Music (area mood `bureau`, music.js): slow, serious, restrained: a low drone, a two-chord pad changing every 12 s, one soft high note now and then. Nothing else.
+
 ## Open
-- How Juno is brought in (walked in, cut) and which rooms are locked until the story opens them.
+- Which rooms are locked until the story opens them; the actual Hale scene (the placeholder lines need replacing).
 - Named auditors (sprites), what each room holds for the plot, Hale's scenes.

@@ -55,6 +55,13 @@ export const TUNING = {
     heart: { vol: 0.2, freq: 62 }, bell: { vol: 0.035, chance: 0.14, octave: 36, offsets: [0, 1, 6, 7] },
     scrape: { vol: 0.03, chance: 0.1 }, beep: { vol: 0.012, chance: 0.15, freq: 1900 },
   },
+  // The Bureau (chapter 3): slow, serious and restrained. A low drone, a sustained two-chord pad that changes every 12 s, and now and then one soft note. Nothing else.
+  bureau: {
+    bpm: 40,
+    chords: [[45, 52, 57, 60], [41, 48, 53, 57], [43, 50, 55, 59], [40, 47, 52, 55]],            // Am, F, G, Em: open fifths, no melody to speak of
+    pad: { vol: 0.036, cutoff: 560, detune: 5, attack: 3.8, release: 4.5 }, drone: { vol: 0.09 },
+    note: { vol: 0.03, chance: 0.05, scale: [69, 72, 74, 76, 79], release: 4.2 },              // chance per beat of a single high note, ringing out
+  },
   board: {
     bpm: 96, tick: { vol: 0.04 }, pulse: { freq: 55, vol: 0.13 },
     ladder: [57, 60, 64, 67, 69, 72, 76], noteVol: 0.06, dingVol: 0.12,
@@ -101,6 +108,17 @@ export function createMusic(synth) {
         const k = S.arpPattern[i % S.arpPattern.length], n = chord[k % chord.length] + 12;
         synth.tone({ freq: midiToFreq(n), type: 'sawtooth', t, dur: S.arp.dur, vol: S.arp.vol * (i % 4 === 2 ? S.arp.accent : 1), attack: 0.002, release: 0.05,
           filter: { type: 'lowpass', freq: S.arp.cutoff, q: 1 }, to: m.out });
+      },
+    },
+    bureau: {
+      bpm: T.bureau.bpm,
+      step(m, i, t) {
+        const S = T.bureau, sd = stepDur(S.bpm), chord = S.chords[Math.floor(i / 32) % S.chords.length];
+        if (i % 32 === 0) {
+          pad(m.out, chord, t, sd * 32, S.pad);
+          synth.tone({ freq: midiToFreq(chord[0] - 12), type: 'sine', t, dur: sd * 32, vol: S.drone.vol, attack: 3, release: 4, to: m.out });
+        }
+        if (i % 4 === 0 && synth.rand() < S.note.chance) synth.tone({ freq: midiToFreq(S.note.scale[Math.floor(synth.rand() * S.note.scale.length)]), type: 'sine', t, dur: 0.2, vol: S.note.vol, release: S.note.release, to: m.out });
       },
     },
     station: {
