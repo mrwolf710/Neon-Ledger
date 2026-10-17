@@ -63,3 +63,8 @@ export interface Interactable {
   id: string; area?: string; position: THREE.Vector3; height: number; verb: string;
   range?: number; glyph?: string; onInteract?: () => void;
 }
+
+// ---------- Names for the main shapes that live next to the code that builds them ----------
+export type { CastMember as NPC } from './game/npc.ts';              // a person in the world (billboard + position + story state)
+export type { CaseFileSave as InvestigationState } from './game/casefile.ts'; // what Juno knows: clues in order + story flags (also the save format)
+export type { AreaRecord as RoomLayout } from './world/areas.ts';     // a generated place: geometry group, blocks, spots, lights, bounds

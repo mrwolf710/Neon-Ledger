@@ -53,7 +53,7 @@ export function surfaceAt(x: number, z: number): string {
 }
 
 interface XYZ { x: number; y: number; z: number }
-export interface SfxUpdate { player: XYZ; yaw: number; rainScale?: number; noRain?: boolean; signs?: { light: THREE.PointLight & { base?: number } }[] }
+export interface SfxUpdate { player: XYZ; yaw: number; rainScale?: number; noRain?: boolean; signs?: { light: { position: THREE.Vector3; intensity: number; base?: number } }[] }
 export type UiSound = 'move' | 'confirm' | 'back' | 'case' | 'linkOk' | 'linkWrong' | 'echoOn' | 'echoOff' | 'glitch';
 export interface Sfx {
   update(dt: number, s: SfxUpdate): void;

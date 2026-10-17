@@ -6,9 +6,9 @@ import type { Spot } from '../types.ts';
 // The area records come from src/world/areas.ts; the pieces main hands in are typed structurally here.
 export type Areas = ReturnType<typeof buildAreas>;
 // collision and road are filled in / read here, whatever the area builders declare.
-export type Area = Areas[keyof Areas] & { collision?: ReturnType<typeof createCollision>; road?: [number, number] };
+export type Area = Areas[keyof Areas] & { collision: ReturnType<typeof createCollision>; road?: [number, number] };
 export type Exit = (typeof EXITS)[number];
-export type Spawn = [number, number, number?];
+export type Spawn = number[] | null;
 export interface WorldDeps {
   scene: THREE.Object3D;
   rng: Parameters<typeof buildAreas>[0];
@@ -19,7 +19,7 @@ export interface WorldDeps {
   onEnter?: (area: Area, spawn?: Spawn) => void;
 }
 export interface World {
-  areas: Areas; exits: typeof EXITS;
+  areas: Areas & Record<string, Area>; exits: typeof EXITS;
   readonly current: Area; readonly busy: boolean;
   routeExit(from: string, to: string): Exit | null;
   spot(area: string, name: string): Spot | undefined;

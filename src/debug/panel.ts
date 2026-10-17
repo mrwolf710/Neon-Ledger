@@ -31,7 +31,20 @@ export const PANEL = {
   `,
 };
 
-export function createDebugPanel(renderer, seed) {
+interface PanelRenderer { info: { render: { calls: number; triangles: number } } }
+interface PanelTab { btn: HTMLButtonElement; page: HTMLDivElement }
+export interface DebugPanel {
+  extra?: () => string;
+  toggle(): void;
+  tab(name: string): void;
+  heading(text: string): void;
+  select(label: string, options: Record<string, string>, value: string, onChange: (v: string) => void): void;
+  slider(label: string, obj: Record<string, any>, key: string, min: number, max: number, step: number, onChange?: () => void, index?: number): void; // any: tunables objects hold numbers or number arrays under arbitrary keys
+  button(label: string, onClick: () => void): void;
+  update(dt: number): void;
+}
+
+export function createDebugPanel(renderer: PanelRenderer, seed: number | string): DebugPanel {
   const style = document.createElement('style'); style.textContent = PANEL.css; document.head.appendChild(style);
   const el = document.createElement('div'); el.id = 'dbg';
   const head = document.createElement('div'); head.className = 'dbg-head';
@@ -44,12 +57,12 @@ export function createDebugPanel(renderer, seed) {
   el.append(head, tabsBar, body);
   document.body.appendChild(el);
   el.addEventListener('keydown', (e) => e.stopPropagation()); // keep game keys out of the menu's controls
-  const syncs = [], tabs = new Map();
-  let cur = null, btns = null, frames = 0, elapsed = 0;
+  const syncs: (() => void)[] = [], tabs = new Map<string, PanelTab>();
+  let cur: PanelTab | null = null, btns: HTMLDivElement | null = null, frames = 0, elapsed = 0;
 
-  const show = (t) => { for (const x of tabs.values()) { x.btn.classList.toggle('on', x === t); x.page.classList.toggle('on', x === t); } };
-  const page = () => { if (!cur) api.tab('General'); return cur.page; };
-  function row(label, control, extra) {
+  const show = (t: PanelTab) => { for (const x of tabs.values()) { x.btn.classList.toggle('on', x === t); x.page.classList.toggle('on', x === t); } };
+  const page = () => { if (!cur) api.tab('General'); return cur!.page; }; // api.tab() sets cur
+  function row<T extends HTMLElement>(label: string, control: T, extra?: HTMLElement): T {
     btns = null;
     const r = document.createElement('label'); r.className = 'dbg-row';
     const l = document.createElement('span'); l.textContent = label;
@@ -59,12 +72,14 @@ export function createDebugPanel(renderer, seed) {
   }
   close.addEventListener('click', () => api.toggle());
 
-  const api = {
+  const api: DebugPanel = {
     toggle() { el.classList.toggle('on'); },
     // Starts (or returns to) a page; everything added after goes on it.
     tab(name) {
-      let t = tabs.get(name);
-      if (!t) {
+      const t0 = tabs.get(name);
+      let t: PanelTab;
+      if (t0) t = t0;
+      else {
         const btn = Object.assign(document.createElement('button'), { className: 'dbg-tab', textContent: name });
         const pg = Object.assign(document.createElement('div'), { className: 'dbg-page' });
         t = { btn, page: pg }; tabs.set(name, t);
@@ -84,16 +99,16 @@ export function createDebugPanel(renderer, seed) {
     },
     // obj[key] is a number, or an array when index is given.
     slider(label, obj, key, min, max, step, onChange = () => {}, index) {
-      const i = document.createElement('input'), val = Object.assign(document.createElement('span'), { className: 'dbg-val' });
-      Object.assign(i, { type: 'range', min, max, step });
+      const i = document.createElement('input') as HTMLInputElement, val = Object.assign(document.createElement('span'), { className: 'dbg-val' });
+      Object.assign(i, { type: 'range', min: String(min), max: String(max), step: String(step) });
       const get = () => (index === undefined ? obj[key] : obj[key][index]), fmt = () => { val.textContent = (+get()).toFixed(step < 0.1 ? 2 : 1); };
       i.addEventListener('input', () => {
         if (index === undefined) obj[key] = +i.value; else obj[key][index] = +i.value;
         fmt(); onChange();
       });
       row(label, i, val);
-      syncs.push(() => { if (document.activeElement !== i) { i.value = get(); fmt(); } });
-      i.value = get(); fmt();
+      syncs.push(() => { if (document.activeElement !== i) { i.value = String(get()); fmt(); } });
+      i.value = String(get()); fmt();
     },
     button(label, onClick) {
       if (!btns) { btns = Object.assign(document.createElement('div'), { className: 'dbg-btns' }); page().appendChild(btns); }
@@ -107,7 +122,8 @@ export function createDebugPanel(renderer, seed) {
       if (elapsed * 1000 < PANEL.refreshMs) return;
       if (el.classList.contains('on')) {
         const { calls, triangles } = renderer.info.render;
-        const heap = performance.memory ? `${Math.round(performance.memory.usedJSHeapSize / 1048576)} MB` : 'n/a';
+        const mem = (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory;
+        const heap = mem ? `${Math.round(mem.usedJSHeapSize / 1048576)} MB` : 'n/a';
         stats.textContent = `${Math.round(frames / elapsed)} fps  ${calls} calls  ${(triangles / 1000).toFixed(0)}k tris  heap ${heap}  seed ${seed}${this.extra ? `\n${this.extra()}` : ''}`;
         syncs.forEach((f) => f());
       }
@@ -119,7 +135,7 @@ export function createDebugPanel(renderer, seed) {
 }
 
 // ?sprites in the URL: shows every sprite sheet, scaled up, over the game (Stage 4 check).
-export function showSprites(sheets, scale = PANEL.spriteScale) {
+export function showSprites(sheets: Record<string, { canvas: HTMLCanvasElement }>, scale = PANEL.spriteScale) {
   const box = document.createElement('div');
   box.style.cssText = PANEL.spriteStyle;
   for (const [id, s] of Object.entries(sheets)) {

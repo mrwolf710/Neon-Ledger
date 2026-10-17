@@ -1,6 +1,14 @@
 import * as THREE from 'three';
 import { EXAMINABLES, TALK, FALLBACK, ENTRIES, BOARD, MAIL, conversationFor } from './story.ts';
 import { rng } from '../core/rng.ts';
+import type { Cast, CastMember } from './npc.ts';
+import type { CaseFile } from './casefile.ts';
+import type { Dialogue } from './dialogue.ts';
+import type { Echo } from './echo.ts';
+import type { Interactions } from './interact.ts';
+import type { Player } from './player.ts';
+import type { World } from './world.ts';
+import type { Spot } from '../types.ts';
 
 // The beat manager: the cold open cutscene, the objective line / minimap mark, and the things you can interact with.
 // Beats 1-3 live here (Stage 9A); later beats add steps to STEPS and conversations to story.js.
@@ -15,10 +23,10 @@ export const BEATS = {
   zoomSeconds: 3,         // after the title card: the CRT frame zooms away and the VHS noise fades out
   settle: 1.5,            // seconds Juno stands still before the title card, so the camera is centred on her
   boothRange: 3.0,     // vendors in the Echo Exchange stand behind a counter
-  talkRange: { mamaTeo: 3.0, prisoner: 3.0 }, // bigger Talk reach for people behind a counter (default INTERACT.range 1.6)
+  talkRange: { mamaTeo: 3.0, prisoner: 3.0 } as Record<string, number>, // bigger Talk reach for people behind a counter (default INTERACT.range 1.6)
   kitStreet: { x: 8.8, z: 3.3, facing: 0 }, // where the worker stands on the street (hostel side, near its door) until the key deduction (then he is at the hostel desk)
   patrol: { speed: 1.0, pause: 2.2 },   // chapter 3: the auditors pacing the desk aisles (local station coordinates)
-  routes: { aud1: [[-12, 0.5], [4.5, 0.5]], aud2: [[4.5, 4.7], [-5, 4.7]], aud3: [[-4.5, -3.1], [5.5, -3.1]] },
+  routes: { aud1: [[-12, 0.5], [4.5, 0.5]], aud2: [[4.5, 4.7], [-5, 4.7]], aud3: [[-4.5, -3.1], [5.5, -3.1]] } as Record<string, [number, number][]>,
   callWalk: 3.6,          // seconds the auditors take to hurry out of the station after the fake threat
   ringEvery: 4,           // seconds between rings while Juno's phone waits to be answered
   cardHold: 2.4,          // title card hold, seconds
@@ -28,17 +36,73 @@ export const BEATS = {
   dark: { exposure: 0.06, lampsFrom: 0.3 }, // the opening starts almost black; station lamps fade up once the train is 30% of the way in
 };
 
-export function createBeats({ terminal, input, world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, echo, deadHour = () => {}, endDeadHour = () => {}, trainSteam = () => {}, setExposure = () => {}, setVhs = () => {}, setCrt = () => {} }) {
-  const timers = [], tweens = [];
-  let ringing = null, answerWait = null, callHint = 0;                          // the intro phone: ring loop + the pending answer
+// The pieces main hands in that live outside src/game, typed structurally (only the members used here).
+export interface BeatsTerminal { mail(owner: string, items: { from: string; subject: string; body: string }[]): Promise<unknown>; keypad(title: string, correct: string): Promise<unknown> }
+export interface BeatsInput { lastDevice?: string; padType?: string; click?: unknown; pressed(action: string): boolean }
+export interface BeatsFade {
+  black: boolean;
+  in(): Promise<void>; out(): Promise<void>;
+  card(lines: { text: string; color: string; scale: number; corner?: string }[], seconds: number): Promise<void>;
+  cardZoom(u: number): void; hideCard(seconds: number): Promise<void>; log(): Promise<void>;
+}
+export interface BeatsSfx {
+  trainArrive(seconds: number): void;
+  phoneRing?: () => void; phoneAnswer?: () => void; override?: (seconds: number) => void; carDrive?: (seconds: number) => void;
+}
+export interface BeatsHud {
+  show(): void; toast(text: string): void;
+  setObjectiveText(text: string): void; setObjective(pos: { x: number; z: number } | null): void;
+}
+export interface BeatsCamera { yaw: number; follow(target: THREE.Vector3, snap?: boolean): void; set(opts: { yaw?: number }): void }
+export interface BeatsDeps {
+  terminal: BeatsTerminal; input: BeatsInput; world: World; cast: Cast; caseFile: CaseFile; dialogue: Dialogue; hud: BeatsHud;
+  interactions: Interactions; fade: BeatsFade; sfx: BeatsSfx; player: Player; clock?: unknown; echo: Echo;
+  deadHour?: () => void; endDeadHour?: () => void; trainSteam?: () => void; setExposure?: (v: number) => void; setVhs?: (v: number) => void; setCrt?: (v: number) => void;
+}
+// What the beats read from specific area records (platform, bureau).
+interface PlatformArea {
+  train: THREE.Object3D; trainStop: number[]; spots: Spot[];
+  trainGlow: { color: THREE.Color; userData: { base: THREE.Color } }[];
+  lights: { intensity: number; base: number }[];
+}
+interface BureauArea {
+  collision?: { grid: { nx: number; nz: number; x0: number; z0: number; cell: number; solid: Uint8Array } };
+  labDoor: THREE.Object3D; labLed: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
+}
+interface Step { id: string; text: string | (() => string); area: string; pos?: () => { x: number; z: number } | null | undefined; done: () => boolean }
+export interface Beats {
+  readonly locked: boolean;
+  visits: Record<string, number>;
+  readonly focus: THREE.Vector3 | null;
+  readonly calling: boolean;
+  answerCall(): void;
+  readonly ending: boolean;
+  readonly finale: boolean;
+  readonly beatNo: number;
+  beatTimes: number[];
+  cliffhanger(): Promise<void>;
+  bureauArrival(): Promise<void>;
+  dealerScene(): Promise<void>;
+  outsideScene(): Promise<void>;
+  skipTo(n: number): void;
+  setCamera(c: BeatsCamera): void;
+  coldOpen(): Promise<void>;
+  skipOpen(): void;
+  register(): void;
+  onEnter(area: { id: string }): void;
+  update(dt: number): void;
+}
+export function createBeats({ terminal, input, world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, echo, deadHour = () => {}, endDeadHour = () => {}, trainSteam = () => {}, setExposure = () => {}, setVhs = () => {}, setCrt = () => {} }: BeatsDeps): Beats {
+  const timers: { left: number; res: () => void }[] = [], tweens: { t: number; s: number; fn: (u: number) => void; res: () => void }[] = [];
+  let ringing: { t: number } | null = null, answerWait: (() => void) | null = null, callHint = 0;                          // the intro phone: ring loop + the pending answer
   const callEl = document.createElement('div'); callEl.className = 'callprompt'; document.body.appendChild(callEl);
-  const visits = {}; // how many times Juno has talked to each person (picks the conversation, see story.js VISITS)
-  const flag = (n) => caseFile.hasFlag(n);
-  let locked = false, focus = null, lastStep = '', ending = false, finale = false, chapter1Done = false;
+  const visits: Record<string, number> = {}; // how many times Juno has talked to each person (picks the conversation, see story.js VISITS)
+  const flag = (n: string) => caseFile.hasFlag(n);
+  let locked = false, focus: THREE.Vector3 | null = null, lastStep = '', ending = false, finale = false, chapter1Done = false;
   const beatTimes = [0, 0, 0, 0, 0, 0, 0]; // seconds spent per beat (debug panel)
-  const STEP_BEAT = { down: 1, sable: 2, back: 3, examine: 3, echo: 4, teo: 5, deduce: 5, teo2: 5, kit: 5, capsule: 5, alley: 5, kitecho: 5, teo3: 5, board2: 6, kit2: 6, kitbreak: 6, press: 6, chip: 7 };
+  const STEP_BEAT: Record<string, number> = { down: 1, sable: 2, back: 3, examine: 3, echo: 4, teo: 5, deduce: 5, teo2: 5, kit: 5, capsule: 5, alley: 5, kitecho: 5, teo3: 5, board2: 6, kit2: 6, kitbreak: 6, press: 6, chip: 7 };
   // Debug 'skip to beat N': the flags and case file entries a player would hold when beat N starts (cumulative), then jump there.
-  const SKIP = {
+  const SKIP: Record<number, { flags?: string[]; add?: string[]; to: string }> = {
     2: { flags: ['visited_street'], to: 'street' },
     3: { flags: ['visited_sable'], to: 'sable' },
     4: { flags: ['seen_backroom', 'ex_body', 'ex_port', 'ex_cups', 'ex_terminal', 'ex_lamp'], add: ['burned_port'], to: 'sable' },
@@ -48,23 +112,23 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
   };
 
   // ---- tiny async helpers driven by update(dt) (so cutscenes pause with the game, not wall-clock) ----
-  const wait = (s) => new Promise((res) => timers.push({ left: s, res }));
-  const tween = (s, fn) => new Promise((res) => tweens.push({ t: 0, s, fn, res }));
+  const wait = (s: number) => new Promise<void>((res) => timers.push({ left: s, res }));
+  const tween = (s: number, fn: (u: number) => void) => new Promise<void>((res) => tweens.push({ t: 0, s, fn, res }));
   // Walk Juno somewhere; gives up after maxSeconds so a blocked path can never freeze a cutscene.
-  const walkTo = async (x, z, reach = 0.2, maxSeconds = 4) => {
-    await Promise.race([new Promise((res) => player.walkTo(new THREE.Vector3(x, 0, z), reach, res)), wait(maxSeconds)]);
+  const walkTo = async (x: number, z: number, reach = 0.2, maxSeconds = 4) => {
+    await Promise.race([new Promise<void>((res) => player.walkTo(new THREE.Vector3(x, 0, z), reach, res)), wait(maxSeconds)]);
     player.cancel();
   };
 
   // ---- Beat 1: the cold open ----
   async function coldOpen() {
     locked = true;
-    const platform = world.areas.platform, train = platform.train, juno = cast.byId.juno;
+    const platform = world.areas.platform as unknown as PlatformArea, train = platform.train, juno = cast.byId.juno;
     juno.away = true; cast.apply();
     const startX = train.position.x, stopX = platform.trainStop[0];
     focus = train.position;                                     // the camera watches the train come in
-    const smooth = (x) => { const c = Math.min(1, Math.max(0, x)); return c * c * (3 - 2 * c); };
-    const glowTo = (g) => platform.trainGlow.forEach((m) => m.color.copy(m.userData.base).multiplyScalar(g));
+    const smooth = (x: number) => { const c = Math.min(1, Math.max(0, x)); return c * c * (3 - 2 * c); };
+    const glowTo = (g: number) => platform.trainGlow.forEach((m) => m.color.copy(m.userData.base).multiplyScalar(g));
     platform.lights.forEach((l) => { l.intensity = 0; });          // pitch black; the windows and door start almost dark too
     glowTo(0.04);
     setVhs(1); setCrt(1);                                                // old VHS tape look until the title card is gone
@@ -82,7 +146,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     setExposure(1); glowTo(1);
     platform.lights.forEach((l) => { l.intensity = l.base; });
     await wait(BEATS.mislaid);
-    const door = platform.spots.find((s) => s.name === 'start');
+    const door = platform.spots.find((s) => s.name === 'start')!;
     player.position.set(stopX, 0, door.z);                      // Juno steps out of the door
     juno.facing = 0; juno.away = false; cast.apply();
     focus = null;
@@ -104,17 +168,17 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     const how = () => (input.lastDevice === 'touch' ? 'Tap to answer' : input.lastDevice === 'gamepad' ? `Press ${input.padType === 'playstation' ? '\u00d7' : 'A'} to answer` : 'Click or press SPACE to answer');
     callEl.textContent = `\ud83d\udcde Incoming call: Hale. ${how()}`; callEl.classList.add('on'); callEl.onpointerdown = () => api.answerCall();
     callHint = setInterval(() => { callEl.textContent = `\ud83d\udcde Incoming call: Hale. ${how()}`; }, 400);
-    await new Promise((res) => { answerWait = res; });          // nothing else is possible until she answers
+    await new Promise<void>((res) => { answerWait = res; });          // nothing else is possible until she answers
     clearInterval(callHint); callEl.onpointerdown = null; callEl.classList.remove('on'); ringing = null; sfx.phoneAnswer?.();                  // Juno picks up
     await wait(0.5);
     await dialogue.start('hale_open');                          // Hale on comms
     player.setPose(null);
     locked = false;
   }
-  let cam = null;
+  let cam: BeatsCamera = null!;
 
   // Resolves on any tap, click, key or pad button (after BEATS.finaleGuard seconds), or after maxSeconds (Infinity = wait for the player).
-  const anyInput = (maxSeconds) => new Promise((res) => {
+  const anyInput = (maxSeconds: number) => new Promise<void>((res) => {
     let raf = 0, tm = 0;
     const done = () => { window.removeEventListener('pointerdown', skip, true); window.removeEventListener('keydown', skip, true); cancelAnimationFrame(raf); clearTimeout(tm); res(); };
     const t0 = performance.now(), skip = () => { if (performance.now() - t0 > BEATS.finaleGuard * 1000) done(); };
@@ -127,10 +191,10 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
   async function cliffhanger() {
     locked = true;
     await dialogue.start('chip_open');
-    const juno = cast.byId.juno, home = [player.position.x, player.position.z, juno.facing], room = world.spot('sable', 'backroom');
+    const juno = cast.byId.juno, home = [player.position.x, player.position.z, juno.facing], room = world.spot('sable', 'backroom')!;
     await world.enter('sable', [room.x, room.z, 0]);                  // the echo plays in the back room where Dex died, not in the car
     const R = BEATS.reveal, yaw0 = cam.yaw, turn = Math.atan2(Math.sin(R.yaw - yaw0), Math.cos(R.yaw - yaw0)); // shortest way round
-    const played = new Promise((res) => echo.start('dex_backup', res));   // Dex's backup, from his eyes
+    const played = new Promise<void>((res) => echo.start('dex_backup', res));   // Dex's backup, from his eyes
     wait(R.from).then(async () => {
       focus = new THREE.Vector3(R.at[0], 0, R.at[1]);                 // frame the spot where Juno will appear
       await tween(R.seconds, (u) => cam.set({ yaw: yaw0 + turn * u * u * (3 - 2 * u) }));
@@ -165,7 +229,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     await wait(0.6);
     await fade.out();
     sfx.carDrive?.(BEATS.driveSeconds);                          // over black: she drives to the Exchange
-    const sp = world.spot('exchange', 'start');
+    const sp = world.spot('exchange', 'start')!;
     world.jump('exchange', [sp.x, sp.z, Math.PI / 2]);           // while the screen is black
     await fade.card([{ text: 'CHAPTER 2', color: '#ff8a1f', scale: 6 }, { text: 'THE ECHO EXCHANGE', color: '#ffd23a', scale: 3 }], BEATS.driveSeconds - 3.6); // held so the drive sound plays out under it
     await fade.in();
@@ -177,7 +241,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
   async function dealerScene() {
     locked = true;
     await dialogue.start('locker_open');
-    await new Promise((res) => echo.start('dex_secret', res));
+    await new Promise<void>((res) => echo.start('dex_secret', res));
     caseFile.setFlag('locker_done');
     await wait(0.6);
     const fixer = cast.byId.fixer, j = cast.byId.juno;
@@ -187,7 +251,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     await wait(0.8);
     await dialogue.start('fixer_deal');
     // He has said his piece: he walks out through the door and is gone, and Juno talks to herself about him and says she is ready for Hale.
-    const door = world.spot('dealer', 'door');
+    const door = world.spot('dealer', 'door')!;
     fixer.anim = 'walk'; fixer.facing = Math.atan2(door.x - fixer.position.x, door.z - fixer.position.z);
     const f0 = { x: fixer.position.x, z: fixer.position.z };
     await tween(BEATS.fixerLeave, (u) => { fixer.position.x = f0.x + (door.x - f0.x) * u; fixer.position.z = f0.z + (door.z - f0.z) * u; });
@@ -203,7 +267,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     locked = true;
     await fade.out();
     finale = true;
-    const out = world.exits.find((e) => e.id === 'dealer-out').spawn;
+    const out = world.exits.find((e) => e.id === 'dealer-out')!.spawn;
     world.jump('exchange', out);                                 // out of the shop, while the screen is black
     for (const id of ['aud1', 'aud2', 'aud3']) cast.byId[id].away = false;
     cast.apply();
@@ -215,9 +279,9 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
   }
 
   // Chapter 3: auditors pace their aisles until Juno phones in a fake threat; the desk computers, the lab keypad and the fake call.
-  const patrols = [];
-  function startPatrol(npc, route) { npc.follow = null; patrols.push({ npc, route, i: 1, pause: 0 }); }
-  function updatePatrols(dt) {
+  const patrols: { npc: CastMember; route: [number, number][]; i: number; pause: number }[] = [];
+  function startPatrol(npc: CastMember, route: [number, number][]) { npc.follow = null; patrols.push({ npc, route, i: 1, pause: 0 }); }
+  function updatePatrols(dt: number) {
     if (flag('aud_gone') || locked || dialogue.active) { for (const p of patrols) if (p.npc.anim === 'walk') p.npc.anim = 'idle'; return; }
     const [ox, oz] = origin('bureau');
     for (const p of patrols) {
@@ -229,10 +293,10 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     }
   }
   const fillers = (() => { const r = rng.fork('mail'), a = [...MAIL.filler]; for (let i = a.length - 1; i > 0; i--) { const j = r.int(0, i); [a[i], a[j]] = [a[j], a[i]]; } return a; })();
-  function useComputer(n) {
+  function useComputer(n: number) {
     if (locked) return;
     if (!flag('aud_gone')) { dialogue.start('aud_block').then(() => { if (flag('make_call') && !flag('aud_gone')) fakeCall(); }); return; }
-    const ranks = [1, 2, 3, 4], have = (k) => ranks.find((r) => flag(`pc${k}_r${r}`));
+    const ranks = [1, 2, 3, 4], have = (k: number) => ranks.find((r) => flag(`pc${k}_r${r}`));
     let rank = have(n);
     if (!rank) { rank = 1 + ranks.filter((k) => have(k)).length; caseFile.setFlag(`pc${n}_r${rank}`); }   // the 1st and 2nd computer she opens are filler, the 3rd always holds the code
     const mail = rank === 3 ? MAIL.code : fillers[n - 1];
@@ -241,7 +305,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
   async function fakeCall() {
     locked = true;
     await dialogue.start('fake_call');
-    const fd = world.spot('bureau', 'frontdoor'), auds = ['aud1', 'aud2', 'aud3'].map((id) => cast.byId[id]);
+    const fd = world.spot('bureau', 'frontdoor')!, auds = ['aud1', 'aud2', 'aud3'].map((id) => cast.byId[id]);
     patrols.length = 0;
     const from = auds.map((a) => [a.position.x, a.position.z]);
     await tween(BEATS.callWalk, (u) => auds.forEach((a, i) => {
@@ -254,12 +318,12 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     locked = false;
   }
   // The lab door is a doorway in the wall that the story keeps shut: a slab mesh plus solid cells in the collision grid, until the code is typed.
-  let labState = null;
+  let labState: boolean | null = null;
   function syncLabDoor() {
     const open = flag('lab_open');
     if (open === labState) return;
     labState = open;
-    const a = world.areas.bureau, g = a.collision?.grid, [ox, oz] = origin('bureau');
+    const a = world.areas.bureau as unknown as BureauArea, g = a.collision?.grid, [ox, oz] = origin('bureau');
     a.labDoor.visible = !open; a.labLed.material.color.set(open ? 0x5cf0a0 : 0xff3b4c);
     if (!g) return;
     for (let j = 0; j < g.nz; j++) for (let i = 0; i < g.nx; i++) {
@@ -270,17 +334,17 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
   async function labKeypad() {
     if (locked || flag('lab_open')) return;
     if (!flag('lab_code_found')) { dialogue.start('lab_sealed'); return; }
-    if (await terminal.keypad('Memory-audit lab', MAIL.code.items[0].body.match(/\{\{(\d+)\}\}/)[1])) caseFile.setFlag('lab_open');
+    if (await terminal.keypad('Memory-audit lab', MAIL.code.items[0].body.match(/\{\{(\d+)\}\}/)![1])) caseFile.setFlag('lab_open');
   }
 
   // Chapter 3: the three auditors walk Juno straight through the station to Hale's office. Slow, serious music (the area's own); the auditors stop at the office door.
-  const origin = (id) => world.areas[id].meta.origin;
+  const origin = (id: string) => world.areas[id].meta.origin as [number, number];
   async function bureauArrival() {
     locked = true;
     await fade.out();
     finale = false;
-    const [ox, oz] = origin('bureau'), at = (x, z) => [ox + x, oz + z], juno = cast.byId.juno, auds = ['aud1', 'aud2', 'aud3'].map((id) => cast.byId[id]);
-    const st = world.spot('bureau', 'start');
+    const [ox, oz] = origin('bureau'), at = (x: number, z: number): [number, number] => [ox + x, oz + z], juno = cast.byId.juno, auds = ['aud1', 'aud2', 'aud3'].map((id) => cast.byId[id]);
+    const st = world.spot('bureau', 'start')!;
     world.jump('bureau', [st.x, st.z, 0]);                       // Juno at the entrance (while the screen is black)
     auds.forEach((a, i) => { a.area = 'bureau'; a.away = false; a.anim = 'idle'; a.position.set(st.x + (i - 1) * 1.1, 0, st.z + 1.0 + (i === 1 ? 0.5 : 0)); a.facing = Math.PI; a.follow = { target: juno, dist: 1.5 + i * 0.7, speed: 3.2 }; });
     cast.apply();
@@ -288,7 +352,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     await fade.card([{ text: 'CHAPTER 3', color: '#1fd6e8', scale: 6 }, { text: 'THE BUREAU', color: '#ffffff', scale: 3 }], 1.2);
     await fade.in();
     await wait(0.6);
-    const leg = (x, z, max = 9) => { const [wx, wz] = at(x, z); return Promise.race([new Promise((res) => player.walkTo(new THREE.Vector3(wx, 0, wz), 0.4, res)), wait(max)]); }; // a leg gives up after `max` s if she snags
+    const leg = (x: number, z: number, max = 9) => { const [wx, wz] = at(x, z); return Promise.race([new Promise<void>((res) => player.walkTo(new THREE.Vector3(wx, 0, wz), 0.4, res)), wait(max)]); }; // a leg gives up after `max` s if she snags
     await leg(0.25, -3.2);                                       // up the middle aisle
     await leg(6.2, -3.2);                                        // east along the clear aisle between the desk rows
     await leg(6.2, -5.9);                                        // to Hale's door
@@ -325,30 +389,30 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     }
     for (const id of ['fixer', 'aud1', 'aud2', 'aud3']) cast.byId[id].away = true; // scripted people appear only in their scenes
     for (const x of EXAMINABLES) {
-      const s = world.spot(x.area, x.spot);
+      const s = world.spot(x.area, x.spot)!;
       interactions.add({ id: `ex:${x.id}`, area: x.area, position: new THREE.Vector3(s.x, 0, s.z), height: 1.0, verb: x.verb,
         onInteract: () => dialogue.start(x.conv) });
     }
-    for (const s of world.areas.street.spots.filter((p) => p.name === 'vending')) {
+    for (const s of world.areas.street.spots.filter((p: Spot) => p.name === 'vending')) {
       interactions.add({ id: 'vending', area: 'street', position: new THREE.Vector3(s.x, 0, s.z), height: 1.8, verb: 'Use', onInteract: () => dialogue.start(TALK.vending) });
     }
-    const lk = world.spot('dealer', 'locker');                // Dex's locker: the dealer must have seen the receipt first (flag locker_ok)
+    const lk = world.spot('dealer', 'locker')!;                // Dex's locker: the dealer must have seen the receipt first (flag locker_ok)
     interactions.add({ id: 'locker9', area: 'dealer', position: new THREE.Vector3(lk.x, 0, lk.z), height: 1.2, verb: 'Open Locker 9',
       onInteract: () => { if (locked || flag('locker_done')) return; if (flag('locker_ok')) dealerScene(); else dialogue.start('locker_shut'); } });
     for (const n of [7, 8, 10, 11]) {                         // the other lockers: not Juno's business
-      const l = world.spot('dealer', `locker${n}`);
+      const l = world.spot('dealer', `locker${n}`)!;
       interactions.add({ id: `locker${n}`, area: 'dealer', position: new THREE.Vector3(l.x, 0, l.z), height: 1.2, verb: `Look at Locker ${n}`, onInteract: () => { if (!locked) dialogue.start(`locker_${n}`); } });
     }
     for (let n = 1; n <= 4; n++) {                              // desk computers Juno can snoop on (chapter 3)
-      const c = world.spot('bureau', `pc${n}`);
+      const c = world.spot('bureau', `pc${n}`)!;
       interactions.add({ id: `pc${n}`, area: 'bureau', position: new THREE.Vector3(c.x, 0, c.z), height: 1.0, verb: 'Use the computer', onInteract: () => useComputer(n) });
     }
-    const ld = world.spot('bureau', 'labdoor');
+    const ld = world.spot('bureau', 'labdoor')!;
     interactions.add({ id: 'labdoor', area: 'bureau', position: new THREE.Vector3(ld.x, 0, ld.z), height: 1.2, verb: 'Use the keypad', onInteract: labKeypad });
     syncLabDoor();
-    const fd = world.spot('bureau', 'frontdoor');                // the Bureau's front door: locked until the deduction, then Juno slips out
+    const fd = world.spot('bureau', 'frontdoor')!;                // the Bureau's front door: locked until the deduction, then Juno slips out
     interactions.add({ id: 'bureau_door', area: 'bureau', position: new THREE.Vector3(fd.x, 0, fd.z), height: 1.2, verb: 'Try the door', onInteract: () => bureauSlip() });
-    const seat = world.spot('car', 'seat');
+    const seat = world.spot('car', 'seat')!;
     interactions.add({ id: 'chip', area: 'car', position: new THREE.Vector3(seat.x, 0, seat.z), height: 1.0, verb: "Slot Dex's chip",
       onInteract: () => { if (locked) return; if (flag('kit_coat') && flag('ex_capsule')) cliffhanger(); else dialogue.start('chip_early'); } });
     for (const b of cast.list) {
@@ -363,7 +427,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     }
   }
   // The worker stands on the street until the key deduction (the Sable clues put together), then he is at the hostel desk.
-  let kitPlace = null;
+  let kitPlace: string | null = null;
   function placeKit() {
     const b = cast.byId.kit, at = flag('key_deduced') ? 'hostel' : 'street';
     if (!b || kitPlace === at) return;
@@ -373,7 +437,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     b.area = at; b.position.set(h.x, b.position.y, h.z); b.facing = h.facing ?? 0;
     cast.apply();
   }
-  function afterTalk(b) {
+  function afterTalk(b: CastMember) {
     if (b.id === 'miso' && flag('miso_joined') && !b.follow) {   // Beat 2: Miso joins and trails Juno
       b.follow = { target: cast.byId.juno, ...BEATS.misoFollow };
       hud.toast('Miso is following you');
@@ -381,16 +445,16 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
   }
 
   // ---- Objectives ----
-  const spotXZ = (area, name) => { const s = world.spot(area, name); return s ? { x: s.x, z: s.z } : null; };
+  const spotXZ = (area: string, name: string) => { const s = world.spot(area, name); return s ? { x: s.x, z: s.z } : null; };
   const examined = () => EXAMINABLES.filter((x) => x.area === 'sable' && flag(`ex_${x.id}`)).length;
   const sableTotal = EXAMINABLES.filter((x) => x.area === 'sable').length;
-  const STEPS = [
+  const STEPS: Step[] = [
     { id: 'down', text: 'Take the stairs down to Lowmarket Street', area: 'street', done: () => flag('visited_street') },
     { id: 'sable', text: 'Find the Sable Noodle House', area: 'sable', done: () => flag('visited_sable') },
     { id: 'back', text: 'Look in the back room', area: 'sable', pos: () => spotXZ('sable', 'backroom'), done: () => flag('seen_backroom') },
     { id: 'examine', text: () => `Examine the scene (${examined()}/${sableTotal})`, area: 'sable',
       pos: () => { // the nearest clue you have not looked at yet
-        const left = EXAMINABLES.filter((x) => x.area === 'sable' && !flag(`ex_${x.id}`)).map((x) => spotXZ('sable', x.spot));
+        const left = EXAMINABLES.filter((x) => x.area === 'sable' && !flag(`ex_${x.id}`)).map((x) => spotXZ('sable', x.spot)!);
         return left.sort((a, b) => Math.hypot(a.x - player.position.x, a.z - player.position.z) - Math.hypot(b.x - player.position.x, b.z - player.position.z))[0];
       }, done: () => examined() >= sableTotal },
     { id: 'echo', text: 'Scan the room for an echo (F)', area: 'sable', pos: () => spotXZ('sable', 'echo'), done: () => caseFile.has('teo_back_room') },
@@ -416,14 +480,14 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     { id: 'station', text: () => (flag('lab_open') ? 'Find out what the Bureau has done to you' : flag('lab_code_found') ? 'Open the memory-audit lab (the keypad, east side)' : flag('aud_gone') ? 'Search the desk computers for the lab code' : 'Get the auditors away from the desks'), area: 'bureau', done: () => flag('bureau_deduced') },
     { id: 'slip', text: 'Slip out through the front door', area: 'bureau', pos: () => spotXZ('bureau', 'frontdoor'), done: () => false },
   ];
-  function markFor(step) {
+  function markFor(step: Step) {
     const here = world.current.id;
     if (step.area === here) return step.pos?.() ?? null;
     const ex = world.routeExit(here, step.area);
     return ex ? { x: ex.at[0], z: ex.at[1] } : null;
   }
 
-  const api = {
+  const api: Beats = {
     get locked() { return locked; },
     visits, // talks per person (a save game keeps them)
     get focus() { return focus; },
@@ -431,13 +495,13 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     answerCall() { answerWait?.(); answerWait = null; },
     get ending() { return ending; },
     get finale() { return finale; },
-    get beatNo() { return STEP_BEAT[STEPS.find((s) => !s.done())?.id] ?? 7; },
+    get beatNo() { return STEP_BEAT[STEPS.find((s) => !s.done())?.id as string] ?? 7; },
     beatTimes,
     cliffhanger, bureauArrival, // also for the ?hooks test driver
     dealerScene, outsideScene, // debug panel: play the chapter 2 ending
     // Debug. n = 2-7: start of chapter 1 beat n, with every clue Juno would hold by then. 8: Chapter 2 start (all chapter 1 clues). 9: Exchange with all six vendor clues.
     // 10: Exchange with every chapter 2 deduction done (dealer door open).
-    skipTo(n) {
+    skipTo(n: number) {
       caseFile.setFlag('visited_street'); fade.black = false; hud.show(); ending = finale = false;
       for (let k = 2; k <= Math.min(n, 7); k++) { SKIP[k].flags?.forEach((f) => caseFile.setFlag(f)); SKIP[k].add?.forEach((id) => caseFile.add(id)); }
       if (n < 8) { const e = world.exits.find((x) => x.to === SKIP[n].to); world.jump(SKIP[n].to, e ? e.spawn : null); return; }
@@ -447,20 +511,20 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
         for (const v of Object.values(TALK)) if (v.startsWith('vend_')) caseFile.setFlag(v);
       }
       if (n >= 10) for (const c of BOARD.conclusions) if (c.needs.every((f) => ENTRIES[f]?.ch2)) caseFile.apply(c.effects);
-      const sp = world.spot('exchange', 'start');
+      const sp = world.spot('exchange', 'start')!;
       world.jump('exchange', [sp.x, sp.z, Math.PI / 2]);
     },
-    setCamera(c) { cam = c; },
+    setCamera(c: BeatsCamera) { cam = c; },
     coldOpen,
     // Debug / ?start=<area>: skip the cold open and drop straight into an area.
     skipOpen() { caseFile.setFlag('visited_street'); fade.black = false; hud.show(); },
     register,
     // Called by main whenever the player changes area.
-    onEnter(area) {
+    onEnter(area: { id: string }) {
       caseFile.setFlag(`visited_${area.id}`);
       if (area.id === 'street' && !flag('toasted_street')) { caseFile.setFlag('toasted_street'); hud.toast('Lowmarket Street'); }
     },
-    update(dt) {
+    update(dt: number) {
       placeKit();
       syncLabDoor(); updatePatrols(dt);
       if (ringing && (ringing.t += dt) >= BEATS.ringEvery) { ringing.t = 0; sfx.phoneRing?.(); }

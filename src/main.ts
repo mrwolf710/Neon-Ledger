@@ -14,13 +14,13 @@ import { createCaseFile } from './game/casefile.ts';
 import { createDialogue } from './game/dialogue.ts';
 import { createEcho } from './game/echo.ts';
 import { createBoard } from './game/board.ts';
-import { createWorld } from './game/world.ts';
+import { createWorld, type Area, type Spawn } from './game/world.ts';
 import { createBeats } from './game/beats.ts';
 import { createTerminal } from './ui/terminal.ts';
 import { ENTRIES, BOARD } from './game/story.ts';
 import { createFade } from './ui/fade.ts';
 import { synth } from './audio/synth.ts';
-import { createSfx, surfaceAt } from './audio/sfx.ts';
+import { createSfx, surfaceAt, type UiSound } from './audio/sfx.ts';
 import { createMusic } from './audio/music.ts';
 import { createTitle } from './ui/title.ts';
 import { createTrailer, TRAILER } from './ui/trailer.ts';
@@ -53,7 +53,7 @@ const MAIN = {
 const Q = settings.quality;
 console.log('Neon Echoes', Q.name);
 
-const canvas = document.getElementById('game');
+const canvas = document.getElementById('game') as HTMLCanvasElement;
 const renderer = new THREE.WebGLRenderer({ canvas });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, Q.pixelRatio));
 renderer.shadowMap.enabled = true;
@@ -63,30 +63,30 @@ renderer.toneMappingExposure = MAIN.exposure;
 renderer.info.autoReset = false; // composer renders several passes; count the whole frame
 
 // Juno is the owner's own pixel art (public/sprites/juno). If it cannot load, the generated Juno stays.
-try { getSheets().juno = await loadJunoSheet(); } catch (e) { console.warn('Juno art not loaded, using the generated sprite:', e.message); }
+try { getSheets().juno = await loadJunoSheet(); } catch (e) { console.warn('Juno art not loaded, using the generated sprite:', (e as Error).message); }
 
-try { getSheets().mamaTeo = await loadTeoSheet(); } catch (e) { console.warn('Teo art not loaded, using the generated sprite:', e.message); }
+try { getSheets().mamaTeo = await loadTeoSheet(); } catch (e) { console.warn('Teo art not loaded, using the generated sprite:', (e as Error).message); }
 
-try { getSheets().preacher = await loadPriestSheet(); } catch (e) { console.warn('Priest art not loaded, using the generated sprite:', e.message); }
-try { getSheets().dex = await loadDexSheet(); } catch (e) { console.warn('Dex art not loaded, using the generated sprite:', e.message); }
+try { getSheets().preacher = await loadPriestSheet(); } catch (e) { console.warn('Priest art not loaded, using the generated sprite:', (e as Error).message); }
+try { getSheets().dex = await loadDexSheet(); } catch (e) { console.warn('Dex art not loaded, using the generated sprite:', (e as Error).message); }
 
-try { getSheets().vendor = await loadVendorSheet(); } catch (e) { console.warn('Vendor art not loaded, using the generated sprite:', e.message); }
-try { getSheets().tobbo = await loadKitSheet(MARKET1_ART); } catch (e) { console.warn('Tobbo art not loaded, using his borrowed sprite:', e.message); getSheets().tobbo = getSheets().walkerD; }
-try { getSheets().gutter = await loadKitSheet(MARKET3_ART); } catch (e) { console.warn('Gutter art not loaded, using his borrowed sprite:', e.message); getSheets().gutter = getSheets().walkerA; }
-try { getSheets().slate = await loadKitSheet(MARKET4_ART); } catch (e) { console.warn('Slate art not loaded, using their borrowed sprite:', e.message); getSheets().slate = getSheets().walkerD; }
-try { getSheets().ruth = await loadKitSheet(MARKET5_ART); } catch (e) { console.warn('Ruth art not loaded, using her borrowed sprite:', e.message); getSheets().ruth = getSheets().vendor; }
-try { getSheets().pim = await loadKitSheet(MARKET7_ART); } catch (e) { console.warn('Pim art not loaded, using their borrowed sprite:', e.message); getSheets().pim = getSheets().walkerC; }
-try { getSheets().dealer = await loadKitSheet(DEALER_ART); } catch (e) { console.warn('Dealer art not loaded, using their borrowed sprite:', e.message); getSheets().dealer = getSheets().walkerC; }
-try { getSheets().oyo = await loadKitSheet(MARKET6_ART); } catch (e) { console.warn('Oyo art not loaded, using his borrowed sprite:', e.message); getSheets().oyo = getSheets().walkerA; }
-try { const aud = await loadKitSheet(AUDITOR_ART); Object.assign(getSheets(), { aud1: aud, aud2: aud, aud3: aud }); } catch (e) { console.warn('Auditor art not loaded, using borrowed sprites:', e.message); Object.assign(getSheets(), { aud1: getSheets().walkerA, aud2: getSheets().walkerD, aud3: getSheets().walkerC }); }
-try { getSheets().walkerA = await loadWalkerSheet(); } catch (e) { console.warn('Walker art not loaded, using the generated sprite:', e.message); }
-try { getSheets().walkerB = await loadWalkerSheet(WALKER2_ART); } catch (e) { console.warn('Walker 2 art not loaded, using the generated sprite:', e.message); }
-try { getSheets().walkerC = await loadWalkerSheet(WALKER3_ART); } catch (e) { console.warn('Walker 3 art not loaded, using the generated sprite:', e.message); }
-try { getSheets().walkerD = await loadWalkerSheet(WALKER4_ART); } catch (e) { console.warn('Walker 4 art not loaded, using the generated sprite:', e.message); }
-try { getSheets().kit = await loadKitSheet(); } catch (e) { console.warn('Kit art not loaded, using the generated sprite:', e.message); }
-try { getSheets().miso = await loadCatSheet(); } catch (e) { console.warn('Cat art not loaded, using the generated sprite:', e.message); }
-try { getSheets().dexStanding = await loadDexStandSheet(); } catch (e) { console.warn('Standing Dex art not loaded, using the seated sprite:', e.message); }
-try { getSheets().hale = await loadHaleSheet(); } catch (e) { console.warn('Hale art not loaded, using the letter portrait:', e.message); }
+try { getSheets().vendor = await loadVendorSheet(); } catch (e) { console.warn('Vendor art not loaded, using the generated sprite:', (e as Error).message); }
+try { getSheets().tobbo = await loadKitSheet(MARKET1_ART); } catch (e) { console.warn('Tobbo art not loaded, using his borrowed sprite:', (e as Error).message); getSheets().tobbo = getSheets().walkerD; }
+try { getSheets().gutter = await loadKitSheet(MARKET3_ART); } catch (e) { console.warn('Gutter art not loaded, using his borrowed sprite:', (e as Error).message); getSheets().gutter = getSheets().walkerA; }
+try { getSheets().slate = await loadKitSheet(MARKET4_ART); } catch (e) { console.warn('Slate art not loaded, using their borrowed sprite:', (e as Error).message); getSheets().slate = getSheets().walkerD; }
+try { getSheets().ruth = await loadKitSheet(MARKET5_ART); } catch (e) { console.warn('Ruth art not loaded, using her borrowed sprite:', (e as Error).message); getSheets().ruth = getSheets().vendor; }
+try { getSheets().pim = await loadKitSheet(MARKET7_ART); } catch (e) { console.warn('Pim art not loaded, using their borrowed sprite:', (e as Error).message); getSheets().pim = getSheets().walkerC; }
+try { getSheets().dealer = await loadKitSheet(DEALER_ART); } catch (e) { console.warn('Dealer art not loaded, using their borrowed sprite:', (e as Error).message); getSheets().dealer = getSheets().walkerC; }
+try { getSheets().oyo = await loadKitSheet(MARKET6_ART); } catch (e) { console.warn('Oyo art not loaded, using his borrowed sprite:', (e as Error).message); getSheets().oyo = getSheets().walkerA; }
+try { const aud = await loadKitSheet(AUDITOR_ART); Object.assign(getSheets(), { aud1: aud, aud2: aud, aud3: aud }); } catch (e) { console.warn('Auditor art not loaded, using borrowed sprites:', (e as Error).message); Object.assign(getSheets(), { aud1: getSheets().walkerA, aud2: getSheets().walkerD, aud3: getSheets().walkerC }); }
+try { getSheets().walkerA = await loadWalkerSheet(); } catch (e) { console.warn('Walker art not loaded, using the generated sprite:', (e as Error).message); }
+try { getSheets().walkerB = await loadWalkerSheet(WALKER2_ART); } catch (e) { console.warn('Walker 2 art not loaded, using the generated sprite:', (e as Error).message); }
+try { getSheets().walkerC = await loadWalkerSheet(WALKER3_ART); } catch (e) { console.warn('Walker 3 art not loaded, using the generated sprite:', (e as Error).message); }
+try { getSheets().walkerD = await loadWalkerSheet(WALKER4_ART); } catch (e) { console.warn('Walker 4 art not loaded, using the generated sprite:', (e as Error).message); }
+try { getSheets().kit = await loadKitSheet(); } catch (e) { console.warn('Kit art not loaded, using the generated sprite:', (e as Error).message); }
+try { getSheets().miso = await loadCatSheet(); } catch (e) { console.warn('Cat art not loaded, using the generated sprite:', (e as Error).message); }
+try { getSheets().dexStanding = await loadDexStandSheet(); } catch (e) { console.warn('Standing Dex art not loaded, using the seated sprite:', (e as Error).message); }
+try { getSheets().hale = await loadHaleSheet(); } catch (e) { console.warn('Hale art not loaded, using the letter portrait:', (e as Error).message); }
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(MAIN.background);
@@ -112,7 +112,7 @@ const saves = createSaves();
 const title = createTitle(() => synth.start(), { saves, synth });
 const sfx = createSfx(synth), music = createMusic(synth);
 const hud = createHud(world.current.collision);
-const menu = createMenu({ synth, saves, snapshot: () => snapshotGame(), onLoad: (d) => loadGame(d) });
+const menu = createMenu({ synth, saves, snapshot: () => snapshotGame(), onLoad: (d) => loadGame(d as SaveData) });
 const tutorial = createTutorial(input);
 const railTrain = createRailTrain(world.areas.street.group, fog);
 const clock = createClock();
@@ -131,18 +131,18 @@ const STEAM = { hisses: 2, first: 0.4, every: [1.8, 3.6], puffs: 8, scale: 1.7, 
 const steamRng = rng.fork('trainsteam');
 let steamNext = -1, steamBursts = 0; // seconds to the next burst (-1 = the train has not stopped yet); bursts so far
 function trainSteam() { steamNext = STEAM.first; }
-function platformSteam(dt, areaId) {
+function platformSteam(dt: number, areaId: string) {
   const on = steamNext >= 0 && areaId === 'platform';
   particles.steamOn = on;
   if (!on) return;
   steamNext -= dt;
   if (steamNext > 0) return;
   steamNext = steamRng.range(STEAM.every[0], STEAM.every[1]);
-  const [sx, sz] = world.areas.platform.trainStop;
+  const [sx, sz] = world.areas.platform.trainStop!;
   if (steamBursts++ < STEAM.hisses) sfx.steamHiss(); // only the first couple of bursts hiss, when the train has just pulled in
   for (let j = 0; j < STEAM.puffs; j++) setTimeout(() => particles.puff(sx - STEAM.back + steamRng.range(-0.8, 0.8), steamRng.range(STEAM.y[0], STEAM.y[1]), sz + steamRng.range(STEAM.z[0], STEAM.z[1]), STEAM.scale, steamRng.range(-0.5, 0.05)), j * 110); // out of the rear section, on the platform side where the camera sees it
 }
-let deadTone = null; // the low tone held under the cliffhanger
+let deadTone: ReturnType<typeof synth.tone> | null = null; // the low tone held under the cliffhanger
 const terminal = createTerminal({ sfx });
 const beats = createBeats({ terminal, trainSteam, input, world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, echo,
   deadHour: () => { tod.setTimeOfDay('blackout', 0.5); lights.scale = 0.3; deadTone = synth.tone({ freq: 55, type: 'sine', dur: 40, vol: 0.3, attack: 2.5, release: 4, bus: 'music' }); }, // beat 7: signs die
@@ -151,7 +151,7 @@ const beats = createBeats({ terminal, trainSteam, input, world, cast, caseFile, 
   setExposure: (v) => { renderer.toneMappingExposure = MAIN.exposure * v; }, setVhs: (a) => post.setVhs(a), setCrt: (a) => { post.setCrt(a); crtFrame.set(a); fade.cardScale(crtFrame.ratio); } });
 beats.setCamera(cam);
 beats.register();
-let phaseId = '', sunsetT = null, lastAreaId = null, cameFromSable = false;
+let phaseId = '', sunsetT: number | null = null, lastAreaId: string | null = null, cameFromSable = false;
 const issues = issuesOn ? createIssues({ input, toast: (t) => hud.toast(t), context: () => ({
   area: world.current.id, place: world.placeAt(player.position.x, player.position.z).name, pos: [+player.position.x.toFixed(1), +player.position.z.toFixed(1)],
   objective: document.querySelector('#hud .objective span')?.textContent ?? '', clock: clock.text, quality: settings.tier, build: typeof __BUILD__ === 'undefined' ? 'dev' : __BUILD__,
@@ -172,9 +172,10 @@ function snapshotGame() {
   };
   return data;
 }
-function loadGame(s) {
+type SaveData = NonNullable<ReturnType<typeof snapshotGame>>;
+function loadGame(s: SaveData) {
   if (beats.locked || dialogue.active) { hud.toast("Can't load during a scene"); return; }
-  const num = (n) => Number.isFinite(n);
+  const num = (n: unknown) => Number.isFinite(n);
   if (!s || s.v !== 1 || !world.areas[s.area] || !Array.isArray(s.pos) || !s.pos.every(num) || !num(s.minutes) || !num(s.facing)
     || !s.board || !Array.isArray(s.board.solved) || !Array.isArray(s.board.edges) || !Array.isArray(s.board.tries)
     || !s.miso || !Array.isArray(s.miso.pos) || !s.miso.pos.every(num) || !s.caseFile || typeof s.visits !== 'object') { hud.toast('Save is damaged'); return; }
@@ -195,8 +196,8 @@ function loadGame(s) {
   hud.toast('Game loaded');
 }
 title.started.then(() => {
-  if (trailerOn) { beats.skipOpen(); const q = new URLSearchParams(location.search); setTimeout(() => trailer.start(Math.max(0, (parseInt(q.get('trailer')) || 1) - 1)), (parseFloat(q.get('delay')) || 8) * 1000); return; } // 8 s head start (press a key, then start recording); ?delay=N changes it
-  if (title.save) { beats.skipOpen(); loadGame(title.save); return; }
+  if (trailerOn) { beats.skipOpen(); const q = new URLSearchParams(location.search); setTimeout(() => trailer.start(Math.max(0, (parseInt(q.get('trailer') ?? '') || 1) - 1)), (parseFloat(q.get('delay') ?? '') || 8) * 1000); return; } // 8 s head start (press a key, then start recording); ?delay=N changes it
+  if (title.save) { beats.skipOpen(); loadGame(title.save as SaveData); return; }
   if (startParam && world.areas[startParam]) {
     beats.skipOpen();
     const sp = world.spot(startParam, 'start'); world.jump(startParam, world.exits.find((x) => x.to === startParam)?.spawn ?? (sp ? [sp.x, sp.z, Math.PI / 2] : null)); // areas with no door in (the Exchange) use their 'start' spot
@@ -209,7 +210,7 @@ phaseId = clock.phase.id;
 tod.setTimeOfDay(phaseId);
 
 // What changes when the player moves to another area: collision, who is drawn, what can be used, rain, the minimap.
-function onAreaEnter(area, spawn) {
+function onAreaEnter(area: Area, spawn: Spawn | undefined) {
   player.setCollision(area.collision);
   hud.setCollision(area.collision);
   if (area.id !== 'platform') sfx.trainStop(); // the train's idle hum ends when Juno leaves the station
@@ -244,16 +245,18 @@ tod.onFlicker = (i) => sfx.crackle(street.signs[i].light.position);
 
 // ?hooks exposes the game objects for the headless test driver (scripts/drive.mjs eval: steps).
 if (new URLSearchParams(location.search).has('hooks')) {
-  const nl = window.__nl = { terminal, interactions, trainSteam, CUTAWAY, fade, crtFrame, music, input, tutorial, menu, title, snapshotGame, loadGame, saves, menu, sfx, synth, cam, world, player, beats, caseFile, dialogue, cast, echo, hud, clock, board, THREE };
+  const hooks = { terminal, interactions, trainSteam, CUTAWAY, fade, crtFrame, music, input, tutorial, menu, title, snapshotGame, loadGame, saves, sfx, synth, cam, world, player, beats, caseFile, dialogue, cast, echo, hud, clock, board, THREE };
+  const nl = Object.assign(hooks, { look: (_a: string, _x: number, _z: number, _d?: number): string => '', lookSpot: (_a: string, _n: string, _d?: number): string => '', lookCast: (_i: string, _d?: number): string => '' });
+  window.__nl = nl;
   // Visual tour helpers: stand the player d units from a point (camera side) in any area, as in play, so the cutaway applies.
-  nl.look = (areaId, x, z, d = 1.8) => {
+  nl.look = (areaId: string, x: number, z: number, d = 1.8) => {
     const b = world.areas[areaId].bounds, dx = (b.x0 + b.x1) / 2 - x, dz = (b.z0 + b.z1) / 2 - z, len = Math.hypot(dx, dz) || 1;
     world.jump(areaId, [x + (dx / len) * d, z + (dz / len) * d, Math.atan2(-dx, -dz)]);
     cam.follow(player.position, true);
     return `${areaId} ${x.toFixed(1)},${z.toFixed(1)}`;
   };
-  nl.lookSpot = (areaId, name, d) => { const q = world.spot(areaId, name); return nl.look(areaId, q.x, q.z, d); };
-  nl.lookCast = (id, d) => { const b = cast.byId[id]; return nl.look(b.area, b.position.x, b.position.z, d); };
+  nl.lookSpot = (areaId: string, name: string, d?: number) => { const q = world.spot(areaId, name)!; return nl.look(areaId, q.x, q.z, d); };
+  nl.lookCast = (id: string, d?: number) => { const b = cast.byId[id]; return nl.look(b.area, b.position.x, b.position.z, d); };
 }
 const debug = createDebugPanel(renderer, rng.seed);
 if (new URLSearchParams(location.search).has('sprites')) showSprites(getSheets());
@@ -265,7 +268,7 @@ debug.heading('Jump to a point in the story (with the clues you would hold)');
 debug.select('jump to', { '': '-', ...STORY_JUMPS }, '', (n) => { if (n) { beats.skipTo(+n); solveHeld(); } });
 debug.heading('Scenes');
 debug.button('Play the chapter 1 ending', () => { beats.skipTo(7); solveHeld(); beats.cliffhanger(); });
-debug.button('Chapter 2: dealer shop, receipt shown (then open Locker 9)', () => { beats.skipTo(10); solveHeld(); caseFile.setFlag('locker_ok'); const s = world.exits.find((e) => e.id === 'dealer-door').spawn; world.jump('dealer', s); });
+debug.button('Chapter 2: dealer shop, receipt shown (then open Locker 9)', () => { beats.skipTo(10); solveHeld(); caseFile.setFlag('locker_ok'); const s = world.exits.find((e) => e.id === 'dealer-door')!.spawn; world.jump('dealer', s); });
 debug.heading('Case file');
 debug.button('Give every clue (ch1 + ch2)', () => { for (const id of Object.keys(ENTRIES)) caseFile.add(id); solveHeld(); });
 debug.button('Chapter 3: the auditors walk Juno into the Bureau', () => beats.bureauArrival());
@@ -274,7 +277,7 @@ debug.button('Show a case-file toast', () => hud.toast('Case file updated'));
 debug.extra = () => `beat ${beats.beatNo}  ${beats.beatTimes.map((s, i) => (s ? `${i + 1}:${Math.round(s)}s` : '')).filter(Boolean).join(' ')}`;
 
 debug.tab('World');
-const labels = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, v.name ?? v.label]));
+const labels = (o: Record<string, { name?: string; label?: string }>) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, (v.name ?? v.label)!]));
 debug.heading('Place and time');
 debug.select('go to', Object.fromEntries(Object.entries(world.areas).map(([id, a]) => [id, a.meta.name])), world.current.id, (id) => {
   const e = world.exits.find((x) => x.to === id);
@@ -294,7 +297,7 @@ debug.heading('Music track');
 let musicForce = '';
 debug.select('play track', { '': 'auto (by area)', street: 'street', station: 'station', scene: 'scene', echo: 'echo', board: 'board', finale: 'finale (ch1 ending)', bazaar: 'bazaar (Exchange)', dealer: 'dealer (implant shop)', silent: 'silent' }, '', (v) => { musicForce = v; if (v) music.setMood(v, 0.4); });
 debug.heading('Sound effects');
-debug.select('play sfx', { '': '-', phoneRing: 'phone ring', trainNow: 'street train pass', carDrive: 'Juno drives to the market', trainArrive: 'platform train arriving', comms: 'Hale comms', override: 'Hale override alarm', stinger: 'reveal stinger', move: 'ui move', confirm: 'ui confirm', back: 'ui back', case: 'ui case', linkOk: 'link ok', linkWrong: 'link wrong', echoOn: 'echo on', echoOff: 'echo off', glitch: 'glitch' }, '', (v) => { if (!v) return; if (sfx[v]) sfx[v](); else sfx.ui(v); });
+debug.select('play sfx', { '': '-', phoneRing: 'phone ring', trainNow: 'street train pass', carDrive: 'Juno drives to the market', trainArrive: 'platform train arriving', comms: 'Hale comms', override: 'Hale override alarm', stinger: 'reveal stinger', move: 'ui move', confirm: 'ui confirm', back: 'ui back', case: 'ui case', linkOk: 'link ok', linkWrong: 'link wrong', echoOn: 'echo on', echoOff: 'echo off', glitch: 'glitch' }, '', (v) => { if (!v) return; const fx = (sfx as unknown as Record<string, (() => void) | undefined>)[v]; if (fx) fx.call(sfx); else sfx.ui(v as UiSound); });
 
 debug.tab('Graphics');
 const pu = () => post.applyUniforms();
@@ -331,7 +334,7 @@ function resize() {
   cam.camera.updateProjectionMatrix();
 }
 window.addEventListener('resize', resize);
-canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); renderer.setAnimationLoop(null); setTimeout(() => location.reload(), 500); }); // ponytail: reload instead of rebuilding GPU state
+canvas.addEventListener('webglcontextlost', (e: Event) => { e.preventDefault(); renderer.setAnimationLoop(null); setTimeout(() => location.reload(), 500); }); // ponytail: reload instead of rebuilding GPU state
 resize();
 
 let last = performance.now();
@@ -394,7 +397,7 @@ renderer.setAnimationLoop((now) => {
   else if (dialogue.active) { if (!cfWasOpen) dialogue.update(dt, input); }
   else if (!cfWasOpen && !bdWasOpen && !board.isOpen && !terminal.isOpen && free) {
     if (input.pressed('echo')) echo.tryStart(player.position);
-    else if (input.pressed('interact')) interactions.current?.onInteract();
+    else if (input.pressed('interact')) interactions.current?.onInteract?.();
   }
   if (!paused && !echoWas && !echo.active) echo.update(dt, input, cam.yaw, area.lights, 0, player.position); // markers + fade-out while idle
   if (!paused) beats.update(dt);
@@ -421,7 +424,7 @@ renderer.setAnimationLoop((now) => {
     people: cast.list.filter((b) => b.id !== 'juno' && !b.ambient && b.root.visible).map((b) => ({ x: b.position.x, z: b.position.z })),
   });
   if (input.pressed('music')) { synth.setMusicOn(!synth.musicOn); hud.toast(synth.musicOn ? 'Music on' : 'Music off'); }
-  music.setMood(musicForce ? musicForce : trailer.active ? trailer.mood : beats.finale ? 'finale' : beats.ending ? 'silent' : echo.active ? 'echo' : board.isOpen ? 'board' : place.mood, trailer.active ? 0.25 : beats.finale ? 0.4 : undefined);
+  music.setMood(musicForce ? musicForce : trailer.active ? trailer.mood : beats.finale ? 'finale' : beats.ending ? 'silent' : echo.active ? 'echo' : board.isOpen ? 'board' : place.mood as string, trailer.active ? 0.25 : beats.finale ? 0.4 : undefined);
   sfx.setEcho(echo.active);
   sfx.update(dt, {
     player: player.position, yaw: cam.yaw, signs: area.id === 'street' ? street.signs : [],
@@ -432,7 +435,7 @@ renderer.setAnimationLoop((now) => {
   if (sunsetT !== null && !modal) sunsetT += dt;
   tod.sunset = sunsetT === null ? 0 : (1 - Math.min(1, sunsetT / tod.sunsetSeconds)) ** 1.5;
   tod.update(dt);
-  if (trailer.active && TRAILER.void) { scene.background.setRGB(0, 0, 0); scene.fog.color.setRGB(0, 0, 0); } // trailer: no lit haze around the street
+  if (trailer.active && TRAILER.void) { (scene.background as THREE.Color).setRGB(0, 0, 0); scene.fog!.color.setRGB(0, 0, 0); } // trailer: no lit haze around the street
   platformSteam(dt, area.id);
   particles.update(dt, cam.target, cam.camera);
   cast.update(dt, cam.yaw, area.lights);
