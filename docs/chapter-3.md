@@ -1,5 +1,7 @@
 # Chapter 3: the Civic Audit Bureau station (planning notes, agreed with the owner)
 
+Hale is a woman (she/her). Use she/her for Hale in text, dialogue and comments.
+
 Chapter 2 ends with three auditors taking Juno in. Chapter 3 starts at the Bureau station: a real hub she can walk around, mostly empty (a late night shift). Story beats are not decided yet.
 
 ## The station (first pass built: area `bureau`, view with `?start=bureau`; not connected to the story yet)
@@ -9,7 +11,7 @@ Chapter 2 ends with three auditors taking Juno in. Chapter 3 starts at the Burea
 - Spots: start (entrance), hale, chair, cell1, archive.
 
 ## Built (headless-checked)
-- The end of chapter 2 no longer shows a "coming soon" card: after the auditors' talk it fades to a CHAPTER 3 / THE BUREAU card, then Juno is at the station entrance with the three auditors, who walk her up the middle aisle and through the aisle between the desks to Hale's office (beats.bureauArrival; each leg gives up after 9 s if she snags). Hale (his own sprite) stands facing the door. PLACEHOLDER dialogue `hale_office` (Hale: "Sit down, Juno." / "Auditors. Wait outside.") and `hale_talk`; the auditors step back into the hall; control returns and the station is hers to walk. Debug panel button runs the scene.
+- The end of chapter 2 no longer shows a "coming soon" card: after the auditors' talk it fades to a CHAPTER 3 / THE BUREAU card, then Juno is at the station entrance with the three auditors, who walk her up the middle aisle and through the aisle between the desks to Hale's office (beats.bureauArrival; each leg gives up after 9 s if she snags). Hale (her own sprite) stands facing the door. PLACEHOLDER dialogue `hale_office` (Hale: "Sit down, Juno." / "Auditors. Wait outside.") and `hale_talk`; the auditors step back into the hall; control returns and the station is hers to walk. Debug panel button runs the scene.
 - The city shows through the windows: dense towers right behind the glass, lit windows in cyan, amber, red and a little pink.
 - Music (area mood `bureau`, music.js): slow, serious, restrained: a low drone, a two-chord pad changing every 12 s, one soft high note now and then. Nothing else.
 

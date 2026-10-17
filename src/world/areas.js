@@ -363,7 +363,7 @@ function bureau(M, rng) {
   }
   for (const x of BUREAU.columns.xs) for (const z of BUREAU.columns.zs) { b.box(M.walls[1], 0.6, H5 - 0.4, 0.6, x, (H5 - 0.4) / 2, z); b.block(x, z, 0.6, 0.6); }
   b.box(signMat('CIVIC AUDIT BUREAU', 0x2a6b72, true), 6.4, 0.8, 0.1, -4, 3.9, hz0 + 0.1, 0, 0, false);              // a sign on the north wall's inside
-  // --- Hale's office (north-east): his desk, chair, shelves and a sofa. Warm light, the only warm room.
+  // --- Hale's office (north-east): her desk, chair, shelves and a sofa. Warm light, the only warm room.
   const hx = (wx0 + wx1) / 2, hz = (R.hale[0] + R.hale[1]) / 2;
   b.box(PM.wood, 2.6, 0.9, 1.1, hx + 1.0, 0.45, hz - 0.6); b.box(M.metal, 2.7, 0.06, 1.2, hx + 1.0, 0.93, hz - 0.6); b.block(hx + 1.0, hz - 0.6, 2.6, 1.1);
   b.box(M.frame, 0.9, 0.55, 0.05, hx + 1.0, 1.25, hz - 0.95); b.box(cool, 0.8, 0.45, 0.03, hx + 1.0, 1.26, hz - 0.92);   // the monitor
