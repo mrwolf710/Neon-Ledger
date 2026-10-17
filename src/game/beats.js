@@ -309,6 +309,8 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     if (!flag('bureau_deduced')) { dialogue.start('bureau_locked'); return; }
     locked = true;
     await dialogue.start('bureau_slip');
+    sfx.phoneRing?.(); await wait(BEATS.ringEvery * 0.6); sfx.phoneRing?.(); await wait(BEATS.ringEvery * 0.6); sfx.phoneAnswer?.(); // Hale calls as Juno steps out
+    await dialogue.start('hale_threat');
     caseFile.setFlag('hale_hunting');
     await fade.out();
     fade.card([{ text: 'END OF CHAPTER 3', color: '#ffffff', scale: 5 }, { text: 'CHAPTER 4: LOWMARKET AT DAWN - COMING SOON', color: '#1fd6e8', scale: 3 }, { text: 'TAP OR PRESS ANY BUTTON', color: '#8a8aa8', scale: 2 }], 3600);

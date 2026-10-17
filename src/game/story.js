@@ -85,7 +85,7 @@ export const MAIL = {
     { from: 'Facilities', subject: 'Reminder: cleaning rota', body: "The cleaners will not enter the lab or the cells. Please keep your own area tidy." },
   ] },
 };
-export const ALARM_CONVS = new Set(['hale_end', 'car_reply']); // Hale's forced call at the end of chapter 1: the dialogue and portrait boxes turn red
+export const ALARM_CONVS = new Set(['hale_end', 'car_reply', 'hale_threat']); // Hale's forced call at the end of chapter 1: the dialogue and portrait boxes turn red
 // What a speaker is called right now: an alias replaces the name once its flag is set.
 export const speakerName = (id, flag) => { const s = SPEAKERS[id]; return !s ? id : s.alias && flag?.(s.alias.flag) ? s.alias.name : s.name; };
 // Rules from the editor: [{ conv, npc, when: 'all' | '1'..'4' (4 = the 4th visit on), fact?: a fact Juno must know, talked?: a person she must already have talked to }].
@@ -452,6 +452,16 @@ export const CONVERSATIONS = {
   bureau_slip: { start: 'a', nodes: {
     a: { speaker: 'juno', text: "(Her account, her initials, my schedule. If I stay till dawn she'll put me back in that chair and I'll lose all of this.)", next: 'b' },
     b: { speaker: 'juno', text: "(The door isn't locked for me. It's locked for her to find me. Not tonight.)", end: true },
+  } },
+  // Chapter 3 end: as Juno slips out, Hale calls, warm and calm, and makes the threat to Teo and Kit. Juno resolves to warn them (chapter 4).
+  hale_threat: { start: 'a', nodes: {
+    a: { speaker: 'hale', text: "Juno. You left without saying goodnight. I'm not angry. I was worried.", next: 'b' },
+    b: { speaker: 'juno', text: 'Hale.', next: 'c' },
+    c: { speaker: 'hale', text: "I've asked a few auditors to look in on Mama Teo and that nervous boy at the hostel. For their safety, you understand. You know how Lowmarket is after dark.", next: 'd' },
+    d: { speaker: 'juno', text: 'Leave them out of this.', next: 'e' },
+    e: { speaker: 'hale', text: "Come home, Juno, and nobody needs looking in on. I'll be waiting.", next: 'f' },
+    f: { speaker: 'juno', text: "(Dead line. 'For their safety.' The same voice that locked my door.)", next: 'g' },
+    g: { speaker: 'juno', text: "(Teo. Kit. They're in this because of me. I have to warn them and get them out of Lowmarket before her auditors reach the Sable.)", end: true },
   } },
   nobody: { start: 'a', nodes: { a: { speaker: 'juno', text: 'Nothing to say yet.', end: true } } },
 };

@@ -8,3 +8,5 @@ Decided with the owner:
 - **Ending:** a call from the fixer leads Juno to the pachinko parlor (chapter 5, one intermediary scene), then the fixer's tower.
 
 Still open: the exact patrol route and sight rules (does being seen fail the sneak, or just cost a conversation?), the fixer's name and corporation, what the dawn visit's one clue is (the story bible mentions a Line 9 platform clue tying Juno's lost hours to Hale), the lines for Teo and Kit, the parlor intermediary.
+
+**Built (end of chapter 3):** as Juno slips out, her phone rings (beats.bureauSlip) and Hale calls, warm and calm: she has sent auditors to look in on Mama Teo and the nervous boy at the hostel, for their safety (story hale_threat, red alarm UI). Juno resolves to warn them and get them out of Lowmarket. Chapter 4 starts from that.
