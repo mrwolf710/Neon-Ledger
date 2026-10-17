@@ -25,7 +25,12 @@ export function createCaseFile(hud, clock) {
   const list = document.createElement('div'); list.className = 'cf-list'; box.appendChild(list);
   const foot = document.createElement('div'); foot.className = 'cf-foot'; box.appendChild(foot);
 
-  const entries = (kind) => [...known.values()].filter((e) => e.kind === kind).sort((a, b) => a.order - b.order);
+  const all = (kind) => [...known.values()].filter((e) => e.kind === kind).sort((a, b) => a.order - b.order);
+  // The chapter Juno is in: 1, then 2 once chapter 1 is done (flag chapter1_done), then 3 once the auditors have her (flag auditors_done). Entries carry ch2: true for chapter 2.
+  const chapterNow = () => (flags.has('auditors_done') ? 3 : flags.has('chapter1_done') ? 2 : 1);
+  const chapterOf = (e) => (e.ch ?? (e.ch2 ? 2 : 1));
+  // While presenting evidence in a conversation, only this chapter's facts are offered, so older chapters never crowd the list.
+  const entries = (kind) => (present && kind === 'facts' ? all(kind).filter((e) => chapterOf(e) === chapterNow()) : all(kind));
 
   function render() {
     tabsEl.replaceChildren(...TABS.map(([k, label]) => {
