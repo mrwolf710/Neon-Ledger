@@ -85,3 +85,4 @@
 - Collision slide keeps full speed along walls (collision.move). loadGame validates the save. Chunk > 500 kB warning. Rail deck hits buildings near x=17. NPCs don't block Juno. Point lights cast no shadows. Mobile shadows may be heavy. iPhone test: npm run dev -- --host (Network URL, Safari landscape).
 
 - Exchange errand (clean favour): Gutter's locker_rental clue needs a swap. vend_gutter (story.js) gives a cracked lens (flags gutter_asked, has_lens); conversationFor('bolt') returns bolt_trade while has_lens && !has_coil (sets has_coil); Gutter then gives the fact. Items are flags only, named in Juno's asides.
+- Memory lab reader (ex_reader) is the chapter 3 climax: Hale's login on every wipe + a voice note; it also sets bureau_deduced (front door unlocks) so Juno leaves at once. The board's runs_through_hale deduction remains optional proof.

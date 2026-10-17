@@ -54,7 +54,7 @@ export const ENTRIES = {
   locker_rented: { ch2: true, kind: 'facts', title: "Dex rented a locker at the implant dealer's", text: 'Locker 9: a spare implant stored in the shop.', source: 'Deduction board' },
   echo_at_dealer: { ch2: true, kind: 'facts', title: "The echo is in a locker at the dealer's shop", text: "Hidden where only the dealer's reader can open it.", source: 'Deduction board' },
   // Chapter 3 (the Bureau) clues and conclusions (ch: 3)
-  wipe_signature: { ch: 3, kind: 'facts', title: 'A wipe signature in my implant', text: 'The reader shows a clean 47-minute cut with a wipe signature, and the same mark on the edges of older gaps.', source: 'Memory-audit lab' },
+  wipe_signature: { ch: 3, kind: 'facts', title: 'Hale ran every wipe', text: "The reader's log shows a clean 47-minute cut with a wipe signature on my implant, the same mark on every older gap, and one operator login: Hale's. A voice note says: 'Standard story.'", source: 'Memory-audit lab' },
   clean_closes: { ch: 3, kind: 'facts', title: 'Thirty-one cases, thirty-one clean closes', text: 'My file: every case closed inside a day, none with a witness statement.', source: 'Echo archive' },
   line9_arrival: { ch: 3, kind: 'facts', title: 'Every case starts the same minute on Line 9', text: 'The duty roster logs me stepping off a train at 22:40 before each case. Thirty-one times.', source: 'A desk roster' },
   override_signed: { ch: 3, kind: 'facts', title: "An override request, signed on Hale's account", text: 'Code VALE-07, signed out at 23:05, the night Dex died.', source: "Hale's terminal" },
@@ -196,7 +196,15 @@ export const CONVERSATIONS = {
   ex_lamp: examine('lamp', null, 'The corner lamp is smashed, glass swept toward the door. Someone wanted the room dark.', 'Smashed on purpose. Dark room, quiet exit.'),
   ex_kitgear: examine('kitgear', null, "A locked shelf behind the desk. Signal jammers, a stripped implant reader, an override damper, Bureau-grade, and a door-breaker with the serial filed off. Collector's pieces, and none of it cheap.", "Kit's collection. He's proud of it."),
   // Chapter 3 clues in the Bureau.
-  ex_reader: examine('reader', 'wipe_signature', "The reader wakes at my touch. My implant log: 23:10 to 23:57, a clean cut with a wipe signature. The same mark sits on the edges of older gaps, every one of them.", 'The reader. The same mark, again and again.'),
+  // The memory lab reader: the proof that Hale herself ran every wipe. It ends the investigation (flag bureau_deduced unlocks the front door); Juno leaves at once.
+  ex_reader: { start: [{ if: { flag: 'ex_reader' }, node: 'again' }, { node: 'a' }], nodes: {
+    a: { speaker: 'juno', text: 'The reader wakes at my touch. My implant log: 23:10 to 23:57, a clean cut with a wipe signature. The same mark sits on the edge of every older gap.', next: 'b', effects: [{ addFact: 'wipe_signature' }, { setFlag: 'ex_reader' }] },
+    b: { speaker: 'juno', text: "Operator: HALE, V. Every session, my case number, the same login. Director Hale, on this reader, every single time.", next: 'c' },
+    c: { speaker: 'hale', text: "(A voice note, her voice.) Subject Vale, session complete. Standard story. She wakes on the platform believing she lost an hour.", next: 'd' },
+    d: { speaker: 'juno', text: "(Not a clerk. Not a system. Her. She sat in this chair, held me under, and walked me to the train.)", next: 'e' },
+    e: { speaker: 'juno', text: "(The reader logged my touch. She'll know within minutes. I'm not waiting for dawn.)", end: true, effects: [{ setFlag: 'bureau_deduced' }] },
+    again: { speaker: 'juno', text: 'HALE, V. Operator, every time.', end: true },
+  } },
   ex_archive: examine('archive', 'clean_closes', "My case file. Thirty-one cases, every one closed inside a day, not one witness statement. Thirty-one clean closes.", 'Thirty-one cases. Thirty-one clean closes.'),
   ex_roster: examine('roster', 'line9_arrival', "A Line 9 duty roster. Every one of my cases begins with me stepping off a train at 22:40. The same minute, thirty-one times.", 'Same train, same minute. Every time.'),
   ex_haledesk: examine('haledesk', 'override_signed', "Hale's terminal, left unlocked. An override request for code VALE-07, signed out on her account at 23:05. The night Dex died.", "Her account. 23:05. VALE-07."),
@@ -450,7 +458,7 @@ export const CONVERSATIONS = {
   hale_talk: { start: 'a', nodes: { a: { speaker: 'hale', text: "Rest, Juno. The doors are locked until dawn. It's for your own good.", end: true } } },
   // Chapter 3 end: Juno slips out through the front door once she has put it together.
   bureau_slip: { start: 'a', nodes: {
-    a: { speaker: 'juno', text: "(Her account, her initials, my schedule. If I stay till dawn she'll put me back in that chair and I'll lose all of this.)", next: 'b' },
+    a: { speaker: 'juno', text: "(Her login on the reader, her initials on the override, my schedule. If I stay till dawn she'll put me back in that chair and I'll lose all of this.)", next: 'b' },
     b: { speaker: 'juno', text: "(The door isn't locked for me. It's locked for her to find me. Not tonight.)", end: true },
   } },
   // Chapter 3 end: as Juno slips out, Hale calls, warm and calm, and makes the threat to Teo and Kit. Juno resolves to warn them (chapter 4).
