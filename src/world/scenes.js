@@ -3,7 +3,7 @@
 // def = what the game normally uses at night (shown as the starting point in the editor).
 export const SCENES = {
   street: 'Lowmarket Street', platform: 'Line 9 Platform', sable: 'Sable Noodle House',
-  alley: 'Alley behind the Sable', hostel: "Capsule Hostel", car: "Juno's Car", exchange: 'The Echo Exchange', dealer: 'Implant dealer',
+  alley: 'Alley behind the Sable', hostel: "Capsule Hostel", car: "Juno's Car", exchange: 'The Echo Exchange', bureau: 'Civic Audit Bureau', dealer: 'Implant dealer',
 };
 
 export const SCENE_KEYS = [
