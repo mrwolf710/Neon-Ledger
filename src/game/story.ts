@@ -1,9 +1,20 @@
-import EDITS from './dialogue-edits.json' with { type: 'json' }; // made in /editor.html (dev server): text changes and new conversations, laid over the text below
+import EDITS_JSON from './dialogue-edits.json' with { type: 'json' };
+import type { BoardData, Choice, Conversation, ConversationContext, DialogueNode, EchoData, Entries, Examinable, Hotspot, Rule, Speaker, StartBranch } from '../types.ts';
+// The editor's file: reserved _keys plus, for every other key, text changes to one conversation's nodes (node id -> new text / speaker / choice texts).
+interface NodeEdit { text?: string; speaker?: string; choices?: Record<string, string> }
+interface EditsFile {
+  _rules?: Rule[]; _visits?: Record<string, string[]>; _talk?: Record<string, string>;
+  _new?: Record<string, { lines: { speaker: string; text: string }[]; active?: boolean; with: string }>;
+  _insert?: { conv: string; after: string; id: string; speaker: string; text: string }[];
+  _graph?: Record<string, { start: string | StartBranch[]; nodes: Record<string, DialogueNode> }>;
+  [conversation: string]: unknown;
+}
+const EDITS = EDITS_JSON as unknown as EditsFile; // made in /editor.html (dev server): text changes and new conversations, laid over the text below
 
 // Story content as plain data: speakers, people, facts, echoes and conversations. Stage 9 writes content here only.
 // The dialogue format is documented in NOTES.md.
 
-export const SPEAKERS = {
+export const SPEAKERS: Record<string, Speaker> = {
   juno: { name: 'Juno', color: '#1fd6e8' },
   mamaTeo: { name: 'Mama Teo', color: '#e0217d' },
   kit: { name: 'Worker', alias: { flag: 'kit_named', name: 'Kit' }, color: '#f2a93b' }, // the hostel worker is just "Worker" until the board names him (flag kit_named)
@@ -25,7 +36,7 @@ export const SPEAKERS = {
 };
 
 // Case file entries. kind decides the tab: people | facts | echoes. source = where Juno learned it.
-export const ENTRIES = {
+export const ENTRIES: Entries = {
   mamaTeo: { kind: 'people', title: 'Mama Teo', text: 'Runs the Sable Noodle House. Sees everyone who comes and goes.', source: 'Lowmarket Street' },
   teo_back_room: { kind: 'echoes', title: "Mama Teo's echo: the back room", text: "Six seconds from Mama Teo's implant, the night Dex died. Two voices, one of them cut off.", source: "Mama Teo's implant" },
   two_voices: { kind: 'facts', title: "Two voices in the echo", text: "Mama Teo's echo holds two voices. Only Dex is accounted for. The other never came through the front door.", source: "Echo: Mama Teo's back room, 02.0" },
@@ -68,7 +79,7 @@ export const ENTRIES = {
 };
 
 // Which conversation each talkable thing starts. Missing ids fall back to FALLBACK.
-export const TALK = { prisoner: 'prisoner_talk', dealer: 'dealer_talk', mamaTeo: 'teo', vending: 'vending', miso: 'miso', vendor: 'vendor', preacher: 'preacher', kit: 'kit',
+export const TALK: Record<string, string> = { prisoner: 'prisoner_talk', dealer: 'dealer_talk', mamaTeo: 'teo', vending: 'vending', miso: 'miso', vendor: 'vendor', preacher: 'preacher', kit: 'kit',
   vesper: 'vend_vesper', mari: 'vend_mari', lux: 'vend_lux', tobbo: 'vend_tobbo', gutter: 'vend_gutter', pim: 'vend_pim', oyo: 'vend_oyo', ruth: 'vend_ruth', slate: 'vend_slate', jinx: 'vend_jinx', bolt: 'vend_bolt', petra: 'vend_petra' };
 export const FALLBACK = 'nobody';
 // Desk computers (chapter 3). The first two Juno opens show filler mail, the third holds the lab code, later ones are filler again (beats.js decides by order).
@@ -87,21 +98,21 @@ export const MAIL = {
 };
 export const ALARM_CONVS = new Set(['hale_end', 'car_reply']); // Hale's forced call at the end of chapter 1: the dialogue and portrait boxes turn red
 // What a speaker is called right now: an alias replaces the name once its flag is set.
-export const speakerName = (id, flag) => { const s = SPEAKERS[id]; return !s ? id : s.alias && flag?.(s.alias.flag) ? s.alias.name : s.name; };
+export const speakerName = (id: string, flag?: (f: string) => boolean): string => { const s = SPEAKERS[id]; return !s ? id : s.alias && flag?.(s.alias.flag) ? s.alias.name : s.name; };
 // Rules from the editor: [{ conv, npc, when: 'all' | '1'..'4' (4 = the 4th visit on), fact?: a fact Juno must know, talked?: a person she must already have talked to }].
 // Ones with conditions are tried first; the first that fits wins, else the visit lists below, else the game's own TALK.
-export const RULES = EDITS._rules ?? [];
+export const RULES: Rule[] = EDITS._rules ?? [];
 // Which conversation plays on each visit, from the editor (older format): VISITS[personId] = [1st, 2nd, 3rd, 4th and later]; '' = the normal one (TALK).
-export const VISITS = EDITS._visits ?? {};
+export const VISITS: Record<string, string[]> = EDITS._visits ?? {};
 // Flags set by the end of conversations made in the editor (matched by id; the last line of the conversation gets them).
 const TEO_POINTS = 'Mama_Teo_Points_to_Capsule_Hotel';
 const DONE_EFFECTS = { Capsule_after_Teo: [{ setFlag: 'kit_paid' }], Mama_Teo_Points_to_Capsule_Hotel: [{ setFlag: 'teo_pointed' }, { setFlag: 'teo_cracked' }] };
-export function conversationFor(personId, visit, ctx = {}) {
+export function conversationFor(personId: string, visit: number, ctx: ConversationContext = {}): string {
   if (personId === 'bolt' && ctx.flag?.('has_lens') && !ctx.flag('has_coil')) return 'bolt_trade'; // the errand: Gutter's cracked lens for Bolt's relay coil
   if (personId === 'mamaTeo' && ctx.has?.('kit_outside') && !ctx.has('kit_name')) return 'teo_worker'; // the worker's echo is in the case file: Teo names him
   if (personId === 'kit' && !ctx.flag?.('key_deduced')) return 'kit_hey'; // he is out on the street until the Sable clues are put together: he only says hello
   if (personId === 'kit' && ctx.flag?.('kit_paid')) return ctx.flag('kit_deduced') ? 'kit' : 'kit_wait'; // once paid: a short line until the board names him, then the interview
-  const fits = (r) => r.npc === personId && (r.when === 'all' || (r.when === '4' ? visit >= 4 : +r.when === visit))
+  const fits = (r: Rule) => r.npc === personId && (r.when === 'all' || (r.when === '4' ? visit >= 4 : +r.when === visit))
     && (!r.fact || ctx.has?.(r.fact)) && (!r.talked || ctx.talked?.(r.talked));
   const rules = RULES.filter((r) => !(r.conv === TEO_POINTS && ctx.flag?.('teo_pointed'))); // Teo points to the hostel once, not on every visit
   const hit = rules.filter((r) => r.fact || r.talked).find(fits) ?? rules.filter((r) => !r.fact && !r.talked).find(fits);
@@ -122,7 +133,7 @@ const TEO_QUESTIONS = [
 
 // Things Juno can examine. spot: a named spot in that area (areas.js). conv: a conversation below (built by examine()).
 // Beat 3 counts the five in the Sable.
-export const EXAMINABLES = [
+export const EXAMINABLES: Examinable[] = [
   { id: 'body', area: 'sable', spot: 'body', verb: 'Examine', conv: 'ex_body' },
   { id: 'port', area: 'sable', spot: 'port', verb: 'Examine', conv: 'ex_port' },
   { id: 'cups', area: 'sable', spot: 'cups', verb: 'Examine', conv: 'ex_cups' },
@@ -137,7 +148,7 @@ export const EXAMINABLES = [
 ];
 
 // One-line examine conversation: Juno speaks, adds the fact and sets the flag ex_<id>; examining again gives a shorter line.
-const examine = (id, fact, text, again) => ({
+const examine = (id: string, fact: string | null, text: string, again: string): Conversation => ({
   start: [{ if: { flag: `ex_${id}` }, node: 'again' }, { node: 'a' }],
   nodes: {
     a: { speaker: 'juno', text, effects: [...(fact ? [{ addFact: fact }] : []), { setFlag: `ex_${id}` }], end: true },
@@ -146,8 +157,8 @@ const examine = (id, fact, text, again) => ({
 });
 
 // Chapter 2 vendor talk. lines: [speaker, text, fact?]; the clue (addFact) comes on the line that carries it; the flag vend_<id> makes later visits play `again`.
-const vendorTalk = (id, lines, again) => {
-  const nodes = {};
+const vendorTalk = (id: string, lines: [string, string, string?][], again: string): Conversation => {
+  const nodes: Record<string, DialogueNode> = {};
   lines.forEach(([sp, text, fact], i) => {
     const last = i === lines.length - 1, effects = [...(fact ? [{ addFact: fact }] : []), ...(last ? [{ setFlag: `vend_${id}` }] : [])];
     nodes[`n${i}`] = { speaker: sp, text, ...(effects.length ? { effects } : {}), ...(last ? { end: true } : { next: `n${i + 1}` }) };
@@ -155,7 +166,7 @@ const vendorTalk = (id, lines, again) => {
   nodes.again = { speaker: id, text: again, end: true };
   return { start: [{ if: { flag: `vend_${id}` }, node: 'again' }, { node: 'n0' }], nodes };
 };
-const VENDOR_TALK = {
+const VENDOR_TALK: Record<string, { again: string; lines: [string, string, string?][] }> = {
   vesper: { again: 'I said no, and I meant it. Move along.', lines: [
     ['juno', "I'm looking into Dex Morrow. Broker, like you."], ['vesper', 'Dex. Dead, I hear. He came by three days ago with an echo he swore would make us both rich.'],
     ['vesper', 'One look at the tag and I said no. Too hot. He just laughed and took it back.', 'echo_refused'], ['juno', 'Too hot how?'], ['vesper', "The kind that gets people deleted. That's all you get, auditor."]] },
@@ -181,7 +192,7 @@ const VENDOR_TALK = {
   petra: { again: 'Please, I only sell flowers.', lines: [['petra', "Don't arrest me, they're plastic! Buy one or please keep moving."], ['petra', 'The real ones died with the old market. Now it is plastic and echoes.']] },
 };
 
-export const CONVERSATIONS = {
+export const CONVERSATIONS: Record<string, Conversation> = {
   // Beat 1: Hale on comms as Juno steps off the train.
   hale_open: { start: 'a', nodes: {
     a: { speaker: 'hale', text: "Vale. Lowmarket, the Sable Noodle House. A broker's dead and his implant is fried.", next: 'a2' },
@@ -458,7 +469,7 @@ export const CONVERSATIONS = {
 
 // Conversations made in the editor: lines play in order; active ones become what the person says when Juno talks to them.
 for (const [id, d] of Object.entries(EDITS._new ?? {})) {
-  const nodes = {};
+  const nodes: Record<string, DialogueNode> = {};
   d.lines.forEach((l, i) => { nodes[`n${i}`] = { speaker: l.speaker, text: l.text, ...(i < d.lines.length - 1 ? { next: `n${i + 1}` } : { end: true }) }; });
   CONVERSATIONS[id] = { start: 'n0', nodes };
   if (d.active) TALK[d.with] = id;
@@ -467,21 +478,21 @@ for (const [npc, c] of Object.entries(EDITS._talk ?? {})) TALK[npc] = c; // set 
 for (const x of EDITS._insert ?? []) { // lines added after an existing box (editor): the new box takes over the old box's next / end
   const c = CONVERSATIONS[x.conv], n = c?.nodes[x.after];
   if (!n) continue;
-  const added = { speaker: x.speaker, text: x.text };
+  const added: DialogueNode = { speaker: x.speaker, text: x.text };
   if (n.end) { added.end = true; delete n.end; } else if (n.next) added.next = n.next;
   n.next = x.id;
-  const ordered = {};
+  const ordered: Record<string, DialogueNode> = {};
   for (const [k, v] of Object.entries(c.nodes)) { ordered[k] = v; if (k === x.after) ordered[x.id] = added; }
   c.nodes = ordered;
 }
 for (const [conv, nodes] of Object.entries(EDITS)) {
-  if (conv === '_new' || conv === '_insert') continue;
-  for (const [id, f] of Object.entries(nodes)) {
+  if (conv.startsWith('_')) continue; // _new, _insert, _graph, _layout ... are not text edits
+  for (const [id, f] of Object.entries(nodes as Record<string, NodeEdit>)) {
     const n = CONVERSATIONS[conv]?.nodes[id];
     if (!n) continue; // the node no longer exists
     if (f.text !== undefined) n.text = f.text;
     if (f.speaker !== undefined) n.speaker = f.speaker;
-    for (const [i, t] of Object.entries(f.choices ?? {})) if (n.choices?.[i]) n.choices[i] = { ...n.choices[i], text: t };
+    for (const [i, t] of Object.entries(f.choices ?? {})) { const c = n.choices?.[+i]; if (n.choices && c) n.choices[+i] = { ...c, text: t } as Choice; }
   }
 }
 
@@ -493,7 +504,7 @@ for (const [id, eff] of Object.entries(DONE_EFFECTS)) {
 for (const [id, g] of Object.entries(EDITS._graph ?? {})) CONVERSATIONS[id] = { start: g.start, nodes: g.nodes };
 
 // Echo hotspots: where F starts an echo. at: [x, z] or { spot, dx, dz } relative to a named batch spot.
-export const HOTSPOTS = [
+export const HOTSPOTS: Hotspot[] = [
   { id: 'teo_back_room', area: 'sable', echo: 'teo_back_room', at: { spot: 'echo' }, radius: 2.6 },
   { id: 'alley_echo', area: 'alley', echo: 'alley_echo', at: { spot: 'echo', dx: 0, dz: 0 }, radius: 2.4 },
   { id: 'dex_backup', area: 'car', echo: 'dex_backup', at: { spot: 'seat' }, radius: 1, hidden: true }, // beat 7, played by beats.js (no marker, no F)
@@ -506,7 +517,7 @@ export const HOTSPOTS = [
 //    positions interpolate linearly between keys; facing defaults to the direction of travel; two keys at nearly the same t make a jump.
 //  voices: [{ t0, t1, speaker: SPEAKERS id, text }] shown as captions. seams: [t] where the memory was edited (stutter + tear).
 //  tags: [{ t, window, fact: ENTRIES id, label }] the player can tag while the playhead is within t +- window.
-export const ECHOES = {
+export const ECHOES: Record<string, EchoData> = {
   teo_back_room: {
     title: "Mama Teo's view", owner: 'mamaTeo', entry: 'teo_back_room', duration: 6,
     tracks: [
@@ -596,7 +607,7 @@ export const ECHOES = {
 //  { id, needs: [factId, ...], result: ENTRIES fact id shown as the conclusion card, line: Juno's line when it locks in, effects }.
 //  Optional requires: [factId] = facts Juno must also hold before the pair is offered. A pair locks on one link; a trio needs links that connect all three. Wrong links snap back with a line from wrongLines;
 //  every 3rd wrong link that touches a conclusion's facts makes Juno hint at one it still needs ({fact} = its title).
-export const BOARD = {
+export const BOARD: BoardData = {
   wrongLines: ["That doesn't connect.", 'No. Those two have nothing to do with each other.', 'Close, maybe. But no.', "Not like that."],
   partialLine: 'That fits. There has to be more to it.',
   hintLine: 'I keep coming back to “{fact}”.',
