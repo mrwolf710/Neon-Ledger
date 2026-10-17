@@ -306,7 +306,9 @@ export const BUREAU = {
   rooms: { hale: [-9, -3], cells: [-3, 3], lab: [3, 9] },            // the wing's z ranges
   winH: 5, pier: 0.8, bay: 4,                  // window wall height, pier width, spacing between piers
   desks: { xs: [-11, -6.5, -2, 2.5], zs: [-6, -2, 2], w: 2.0, d: 0.9 },
-  columns: { xs: [-8.75, -4.25, 0.25], zs: [-4, 0] },                 // evenly spaced interior columns (on top of the window piers)
+  columns: { xs: [-8, -2, 4], zs: [-4] },                              // the only columns: three, evenly spaced down the middle aisle
+  mullion: 3,                                                          // spacing of the thin window bars (no pier columns)
+  screenOn: 0.75,                                                      // share of desk monitors that are switched on (night shift, mostly empty)
   skyline: { towers: 46, from: 7, to: 40 },   // how many towers and how far out (outside the window walls)
   colors: { cool: 0x1fd6e8, white: 0xdfeaff, alarm: 0xff3b4c, warm: 0xf2a93b },
 };
@@ -316,25 +318,15 @@ function bureau(M, rng) {
   const cool = lit(C.cool), alarm = lit(C.alarm), warm = lit(C.warm), floorMat = M.walls[2];
   floor(b, floorMat, hx0, hz0, wx1, hz1);
   // --- Tall window walls on the far sides (north z = hz0, west x = hx0): piers, a sill, a head beam and a mullion in each bay. Open between, so the skyline shows.
-  const H5 = BUREAU.winH, P = BUREAU.pier;
-  for (let x = hx0; x <= wx1 + 0.01; x += BUREAU.bay) {
-    b.box(M.walls[1], P, H5, P, x, H5 / 2, hz0 - P / 2); b.block(x, hz0 - P / 2, P, P);
-    if (x < wx1 - 0.01) { const cx = x + BUREAU.bay / 2;
-      b.box(M.frame, BUREAU.bay - P, 0.9, 0.3, cx, 0.45, hz0 - 0.15); b.block(cx, hz0 - 0.15, BUREAU.bay - P, 0.3);   // sill
-      b.box(M.frame, BUREAU.bay - P, 0.5, 0.3, cx, H5 - 0.25, hz0 - 0.15);                                          // head beam
-      b.box(M.frame, 0.08, H5 - 1.4, 0.08, cx, 0.9 + (H5 - 1.4) / 2, hz0 - 0.15);                                    // mullion
-      b.box(cool, BUREAU.bay - P - 0.2, 0.05, 0.05, cx, 0.95, hz0 - 0.3);                                            // a thin light along the sill
-    }
-  }
-  for (let z = hz0; z <= hz1 + 0.01; z += 4.5) {
-    b.box(M.walls[1], P, H5, P, hx0 - P / 2, H5 / 2, z); b.block(hx0 - P / 2, z, P, P);
-    if (z < hz1 - 0.01) { const cz = z + 2.25;
-      b.box(M.frame, 0.3, 0.9, 4.5 - P, hx0 - 0.15, 0.45, cz); b.block(hx0 - 0.15, cz, 0.3, 4.5 - P);
-      b.box(M.frame, 0.3, 0.5, 4.5 - P, hx0 - 0.15, H5 - 0.25, cz);
-      b.box(M.frame, 0.08, H5 - 1.4, 0.08, hx0 - 0.15, 0.9 + (H5 - 1.4) / 2, cz);
-      b.box(cool, 0.05, 0.05, 4.5 - P - 0.2, hx0 - 0.3, 0.95, cz);
-    }
-  }
+  const H5 = BUREAU.winH, P = BUREAU.pier, Mu = BUREAU.mullion;
+  // One continuous glass wall per side: a low sill, a head beam and thin mullions only (no columns), so the skyline shows through.
+  const wide = wx1 - hx0, long = hz1 - hz0;
+  b.box(M.frame, wide, 0.9, 0.3, (hx0 + wx1) / 2, 0.45, hz0 - 0.15); b.block((hx0 + wx1) / 2, hz0 - 0.15, wide, 0.3); b.box(M.frame, wide, 0.4, 0.3, (hx0 + wx1) / 2, H5 - 0.2, hz0 - 0.15);
+  for (let x = hx0 + Mu; x < wx1; x += Mu) b.box(M.frame, 0.08, H5 - 1.3, 0.08, x, 0.9 + (H5 - 1.3) / 2, hz0 - 0.15);
+  b.box(cool, wide - 0.4, 0.04, 0.04, (hx0 + wx1) / 2, 0.93, hz0 - 0.32);
+  b.box(M.frame, 0.3, 0.9, long, hx0 - 0.15, 0.45, (hz0 + hz1) / 2); b.block(hx0 - 0.15, (hz0 + hz1) / 2, 0.3, long); b.box(M.frame, 0.3, 0.4, long, hx0 - 0.15, H5 - 0.2, (hz0 + hz1) / 2);
+  for (let z = hz0 + Mu; z < hz1; z += Mu) b.box(M.frame, 0.08, H5 - 1.3, 0.08, hx0 - 0.15, 0.9 + (H5 - 1.3) / 2, z);
+  b.box(cool, 0.04, 0.04, long - 0.4, hx0 - 0.32, 0.93, (hz0 + hz1) / 2);
   // --- The city outside: a skyline of dark towers with lit windows, beyond the north and west window walls.
   const jr = rng.fork('skyline'), tw = [PM.crates[1], M.walls[1], M.metal];
   for (let i = 0; i < BUREAU.skyline.towers; i++) {
@@ -356,21 +348,22 @@ function bureau(M, rng) {
   for (let z = R.hale[0] + 0.5; z < R.hale[1]; z += 1.2) if (!(z > R.hale[0] + 2.3 && z < R.hale[0] + 3.9)) b.box(M.frame, 0.05, 1.3, 0.05, wx0, 1.65, z);
   b.box(M.frame, 0.06, 0.06, R.hale[1] - R.hale[0] - 0.4, wx0, 2.3, (R.hale[0] + R.hale[1]) / 2 - 0.2);
   // --- The main hall: rows of desks with chairs and glowing monitors; the desks face the north windows.
-  const D = BUREAU.desks;
+  const D = BUREAU.desks, sr = rng.fork('screens');
   for (const z of D.zs) for (const x of D.xs) {
     b.box(PM.wood, D.w, 0.08, D.d, x, 0.78, z); for (const sx of [-1, 1]) b.box(PM.pole, 0.07, 0.76, D.d - 0.1, x + sx * (D.w / 2 - 0.08), 0.38, z); b.block(x, z, D.w, D.d);
-    b.box(M.frame, 0.7, 0.45, 0.05, x, 1.05, z - 0.25); b.box(cool, 0.62, 0.37, 0.03, x, 1.06, z - 0.22);            // monitor, screen toward the chair
+    b.box(M.frame, 0.7, 0.45, 0.05, x, 1.05, z - 0.25); if (sr.rand() < BUREAU.screenOn) b.box(cool, 0.62, 0.37, 0.03, x, 1.06, z - 0.22);   // monitor, screen toward the chair (some are off)
     b.box(M.metal, 0.5, 0.03, 0.18, x, 0.83, z + 0.1);                                                              // keyboard
     b.box(PM.vendBody, 0.5, 0.08, 0.5, x + 0.1, 0.5, z + 0.95, 0, 0.15); b.box(PM.vendBody, 0.5, 0.55, 0.07, x + 0.1, 0.8, z + 1.2, 0, 0.15); b.block(x + 0.1, z + 1.0, 0.5, 0.5); // chair
   }
-  for (const x of BUREAU.columns.xs) for (const z of BUREAU.columns.zs) { b.box(M.walls[1], 0.6, H5 - 0.4, 0.6, x, (H5 - 0.4) / 2, z); b.box(cool, 0.04, H5 - 1, 0.04, x + 0.31, H5 / 2, z + 0.31); b.block(x, z, 0.6, 0.6); }
-  b.box(signMat('CIVIC AUDIT BUREAU', P_COOL, true), 6.4, 0.8, 0.1, -4, 3.9, hz0 + 0.1, 0, 0, false);              // a sign on the north wall's inside
+  for (const x of BUREAU.columns.xs) for (const z of BUREAU.columns.zs) { b.box(M.walls[1], 0.6, H5 - 0.4, 0.6, x, (H5 - 0.4) / 2, z); b.block(x, z, 0.6, 0.6); }
+  b.box(signMat('CIVIC AUDIT BUREAU', 0x2a6b72, true), 6.4, 0.8, 0.1, -4, 3.9, hz0 + 0.1, 0, 0, false);              // a sign on the north wall's inside
   // --- Hale's office (north-east): his desk, chair, shelves and a sofa. Warm light, the only warm room.
   const hx = (wx0 + wx1) / 2, hz = (R.hale[0] + R.hale[1]) / 2;
   b.box(PM.wood, 2.6, 0.9, 1.1, hx + 1.0, 0.45, hz - 0.6); b.box(M.metal, 2.7, 0.06, 1.2, hx + 1.0, 0.93, hz - 0.6); b.block(hx + 1.0, hz - 0.6, 2.6, 1.1);
-  b.box(M.frame, 0.9, 0.55, 0.05, hx + 1.0, 1.25, hz - 0.95); b.box(warm, 0.8, 0.45, 0.03, hx + 1.0, 1.26, hz - 0.92);
+  b.box(M.frame, 0.9, 0.55, 0.05, hx + 1.0, 1.25, hz - 0.95); b.box(cool, 0.8, 0.45, 0.03, hx + 1.0, 1.26, hz - 0.92);   // the monitor
+  b.box(M.frame, 0.12, 0.35, 0.12, hx + 2.0, 1.1, hz - 0.75); b.box(warm, 0.3, 0.12, 0.3, hx + 2.0, 1.34, hz - 0.75);    // the desk lamp
   b.box(PM.vendBody, 0.7, 0.1, 0.7, hx + 1.0, 0.55, hz + 0.4); b.box(PM.vendBody, 0.7, 0.7, 0.1, hx + 1.0, 0.95, hz + 0.75); b.block(hx + 1.0, hz + 0.5, 0.7, 0.7);
-  b.box(PM.wood, 3.0, 1.9, 0.35, hx - 1.2, 0.95, R.hale[0] + 0.45); b.block(hx - 1.2, R.hale[0] + 0.45, 3.0, 0.35); b.box(warm, 2.7, 0.04, 0.04, hx - 1.2, 1.15, R.hale[0] + 0.66);
+  b.box(PM.wood, 3.0, 1.9, 0.35, hx - 1.2, 0.95, R.hale[0] + 0.45); b.block(hx - 1.2, R.hale[0] + 0.45, 3.0, 0.35);
   b.box(PM.vendBody, 2.0, 0.5, 0.8, hx - 2.4, 0.25, hz + 1.9); b.block(hx - 2.4, hz + 1.9, 2.0, 0.8);
   // --- Holding cells (east): three cells behind bars; a bench and a dull red light in each. The corridor in front stays open.
   const cx0 = wx0 + 5, cn = R.cells[1] - R.cells[0];
@@ -380,7 +373,6 @@ function bureau(M, rng) {
     b.box(M.metal, 0.12, 0.12, cn / 3, cx0, 2.4, zc); b.block(cx0, z0 + 0.25, 0.2, 0.5); b.block(cx0, z1 - 0.25, 0.2, 0.5); // bars block either side of a 1-unit doorway
     if (i < 2) { b.box(M.walls[1], wx1 - cx0, 1.0, T, (cx0 + wx1) / 2, 0.5, z1); b.block((cx0 + wx1) / 2, z1, wx1 - cx0, T); }
     b.box(PM.vendBody, 2.2, 0.4, 0.6, wx1 - 1.2, 0.2, zc); b.box(alarm, 0.4, 0.04, 0.4, cx0 + 0.9, 0.04, zc);
-    b.light(C.alarm, 7, wx1 - 1.5, 2.2, zc);
   }
   // --- Memory-audit lab (south-east): a reader chair under a halo ring, a console with three screens on the north wall.
   const lx = (wx0 + wx1) / 2, lz = (R.lab[0] + R.lab[1]) / 2 + 0.6;
@@ -391,9 +383,11 @@ function bureau(M, rng) {
   for (let i = 0; i < 3; i++) { const z = 4.2 + i * 1.5; b.box(M.metal, 0.5, 1.8, 1.3, hx0 + 0.45, 0.9, z); b.block(hx0 + 0.45, z, 0.5, 1.3); for (let k = 0; k < 5; k++) b.box(k % 2 ? cool : warm, 0.04, 0.12, 1.0, hx0 + 0.72, 0.3 + k * 0.34, z); }
   for (let i = 0; i < 2; i++) { const x = -13.2 + i * 2.6 + 1.0; b.box(M.metal, 1.5, 1.8, 0.5, x + 0.4, 0.9, hz1 - 0.45); b.block(x + 0.4, hz1 - 0.45, 1.5, 0.5); for (let k = 0; k < 5; k++) b.box(k % 2 ? warm : cool, 1.2, 0.12, 0.04, x + 0.4, 0.3 + k * 0.34, hz1 - 0.72); }
   table(b, PM, -11.5, 6.2, 1.6, 0.9);
-  // --- Lights (kept few for the iPhone): hall (cool white over the aisles), then one in each room.
-  for (const [x, z] of [[-10, -6], [-3, -6], [4, -4], [-10, 0], [-3, 1], [4, 2]]) b.light(C.white, 12, x, 3.8, z);
-  b.light(C.warm, 12, hx, 2.6, hz); b.light(C.cool, 12, lx, 2.8, lz); b.light(C.cool, 8, -11.5, 2.4, 6.2); b.light(C.cool, 8, 0, 3.0, 8);
+  // --- Lights (kept few for the iPhone): the screens are the light. Dim cyan pools at the desk clusters, one lamp and one screen glow in Hale's office,
+  // the lab's screens, a dull red wash for the cells and the archive racks' faint glow. No ceiling lamps.
+  for (const [x, z] of [[-11, -5.3], [-4, -5.3], [3, -5.3], [-11, -1.3], [-4, -1.3], [3, -1.3]]) b.light(C.cool, 5, x, 1.5, z);
+  b.light(C.warm, 6, hx + 2.0, 1.6, hz - 0.75); b.light(C.cool, 3, hx + 1.0, 1.4, hz - 0.5);
+  b.light(C.cool, 6, lx, 2.0, lz - 1.0); b.light(C.alarm, 6, wx1 - 2.0, 2.0, (R.cells[0] + R.cells[1]) / 2); b.light(C.cool, 4, -11.5, 2.0, 6.2);
   b.spot('start', 0, 7.4); b.spot('hale', hx + 1.0, hz + 0.4); b.spot('chair', lx, lz + 0.9); b.spot('cell1', wx1 - 1.2, R.cells[0] + cn / 6); b.spot('archive', -11.5, 5.0);
   return finish('bureau', b, [hx0, hz0, wx1, hz1]);
 }

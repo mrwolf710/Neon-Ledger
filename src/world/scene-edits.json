@@ -32,11 +32,11 @@
   },
   "bureau": {
     "sunset": 0,
-    "sky": "#0a1426",
-    "fog": "#122238",
+    "sky": "#03050b",
+    "fog": "#070e1a",
     "fogDensity": 0.003,
     "moonColor": "#9fd0ff",
-    "hemi": 1.0,
+    "hemi": 0.38,
     "saturation": 1.05,
     "lift": [
       0,
@@ -48,8 +48,8 @@
       1.02,
       1.12
     ],
-    "lightScale": 2.0,
+    "lightScale": 1.6,
     "rain": 0,
-    "bloom": 0.7
+    "bloom": 0.8
   }
 }
