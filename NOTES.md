@@ -83,3 +83,5 @@
 - Finale echo (dex_backup) plays in the Sable back room (beats.cliffhanger world.enter sable, echo, world.enter car; ghost coords are sable x 150+). Dex's keys turn him to follow the visitor (story.js); beats.cliffhanger swings the camera round to Juno's front from echo second BEATS.reveal.from over .seconds (cam.set({yaw}), focus on her ghost), then restores the view. cam.set fields are optional.
 ## Known issues
 - Collision slide keeps full speed along walls (collision.move). loadGame validates the save. Chunk > 500 kB warning. Rail deck hits buildings near x=17. NPCs don't block Juno. Point lights cast no shadows. Mobile shadows may be heavy. iPhone test: npm run dev -- --host (Network URL, Safari landscape).
+
+- Exchange errand (clean favour): Gutter's locker_rental clue needs a swap. vend_gutter (story.js) gives a cracked lens (flags gutter_asked, has_lens); conversationFor('bolt') returns bolt_trade while has_lens && !has_coil (sets has_coil); Gutter then gives the fact. Items are flags only, named in Juno's asides.

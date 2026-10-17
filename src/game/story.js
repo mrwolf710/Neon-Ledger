@@ -97,6 +97,7 @@ export const VISITS = EDITS._visits ?? {};
 const TEO_POINTS = 'Mama_Teo_Points_to_Capsule_Hotel';
 const DONE_EFFECTS = { Capsule_after_Teo: [{ setFlag: 'kit_paid' }], Mama_Teo_Points_to_Capsule_Hotel: [{ setFlag: 'teo_pointed' }, { setFlag: 'teo_cracked' }] };
 export function conversationFor(personId, visit, ctx = {}) {
+  if (personId === 'bolt' && ctx.flag?.('has_lens') && !ctx.flag('has_coil')) return 'bolt_trade'; // the errand: Gutter's cracked lens for Bolt's relay coil
   if (personId === 'mamaTeo' && ctx.has?.('kit_outside') && !ctx.has('kit_name')) return 'teo_worker'; // the worker's echo is in the case file: Teo names him
   if (personId === 'kit' && !ctx.flag?.('key_deduced')) return 'kit_hey'; // he is out on the street until the Sable clues are put together: he only says hello
   if (personId === 'kit' && ctx.flag?.('kit_paid')) return ctx.flag('kit_deduced') ? 'kit' : 'kit_wait'; // once paid: a short line until the board names him, then the interview
@@ -168,9 +169,6 @@ const VENDOR_TALK = {
   tobbo: { again: "That's all I heard. Cables are three for ten.", lines: [
     ['juno', 'Did you see Dex tonight?'], ['tobbo', 'Earlier, right here by the cables. Shouting at a man in a dark suit.'],
     ['tobbo', "Dex says, 'You're too late. It's somewhere you can't buy it.' Then the suit pays me to go away. I took the cash and went.", 'suit_argument']] },
-  gutter: { again: "I've told you what I know. I fix ports, not secrets.", lines: [
-    ['juno', 'If someone wanted to hide data, where would they put it?'], ['gutter', "Not in their head, that's for sure. The implant dealer here rents lockers. Spare implants kept in the shop, with data loaded."],
-    ['gutter', "Only the renter can pull one, and only on the dealer's own reader. Don't ask me about the dealer. Don't touch the lockers.", 'locker_rental']] },
   pim: { again: 'Please. I only said what I saw.', lines: [
     ['juno', 'Were you near the Sable tonight?'], ['pim', 'I sell umbrellas on rainy nights, miss. I go where it rains. That is everywhere.'],
     ['pim', 'I saw a woman with a Bureau badge go in around ten past eleven. Out again close to midnight. Nearly an hour.', 'bureau_woman'],
@@ -383,6 +381,25 @@ export const CONVERSATIONS = {
   dealer_locked: { start: 'a', nodes: { a: { speaker: 'juno', text: "(Shuttered. Whatever is in there, I don't know enough to knock yet.)", end: true } } },
   dealer_next: { start: 'a', nodes: { a: { speaker: 'juno', text: "(The dealer's shop. Dex's echo is in there. Whoever else wants it is closing in.)", end: true } } },
   ...Object.fromEntries(Object.entries(VENDOR_TALK).map(([id, v]) => [`vend_${id}`, vendorTalk(id, v.lines, v.again)])),
+  // Chapter 2 errand: Gutter will only talk about the lockers if Juno swaps his cracked drone lens for Bolt's relay coil (flags gutter_asked, has_lens, has_coil).
+  vend_gutter: { start: [{ if: { flag: 'vend_gutter' }, node: 'again' }, { if: { flag: 'has_coil' }, node: 'd0' }, { if: { flag: 'gutter_asked' }, node: 'wait' }, { node: 'a0' }], nodes: {
+    a0: { speaker: 'juno', text: 'If someone wanted to hide data, where would they put it?', next: 'a1' },
+    a1: { speaker: 'gutter', text: "Depends who's asking. I only talk to people who've done me a favour. Do I look like a charity?", next: 'a2' },
+    a2: { speaker: 'gutter', text: "I'm short a relay coil. Bolt, the drone stall, has a bin full. Take him this cracked lens, he'll know what it's for, and bring me what he gives you.", next: 'a3', effects: [{ setFlag: 'gutter_asked' }, { setFlag: 'has_lens' }] },
+    a3: { speaker: 'juno', text: '(An errand for an answer. [Cracked drone lens] in my pocket. Bolt is across the square.)', end: true },
+    wait: { speaker: 'gutter', text: "Bolt's stall, across the square. Lens for a coil. Go on.", end: true },
+    d0: { speaker: 'gutter', text: 'That is the coil. Good, a clean one. Right, a deal is a deal.', next: 'd1' },
+    d1: { speaker: 'gutter', text: "Not in their head, that's for sure. The implant dealer here rents lockers. Spare implants kept in the shop, with data loaded.", next: 'd2' },
+    d2: { speaker: 'gutter', text: "Only the renter can pull one, and only on the dealer's own reader. Don't ask me about the dealer. Don't touch the lockers.", next: 'd3', effects: [{ addFact: 'locker_rental' }, { setFlag: 'vend_gutter' }] },
+    d3: { speaker: 'juno', text: '(Spare implants, kept in a locker. Data loaded.)', end: true },
+    again: { speaker: 'gutter', text: "I've told you what I know. I fix ports, not secrets.", end: true },
+  } },
+  bolt_trade: { start: 'a', nodes: {
+    a: { speaker: 'juno', text: "Gutter sent me. He says you'll know what this is for.", next: 'b' },
+    b: { speaker: 'bolt', text: "A cracked lens. He still hasn't learned to hold a drone straight. Fine.", next: 'c' },
+    c: { speaker: 'bolt', text: "Take the coil, the good one. Tell him that makes us even, and tell him I'm not fixing his stall light again.", next: 'd', effects: [{ setFlag: 'has_coil' }] },
+    d: { speaker: 'juno', text: '(Lens gone, [relay coil] in hand. Back to Gutter.)', end: true },
+  } },
   // Chapter 3: Juno is walked into Hale's office. PLACEHOLDER lines; the real scene is the owner's to write (docs/chapter-3.md).
   hale_office: { start: 'a', nodes: {
     a: { speaker: 'hale', text: 'Sit down, Juno. You look terrible. When did you last sleep?', next: 'b' },
