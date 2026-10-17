@@ -10,7 +10,11 @@ The Civic Audit Bureau runs an **off-book program**: it lends memory auditors to
 - The **corporate fixer** works for a corporation that is a client of the program. He wants the echo to **blackmail the Bureau**, not to expose it. His deal ("your forty-seven minutes never happened, the case closes on a burglar") is a lie that keeps Juno useful to him.
 - Kit saw the auditor leave; Mama Teo, the vendors and Kit are bystanders the program does not care about, and who pay for it.
 
-## Ending (chosen): C, she wipes herself
+## New from the owner (supersedes the ending below where they differ)
+- **The fixer offers to restore Juno's memories.** They include **many, many assassinations for the Bureau**. It is devastating: her mind has been wiped over and over and over again. (Proposed logic: the fixer's corporation, as a client, **kept copies of every wipe** as insurance, which is the real blackmail material and why his offer is credible.)
+- **The finale: Hale shows up and tries to shoot Juno.** **Kit and Mama Teo work together to take Hale out and save Juno.** (Needs setup earlier: why Teo and Kit are there, and a chance for each to matter.)
+
+## Ending (chosen earlier): C, she wipes herself - NOW TO BE RECONCILED with the finale above
 Juno destroys the proof and her own memory together, to protect Teo, Kit and the others. Hale falls or does not (to be decided), but Juno is back where she started. The game ends on the opening: a train arrives and Juno says "I think I lost an hour on that train." (Bleak, closes the loop.)
 
 ## Chapter plan (5 more locations before the end; the Bureau is built)
