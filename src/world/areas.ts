@@ -516,7 +516,7 @@ function bureau(M: Materials, rng: Rng) {
   deskSpot('roster', onDesks[1]); deskSpot('queue', onDesks[onDesks.length - 2]);   // two of the lit screens hold clues, the rest are mail (pc1, pc2...)
   onDesks.filter((_, i) => i !== 1 && i !== onDesks.length - 2).forEach((d, i) => deskSpot('pc' + (i + 1), d));
   b.box(M.frame, 0.22, 0.06, 0.16, -11.2, 0.84, 6.2); b.box(M.litWarm, 0.18, 0.02, 0.1, -11.2, 0.88, 6.2); b.box(M.frame, 0.06, 0.05, 0.2, -11.2, 0.92, 6.2); b.spot('phone', -11.5, 5.5);   // the phone on the archive table
-  b.spot('start', 0, 7.4); b.spot('hale', hx - 1.0, R.hale[0] + 3.1); b.spot('chair', lx - 3.0, R.lab[1] - 1.5);   // the reader log is read at the little table (cart) to the right of the big screen b.spot('cell1', wx1 - 1.2, R.cells[0] + cn / 6); b.spot('archive', -11.5, 5.0);
+  b.spot('start', 0, 7.4); b.spot('hale', hx - 1.0, R.hale[0] + 3.1); b.spot('chair', lx - 3.0, R.lab[1] - 1.5); b.spot('cell1', wx1 - 1.2, R.cells[0] + cn / 6); b.spot('archive', -11.5, 5.0);   // the reader log is read at the little table (cart) right of the big screen
   const out = finish('bureau', b, [hx0, hz0, wx1, hz1], { labDoor, labLed, labCover, blink, labScreen });
   out.group.add(labDoor, labLed, labCover);
   return out;
