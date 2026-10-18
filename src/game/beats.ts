@@ -462,7 +462,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
 
   // Chapter 3: the reader's log plays as a "video" on the lab's big screen: a security camera in the real memory-lab room films Juno in the chair and Hale beside her (their own sprites,
   // drawn only for that camera) into a render target that is the screen's picture; a scanline / REC overlay is drawn over it. The lines play in the dialogue box; the camera zooms in on the screen.
-  const VIDEO = { w: 320, h: 124, fov: 48, cam: [-3.2, 3.4, 2.2] as [number, number, number], aim: [0.65, 0.95, -2.2] as [number, number, number], sit: 0.2, shake: 0.03, noise: 36, distance: 5.4, pitchDeg: 0, zoomSeconds: 4.5 };   // cam / aim: security camera and target relative to the screen spot (x, y, z); sit = Juno's height in the chair; distance / pitchDeg: how close and how low the player camera looks at the screen
+  const VIDEO = { w: 320, h: 124, fov: 48, cam: [-3.6, 3.3, -0.5] as [number, number, number], aim: [0.65, 0.95, -2.2] as [number, number, number], sit: 0.2, shake: 0.03, noise: 36, distance: 5.4, pitchDeg: 0, zoomSeconds: 4.5 };   // cam / aim: security camera and target relative to the screen spot (x, y, z); sit = Juno's height in the chair; distance / pitchDeg: how close and how low the player camera looks at the screen
   let labVideoOn = false, videoView: { pos: THREE.Vector3; target: THREE.Vector3; fov: number; yaw: number } | null = null;
   async function labVideo() {
     const a = world.areas.bureau as unknown as { labScreen?: THREE.MeshBasicMaterial; labOverlay?: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial> }, mat = a.labScreen, ov = a.labOverlay, sp = world.spot('bureau', 'labscreen');
@@ -528,10 +528,13 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
       const from = { yaw: cam.yaw, pitch: cam.pitch, distance: cam.distance }, dy = Math.atan2(Math.sin(to.yaw - from.yaw), Math.cos(to.yaw - from.yaw));
       return tween(seconds, (u) => { const e = u * u * (3 - 2 * u); cam.set({ yaw: from.yaw + dy * e, pitch: from.pitch + (to.pitch - from.pitch) * e, distance: from.distance + (to.distance - from.distance) * e }); });
     };
-    const room = world.areas.bureau.group.children.filter((c) => c instanceof THREE.Mesh && (c as THREE.Mesh).material !== mat && c !== ov && c.visible), order = room.map((_, k) => k).sort(() => Math.random() - 0.5);
-    const dissolve = (u: number) => room.forEach((c, k) => { c.visible = order[k] / room.length >= u; });   // the furniture and walls drop out one by one as the camera moves in (u 0 = all there, 1 = only the TV)
+    const room = world.areas.bureau.group.children.filter((c): c is THREE.Mesh => c instanceof THREE.Mesh && c.material !== mat && c !== ov && c.visible), mats = [...new Set(room.flatMap((c) => (Array.isArray(c.material) ? c.material : [c.material])))], was = mats.map((m) => [m.transparent, m.opacity, m.depthWrite] as const);
+    const dissolve = (u: number) => {   // u 0 = the room as it was, 1 = gone: every piece fades together (and is hidden once clear)
+      mats.forEach((m, k) => { m.transparent = u > 0 || was[k][0]; m.opacity = was[k][1] * (1 - u); m.depthWrite = u > 0 ? false : was[k][2]; m.needsUpdate = true; });
+      room.forEach((c) => { c.visible = u < 1; });
+    };
     focus = screenAt;                                                       // 1: the player camera moves to the north side of the room and zooms slowly in on the screen (the player cannot move it)
-    await Promise.all([zoom({ yaw: Math.PI, pitch: THREE.MathUtils.degToRad(VIDEO.pitchDeg), distance: VIDEO.distance }, VIDEO.zoomSeconds), tween(VIDEO.zoomSeconds * 0.85, dissolve)]);
+    await Promise.all([zoom({ yaw: Math.PI, pitch: THREE.MathUtils.degToRad(VIDEO.pitchDeg), distance: VIDEO.distance }, VIDEO.zoomSeconds), tween(0.9, dissolve)]);
     await wait(0.5);
     await glitchTo(1.1, true);                                              // 2: it glitches out into the feed itself, full-screen: Hale wiping Juno's memory
     await wait(0.8);
