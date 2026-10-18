@@ -375,6 +375,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
   const origin = (id: string) => world.areas[id].meta.origin as [number, number];
   // After loading a save: the auditors pace the desks (and Hale sits in her office) until the fake call sends them away; before the arrival scene they are not there yet.
   function restoreStation() {
+    if (flag('chapter4')) clearSable();
     const [ox, oz] = origin('bureau'), gone = flag('aud_gone'), here = (flag('hale_met') || flag('bureau_arrived') || flag('visited_bureau')) && !gone;
     patrols.length = 0;
     for (const id of ['aud1', 'aud2', 'aud3']) {
@@ -434,6 +435,13 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     locked = false;                                              // the station is hers to walk
   }
 
+  // Chapter 4: the Sable is just a noodle shop again. Dex's body, the cups, the broken lamp and the glass are gone, the back room has nothing to examine and no echo to scan.
+  function clearSable() {
+    cast.byId.dex.away = true; cast.apply();
+    const m = world.areas.sable.mess; if (m) m.visible = false;
+    for (const h of echo.hotspots) if (h.area === 'sable') h.hidden = true;
+  }
+
   // Chapter 3 end: the front door is locked until Juno has put the clues together (flag bureau_deduced); then she slips out and Hale will come after her.
   async function bureauSlip() {
     if (locked) return;
@@ -454,6 +462,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     world.jump('street', world.exits.find((e) => e.id === 'sable-out')!.spawn);
     cast.apply();
     caseFile.setFlag('chapter4');
+    clearSable();
     await fade.card([{ text: 'CHAPTER 4', color: '#ff9a3c', scale: 6 }, { text: 'LOWMARKET AT DAWN', color: '#ffffff', scale: 3 }], 2.4);
     await fade.in();
     locked = false;
@@ -463,12 +472,12 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
   function register() {
     for (const e of world.exits) {
       interactions.add({ id: e.id, area: e.area, position: new THREE.Vector3(e.at[0], 0, e.at[1]), height: 1.2, verb: e.verb,
-        onInteract: () => { if (e.id === 'dealer-door' && !flag('dealer_open')) dialogue.start('dealer_locked'); else if (e.id === 'dealer-out' && flag('fixer_done') && !flag('auditors_done')) { if (!locked) outsideScene(); } else world.enter(e.to, e.spawn); } }); // the dealer's door stays shut until the locker deduction
+        onInteract: () => { if (e.id === 'dealer-door' && !flag('dealer_open')) dialogue.start('dealer_locked'); else if (e.id === 'sable-door' && flag('chapter4') && !flag('kit_warned')) dialogue.start('sable_kit_first'); else if (e.id === 'dealer-out' && flag('fixer_done') && !flag('auditors_done')) { if (!locked) outsideScene(); } else world.enter(e.to, e.spawn); } }); // the dealer's door stays shut until the locker deduction
     }
     for (const id of ['fixer', 'aud1', 'aud2', 'aud3']) cast.byId[id].away = true; // scripted people appear only in their scenes
     for (const x of EXAMINABLES) {
       const s = world.spot(x.area, x.spot)!;
-      interactions.add({ id: `ex:${x.id}`, area: x.area, position: new THREE.Vector3(s.x, 0, s.z), height: 1.0, verb: x.verb, clue: () => !flag(`ex_${x.id}`) && (!DESK_CLUES.includes(x.id) || flag('aud_gone')) && (x.id !== 'haledesk' || flag('hale_left')),
+      interactions.add({ id: `ex:${x.id}`, get area() { return x.area === 'sable' && flag('chapter4') ? '' : x.area; }, position: new THREE.Vector3(s.x, 0, s.z), height: 1.0, verb: x.verb, clue: () => !flag(`ex_${x.id}`) && !(x.area === 'sable' && flag('chapter4')) && (!DESK_CLUES.includes(x.id) || flag('aud_gone')) && (x.id !== 'haledesk' || flag('hale_left')),
         onInteract: () => { if (x.id === 'haledesk' && !flag('hale_left')) dialogue.start('hale_watching'); else if (DESK_CLUES.includes(x.id) && !flag('aud_gone')) audBlock(); else dialogue.start(x.conv); } });
     }
     for (const s of world.areas.street.spots.filter((p: Spot) => p.name === 'vending')) {
@@ -561,6 +570,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     { id: 'hale', text: 'Face Hale in her office', area: 'bureau', pos: () => spotXZ('bureau', 'hale'), done: () => flag('hale_met') },
     { id: 'station', text: () => (flag('lab_open') ? 'Use the reader in the memory lab' : flag('lab_code_found') ? 'Open the memory-audit lab (the keypad, east side)' : flag('aud_gone') ? (stationClues() ? 'Search the desk computers for the lab code' : 'Search the station: the archive, the desks and the cells') : flag('pc_tried') ? 'Get the auditors away from the desks' : "Look for clues about what's going on"), area: 'bureau', done: () => flag('bureau_deduced') },
     { id: 'slip', text: 'Slip out through the front door', area: 'bureau', pos: () => spotXZ('bureau', 'frontdoor'), done: () => flag('chapter4') },
+    { id: 'kit4', text: 'Warn Kit at the capsule hostel', area: 'hostel', pos: () => spotXZ('hostel', 'kit'), done: () => flag('kit_warned') },
     { id: 'warn', text: "Warn Mama Teo and Kit before Hale's auditors reach them", area: 'sable', pos: () => spotXZ('sable', 'teo'), done: () => false },   // chapter 4 (not built yet)
   ];
   function markFor(step: Step) {

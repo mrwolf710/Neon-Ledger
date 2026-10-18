@@ -152,6 +152,7 @@ const beats = createBeats({ terminal, trainSteam, input, world, cast, caseFile, 
   setExposure: (v) => { renderer.toneMappingExposure = MAIN.exposure * v; }, setVhs: (a) => post.setVhs(a), setCrt: (a) => { post.setCrt(a); crtFrame.set(a); fade.cardScale(crtFrame.ratio); } });
 beats.setCamera(cam);
 beats.register();
+const todMood = () => (phaseId === 'dawn' && !world.current.meta.outdoor ? 'night' : phaseId);
 let phaseId = '', sunsetT: number | null = null, lastAreaId: string | null = null, cameFromSable = false;
 const issues = issuesOn ? createIssues({ input, toast: (t) => hud.toast(t), context: () => ({
   area: world.current.id, place: world.placeAt(player.position.x, player.position.z).name, pos: [+player.position.x.toFixed(1), +player.position.z.toFixed(1)],
@@ -233,6 +234,7 @@ function onAreaEnter(area: Area, spawn: Spawn | undefined) {
   cast.setArea(area.id); interactions.setArea(area.id); echo.setArea(area.id);
   particles.active = area.meta.outdoor; particles.motes = area.id !== 'exchange'; // no floating motes in the market
   tod.setIndoor(!area.meta.outdoor);
+  if (phaseId === 'dawn') tod.setTimeOfDay(todMood()); // the orange sunup is for exteriors only: rooms keep the night look
   CUTAWAY.minY = area.id === 'exchange' ? 1e3 : area.meta.outdoor ? 0.3 : 1.15; // exchange: never cut, the booths must always be visible; // indoors, tables and the counter stay solid; only walls and signs above them are cut
   tod.setScene(area.id);
   if (area.id === 'exchange') { cam.set({ yaw: (CAMERA.exchangeYawDeg * Math.PI) / 180 }); cam.snap(); } // the market route is laid out for a north-facing view
@@ -429,7 +431,7 @@ renderer.setAnimationLoop((now) => {
 
   // Clock: runs once the title is dismissed; the phase picks the time-of-day mood.
   if (free && !echo.active && !paused) clock.update(dt);
-  if (clock.phase.id !== phaseId && !beats.ending) { phaseId = clock.phase.id; tod.setTimeOfDay(phaseId, 8); }
+  if (clock.phase.id !== phaseId && !beats.ending) { phaseId = clock.phase.id; tod.setTimeOfDay(todMood(), 8); }
   hud.setClock(clock.text, clock.phase.label, clock.progress);
   if (input.pressed('hideControls')) hud.toggleControls();
   if (input.pressed('map')) document.body.classList.toggle('nomap'); // N / the MAP button: hide or show the clock and minimap

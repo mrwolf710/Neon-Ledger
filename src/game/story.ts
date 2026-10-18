@@ -113,6 +113,7 @@ const DONE_EFFECTS = { Capsule_after_Teo: [{ setFlag: 'kit_paid' }], Mama_Teo_Po
 export function conversationFor(personId: string, visit: number, ctx: ConversationContext = {}): string {
   if (personId === 'bolt' && ctx.flag?.('has_lens') && !ctx.flag('has_coil')) return 'bolt_trade'; // the errand: Gutter's cracked lens for Bolt's relay coil
   if (personId === 'mamaTeo' && ctx.has?.('kit_outside') && !ctx.has('kit_name')) return 'teo_worker'; // the worker's echo is in the case file: Teo names him
+  if (personId === 'kit' && ctx.flag?.('chapter4')) return ctx.flag('kit_warned') ? 'kit_ch4_after' : 'kit_ch4'; // chapter 4: Juno warns him first
   if (personId === 'kit' && !ctx.flag?.('key_deduced')) return 'kit_hey'; // he is out on the street until the Sable clues are put together: he only says hello
   if (personId === 'kit' && ctx.flag?.('kit_paid')) return ctx.flag('kit_deduced') ? 'kit' : 'kit_wait'; // once paid: a short line until the board names him, then the interview
   const fits = (r: Rule) => r.npc === personId && (r.when === 'all' || (r.when === '4' ? visit >= 4 : +r.when === visit))
@@ -278,6 +279,15 @@ export const CONVERSATIONS: Record<string, Conversation> = {
   // Kit (the hostel worker). Out on the street until the key deduction (flag key_deduced) he only says hello (kit_hey). Before the board names him he only says capsule 3F is open (kit_wait). After the deduction (flag kit_named) Juno calls him Kit,
   // he claims he left capsule 3F at 23:00 ; present kit_outside (his echo) to break the story, then kit_saw_them for the coat.
   kit_wait: { start: 'a', nodes: { a: { speaker: 'kit', text: 'Capsule 3F is open, like I said. Thanks for the credits, they go straight to the collection. There is a Gen-3 interface arm coming up at auction. Come back when you know something worth another 30.', end: true } } },
+  // Chapter 4: dawn at the hostel. Juno has to get Kit out of Lowmarket before Hale's auditors come looking (sets kit_warned, which opens the Sable door).
+  kit_ch4: { start: 'a', nodes: {
+    a: { speaker: 'juno', text: "Kit. Listen. Hale's auditors are coming down Lowmarket this morning, for you and for Mama Teo. I need you out of here.", next: 'b' },
+    b: { speaker: 'kit', text: "Auditors? Here? I just rent out capsules! I told you everything, I swear!", next: 'c' },
+    c: { speaker: 'juno', text: "You told me enough to scare her. Pack your gear, all of it, especially that shelf, and keep your head down. I'll find you when I need it.", next: 'd' },
+    d: { speaker: 'kit', text: "The shelf. Right. The good stuff. Nobody gets the good stuff. I'll go out the back.", end: true, effects: [{ setFlag: 'kit_warned' }] },
+  } },
+  kit_ch4_after: { start: 'a', nodes: { a: { speaker: 'kit', text: "Packing. Quietly. Tell Mama Teo I said... no, don't tell her anything. Go.", end: true } } },
+  sable_kit_first: { start: 'a', nodes: { a: { speaker: 'juno', text: "(Not yet. I have to see Kit first. There's something I need him to do before the auditors get here.)", end: true } } },
   kit_hey: { start: 'a', nodes: { a: { speaker: 'kit', text: "Hey, what's up?", end: true } } },
   // Mama Teo names the worker from the alley echo (the only way Juno learns his name; sets kit_named so he is called Kit from here on).
   teo_worker: { start: [{ if: { flag: 'teo_pointed' }, node: 'a2' }, { node: 'a' }], nodes: {

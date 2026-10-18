@@ -122,7 +122,7 @@ function begin(id: AreaId) {
 // Finish an area: bounds are local floor rectangles; returns the common record.
 export interface AreaExtra {
   train?: THREE.Group; trainGlow?: THREE.MeshBasicMaterial[]; trainStop?: [number, number];
-  labDoor?: THREE.Mesh; labLed?: THREE.Mesh;
+  labDoor?: THREE.Mesh; labLed?: THREE.Mesh; mess?: THREE.Group;
 }
 export interface AreaRecord extends AreaExtra {
   id: AreaId; meta: AreaDef; group: THREE.Group; extra: AreaExtra;
@@ -230,17 +230,20 @@ function sable(M: Materials) {
   b.light(P.amberLight, 13, -2.5, 2.4, 0.5); b.light(P.amber, 9, -4.6, 2.2, 1.6); b.light(P.amberLight, 8, -3.2, 1.8, -1.2);
   // Back room: the table, two cups, shelves, the terminal, a smashed lamp.
   table(b, PM, 4.6, 0.2, 1.8, 1.0); stool(b, PM, 4.6, 1.15);
-  cup(b, PM.crates[0], PM.pole, 4.1, 0.79, 0.05); cup(b, PM.crates[1], PM.pole, 5.0, 0.79, 0.35);
+  const mess = begin('sable');   // the scene props chapter 4 clears away (cups, broken lamp, glass): their own group, hidden once the chapter starts
+  cup(mess, PM.crates[0], PM.pole, 4.1, 0.79, 0.05); cup(mess, PM.crates[1], PM.pole, 5.0, 0.79, 0.35);
   crates(b, PM, 6.9, -2.5, 2); crates(b, PM, 7.6, -2.5, 3); b.box(PM.crates[2], 1.6, 1.2, 0.5, 3.1, 0.6, -2.7); b.block(3.1, -2.7, 1.6, 0.5);
   b.box(M.frame, 0.6, 1.0, 0.4, 5.6, 0.5, -2.75); b.block(5.6, -2.75, 0.6, 0.4); b.box(M.litCool, 0.4, 0.35, 0.02, 5.6, 0.85, -2.54);
-  b.box(PM.pole, 0.9, 0.07, 0.07, 3.0, 0.08, -1.2); b.box(PM.lamp, 0.35, 0.18, 0.35, 3.55, 0.12, -1.15);   // the broken lamp lying down, its head still glowing
-  for (let i = 0; i < 9; i++) b.box(M.litCool, 0.1, 0.03, 0.07, 2.4 + (i % 3) * 0.28, 0.03, -0.9 + (i >> 1) * 0.12);  // glass
+  mess.box(PM.pole, 0.9, 0.07, 0.07, 3.0, 0.08, -1.2); mess.box(PM.lamp, 0.35, 0.18, 0.35, 3.55, 0.12, -1.15);   // the broken lamp lying down, its head still glowing
+  for (let i = 0; i < 9; i++) mess.box(M.litCool, 0.1, 0.03, 0.07, 2.4 + (i % 3) * 0.28, 0.03, -0.9 + (i >> 1) * 0.12);  // glass
   b.light(P.white, 18, 4.6, 2.5, 0.6);                      // the forensic lamp over the table: Dex, the cups and the floor around them
   b.light(P.cyanLight, 12, 3.2, 2.2, -1.6); b.light(P.magenta, 7, 6.8, 2.0, -1.4); b.light(P.cyan, 9, 3.2, 1.6, 2.0); b.light(P.cyan, 7, 6.8, 1.8, 1.6);
   b.spot('teo', -3.2, -2.45); b.spot('dex', 4.6, 0.95); b.spot('body', 5.5, 1.5); b.spot('port', 3.7, 1.0);
   b.spot('cups', 4.55, -0.9); b.spot('terminal', 5.6, -2.0); b.spot('lamp', 3.0, -0.7); b.spot('echo', 6.0, 1.9);
   b.spot('backroom', 3.0, 0); b.spot('frontdoor', -5.4, 0); b.spot('backdoor', 7.4, 0);
-  return finish('sable', b, [-6, -3, 8, 3]);
+  const area = finish('sable', b, [-6, -3, 8, 3], { mess: mess.build() });
+  area.group.add(area.mess!);
+  return area;
 }
 
 // ---------- Alley behind the Sable (runs along Z; the Sable's back door is at the north end) ----------
