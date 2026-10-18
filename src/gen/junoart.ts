@@ -120,7 +120,7 @@ export async function loadDexSheet(): Promise<SpriteSheet> {
 export const loadTeoSheet = () => loadSheet(TEO_ART, TEO_FRAMES, ['']);
 export const loadVendorSheet = () => loadKitSheet(VENDOR_ART);
 // The three Bureau auditors (chapter 2 ending): eight 48 px stills (<dir>.png) and a 4-frame breathing loop (64 px frames, idle-<dir>-<n>.png) for south, north and south-east; other directions hold their still.
-export const AUDITOR_ART = { ...MARKET1_ART, base: 'sprites/auditors', pxPerUnit: 20, foot: 11, walk: { file: 'walk/sheet', walkFps: 8 } }; // the three Bureau auditors share one owner sheet (64 px cells, 8 directions, 4-frame idle) and portrait
+export const AUDITOR_ART = { ...MARKET1_ART, base: 'sprites/auditors', pxPerUnit: 20, foot: 11, walk: { file: 'walk/sheet', walkFps: 8, cell: 68 } }; // the three Bureau auditors share one owner sheet (64 px cells, 8 directions, 4-frame idle) and portrait
 export async function loadHaleSheet(): Promise<SpriteSheet> {
   const A = HALE_ART, grid = await load(`${import.meta.env.BASE_URL}${A.base}/sheet.png`), imgs: Record<string, CanvasImageSource> = {};
   A.dirs.forEach((dir, i) => {
@@ -238,17 +238,18 @@ async function loadSheet(A: SheetArt, FRAMES: FrameTable, states: string[], prel
   return { texture, canvas, frameW: S, frameH: S, pxPerUnit: A.pxPerUnit, dirs: 8, rows: {}, animRows, anims: sheetAnims, walkFps: A.walkFps };
 }
 
-// The auditors' walk (optional): public/sprites/auditors/walk/sheet.png, 64 px cells, same layout as the street walkers: row 0 = unused (the 8 stills),
-// rows 1-8 = one direction each in the order south, south-west, west, north-west, north, north-east, east, south-east (JUNO_ART.dirs), frames side by side (up to 8).
+// The auditors' walk (optional): public/sprites/auditors/walk/sheet.png, 68 px cells (cropped to 64), same layout as the street walkers: row 0 = unused (the 8 stills),
+// rows 1-8 = one direction each in JUNO_ART.dirs order (south, south-east, east, ...), frames side by side (up to 8).
 // Missing file = the auditors slide along in their idle loop, as before.
 export async function loadAuditorSheet(A = AUDITOR_ART): Promise<SpriteSheet> {
   const sheet = await loadKitSheet(A), img = await load(`${import.meta.env.BASE_URL}${A.base}/${A.walk.file}.png`).catch(() => null);
   if (!img) return sheet;
-  const c = A.cell, n = A.dirs.length, frames = Math.min(8, Math.floor(img.width / c)), base = sheet.canvas.height / c;
+  const c = A.cell, wc = A.walk.cell, pad = wc - c, n = A.dirs.length, frames = Math.min(8, Math.floor(img.width / wc)), base = sheet.canvas.height / c;
   const canvas = Object.assign(document.createElement('canvas'), { width: Math.max(sheet.canvas.width, frames * c), height: sheet.canvas.height + n * c });
   const ctx = canvas.getContext('2d')!;
   ctx.drawImage(sheet.canvas, 0, 0);
-  A.dirs.forEach((d, i) => ctx.drawImage(img, 0, (i + 1) * c, frames * c, c, 0, sheet.canvas.height + i * c, frames * c, c));
+  // the walk sheet's cells are wc px (68), the stills c px (64): per frame, drop pad/2 px each side and pad px off the top so the feet stay where they were
+  A.dirs.forEach((d, i) => { for (let f = 0; f < frames; f++) ctx.drawImage(img, f * wc + pad / 2, (i + 1) * wc + pad, c, c, f * c, sheet.canvas.height + i * c, c, c); });
   const texture = new THREE.CanvasTexture(canvas);
   texture.magFilter = texture.minFilter = THREE.NearestFilter;
   texture.generateMipmaps = false;

@@ -1,0 +1,109 @@
+{
+  "character": {
+    "id": "b1386f15-5e25-4d17-8f96-570e2d17c292",
+    "name": "walking",
+    "prompt": "cyberpunk style private investigator.  Dark blue trech coat.  Male.  Dark short hair.  pale.  Sleek, cool.  Dark pallette.",
+    "size": {
+      "width": 48,
+      "height": 48
+    },
+    "directions": 8,
+    "view": "low top-down"
+  },
+  "spritesheet": {
+    "path": "cyberpunk_style_private-walking.png",
+    "cell_size": {
+      "width": 68,
+      "height": 68
+    },
+    "sheet_size": {
+      "width": 544,
+      "height": 612
+    },
+    "columns": 8,
+    "pivot": "cell-center",
+    "rows": [
+      {
+        "row": 0,
+        "type": "rotations",
+        "frame_count": 8,
+        "directions": [
+          "south",
+          "south-east",
+          "east",
+          "north-east",
+          "north",
+          "north-west",
+          "west",
+          "south-west"
+        ]
+      },
+      {
+        "row": 1,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "Walking",
+        "animation_group_id": "ca27d3cd-49dd-4dcf-89c0-572686d9ddba",
+        "direction": "south"
+      },
+      {
+        "row": 2,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "Walking",
+        "animation_group_id": "ca27d3cd-49dd-4dcf-89c0-572686d9ddba",
+        "direction": "south-east"
+      },
+      {
+        "row": 3,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "Walking",
+        "animation_group_id": "ca27d3cd-49dd-4dcf-89c0-572686d9ddba",
+        "direction": "east"
+      },
+      {
+        "row": 4,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "Walking",
+        "animation_group_id": "ca27d3cd-49dd-4dcf-89c0-572686d9ddba",
+        "direction": "north-east"
+      },
+      {
+        "row": 5,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "Walking",
+        "animation_group_id": "ca27d3cd-49dd-4dcf-89c0-572686d9ddba",
+        "direction": "north"
+      },
+      {
+        "row": 6,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "Walking",
+        "animation_group_id": "ca27d3cd-49dd-4dcf-89c0-572686d9ddba",
+        "direction": "north-west"
+      },
+      {
+        "row": 7,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "Walking",
+        "animation_group_id": "ca27d3cd-49dd-4dcf-89c0-572686d9ddba",
+        "direction": "west"
+      },
+      {
+        "row": 8,
+        "type": "animation",
+        "frame_count": 8,
+        "animation": "Walking",
+        "animation_group_id": "ca27d3cd-49dd-4dcf-89c0-572686d9ddba",
+        "direction": "south-west"
+      }
+    ]
+  },
+  "export_version": "1.0",
+  "export_date": "2026-10-18T01:13:17.164912+00:00"
+}
