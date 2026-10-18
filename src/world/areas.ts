@@ -471,7 +471,7 @@ function bureau(M: Materials, rng: Rng) {
   for (const [x, z] of [[-11, -5.3], [-4, -5.3], [3, -5.3], [-11, -1.3], [-4, -1.3], [3, -1.3]]) b.light(C.cool, 5, x, 1.5, z);
   b.light(C.warm, 6, hx + 2.0, 1.6, hz + 0.1); b.light(C.cool, 3, hx + 1.0, 1.4, hz - 0.3);
   b.light(C.cool, 6, lx, 2.0, lz - 1.0); b.light(C.alarm, 6, wx1 - 2.0, 2.0, (R.cells[0] + R.cells[1]) / 2); b.light(C.cool, 4, -11.5, 2.0, 6.2);
-  b.spot('frontdoor', 0, 8.3); b.spot('haledesk', hx + 1.95, hz - 1.0);   // clue spots: a desk roster, a desk's clean-up queue, Hale's desk terminal
+  b.spot('frontdoor', 0, 8.3); b.spot('haledesk', hx + 0.05, hz - 1.0);   // clue spots: a desk roster, a desk's clean-up queue, Hale's desk terminal
   // --- The lab's door: a sliding slab in the doorway (hidden when the code is entered; beats.js clears the collision too), a keypad post beside it with a red/green LED.
   const [ox, oz] = AREAS.bureau.origin, dz = R.lab[0] + 3.0;
   b.box(M.frame, 0.25, 1.3, 0.25, wx0 - 0.5, 0.65, dz - 0.9); b.box(cool, 0.04, 0.16, 0.12, wx0 - 0.63, 1.0, dz - 0.9);
