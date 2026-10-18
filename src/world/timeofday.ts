@@ -26,6 +26,11 @@ export const TIME_OF_DAY = {
     lift: [0, 0, 0.03], gamma: [0.95, 0.95, 1], gain: [0.9, 0.95, 1.05], saturation: 0.85,
     signs: 0.75, flicker: 0.3, dead: 0.25, rain: 1,
   },
+  dawn: { // chapter 4: sunup over Lowmarket, everything warm orange
+    label: 'Dawn', sky: 0x8a3a12, fog: 0x7a3a18, fogDensity: 0.02, moon: 1.3, moonColor: 0xff9a40, hemi: 0.75,
+    lift: [0.05, 0.02, 0], gamma: [1.02, 0.98, 0.9], gain: [1.15, 0.98, 0.78], saturation: 1.25,
+    signs: 0.7, flicker: 0.01, dead: 0.1, rain: 0.2,
+  },
   blackout: { // beat 7: every sign dies, only the dashboard glows
     label: 'Blackout', sky: 0x020204, fog: 0x06060e, fogDensity: 0.05, moon: 0.2, moonColor: 0x7088d0, hemi: 0.08,
     lift: [0, 0, 0.02], gamma: [0.95, 0.95, 1], gain: [0.85, 0.92, 1.05], saturation: 0.8,

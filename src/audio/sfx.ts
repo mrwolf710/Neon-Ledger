@@ -23,7 +23,7 @@ export const TUNING = {
     screech: { freq: 3300, q: 7, vol: 0.05 },                        // faint steel-on-steel squeal at the pass
     bogie: [0.11, 0.3], clackVol: 0.35 },                            // wheel clacks come in pairs
   // Juno driving to the Echo Exchange (end of chapter 1), over black: door, a soft electric pull-away, wet road hiss and a low rumble, wipers, cars passing, braking, the door again.
-  drive: { door: 0.28, roadVol: 0.16, hissFreq: 2400, rumbleVol: 0.3, wipeEvery: 1.15, wipeVol: 0.05, pass: 2, passVol: 0.07, whine: { from: 420, to: 900, vol: 0.012 } },
+  drive: { door: 0.28, roadVol: 0.16, hissFreq: 2400, rumbleVol: 0.3, wipeEvery: 1.15, wipeVol: 0.05, pass: 2, passVol: 0.07, whine: { from: 420, to: 900, vol: 0.012 }, engine: { pitch: 1.6, level: 0.35 } }, // engine = the train motor sound (startMotor) tuned up and turned down: a smaller engine
   steam: { vol: 0.09, dur: 0.8, hp: 3500 },                 // a short pressure hiss for each puff of steam
   echo: { ambientLevel: 0.05, fadeOut: 0.35, fadeIn: 0.5,   // ambient bus level during an echo, and fade time constants (s)
     rumble: { vol: 0.55, lowpass: 95, sub: 41, subVol: 0.5, wobble: 0.17, in: 0.7 } },
@@ -111,21 +111,21 @@ export function createSfx(synth: Synth): Sfx {
   // ---------- Train arriving (cold open) ----------
   // Built like the street train and the rain: broad noise layers (a distorted deep one and a rushing one) whose filters sweep DOWN as the train brakes, so the whole sound falls in pitch
   // and settles into a low idle. No pitched tone or buzz.
-  function startMotor(seconds: number) {
+  function startMotor(seconds: number, pitch = 1, level = 1) { // pitch/level: 1 = the train; Juno's car uses the same sound higher and quieter (a smaller engine)
     stopMotor(0.1);
     const ctx = synth.ctx!, t = synth.now, M = T.motor;
-    const out = ctx.createGain(); out.gain.setValueAtTime(M.start, t); out.connect(synth.buses.sfx);
-    const body = synth.noiseLoop(4.1), bf = synth.filter('lowpass', M.body.fast, 0.6), pre = ctx.createGain(), ws = ctx.createWaveShaper(), bg = ctx.createGain();
+    const out = ctx.createGain(), lvl = ctx.createGain(); out.gain.setValueAtTime(M.start, t); lvl.gain.value = level; out.connect(lvl); lvl.connect(synth.buses.sfx);
+    const body = synth.noiseLoop(4.1), bf = synth.filter('lowpass', M.body.fast * pitch, 0.6), pre = ctx.createGain(), ws = ctx.createWaveShaper(), bg = ctx.createGain();
     pre.gain.value = M.body.drive; ws.curve = distortion(M.body.grit); ws.oversample = '2x'; bg.gain.value = M.body.vol; body.connect(bf); bf.connect(pre); pre.connect(ws); ws.connect(bg); bg.connect(out);
-    const hiss = synth.noiseLoop(5.3), hf = synth.filter('lowpass', M.hiss.fast, 0.4), hg = ctx.createGain(); hg.gain.value = M.hiss.vol; hiss.connect(hf); hf.connect(hg); hg.connect(out);
+    const hiss = synth.noiseLoop(5.3), hf = synth.filter('lowpass', M.hiss.fast * pitch, 0.4), hg = ctx.createGain(); hg.gain.value = M.hiss.vol; hiss.connect(hf); hf.connect(hg); hg.connect(out);
     for (const [f, fast, slow] of [[bf, M.body.fast, M.body.slow], [hf, M.hiss.fast, M.hiss.slow]] as [BiquadFilterNode, number, number][]) { // the pitch falls as the train slows
-      f.frequency.setValueAtTime(fast, t); f.frequency.exponentialRampToValueAtTime(slow, t + seconds);
+      f.frequency.setValueAtTime(fast * pitch, t); f.frequency.exponentialRampToValueAtTime(slow * pitch, t + seconds);
     }
     out.gain.exponentialRampToValueAtTime(1, t + seconds * M.swellAt);          // swells as it comes in...
     out.gain.linearRampToValueAtTime(M.stopLevel, t + seconds);                 // ...and eases off as it brakes
     out.gain.setTargetAtTime(M.idleGain, t + seconds + M.idleAfter, M.idleTime); // then turned right down while Juno is on the platform (the idling train)
-    bf.frequency.setTargetAtTime(M.body.idle, t + seconds, 0.6);
-    hf.frequency.setTargetAtTime(M.hiss.idle, t + seconds, 0.6);
+    bf.frequency.setTargetAtTime(M.body.idle * pitch, t + seconds, 0.6);
+    hf.frequency.setTargetAtTime(M.hiss.idle * pitch, t + seconds, 0.6);
     motor = { out, nodes: [body, hiss] };
   }
   function stopMotor(fade = 0.6) {
@@ -399,6 +399,7 @@ export function createSfx(synth: Synth): Sfx {
       const D = T.drive, t = synth.now, end = t + seconds;
       const door = (at: number) => { synth.noise({ t: at, dur: 0.16, vol: D.door, attack: 0.002, release: 0.12, filter: { type: 'lowpass', freq: 380 } }); synth.tone({ freq: 90, t: at, dur: 0.22, vol: D.door, slide: 42, attack: 0.002, release: 0.15 }); synth.noise({ t: at + 0.02, dur: 0.05, vol: D.door * 0.4, attack: 0.001, release: 0.04, filter: { type: 'highpass', freq: 2500 } }); };
       door(t + 0.1);                                                   // she shuts the door
+      startMotor(seconds, D.engine.pitch, D.engine.level); setTimeout(() => stopMotor(0.4), seconds * 1000);   // the train's motor sound, higher and quieter
       synth.tone({ freq: D.whine.from, t: t + 0.9, dur: seconds - 1.6, vol: D.whine.vol, slide: D.whine.to, attack: 0.6, release: 1.4, type: 'sine' }); // the electric pull-away, barely there
       synth.noise({ t: t + 0.8, dur: seconds - 0.8, vol: D.roadVol, attack: 1.2, release: 1.4, filter: { type: 'lowpass', freq: D.hissFreq, sweepTo: D.hissFreq * 0.55 } });     // tyres hissing on the wet road, easing as she brakes
       synth.noise({ t: t + 0.6, dur: seconds - 0.6, vol: D.rumbleVol, attack: 1.0, release: 1.5, filter: { type: 'lowpass', freq: 160, sweepTo: 70 } });                        // low road rumble

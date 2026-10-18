@@ -60,7 +60,7 @@ export interface BeatsCamera { yaw: number; follow(target: THREE.Vector3, snap?:
 export interface BeatsDeps {
   terminal: BeatsTerminal; input: BeatsInput; world: World; cast: Cast; caseFile: CaseFile; dialogue: Dialogue; hud: BeatsHud;
   interactions: Interactions; fade: BeatsFade; sfx: BeatsSfx; player: Player; clock?: unknown; echo: Echo;
-  deadHour?: () => void; endDeadHour?: () => void; trainSteam?: () => void; setExposure?: (v: number) => void; setVhs?: (v: number) => void; setCrt?: (v: number) => void;
+  dawn?: () => void; deadHour?: () => void; endDeadHour?: () => void; trainSteam?: () => void; setExposure?: (v: number) => void; setVhs?: (v: number) => void; setCrt?: (v: number) => void;
 }
 // What the beats read from specific area records (platform, bureau).
 interface PlatformArea {
@@ -96,7 +96,7 @@ export interface Beats {
   onEnter(area: { id: string }): void;
   update(dt: number): void;
 }
-export function createBeats({ terminal, input, world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, echo, deadHour = () => {}, endDeadHour = () => {}, trainSteam = () => {}, setExposure = () => {}, setVhs = () => {}, setCrt = () => {} }: BeatsDeps): Beats {
+export function createBeats({ terminal, input, world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, echo, dawn = () => {}, deadHour = () => {}, endDeadHour = () => {}, trainSteam = () => {}, setExposure = () => {}, setVhs = () => {}, setCrt = () => {} }: BeatsDeps): Beats {
   const timers: { left: number; res: () => void }[] = [], tweens: { t: number; s: number; fn: (u: number) => void; res: () => void }[] = [], frameHooks = new Set<(dt: number) => void>(); // frameHooks: functions run every frame (dt) while a scene needs them
   let ringing: { t: number } | null = null, answerWait: (() => void) | null = null, callHint = 0;                          // the intro phone: ring loop + the pending answer
   const callEl = document.createElement('div'); callEl.className = 'callprompt'; document.body.appendChild(callEl);
@@ -448,11 +448,15 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     sfx.phoneRing?.(); await wait(BEATS.ringEvery * 0.6); sfx.phoneRing?.(); await wait(BEATS.ringEvery * 0.6); sfx.phoneAnswer?.(); // Hale calls as Juno steps out
     await dialogue.start('hale_threat');
     caseFile.setFlag('hale_hunting');
+    // Chapter 4 begins: the same street, hours later, at sunup (the clock moves on to dawn and the mood turns orange).
     await fade.out();
-    fade.card([{ text: 'END OF CHAPTER 3', color: '#ffffff', scale: 5 }, { text: 'CHAPTER 4: LOWMARKET AT DAWN - COMING SOON', color: '#1fd6e8', scale: 3 }, { text: 'TAP OR PRESS ANY BUTTON', color: '#8a8aa8', scale: 2 }], 3600);
-    await wait(BEATS.finaleGuard);
-    await anyInput(Infinity);
-    location.reload();                                           // back to the title screen
+    dawn();
+    world.jump('street', world.exits.find((e) => e.id === 'sable-out')!.spawn);
+    cast.apply();
+    caseFile.setFlag('chapter4');
+    await fade.card([{ text: 'CHAPTER 4', color: '#ff9a3c', scale: 6 }, { text: 'LOWMARKET AT DAWN', color: '#ffffff', scale: 3 }], 2.4);
+    await fade.in();
+    locked = false;
   }
 
   // ---- Interactables: doors, clues, people ----
@@ -556,7 +560,8 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     { id: 'out', text: 'Leave the shop', area: 'dealer', pos: () => spotXZ('dealer', 'door'), done: () => flag('auditors_done') },
     { id: 'hale', text: 'Face Hale in her office', area: 'bureau', pos: () => spotXZ('bureau', 'hale'), done: () => flag('hale_met') },
     { id: 'station', text: () => (flag('lab_open') ? 'Use the reader in the memory lab' : flag('lab_code_found') ? 'Open the memory-audit lab (the keypad, east side)' : flag('aud_gone') ? (stationClues() ? 'Search the desk computers for the lab code' : 'Search the station: the archive, the desks and the cells') : flag('pc_tried') ? 'Get the auditors away from the desks' : "Look for clues about what's going on"), area: 'bureau', done: () => flag('bureau_deduced') },
-    { id: 'slip', text: 'Slip out through the front door', area: 'bureau', pos: () => spotXZ('bureau', 'frontdoor'), done: () => false },
+    { id: 'slip', text: 'Slip out through the front door', area: 'bureau', pos: () => spotXZ('bureau', 'frontdoor'), done: () => flag('chapter4') },
+    { id: 'warn', text: "Warn Mama Teo and Kit before Hale's auditors reach them", area: 'sable', pos: () => spotXZ('sable', 'teo'), done: () => false },   // chapter 4 (not built yet)
   ];
   function markFor(step: Step) {
     const here = world.current.id;

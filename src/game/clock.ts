@@ -7,6 +7,7 @@ export const CLOCK = {
     { id: 'lateEvening', from: 0, label: 'Late Evening' },
     { id: 'night', from: 23 * 60, label: 'Night' },
     { id: 'deadHour', from: 25 * 60 + 30, label: 'Dead Hour' },
+    { id: 'dawn', from: 29 * 60, label: 'Dawn' },    // chapter 4 (setTime(5, 40))
   ],
 };
 

@@ -54,7 +54,7 @@ export function createCaseFile(hud: { toast(text: string): void }, clock?: Clock
 
   const all = (kind: EntryKind) => [...known.values()].filter((e) => e.kind === kind).sort((a, b) => a.order - b.order);
   // The chapter Juno is in: 1, then 2 once chapter 1 is done (flag chapter1_done), then 3 once the auditors have her (flag auditors_done). Entries carry ch2: true for chapter 2.
-  const chapterNow = () => (flags.has('auditors_done') ? 3 : flags.has('chapter1_done') ? 2 : 1);
+  const chapterNow = () => (flags.has('chapter4') ? 4 : flags.has('auditors_done') ? 3 : flags.has('chapter1_done') ? 2 : 1);
   const chapterOf = (e: Clue) => (e.ch ?? (e.ch2 ? 2 : 1));
   // While presenting evidence in a conversation, only this chapter's facts are offered, so older chapters never crowd the list.
   // Spent clues (the board has used them) are left out too, so the list is just what is still in play, unless this person reacts to that fact (opts.keys).

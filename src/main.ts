@@ -145,6 +145,7 @@ function platformSteam(dt: number, areaId: string) {
 let deadTone: ReturnType<typeof synth.tone> | null = null; // the low tone held under the cliffhanger
 const terminal = createTerminal({ sfx });
 const beats = createBeats({ terminal, trainSteam, input, world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, echo,
+  dawn: () => clock.setTime(5, 40),
   deadHour: () => { tod.setTimeOfDay('blackout', 0.5); lights.scale = 0.3; deadTone = synth.tone({ freq: 55, type: 'sine', dur: 40, vol: 0.3, attack: 2.5, release: 4, bus: 'music' }); }, // beat 7: signs die
   endDeadHour: () => { tod.setTimeOfDay('night', 1.5); lights.scale = 1; deadTone?.gain.gain.setTargetAtTime(0.0001, synth.now, 0.5); deadTone?.osc.stop(synth.now + 3); deadTone = null; }, // chapter 2: she decides to go, the signs and music return, one low tone
 
