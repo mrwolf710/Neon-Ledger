@@ -446,12 +446,17 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     caseFile.setFlag('teo_meet'); caseFile.setFlag('arcade_call');
     locked = false;
   }
-  // Chapter 4 ending: a stranger in the arcade points Juno at the fixer's tower, then the chapter card (chapter 5 is not built).
-  async function arcadeScene() {
+  // Chapter 4 ending: Juno walks into the arcade crowd (one aside), finds the one person not playing (a Talk prompt, conv arcade_stranger sets arcade_met),
+  // then afterTalk runs arcadeExit: the chapter card (chapter 5 is not built).
+  async function arcadeEnter() {
+    caseFile.setFlag('arcade_seen'); locked = true;
+    await wait(0.8);
+    await dialogue.start('arcade_enter');
+    locked = false;
+  }
+  async function arcadeExit() {
     locked = true;
-    await wait(0.6);
-    await dialogue.start('arcade_stranger');
-    caseFile.setFlag('arcade_met');
+    await wait(0.4);
     const st = cast.byId.stranger; st.away = true; cast.apply();
     await fade.out();
     fade.card([{ text: 'END OF CHAPTER 4', color: '#ffffff', scale: 5 }, { text: 'CHAPTER 5: THE MERIDIAN TOWER - COMING SOON', color: '#ff9a3c', scale: 3 }, { text: 'TAP OR PRESS ANY BUTTON', color: '#8a8aa8', scale: 2 }], 3600);
@@ -550,6 +555,17 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
   }
   // The memory lab's LEDs: each shared material flips on and off at its own random-looking rate.
   let labClock = 0;
+  // The arcade: every screen and bulb (shared materials) winks at its own quick rate.
+  let arcClock = 0;
+  function blinkArcade(dt: number) {
+    const m = (world.areas.arcade as unknown as { blink?: THREE.MeshBasicMaterial[] }).blink;
+    if (!m) return;
+    arcClock += dt;
+    m.forEach((mat, i) => {
+      const on = (Math.sin(Math.floor(arcClock * (3 + (i % 5) * 2.1)) * 12.9898 + i * 7.7) * 43758.5453 % 1 + 1) % 1 > 0.35;
+      mat.color.setHex(mat.userData.c).multiplyScalar(on ? 1 : 0.15);
+    });
+  }
   function blinkLab(dt: number) {
     const a = world.areas.bureau as unknown as { blink?: THREE.MeshBasicMaterial[]; labScreen?: THREE.MeshBasicMaterial }, m = a.blink;
     if (!m) return;
@@ -657,6 +673,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     cast.apply();
   }
   function afterTalk(b: CastMember) {
+    if (b.id === 'stranger' && flag('arcade_met')) { arcadeExit(); return; }
     if (b.id === 'miso' && flag('miso_joined') && !b.follow) {   // Beat 2: Miso joins and trails Juno
       b.follow = { target: cast.byId.juno, ...BEATS.misoFollow };
       hud.toast('Miso is following you');
@@ -700,7 +717,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     { id: 'slip', text: 'Slip out through the front door', area: 'bureau', pos: () => spotXZ('bureau', 'frontdoor'), done: () => flag('chapter4') },
     { id: 'kit4', text: 'Talk to Kit at the capsule hostel about his gear', area: 'hostel', pos: () => spotXZ('hostel', 'kit'), done: () => flag('kit_warned') },
     { id: 'meet', text: "Meet Kit and Mama Teo in the Sable's back room", area: 'sable', pos: () => spotXZ('sable', 'teomeet'), done: () => flag('teo_meet') },
-    { id: 'arcade', text: 'Go to the pachinko arcade', area: 'arcade', pos: () => spotXZ('arcade', 'stranger'), done: () => flag('arcade_met') },   // the chapter 4 ending
+    { id: 'arcade', text: 'Find the go-between at the pachinko arcade', area: 'arcade', pos: () => spotXZ('arcade', 'stranger'), done: () => flag('arcade_met') },   // the chapter 4 ending
   ];
   function markFor(step: Step) {
     const here = world.current.id;
@@ -751,6 +768,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     update(dt: number) {
       placeKit();
       if (world.current.id === 'bureau') blinkLab(dt);
+      else if (world.current.id === 'arcade') blinkArcade(dt);
       for (const h of frameHooks) h(dt);
       syncLabDoor(); updatePatrols(dt);
       if (flag('ex_haledesk') && flag('hale_left') && !flag('hale_back') && !haleWalking && !dialogue.active && !locked) { haleWalking = true; walkHale(true); }   // she heads home once Juno has read her desk
@@ -766,7 +784,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
       }
       if (!locked && !dialogue.active && flag('chapter4')) {
         if (world.current.id === 'sable' && flag('kit_warned') && !flag('teo_meet') && player.position.x > world.current.meta.origin[0] + 2.4) sableMeeting();
-        else if (world.current.id === 'arcade' && !flag('arcade_met')) arcadeScene();
+        else if (world.current.id === 'arcade' && !flag('arcade_seen')) arcadeEnter();
       }
       // Beat 3 trigger: Juno steps into the back room.
       if (world.current.id === 'sable' && !flag('seen_backroom') && player.position.x > world.current.meta.origin[0] + 2.4) {

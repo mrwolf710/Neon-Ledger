@@ -80,7 +80,7 @@ export const ENTRIES: Entries = {
 };
 
 // Which conversation each talkable thing starts. Missing ids fall back to FALLBACK.
-export const TALK: Record<string, string> = { prisoner: 'prisoner_talk', dealer: 'dealer_talk', mamaTeo: 'teo', vending: 'vending', miso: 'miso', vendor: 'vendor', preacher: 'preacher', kit: 'kit',
+export const TALK: Record<string, string> = { stranger: 'arcade_stranger', prisoner: 'prisoner_talk', dealer: 'dealer_talk', mamaTeo: 'teo', vending: 'vending', miso: 'miso', vendor: 'vendor', preacher: 'preacher', kit: 'kit',
   vesper: 'vend_vesper', mari: 'vend_mari', lux: 'vend_lux', tobbo: 'vend_tobbo', gutter: 'vend_gutter', pim: 'vend_pim', oyo: 'vend_oyo', ruth: 'vend_ruth', slate: 'vend_slate', jinx: 'vend_jinx', bolt: 'vend_bolt', petra: 'vend_petra' };
 export const FALLBACK = 'nobody';
 // Desk computers (chapter 3). The first two Juno opens show filler mail, the third holds the lab code, later ones are filler again (beats.js decides by order).
@@ -312,22 +312,23 @@ export const CONVERSATIONS: Record<string, Conversation> = {
     a: { speaker: 'juno', text: "(An unknown number.) Vale.", next: 'b' },
     b: { speaker: 'stranger', text: "Detective. Don't say my name, you don't know it. The pachinko arcade on Lowmarket Street. Come alone. Someone wants to talk to you about Hale.", next: 'c' },
     c: { speaker: 'juno', text: 'Who is this?', next: 'd' },
-    d: { speaker: 'stranger', text: "Someone who wants her gone as much as you do. Come now, before her auditors arrive.", next: 'e' },
+    d: { speaker: 'stranger', text: "Someone with an offer. About your lost hours, and about Hale. Come now, before her auditors arrive.", next: 'e' },
     e: { speaker: 'juno', text: "I'll be there.", next: 'f' },
     f: { speaker: 'mamaTeo', text: "Who calls this early? Nobody good. Go. Kit and I will mind the soup.", end: true },
   } },
   teo_ch4_after: { start: 'a', nodes: { a: { speaker: 'mamaTeo', text: "I'm not going anywhere. Go and see your caller, and come back and eat.", end: true } } },
   arcade_closed: { start: 'a', nodes: { a: { speaker: 'juno', text: "(The pachinko arcade. Shuttered, for now. I have no reason to be there.)", end: true } } },
-  // Chapter 4 ending: the arcade, a stranger sets up the meeting with the fixer at the tower (beats.arcadeScene).
+  // Chapter 4 ending: the arcade. The fixer's go-between (the one person not playing a machine) sets up the meeting at the tower (beats.arcadeScene finds him; afterTalk runs the exit).
+  arcade_enter: { start: 'a', nodes: { a: { speaker: 'juno', text: "(Bells, coins, a hundred jingles at once. Everyone is feeding a machine. Everyone except the one by the prize counter, watching the door.)", end: true } } },
   arcade_stranger: { start: 'a', nodes: {
-    a: { speaker: 'stranger', text: "Detective Vale. Sit anywhere, the machines are too loud for anyone to listen. You came alone. Good.", next: 'b' },
-    b: { speaker: 'juno', text: "You made the call. Who are you?", next: 'c' },
-    c: { speaker: 'stranger', text: "A voice that gets paid to be in the right place. The man you want does not do phones, or arcades, or daylight. He does a tower.", next: 'd' },
-    d: { speaker: 'juno', text: 'The man in the dark suit from the Exchange.', next: 'e' },
-    e: { speaker: 'stranger', text: "The Meridian Tower. The forty-first floor. Tell the lift that Dex sent you. It is the only password he accepts.", next: 'f' },
-    f: { speaker: 'juno', text: 'Dex is dead.', next: 'g' },
-    g: { speaker: 'stranger', text: "Yes. That is why it works. Hale's auditors reach the Sable by eight. Go before then, or after, but go. He is offering you your forty-seven minutes back. And the others.", next: 'h' },
-    h: { speaker: 'juno', text: "(The others. How many more nights has she taken from me?)", end: true },
+    a: { speaker: 'stranger', text: "Detective Vale. You came alone, and on time. My employer will be pleased. Please, nobody here can hear a word over the machines.", next: 'b' },
+    b: { speaker: 'juno', text: "Your employer is the man in the dark suit.", next: 'c' },
+    c: { speaker: 'stranger', text: "My employer prefers 'a concerned party'. He does not do phones, or arcades, or daylight. He does a tower. The Meridian Tower, the forty-first floor.", next: 'd' },
+    d: { speaker: 'juno', text: "And why would I walk into a tower?", next: 'e' },
+    e: { speaker: 'stranger', text: "He is offering you your forty-seven minutes back. And the others. Tell the lift that Dex sent you. It is the only password it accepts.", next: 'f' },
+    f: { speaker: 'juno', text: "Dex is dead. Using his name is cheap.", next: 'g' },
+    g: { speaker: 'stranger', text: "Yes, that is why it works. Hale's auditors reach the Sable by eight. Go before then, or after, but go.", next: 'h' },
+    h: { speaker: 'juno', text: "(The others. How many nights has she taken from me? My hands are shaking, and it isn't the noise.)", effects: [{ setFlag: 'arcade_met' }], end: true },
   } },
   sable_kit_first: { start: 'a', nodes: { a: { speaker: 'juno', text: "(Not yet. I have to see Kit first. There's something I need him to do before the auditors get here.)", end: true } } },
   kit_hey: { start: 'a', nodes: { a: { speaker: 'kit', text: "Hey, what's up?", end: true } } },
@@ -479,7 +480,7 @@ export const CONVERSATIONS: Record<string, Conversation> = {
     a: { speaker: 'hale', text: 'Sit down, Juno. You look terrible. When did you last sleep?', next: 'b' },
     b: { speaker: 'juno', text: "Dex Morrow's dead, and you sent me to call it a burnout.", next: 'c' },
     c: { speaker: 'hale', text: "I sent you because I trust you. Because you're the best I have. Burnout is the kindest word for it, and you know why.", next: 'c2' },
-    c2: { speaker: 'juno', text: "(Kindest word. She said it before I'd said a thing about burnout. Why is she so set on that one?)", next: 'd' },
+    c2: { speaker: 'juno', text: "(Kindest word. The port was burned from the outside, and she's still set on 'burnout'. Why that one?)", next: 'd' },
     d: { speaker: 'hale', text: "A broker dies on your shift and the Bureau starts asking questions. I would rather they asked me. Let me close this for you.", next: 'd2' },
     d2: { speaker: 'juno', text: "(Close it. Not look into it. Close it. Three auditors dragged me across the city for a case she wants shut.)", next: 'e' },
     e: { speaker: 'juno', text: 'I was in that room, Hale.', next: 'f' },
@@ -524,8 +525,8 @@ export const CONVERSATIONS: Record<string, Conversation> = {
     a: { speaker: 'juno', text: "(There. The memory-audit lab: a door code, in a facilities e-mail, with a polite note to destroy it after reading. Nobody ever does.)", end: true, effects: [{ setFlag: 'lab_code_found' }] },
   } },
   lab_sealed: { start: [{ if: { flag: 'lab_seen' }, node: 'again' }, { node: 'a' }], nodes: {
-    a: { speaker: 'juno', text: "(The memory-audit lab. This is where they cut the forty-seven minutes out of my head. Four digits and a red light between me and the truth.)", next: 'b', effects: [{ setFlag: 'lab_seen' }] },
-    b: { speaker: 'juno', text: "(I NEED to get in there. The reader keeps a log of every wipe, with names and dates. If it says what I think it says, I can prove it all.)", next: 'c' },
+    a: { speaker: 'juno', text: "(The memory-audit lab. If anyone cut those forty-seven minutes out of my head, it would be here. Four digits and a red light between me and the truth.)", next: 'b', effects: [{ setFlag: 'lab_seen' }] },
+    b: { speaker: 'juno', text: "(I need to get in there. The reader keeps a log of every session, with names and dates. If I'm right, it can prove it all.)", next: 'c' },
     c: { speaker: 'juno', text: "(Someone in this building must have written the code down. Nobody remembers four digits. Not even Hale.)", end: true },
     again: { speaker: 'juno', text: "(Still sealed. I need that code. The answer to everything is behind this door.)", end: true },
   } },
@@ -559,7 +560,8 @@ export const LAB_VIDEO: { speaker: string; text: string }[] = [
 ];
 LAB_VIDEO.forEach((l, i) => { CONVERSATIONS[`lab_video_${i}`] = { start: 'a', nodes: { a: { speaker: l.speaker, text: l.text, end: true } } }; });
 CONVERSATIONS.lab_video_after = { start: 'a', nodes: {
-  a: { speaker: 'juno', text: "(That was me. That was Hale's voice, and my own, begging. And the date on the log is not the only one.)", next: 'b' },
+  a: { speaker: 'juno', text: "(That was me. That was Hale's voice, and my own, begging. And the date on the log is not the only one.)", next: 'a2' },
+  a2: { speaker: 'juno', text: "(\"The case closes on a burglar.\" The man in the dark suit said those exact words to me at the Exchange. He has seen this. He has seen all of it.)", next: 'b' },
   b: { speaker: 'juno', text: "(Thirty-one sessions. She has done this to me thirty-one times.)", next: 'c' },
   c: { speaker: 'juno', text: "(I have to get out of here. Now. The reader logged my touch, she'll know within minutes, and if she finds me in this room I'm back in that chair. I'm not waiting for dawn.)", end: true, effects: [{ setFlag: 'bureau_deduced' }] },
 } };

@@ -14,6 +14,7 @@ export const TUNING = {
     metal: { vol: 0.22, ring: [430, 640], dur: 0.2, click: 0.11, ringVol: 0.08 },
     runBoost: 1.35, otherRange: 14, jitter: 0.06,
   },
+  arcade: { every: [0.1, 0.45], vol: 0.05, bell: [1300, 2600], coins: 7, jingleChance: 0.12 },   // pachinko parlour din: gaps between events (s), per-event volume, bell pitch range
   hum: { voices: 3, vol: 0.055, base: 50, lowpass: 520, ref: 4, update: 0.5, buzz: 0.18 },
   crackle: { vol: 0.12, hp: 3200, bursts: 3 },
   train: { minGap: 19, maxGap: 37, first: 7, duration: 8.5, startZ: -44, endZ: 44, x: DISTRICT.rail.x, y: DISTRICT.rail.height,
@@ -54,7 +55,7 @@ export function surfaceAt(x: number, z: number): string {
 }
 
 interface XYZ { x: number; y: number; z: number }
-export interface SfxUpdate { player: XYZ; yaw: number; lab?: boolean; rainScale?: number; noRain?: boolean; signs?: { light: { position: THREE.Vector3; intensity: number; base?: number } }[] }
+export interface SfxUpdate { player: XYZ; yaw: number; lab?: boolean; arcade?: number; rainScale?: number; noRain?: boolean; signs?: { light: { position: THREE.Vector3; intensity: number; base?: number } }[] }
 export type UiSound = 'move' | 'confirm' | 'back' | 'case' | 'linkOk' | 'linkWrong' | 'echoOn' | 'echoOff' | 'glitch';
 export interface Sfx {
   update(dt: number, s: SfxUpdate): void;
@@ -85,7 +86,7 @@ export function createSfx(synth: Synth): Sfx {
   let ambient: GainNode | null = null, rumble: { g: GainNode } | null = null, echoOn = false, echoApplied: boolean | null = null;
   let motor: { out: GainNode; nodes: AudioBufferSourceNode[] } | null = null;
   let rain: RainState | null = null, hum: { out: GainNode; p: PannerNode }[] | null = null, train: TrainState | null = null, lastPlayer: XYZ = { x: 0, y: 0, z: 0 }, lastYaw = 0;
-  let labTimer = 0, droplet = 0, humTimer = 0, trainTimer = T.train.first, voiceCount = 0, rainLevel = 1;
+  let arcTimer = 0, labTimer = 0, droplet = 0, humTimer = 0, trainTimer = T.train.first, voiceCount = 0, rainLevel = 1;
 
   // ---------- Rain (built lazily once audio is ready) ----------
   function buildRain() {
@@ -272,6 +273,19 @@ export function createSfx(synth: Synth): Sfx {
         const g = synth.ctx!.createGain(); g.gain.value = 1; const sp = stereo(ambient, p); g.connect(sp);
         synth.tone({ freq: lo + synth.rand() * (hi - lo), type: 'sine', dur: 0.012, release: 0.025, vol: R.droplets.vol * (0.5 + synth.rand()), to: g });
       }
+      // Pachinko parlour din (arcade only; s.arcade = loudness, lower while someone talks): bells, coin spills, ball rattle, jingles.
+      if (s.arcade) {
+        arcTimer -= dt;
+        if (arcTimer <= 0) {
+          const A = T.arcade, r = synth.rand, v = A.vol * s.arcade;
+          arcTimer = A.every[0] + r() * (A.every[1] - A.every[0]);
+          const k = r();
+          if (k < 0.35) synth.tone({ freq: A.bell[0] + r() * (A.bell[1] - A.bell[0]), type: 'triangle', dur: 0.25, release: 0.2, vol: v * 0.8 });
+          else if (k < 0.6) for (let i = 0; i < A.coins; i++) synth.noise({ t: synth.now + i * 0.045, dur: 0.03, vol: v * 0.7, filter: { type: 'bandpass', freq: 3800 + r() * 1600, q: 3 } });
+          else if (k < 0.85) synth.noise({ dur: 0.35, vol: v * 0.6, attack: 0.05, release: 0.2, filter: { type: 'bandpass', freq: 1700 + r() * 800, q: 1.2 } });
+          if (r() < A.jingleChance) [0, 4, 7, 12].forEach((n, i) => synth.tone({ t: synth.now + i * 0.09, freq: 660 * 2 ** (n / 12), type: 'square', dur: 0.08, release: 0.06, vol: v * 0.35 }));
+        }
+      } else arcTimer = 0;
       // Neon hum: re-park the voices on the nearest signs a couple of times a second.
       humTimer -= dt;
       if (humTimer <= 0 && s.signs?.length) {

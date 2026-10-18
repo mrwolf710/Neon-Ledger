@@ -299,28 +299,48 @@ function hostel(M: Materials) {
   return finish('hostel', b, [-5, -3.5, 5, 3.5]);
 }
 
-// ---------- Chapter 4: the pachinko arcade (a quick scene). Spots: door, stranger. ----------
+// ---------- Chapter 4: the pachinko arcade. Spots: door, stranger. Loud and packed; the screens and bulbs wink on shared materials (beats.blinkArcade). ----------
+const ARCADE = { colors: [0xff3b9a, 0x1fd6e8, 0xffb23a, 0xd04bff, 0x5cf0a0, 0xffe45c] };   // the machine glow colours, two shared materials each
 function arcade(M: Materials) {
   const b = begin('arcade'), PM = propMats(M);
   floor(b, M.walls[2], -5, -3.5, 5, 3.5);
   wallX(b, M, -3.5 - T / 2, -5 - T, 5 + T); wallX(b, M, 3.5 + T / 2, -5 - T, 5 + T, [[-0.9, 0.9]]);
   wallZ(b, M, -5 - T / 2, -3.5, 3.5); wallZ(b, M, 5 + T / 2, -3.5, 3.5);
   doorMat(b, M, 0, 3.1, 1.4, 0.6);
+  const blink = ARCADE.colors.flatMap((c) => [0, 1].map(() => { const m = new THREE.MeshBasicMaterial({ color: c }); m.userData.c = c; return m; }));
+  let bi = 0;
+  const lit = () => blink[(bi += 5) % blink.length];
   const glow = [P.pink, P.cyan, P.amber, P.magenta];
-  for (let i = 0; i < 6; i++) {        // the back row of arcade cabinets: dark bodies with lit screens and a marquee
+  for (let i = 0; i < 6; i++) {        // the back row of arcade cabinets: dark bodies with blinking screens and a marquee
     const x = -4.0 + i * 1.6;
-    b.box(M.metal, 1.2, 1.8, 0.8, x, 0.9, -3.0); b.box(i % 2 ? M.litCool : M.litWarm, 0.9, 0.6, 0.04, x, 1.25, -2.58); b.box(signMat(['GO', 'HI', 'VS', 'FX', 'XP', 'UP'][i], glow[i % 4], false), 0.8, 0.25, 0.04, x, 1.72, -2.58, 0, 0, false);
+    b.box(M.metal, 1.2, 1.8, 0.8, x, 0.9, -3.0); b.box(lit(), 0.9, 0.6, 0.04, x, 1.25, -2.58, 0, 0, false); b.box(signMat(['GO', 'HI', 'VS', 'FX', 'XP', 'UP'][i], glow[i % 4], false), 0.8, 0.25, 0.04, x, 1.72, -2.58, 0, 0, false);
+    b.box(M.frame, 1.0, 0.08, 0.3, x, 0.75, -2.45);                                       // the control ledge, with a blinking button row
+    for (let k = 0; k < 3; k++) b.box(lit(), 0.1, 0.04, 0.1, x - 0.25 + k * 0.25, 0.81, -2.45, 0, 0, false);
+    b.box(M.frame, 0.36, 0.42, 0.36, x, 0.21, -1.9);                                      // a stool
   }
   b.block(0, -3.0, 9.6, 0.8);
-  for (const sx of [-1, 1]) for (let k = 0; k < 3; k++) {  // pachinko machines along both side walls, facing in
-    const z = -1.6 + k * 1.7, x = sx * 4.35;
-    b.box(M.metal, 0.8, 1.7, 1.1, x, 0.85, z); b.box(k % 2 ? M.litWarm : M.litCool, 0.04, 1.0, 0.8, x - sx * 0.42, 1.05, z); b.block(x, z, 0.8, 1.1);
+  const pachi = (x: number, z: number, face: number) => {      // a pachinko machine facing +face on x: body, a lit pin board with a column of blinking bars, a tray
+    b.box(M.metal, 0.8, 1.7, 1.1, x, 0.85, z); b.box(lit(), 0.04, 1.0, 0.8, x + face * 0.42, 1.05, z, 0, 0, false);
+    for (let k = 0; k < 4; k++) b.box(lit(), 0.05, 0.08, 0.12, x + face * 0.43, 0.6 + k * 0.28, z + (k % 2 ? 0.3 : -0.3), 0, 0, false);
+    b.box(M.frame, 0.3, 0.06, 0.9, x + face * 0.55, 0.62, z); b.box(M.frame, 0.36, 0.42, 0.36, x + face * 1.0, 0.21, z);
+    b.block(x, z, 0.8, 1.1);
+  };
+  for (const sx of [-1, 1]) for (let k = 0; k < 3; k++) pachi(sx * 4.35, -1.6 + k * 1.7, -sx);   // along both side walls, facing in
+  for (const sx of [-1, 1]) {                                    // two islands of back-to-back machines in the middle
+    const x = sx * 1.7; b.box(M.metal, 1.0, 1.7, 1.0, x, 0.85, -0.7); b.block(x, -0.7, 1.0, 1.0);
+    for (const f of [-1, 1]) { b.box(lit(), 0.7, 0.9, 0.04, x, 1.05, -0.7 + f * 0.52, 0, 0, false); b.box(M.frame, 0.9, 0.06, 0.3, x, 0.62, -0.7 + f * 0.62); b.box(M.frame, 0.36, 0.42, 0.36, x + sx * 0.3, 0.21, -0.7 + f * 1.05); }
   }
-  b.box(PM.wood, 2.4, 1.0, 0.8, 2.0, 0.5, 1.2); b.box(M.metal, 2.5, 0.06, 0.9, 2.0, 1.03, 1.2); b.block(2.0, 1.2, 2.4, 0.8);   // the prize counter
+  b.box(PM.wood, 2.4, 1.0, 0.8, 2.0, 0.5, 1.8); b.box(M.metal, 2.5, 0.06, 0.9, 2.0, 1.03, 1.8); b.block(2.0, 1.8, 2.4, 0.8);   // the prize counter, with prizes on a shelf
+  for (let k = 0; k < 5; k++) b.box(lit(), 0.3, 0.3, 0.2, 1.1 + k * 0.45, 1.25, 1.95, 0, 0, false);
   b.box(signMat('ARCADE', P.pink), 3.4, 0.8, 0.1, 0, 2.8, -1.8, 0, 0, false);
+  for (let k = 0; k < 18; k++) {                                 // strings of marquee bulbs along the back and side walls
+    const t = k / 17;
+    b.box(lit(), 0.1, 0.1, 0.1, -4.8 + t * 9.6, 2.45, -3.42, 0, 0, false);
+    if (k < 12) for (const sx of [-1, 1]) b.box(lit(), 0.1, 0.1, 0.1, sx * 4.92, 2.45, -3.2 + k * 0.58, 0, 0, false);
+  }
   b.light(P.pink, 14, -2.5, 2.2, -1.5); b.light(P.cyan, 14, 2.5, 2.2, -1.5); b.light(P.amber, 10, 0, 2.2, 1.5); b.light(P.magenta, 8, 0, 1.8, -2.4);
   b.spot('door', 0, 2.9); b.spot('stranger', -0.8, 0.2);
-  return finish('arcade', b, [-5, -3.5, 5, 3.5]);
+  return finish('arcade', b, [-5, -3.5, 5, 3.5], { blink });
 }
 
 // ---------- Chapter 2: the implant dealer's shop (the only interior of the Exchange). Locker 9 is Dex's. Spots: door, dealer (behind the counter), locker (in front of Locker 9), locker7 / 8 / 10 / 11, fixer (where the suit steps in). ----------

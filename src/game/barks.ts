@@ -27,6 +27,7 @@ const LINES: Record<string, BarkEntry[]> = {
     { flag: 'kit_named', lines: ['Kit. You know my name now.', "I'm just trying to sleep."] },
     { lines: ['Rooms are full.', 'Quiet hours, please.'] },
   ],
+  gambler: [{ lines: ['Almost! Almost.', 'Not now, the next ball is mine.', 'Sixth night running.', 'It owes me.'] }],
   preacher: [{ lines: ['The Ledger sees all debts.', 'Repent in credits.', 'Neon is a kind of prayer.'] }],
   walker: [
     { flag: 'miso_joined', notFlag: 'chapter1_done', lines: ['Nice cat.', 'Is that cat yours?'] },
@@ -43,7 +44,7 @@ export function createBarks({ cast, caseFile, player, camera }: BarksDeps): Bark
   const base = new Map<CastMember, number>(), last = new Map<string, number>(), was = new Set<CastMember>(), v = new THREE.Vector3();
   let clock = 0, gap = 0, speaker: CastMember | null = null, left = 0, area: string | null = null;
   const rnd = (a: string[]) => a[Math.floor(Math.random() * a.length)]; // cosmetic only: does not touch the seeded city
-  const pick = (id: string, ambient: boolean) => (LINES[ambient ? 'walker' : id] ?? []).find((e) => (!e.flag || caseFile.hasFlag(e.flag)) && (!e.notFlag || !caseFile.hasFlag(e.notFlag)));
+  const pick = (id: string, ambient: boolean) => (LINES[id.startsWith('gam') ? 'gambler' : ambient ? 'walker' : id] ?? []).find((e) => (!e.flag || caseFile.hasFlag(e.flag)) && (!e.notFlag || !caseFile.hasFlag(e.notFlag)));
   const turn = (a: number, to: number, k: number) => a + Math.atan2(Math.sin(to - a), Math.cos(to - a)) * Math.min(1, k);
 
   return {

@@ -28,3 +28,17 @@ Goal: Juno learns her gap is a wipe, that it has happened over and over on a sch
 ## Open
 - Named auditors; the auditors' walk sheet (owner todo, see NOTES.md).
 - Whether Hale needs a physical scene before the finale (chapter 4 keeps her unseen).
+
+## Consistency review (player knows only chapters 1 and 2)
+Chapter 3 works: every clue follows from something planted earlier, and Hale's "rest" is a tell the prisoner repeats. Fixed in text: the "burnout" aside (Juno said the word first; the aside now questions Hale pushing "burnout" when the port was burned from outside), the lab door lines (Juno only suspects a wipe until the reader proves it), and a new aside after the lab video linking "the case closes on a burglar" to the fixer's exact words in chapter 2.
+
+### Still to fix
+- **Timeline (chapters 1 and 3):** Juno steps off the train at 22:40 and Hale already says "a broker's dead", yet the gap (23:10-23:57), the override signed at 23:05, Kit's 23:40 sighting and the implant-log bar (`fade.ts`, 22:40-02:10) all fall after 22:40, during her own investigation. The roster line "every case begins at 22:40" makes it obvious. Smallest fix: start the clock later (e.g. 00:40 in `clock.ts`), change the roster text and `line9_arrival` entry, and move the log bar's start. The wipe session and train ride then sit between 23:57 and her arrival.
+- **The dying man:** the bible says he is an earlier victim, but `dex_secret` uses Dex's sprite and Juno's voice line says "(Dex, dying...)", and the lab video has "he was already dying". Decide who it is, then align `dex_secret`, the video and the chapter 5 montage.
+
+### To add
+1. **Hale asks for the echo and badge.** The car call ("bring the chip") and the auditors ("the echo and your badge") demand them; the office scene never mentions either. Add a beat where Hale asks and Juno stalls or lies; decide what happens to the badge (an auditor still says "Auditor Juno").
+2. **The fixer.** Hale never asks about the man in the dark suit and Juno never tells her. Juno should choose what to hide.
+3. **How Hale knows about Teo and Kit** (`hale_threat`): add Juno asking and Hale answering "your implant logs where you've been".
+4. **The grey glove** is the only chapter 1 clue chapter 3 never uses: have Juno match it against her own spare pair or a Bureau issue record.
+5. **The prisoner** is only unease. Consider giving him one concrete detail the player can confirm later (a name or a number such as "thirty-one").

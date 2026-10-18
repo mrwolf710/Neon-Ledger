@@ -460,7 +460,7 @@ renderer.setAnimationLoop((now) => {
   music.setMood(musicForce ? musicForce : trailer.active ? trailer.mood : beats.finale ? 'finale' : beats.ending ? 'silent' : echo.active ? 'echo' : board.isOpen ? 'board' : place.mood as string, trailer.active ? 0.25 : beats.finale ? 0.4 : undefined);
   sfx.setEcho(echo.active);
   sfx.update(dt, {
-    player: player.position, yaw: cam.yaw, lab: inLab(), signs: area.id === 'street' ? street.signs : [],
+    player: player.position, yaw: cam.yaw, lab: inLab(), arcade: area.id === 'arcade' ? (dialogue.active ? 0.3 : 1) : 0, signs: area.id === 'street' ? street.signs : [],
     rainScale: particles.rainScale * (area.meta.outdoor ? 1 : MAIN.indoorRain), noRain: area.id === 'platform',
   });
   // Sunset: starts when Juno first reaches the street, fades to the night mood over SUNSET.seconds.

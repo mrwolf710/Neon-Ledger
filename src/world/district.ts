@@ -51,7 +51,14 @@ export const CAST = [
   // The implant dealer's shop and the scripted people of the chapter 2 ending (beats.dealerScene): borrowed sheets until the owner draws them. ambient = no Talk prompt.
   { id: 'dealer', area: 'dealer', at: 'dealer', facing: 0, booth: true },
   { id: 'fixer', area: 'dealer', at: 'fixer', sheet: 'walkerB', facing: -Math.PI / 4, ambient: true },
-  { id: 'stranger', area: 'arcade', at: 'stranger', sheet: 'walkerD', facing: Math.PI / 2, ambient: true },   // chapter 4: the go-between at the arcade (borrowed sprite)
+  { id: 'stranger', area: 'arcade', at: 'stranger', sheet: 'walkerD', facing: 0 },   // chapter 4: the fixer's go-between at the arcade, the one person not playing (borrowed sprite); Talk
+  // The arcade crowd (borrowed sheets, standing at the machines; local arcade x = world x - 1350). ambient = no Talk prompt.
+  { id: 'gam1', area: 'arcade', at: [1346.7, 0.1], sheet: 'walkerA', facing: -Math.PI / 2, ambient: true },
+  { id: 'gam2', area: 'arcade', at: [1353.3, -1.6], sheet: 'walkerB', facing: Math.PI / 2, ambient: true },
+  { id: 'gam3', area: 'arcade', at: [1347.8, -2.1], sheet: 'walkerC', facing: Math.PI, ambient: true },
+  { id: 'gam4', area: 'arcade', at: [1352.4, -2.1], sheet: 'walkerA', facing: Math.PI, ambient: true },
+  { id: 'gam5', area: 'arcade', at: [1353.3, 1.8], sheet: 'walkerB', facing: Math.PI / 2, ambient: true },
+  { id: 'gam6', area: 'arcade', at: [1346.7, -1.6], sheet: 'walkerC', facing: -Math.PI / 2, ambient: true },
   // Chapter 3: the two people in the memory lab's recorded wipe session (beats.labVideo). Never drawn in the room: they are shown only to the security camera that films the big screen.
   { id: 'vjuno', area: 'bureau', at: 'vjuno', sheet: 'juno', facing: 0, pose: 'sit', ambient: true },
   { id: 'vhale', area: 'bureau', at: 'vhale', sheet: 'hale', facing: 0, ambient: true },
