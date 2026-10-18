@@ -232,6 +232,8 @@ body.echo #hud .objective { display: none !important; }
 #menu .menutitle { font-size: 1.8rem; color: #fff; margin-bottom: 0.6rem; }
 #menu .menuhead { margin: 0.9rem 0 0.25rem; font: 700 0.95rem var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--cyan); }
 #menu .menurow { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.45rem 0.8rem; font-size: 1.15rem; cursor: pointer; border: 1px solid transparent; }
+#menu .menushot { width: 6rem; height: 3.4rem; object-fit: cover; border: 1px solid var(--magenta); flex: none; }
+#menu .menurow span:first-of-type { flex: 1; }
 #menu .menurow.sel { border-color: var(--magenta); background: rgba(224, 33, 125, 0.22); color: #fff; }
 #menu .menuval { display: flex; align-items: center; gap: 0.7rem; }
 #menu .menuval i { font-style: normal; min-width: 3.2rem; text-align: center; color: var(--pink); }

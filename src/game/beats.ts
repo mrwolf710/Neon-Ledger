@@ -14,7 +14,7 @@ import type { Spot } from '../types.ts';
 // Beats 1-3 live here (Stage 9A); later beats add steps to STEPS and conversations to story.js.
 export const BEATS = {
   fixerLeave: 2.0,     // seconds the fixer takes to walk out of the shop
-  carAt: [-13.5, -1.9],   // where Juno's car is parked on the street (the exterior shot of the drive; areas.ts CAR.at)
+  driveLines: 3,       // seconds of speed lines over the car model in the dark (the outside shot of the drive)
   driveSeconds: 6.5,   // chapter 1 ending: how long the drive to the Exchange sounds (the CHAPTER 2 card is held to match)
   overrideSeconds: 2.4, // the red 'System override' banner before Hale's forced call at the end of chapter 1
   finaleSeconds: 10, finaleGuard: 1.5, // end of chapter 1: how long the fast music plays before it moves on by itself; seconds before a tap can skip it
@@ -35,6 +35,7 @@ export const BEATS = {
   mislaid: 0.6,           // pause before Juno steps out
   misoFollow: { dist: 1.5, speed: 2.6 },
   reveal: { from: 3.2, seconds: 1.3, yaw: -Math.PI / 2 + 0.38, at: [156.0, 0.4] }, // Dex's backup: from echo second `from`, the camera swings round (over `seconds`) to Juno's front, ending just before the stinger at 4.6 s. yaw = her facing + a little, so Dex doesn't stand in front of her; at = where her ghost stands
+  outsideOrbit: { seconds: 40, turns: 1 }, // Juno steps out of the implant shop: the camera slowly circles the Exchange (turns = full circles over `seconds`)
   dark: { exposure: 0.06, lampsFrom: 0.3 }, // the opening starts almost black; station lamps fade up once the train is 30% of the way in
 };
 
@@ -233,11 +234,11 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     { const miso = cast.byId.miso; miso.follow = null; miso.away = true; cast.apply(); }   // Miso stays behind: he does not come past chapter 1
     await wait(0.6);
     sfx.carDrive?.(BEATS.driveSeconds);                          // she drives to the Exchange: streaks race past the windows, then black
-    await fade.out();                                            // cut to the outside of the car, driving off (Juno stays hidden)
+    await fade.out();                                            // cut to the whole car in the dark (the 'drive' area), Juno hidden
     cast.setHidden(true);
-    world.jump('street', [BEATS.carAt[0], BEATS.carAt[1], 0]);
+    world.jump('drive', [...origin('drive'), 0]);
     await fade.in();
-    { const c = Math.cos(cam.yaw), sn = Math.sin(cam.yaw); await fade.speedLines(BEATS.driveSeconds - 3.6, c, sn * 0.7); }   // the car heads west (-x): on screen that is (-cos, -sin * 0.7), so the streaks flow the other way
+    { const c = Math.cos(cam.yaw), sn = Math.sin(cam.yaw); await fade.speedLines(BEATS.driveLines, c, sn * 0.7); }   // the car heads west (-x): on screen that is (-cos, -sin * 0.7), so the streaks flow the other way
     await fade.out();
     const sp = world.spot('exchange', 'start')!;
     world.jump('exchange', [sp.x, sp.z, Math.PI / 2]);           // while the screen is black
@@ -283,6 +284,8 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     for (const id of ['aud1', 'aud2', 'aud3']) cast.byId[id].away = false;
     cast.apply();
     await fade.in();
+    const O = BEATS.outsideOrbit, yaw0 = cam.yaw;
+    tween(O.seconds, (u) => { if (!flag('auditors_done')) cam.set({ yaw: yaw0 + u * O.turns * Math.PI * 2 }); }); // stops once the scene ends
     await wait(0.8);
     await dialogue.start('auditors');
     caseFile.setFlag('auditors_done');
@@ -397,6 +400,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     const progress = (x: number, z: number) => { let best = 0, bd = Infinity; for (let k = 1; k < route.length; k++) { const [ax, az] = route[k - 1], [bx, bz] = route[k], l2 = (bx - ax) ** 2 + (bz - az) ** 2 || 1, u = Math.max(0, Math.min(1, ((x - ax) * (bx - ax) + (z - az) * (bz - az)) / l2)), d = Math.hypot(ax + (bx - ax) * u - x, az + (bz - az) * u - z); if (d < bd) { bd = d; best = cum[k - 1] + u * Math.sqrt(l2); } } return best; };
     const gaps = [1.9, 2.7, 1.9], side = [0.6, 0, -0.6], capD = cum[3] - 0.3;           // aud2 in front, aud1 and aud3 either side behind it; they stop short of Hale's door corner
     auds.forEach((a, i) => { a.area = 'bureau'; a.away = false; a.follow = null; a.anim = 'idle'; a.facing = Math.PI; });
+    juno.facing = Math.PI;                                      // Juno faces the same way as the auditors
     const lead = (_dt: number) => auds.forEach((a, i) => {
       const jd = progress(juno.position.x, juno.position.z), d = Math.min(jd + gaps[i], capD), q = pathAt(d), end = Math.max(0, Math.min(1, (d - (capD - 1.2)) / 1.2));
       const nx = Math.cos(q.h), nz = -Math.sin(q.h);                                        // sideways of the heading

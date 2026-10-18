@@ -112,7 +112,7 @@ const saves = createSaves();
 const title = createTitle(() => synth.start(), { saves, synth });
 const sfx = createSfx(synth), music = createMusic(synth);
 const hud = createHud(world.current.collision);
-const menu = createMenu({ synth, saves, snapshot: () => snapshotGame(), onLoad: (d) => loadGame(d as SaveData) });
+const menu = createMenu({ synth, saves, snapshot: () => snapshotGame(), shot: () => saveShot(), onLoad: (d) => loadGame(d as SaveData) });
 const tutorial = createTutorial(input);
 const railTrain = createRailTrain(world.areas.street.group, fog);
 const clock = createClock();
@@ -160,6 +160,17 @@ const issues = issuesOn ? createIssues({ input, toast: (t) => hud.toast(t), cont
 const trailerOn = new URLSearchParams(location.search).has('trailer'); // ?trailer plays a scripted teaser (src/ui/trailer.js)
 const trailer = createTrailer({ cam, world, player, post, fade, cast, sfx, synth });
 const startParam = new URLSearchParams(location.search).get('start'); // ?start=sable jumps straight to an area (testing)
+// Thumbnail of the current view for a save slot: render one frame, then copy it out before the browser clears the buffer.
+const SHOT = { w: 192, h: 108, quality: 0.7 };
+function saveShot() {
+  try {
+    post.render(0);
+    const c = Object.assign(document.createElement('canvas'), { width: SHOT.w, height: SHOT.h }), g = c.getContext('2d')!;
+    const k = Math.max(SHOT.w / canvas.width, SHOT.h / canvas.height), w = canvas.width * k, h = canvas.height * k;
+    g.drawImage(canvas, (SHOT.w - w) / 2, (SHOT.h - h) / 2, w, h);
+    return c.toDataURL('image/jpeg', SHOT.quality);
+  } catch { return undefined; }
+}
 // Save slots in the browser (core/saves.js), each: where Juno is, the case file, the board, the clock, who she has talked to and Miso.
 function snapshotGame() {
   if (beats.locked || dialogue.active) { hud.toast("Can't save during a scene"); return null; } // the menu also opens during cutscenes and conversations now

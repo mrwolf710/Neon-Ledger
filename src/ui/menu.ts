@@ -10,11 +10,11 @@ export const MENU = { step: 0.1, z: 20 }; // step = volume change per press
 
 // Pause menu (Esc / pad Start / touch pause): sound, video, restart, quit. Keyboard, pad (menu*), mouse and touch.
 // Saves opens a list of save slots in the browser (core/saves.js): new, load, overwrite, rename, delete. Quality, Restart and Quit reload the page and go back to the title.
-interface Row { head?: string; label?: string | (() => string); val?: () => string; adj?: (d: number) => void; act?: () => void }
+interface Row { head?: string; label?: string | (() => string); val?: () => string; adj?: (d: number) => void; act?: () => void; img?: string }
 interface InputLike { pressed(a: string): boolean }
 export interface Menu { readonly isOpen: boolean; open(): void; close(): void; update(input: InputLike): void }
 
-export function createMenu({ synth, saves, snapshot = () => null, onLoad = () => {} }: { synth: Synth; saves: ReturnType<typeof createSaves>; snapshot?: () => unknown; onLoad?: (data: unknown) => void }): Menu {
+export function createMenu({ synth, saves, snapshot = () => null, shot = () => undefined, onLoad = () => {} }: { synth: Synth; saves: ReturnType<typeof createSaves>; snapshot?: () => unknown; shot?: () => string | undefined; onLoad?: (data: unknown) => void }): Menu {
   const root = document.createElement('div');
   root.id = 'menu';
   root.style.zIndex = String(MENU.z);
@@ -52,12 +52,12 @@ export function createMenu({ synth, saves, snapshot = () => null, onLoad = () =>
   const saveRows = (): Row[] => [
     { label: '◄ Back', act: () => setView('main') },
     { head: 'Saves' },
-    { label: 'New save', act: () => { const d = snapshot(); if (d && saves.add(d)) setView('saves', 1); } },
+    { label: 'New save', act: () => { const d = snapshot(); if (d && saves.add(d, shot())) setView('saves', 1); } },
     ...saves.list.map((s) => {
       let k = 0;
-      const acts: [string, () => unknown][] = [['Load', () => { api.close(); onLoad(s.data); }], ['Overwrite', () => { const d = snapshot(); if (d) saves.overwrite(s.id, d); }],
+      const acts: [string, () => unknown][] = [['Load', () => { api.close(); onLoad(s.data); }], ['Overwrite', () => { const d = snapshot(); if (d) saves.overwrite(s.id, d, shot()); }],
         ['Rename', () => { const n = prompt('Name this save', s.name); if (n) saves.rename(s.id, n); }], ['Delete', () => saves.remove(s.id)]];
-      return { label: () => `${s.name} · ${when(s.t)}`, val: () => (pending === 'save' ? 'Sure? Again' : acts[k][0]), adj: (d: number) => { k = (k + d + acts.length) % acts.length; },
+      return { img: s.img, label: () => `${s.name} · ${when(s.t)}`, val: () => (pending === 'save' ? 'Sure? Again' : acts[k][0]), adj: (d: number) => { k = (k + d + acts.length) % acts.length; },
         act: () => {
           const [name, fn] = acts[k], run = () => { const at = sel; fn(); if (name !== 'Load') setView('saves', at); };
           if (name === 'Rename') run(); else if (pending === 'save') run(); else pending = 'save';
@@ -69,7 +69,7 @@ export function createMenu({ synth, saves, snapshot = () => null, onLoad = () =>
   // render() runs every frame while the menu is open; it only rebuilds the rows when something changed, otherwise a finger or mouse
   // press would land on a row that was replaced before the release (no click) and scrolling would jump back.
   function render() {
-    const key = `${view}|${sel}|${rows.map((r) => r.head ?? `${typeof r.label === 'function' ? r.label() : r.label}${r.val ? r.val() : ''}`).join('|')}`;
+    const key = `${view}|${sel}|${rows.map((r) => r.head ?? `${r.img?.length ?? ''}${typeof r.label === 'function' ? r.label() : r.label}${r.val ? r.val() : ''}`).join('|')}`;
     if (key === lastKey) return;
     lastKey = key;
     box.querySelectorAll('.menurow, .menuhead').forEach((n) => n.remove());
@@ -77,6 +77,7 @@ export function createMenu({ synth, saves, snapshot = () => null, onLoad = () =>
       if (r.head) { box.appendChild(Object.assign(document.createElement('div'), { className: 'menuhead', textContent: r.head })); return; }
       const i = items.indexOf(r), d = document.createElement('div');
       d.className = `menurow${i === sel ? ' sel' : ''}`;
+      if (r.img) d.appendChild(Object.assign(document.createElement('img'), { src: r.img, className: 'menushot' }));
       d.appendChild(Object.assign(document.createElement('span'), { textContent: typeof r.label === 'function' ? r.label() : r.label }));
       if (r.val) {
         const v = document.createElement('span'); v.className = 'menuval';

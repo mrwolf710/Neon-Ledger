@@ -28,6 +28,7 @@ export const AREAS = {
   car:      { origin: [600, 0],  name: "Juno's Car",             district: 'Lowmarket', outdoor: false, mood: 'scene',  surface: 'tile' },
   bureau:   { origin: [1050, 0], name: 'Civic Audit Bureau',     district: 'Civic Centre', outdoor: false, mood: 'bureau', surface: 'tile' }, // chapter 3 hub (docs/chapter-3.md)
   dealer:   { origin: [900, 0],  name: 'Implants',               district: 'Undercity', outdoor: false, mood: 'dealer',  surface: 'tile' }, // chapter 2: the implant dealer's shop (docs/chapter-2.md)
+  drive:    { origin: [1200, 0], name: 'The Road',              district: 'Lowmarket', outdoor: false, mood: 'scene',  surface: null }, // chapter 1 ending: the car alone in the dark while it drives (no floor, no walls)
   exchange: { origin: [750, 0],  name: 'The Echo Exchange',      district: 'Undercity', outdoor: true,  mood: 'bazaar', surface: 'asphalt' }, // chapter 2 hub (docs/chapter-2.md)
 } satisfies Record<string, AreaDef>;
 export type AreaId = keyof typeof AREAS;
@@ -596,8 +597,8 @@ const CAR = {
   at: [-13.5, -1.9], length: 3.3, width: 1.55,        // world position of the centre and the footprint (the first version was 3.0 x 1.4: about 10% bigger now)
   blue: 0x2d4f8f, steel: 0xb4bac4, trim: 0x0b0b12, rim: 0xc9ccd4, tail: 0xff2a3a, head: 0xdff6ff,
 };
-function junoCar(b: Batch, M: Materials) {
-  const [cx, cz] = CAR.at, L = CAR.length, W = CAR.width, std = (color: number, metalness: number, roughness: number) => new THREE.MeshStandardMaterial({ color, metalness, roughness, emissive: color, emissiveIntensity: 0.18 }); // a faint self-glow so the dark paint still reads at night
+function junoCar(b: Batch, M: Materials, at: [number, number] = CAR.at as [number, number]) {
+  const [cx, cz] = at, L = CAR.length, W = CAR.width, std = (color: number, metalness: number, roughness: number) => new THREE.MeshStandardMaterial({ color, metalness, roughness, emissive: color, emissiveIntensity: 0.18 }); // a faint self-glow so the dark paint still reads at night
   const blue = std(CAR.blue, 0.55, 0.35), steel = std(CAR.steel, 0.8, 0.4), trim = std(CAR.trim, 0.3, 0.6), rim = std(CAR.rim, 0.9, 0.3);
   const glow = (hex: number) => new THREE.MeshBasicMaterial({ color: new THREE.Color(hex).multiplyScalar(BUILDINGS.windowGlow) }), tail = glow(CAR.tail), head = glow(CAR.head);
   const part = (m: THREE.Material, sx: number, sy: number, sz: number, x: number, y: number, z: number) => b.box(m, sx, sy, sz, cx + x, y, cz + z, 0, 0, false); // x along the car (front +x), z across
@@ -633,13 +634,22 @@ function junoCar(b: Batch, M: Materials) {
 function streetExtras(M: Materials) {
   const b = createBatch(), PM = propMats(M);
   b.setTransform(0, 0, 0);
-  b.box(signMat('SABLE', P.amber), 6, 1.2, 0.1, 0, 3.1, -4.82, 0, 0, false);          // covers the random shop sign on that building
+  b.box(signMat('SABLE', P.amber), 6, 1.2, 0.1, 0, 3.1, -4.0, 0, 0, false);           // covers the random shop sign on that building; hangs out past the random balcony / fire-escape rails (0.7 deep) so nothing hides the letters
   b.light(P.amberLight, 4.5, 0, 3.0, -4.2);
   b.box(signMat('CAPSULE', P.pink), 3.4, 0.8, 0.1, 10.6, 3.0, 4.82, 0, 0, false);       // over the hostel entrance (the door is at x 10.6, z 4.15)
   junoCar(b, M);
   for (const e of EXIT_DEFS.filter((x) => x.area === 'street')) b.box(M.litCool, 1.2, 0.03, 0.8, e.at[0], 0.03 + (Math.abs(e.at[1]) > 3 ? 0.15 : 0), e.at[1]);
   const g = b.build();
   return { group: g, blocks: g.userData.blocks, lights: g.userData.lights };
+}
+
+// The drive: just Juno's car (nose toward -x, the way the speed lines flow from) with a cool light on it, nothing else.
+function driveArea(M: Materials) {
+  const b = begin('drive');
+  b.setTransform(AREAS.drive.origin[0], AREAS.drive.origin[1], Math.PI);
+  junoCar(b, M, [0, 0]);
+  b.light(0x9fe8ff, 6, 0, 3, 1.5); b.light(0x9fe8ff, 6, 0, 3, -1.5);
+  return finish('drive', b, [-4, -3, 4, 3]);
 }
 
 // Builds every area. rng: the world rng; returns { id: area }.
@@ -653,7 +663,7 @@ export function buildAreas(rng: Rng) {
     blocks: [...d.userData.blocks, ...ex.blocks], spots: d.userData.spots, lights: [...d.userData.lights, ...ex.lights],
     signs: d.userData.signs, steam: d.userData.steam, bounds: streetBounds(), road: [-3, 3],
   };
-  const areas: Record<AreaId, AreaRecord> = { street, platform: platform(M), sable: sable(M), alley: alley(M), hostel: hostel(M), car: car(M), dealer: dealer(M), bureau: bureau(M, rng.fork('bureau')), exchange: exchange(M, rng.fork('exchange')) };
+  const areas: Record<AreaId, AreaRecord> = { street, platform: platform(M), sable: sable(M), alley: alley(M), hostel: hostel(M), car: car(M), dealer: dealer(M), bureau: bureau(M, rng.fork('bureau')), exchange: exchange(M, rng.fork('exchange')), drive: driveArea(M) };
   // The train is a child of the platform group so it shows and hides with it.
   areas.platform.group.add(areas.platform.train!);
   for (const e of EXIT_DEFS) (areas[e.area].exits ??= []).push(e);
