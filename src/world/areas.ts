@@ -346,7 +346,7 @@ export const BUREAU = {
   rooms: { hale: [-9, -3], cells: [-3, 3], lab: [3, 9] },            // the wing's z ranges
   winH: 5, pier: 0.8, bay: 4,                  // window wall height, pier width, spacing between piers
   desks: { xs: [-11, -6.5, -2, 2.5], zs: [-6, -2, 2], w: 2.0, d: 0.9 },
-  columns: { xs: [-8, -2, 4], zs: [-4] },                              // the only columns: three, evenly spaced down the middle aisle
+  columns: { xs: [-8, -2], zs: [-4] },                                // the only columns: two down the middle aisle (none at x 4: the auditors walk through it outside Hale's office)
   mullion: 3,                                                          // spacing of the thin window bars (no pier columns)
   screenOn: 0.75,                                                      // share of desk monitors that are switched on (night shift, mostly empty)
   skyline: { towers: 70, from: 3.5, to: 30, minH: 12, maxH: 40, lit: 0.85 },   // how many towers and how far out (outside the window walls)
