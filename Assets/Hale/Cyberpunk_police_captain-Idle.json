@@ -13,12 +13,12 @@
   "spritesheet": {
     "path": "Cyberpunk_police_captain-Idle.png",
     "cell_size": {
-      "width": 48,
-      "height": 48
+      "width": 80,
+      "height": 80
     },
     "sheet_size": {
-      "width": 384,
-      "height": 48
+      "width": 640,
+      "height": 720
     },
     "columns": 8,
     "pivot": "cell-center",
@@ -37,9 +37,73 @@
           "west",
           "south-west"
         ]
+      },
+      {
+        "row": 1,
+        "type": "animation",
+        "frame_count": 6,
+        "animation": "Walk",
+        "animation_group_id": "99cac40e-3328-4191-8edc-67603ec0b037",
+        "direction": "south"
+      },
+      {
+        "row": 2,
+        "type": "animation",
+        "frame_count": 6,
+        "animation": "Walk",
+        "animation_group_id": "99cac40e-3328-4191-8edc-67603ec0b037",
+        "direction": "south-east"
+      },
+      {
+        "row": 3,
+        "type": "animation",
+        "frame_count": 6,
+        "animation": "Walk",
+        "animation_group_id": "99cac40e-3328-4191-8edc-67603ec0b037",
+        "direction": "east"
+      },
+      {
+        "row": 4,
+        "type": "animation",
+        "frame_count": 6,
+        "animation": "Walk",
+        "animation_group_id": "99cac40e-3328-4191-8edc-67603ec0b037",
+        "direction": "north-east"
+      },
+      {
+        "row": 5,
+        "type": "animation",
+        "frame_count": 6,
+        "animation": "Walk",
+        "animation_group_id": "99cac40e-3328-4191-8edc-67603ec0b037",
+        "direction": "north"
+      },
+      {
+        "row": 6,
+        "type": "animation",
+        "frame_count": 6,
+        "animation": "Walk",
+        "animation_group_id": "99cac40e-3328-4191-8edc-67603ec0b037",
+        "direction": "north-west"
+      },
+      {
+        "row": 7,
+        "type": "animation",
+        "frame_count": 6,
+        "animation": "Walk",
+        "animation_group_id": "99cac40e-3328-4191-8edc-67603ec0b037",
+        "direction": "west"
+      },
+      {
+        "row": 8,
+        "type": "animation",
+        "frame_count": 6,
+        "animation": "Walk",
+        "animation_group_id": "99cac40e-3328-4191-8edc-67603ec0b037",
+        "direction": "south-west"
       }
     ]
   },
   "export_version": "1.0",
-  "export_date": "2026-10-07T11:48:36.464786+00:00"
+  "export_date": "2026-10-18T00:15:42.247541+00:00"
 }

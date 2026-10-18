@@ -55,7 +55,7 @@ export const DEALER_ART = { ...MARKET1_ART, base: 'sprites/dealer', cell: 68, fp
 export const MARKET4_ART = { ...MARKET1_ART, base: 'sprites/market4', cell: 68, fps: 8, frames: 8 }; // market4 = Slate, the ID printer (tattooed, eyepiece): 68 px cells, 8-frame idle
 export const MARKET3_ART = { ...MARKET1_ART, base: 'sprites/market3' }; // market3 = Gutter, the parts seller (tank top, cybernetic arm)
 // Hale: eight 48 px rotation frames across one row; comms show the rear-left (north-west) view.
-export const HALE_ART = { base: 'sprites/hale', size: 48, pxPerUnit: 24, dirs: JUNO_ART.dirs, portraitDirection: 'north-west' };
+export const HALE_ART = { base: 'sprites/hale', size: 48, pxPerUnit: 24, sheets: { walk: { file: 'walk/sheet', frames: 6 } }, sheetCell: 80, walkFps: 8, dirs: JUNO_ART.dirs, portraitDirection: 'north-west' };
 // Street walkers (CAST walkerA, walkerB): one Pixellab sheet each: row 0 = 8 stills (idle), rows 1-8 = the walk per direction (`frames` long). `cell` px cells, cropped to the middle 48 px.
 export const WALKER1_ART = { base: 'sprites/walker1', size: 48, cell: 80, frames: 8, pxPerUnit: 24, walkFps: 7, dirs: JUNO_ART.dirs }; // the "sad walk"
 export const WALKER2_ART = { base: 'sprites/walker2', size: 48, cell: 64, frames: 6, pxPerUnit: 24, walkFps: 8, dirs: JUNO_ART.dirs }; // the businessman

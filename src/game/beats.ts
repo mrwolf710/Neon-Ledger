@@ -14,6 +14,7 @@ import type { Spot } from '../types.ts';
 // Beats 1-3 live here (Stage 9A); later beats add steps to STEPS and conversations to story.js.
 export const BEATS = {
   fixerLeave: 2.0,     // seconds the fixer takes to walk out of the shop
+  carAt: [-13.5, -1.9],   // where Juno's car is parked on the street (the exterior shot of the drive; areas.ts CAR.at)
   driveSeconds: 6.5,   // chapter 1 ending: how long the drive to the Exchange sounds (the CHAPTER 2 card is held to match)
   overrideSeconds: 2.4, // the red 'System override' banner before Hale's forced call at the end of chapter 1
   finaleSeconds: 10, finaleGuard: 1.5, // end of chapter 1: how long the fast music plays before it moves on by itself; seconds before a tap can skip it
@@ -232,10 +233,15 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     { const miso = cast.byId.miso; miso.follow = null; miso.away = true; cast.apply(); }   // Miso stays behind: he does not come past chapter 1
     await wait(0.6);
     sfx.carDrive?.(BEATS.driveSeconds);                          // she drives to the Exchange: streaks race past the windows, then black
-    { const c = Math.cos(cam.yaw), sn = Math.sin(cam.yaw); await fade.speedLines(BEATS.driveSeconds - 2.9, c, sn * 0.7); }   // the car heads west (-x): on screen that is (-cos, -sin * 0.7), so the streaks flow the other way
+    await fade.out();                                            // cut to the outside of the car, driving off (Juno stays hidden)
+    cast.setHidden(true);
+    world.jump('street', [BEATS.carAt[0], BEATS.carAt[1], 0]);
+    await fade.in();
+    { const c = Math.cos(cam.yaw), sn = Math.sin(cam.yaw); await fade.speedLines(BEATS.driveSeconds - 3.6, c, sn * 0.7); }   // the car heads west (-x): on screen that is (-cos, -sin * 0.7), so the streaks flow the other way
     await fade.out();
     const sp = world.spot('exchange', 'start')!;
     world.jump('exchange', [sp.x, sp.z, Math.PI / 2]);           // while the screen is black
+    cast.setHidden(false);
     await fade.card([{ text: 'CHAPTER 2', color: '#ff8a1f', scale: 6 }, { text: 'THE ECHO EXCHANGE', color: '#ffd23a', scale: 3 }], BEATS.driveSeconds - 3.6); // held so the drive sound plays out under it
     await fade.in();
     locked = false;
@@ -300,17 +306,17 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
   const fillers = (() => { const r = rng.fork('mail'), a = [...MAIL.filler]; for (let i = a.length - 1; i > 0; i--) { const j = r.int(0, i); [a[i], a[j]] = [a[j], a[i]]; } return a; })();
   let pcCount = 0;
   const stationClues = () => ['archive', 'roster', 'haledesk', 'cellwall', 'queue'].every((id) => flag(`ex_${id}`)); // the five clues outside the lab
+  const CODE_PC = 3;   // which lit desk computer holds the lab code
   const DESK_CLUES = ['roster', 'queue', 'haledesk'];   // desk screens: the auditors yell at her for touching any of them
   function audBlock() { caseFile.setFlag('pc_tried'); dialogue.start('aud_block'); }
   function useComputer(n: number) {
     if (locked) return;
     if (!flag('aud_gone')) { audBlock(); return; }
-    const ranks = [1, 2, 3, 4], have = (k: number) => ranks.find((r) => flag(`pc${k}_r${r}`)), opened = () => Array.from({ length: pcCount }, (_, i) => i + 1).filter(have).length;
-    let rank = have(n);
-    if (!rank && opened() === 2 && !stationClues()) { dialogue.start('pc_dark'); return; } // the third screen stays dark until she has the other five clues
-    if (!rank) { rank = 1 + opened(); caseFile.setFlag(`pc${n}_r${rank}`); }   // the 1st and 2nd computer she opens are filler, the 3rd always holds the code
-    const mail = rank === 3 ? MAIL.code : fillers[(n - 1) % fillers.length];
-    terminal.mail(mail.owner, mail.items).then(() => { if (rank === 3 && !flag('lab_code_found')) dialogue.start('code_found'); });
+    // Every lit screen opens to mail. The third lit desk (CODE_PC) holds the lab code mail; the rest are filler, each different.
+    const hasCode = n === CODE_PC;
+    if (hasCode) caseFile.setFlag(`pc${n}_code`);
+    const mail = hasCode ? MAIL.code : fillers[(n - 1) % fillers.length];
+    terminal.mail(mail.owner, mail.items).then(() => { if (hasCode && !flag('lab_code_found')) dialogue.start('code_found'); });
   }
   // Hale walks the route (sliding, she has no walk frames) and stops facing the cells; flag hale_left when she arrives.
   function walkHale() {
@@ -320,7 +326,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     tween(total / J.speed, (u) => {
       let d = u * total, i = 0; while (i < lens.length - 1 && d > lens[i]) d -= lens[i++];
       const k = lens[i] ? Math.min(1, d / lens[i]) : 1, [ax, az] = pts[i], [bx, bz] = pts[i + 1];
-      h.position.set(ax + (bx - ax) * k, 0, az + (bz - az) * k); h.facing = u >= 1 ? Math.PI / 2 : Math.atan2(bx - ax, bz - az);
+      h.position.set(ax + (bx - ax) * k, 0, az + (bz - az) * k); h.facing = u >= 1 ? Math.PI / 2 : Math.atan2(bx - ax, bz - az); h.anim = u >= 1 ? 'idle' : 'walk';
     }).then(() => caseFile.setFlag('hale_left'));
   }
   async function fakeCall() {
@@ -378,7 +384,8 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     finale = false;
     const [ox, oz] = origin('bureau'), at = (x: number, z: number): [number, number] => [ox + x, oz + z], juno = cast.byId.juno, auds = ['aud1', 'aud2', 'aud3'].map((id) => cast.byId[id]);
     const st = world.spot('bureau', 'start')!;
-    world.jump('bureau', [st.x, st.z, 0]);                       // Juno at the entrance (while the screen is black)
+    world.jump('bureau', [st.x, st.z, 0]);
+    { const hs = world.spot('bureau', 'hale')!, h = cast.byId.hale; h.position.set(hs.x, 0, hs.z); h.facing = -Math.PI / 2; h.anim = 'idle'; }   // Hale waits in her office (not wherever an earlier run of the scene left her)                       // Juno at the entrance (while the screen is black)
     // The auditors LEAD: they walk ahead along the route (a path of points), Juno follows a few steps behind. Each auditor stays `gap` units ahead of her progress along the path.
     const route = [[st.x, st.z], at(0.25, -3.2), at(6.2, -3.2), at(6.2, -5.9), at(9.4, -5.9)], cum = [0];
     for (let k = 1; k < route.length; k++) cum.push(cum[k - 1] + Math.hypot(route[k][0] - route[k - 1][0], route[k][1] - route[k - 1][1]));

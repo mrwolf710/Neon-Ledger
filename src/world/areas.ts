@@ -403,14 +403,14 @@ function bureau(M: Materials, rng: Rng) {
     b.box(M.metal, 0.5, 0.03, 0.18, x, 0.83, z + 0.1);                                                              // keyboard
     b.box(PM.vendBody, 0.5, 0.08, 0.5, x + 0.1, 0.5, z + 0.95, 0, 0.15); b.box(PM.vendBody, 0.5, 0.55, 0.07, x + 0.1, 0.8, z + 1.2, 0, 0.15); b.block(x + 0.1, z + 1.0, 0.5, 0.5); // chair
   }
-  for (const x of BUREAU.columns.xs) for (const z of BUREAU.columns.zs) { b.box(M.walls[1], 0.6, H5 - 0.4, 0.6, x, (H5 - 0.4) / 2, z); b.block(x, z, 0.6, 0.6); }
+  for (const x of BUREAU.columns.xs) for (const z of BUREAU.columns.zs) { b.box(M.walls[1], 0.6, H5 - 0.4, 0.6, x, (H5 - 0.4) / 2, z); b.block(x, z, 0.35, 0.35); }   // the pillar is 0.6 wide but only its core blocks, so the aisles stay easy to walk
   b.box(signMat('CIVIC AUDIT BUREAU', 0x2a6b72, true), 6.4, 0.8, 0.1, -4, 3.9, hz0 + 0.1, 0, 0, false);              // a sign on the north wall's inside
   // --- Hale's office (north-east): her desk, chair, shelves and a sofa. Warm light, the only warm room.
   const hx = (wx0 + wx1) / 2, hz = (R.hale[0] + R.hale[1]) / 2;
-  b.box(PM.wood, 1.1, 0.9, 2.6, hx - 0.6, 0.45, hz - 0.6); b.box(M.metal, 1.2, 0.06, 2.7, hx - 0.6, 0.93, hz - 0.6); b.block(hx - 0.6, hz - 0.6, 1.1, 2.6);   // her desk runs north-south, the chair on its west side with its back to the glass
-  b.box(M.frame, 0.05, 0.55, 0.9, hx - 0.35, 1.25, hz - 0.6); b.box(cool, 0.03, 0.45, 0.8, hx - 0.38, 1.26, hz - 0.6);   // the monitor, facing the chair
-  b.box(M.frame, 0.12, 0.35, 0.12, hx - 0.5, 1.1, hz - 1.6); b.box(warm, 0.3, 0.12, 0.3, hx - 0.5, 1.34, hz - 1.6);    // the desk lamp
-  b.box(PM.vendBody, 0.7, 0.1, 0.7, hx - 1.4, 0.55, hz - 0.6); b.box(PM.vendBody, 0.1, 0.7, 0.7, hx - 1.75, 0.95, hz - 0.6); b.block(hx - 1.4, hz - 0.6, 0.7, 0.7);
+  b.box(PM.wood, 2.6, 0.9, 1.1, hx + 1.0, 0.45, hz - 0.2); b.box(M.metal, 2.7, 0.06, 1.2, hx + 1.0, 0.93, hz - 0.2); b.block(hx + 1.0, hz - 0.2, 2.6, 1.1);   // her desk, chair on its north side (back to the north windows), all facing the south wall
+  b.box(M.frame, 0.9, 0.55, 0.05, hx + 1.0, 1.25, hz + 0.1); b.box(cool, 0.8, 0.45, 0.03, hx + 1.0, 1.26, hz + 0.07);   // the monitor, screen toward the chair
+  b.box(M.frame, 0.12, 0.35, 0.12, hx + 2.0, 1.1, hz + 0.1); b.box(warm, 0.3, 0.12, 0.3, hx + 2.0, 1.34, hz + 0.1);    // the desk lamp
+  b.box(PM.vendBody, 0.7, 0.1, 0.7, hx + 1.0, 0.55, hz - 1.2); b.box(PM.vendBody, 0.7, 0.7, 0.1, hx + 1.0, 0.95, hz - 1.55); b.block(hx + 1.0, hz - 1.2, 0.7, 0.7);
   b.box(PM.wood, 3.0, 1.9, 0.35, hx - 1.2, 0.95, R.hale[0] + 0.45); b.block(hx - 1.2, R.hale[0] + 0.45, 3.0, 0.35);
   b.box(PM.vendBody, 2.0, 0.5, 0.8, hx - 2.4, 0.25, hz + 1.9); b.block(hx - 2.4, hz + 1.9, 2.0, 0.8);
   // --- Holding cells (east): three cells behind bars; a bench and a dull red light in each. The corridor in front stays open.
@@ -436,9 +436,9 @@ function bureau(M: Materials, rng: Rng) {
   // --- Lights (kept few for the iPhone): the screens are the light. Dim cyan pools at the desk clusters, one lamp and one screen glow in Hale's office,
   // the lab's screens, a dull red wash for the cells and the archive racks' faint glow. No ceiling lamps.
   for (const [x, z] of [[-11, -5.3], [-4, -5.3], [3, -5.3], [-11, -1.3], [-4, -1.3], [3, -1.3]]) b.light(C.cool, 5, x, 1.5, z);
-  b.light(C.warm, 6, hx - 0.5, 1.6, hz - 1.6); b.light(C.cool, 3, hx - 0.6, 1.4, hz - 0.5);
+  b.light(C.warm, 6, hx + 2.0, 1.6, hz + 0.1); b.light(C.cool, 3, hx + 1.0, 1.4, hz - 0.3);
   b.light(C.cool, 6, lx, 2.0, lz - 1.0); b.light(C.alarm, 6, wx1 - 2.0, 2.0, (R.cells[0] + R.cells[1]) / 2); b.light(C.cool, 4, -11.5, 2.0, 6.2);
-  b.spot('frontdoor', 0, 8.3); b.spot('haledesk', hx - 0.6, hz + 1.1);   // clue spots: a desk roster, a desk's clean-up queue, Hale's desk terminal
+  b.spot('frontdoor', 0, 8.3); b.spot('haledesk', hx + 1.95, hz - 1.0);   // clue spots: a desk roster, a desk's clean-up queue, Hale's desk terminal
   // --- The lab's door: a sliding slab in the doorway (hidden when the code is entered; beats.js clears the collision too), a keypad post beside it with a red/green LED.
   const [ox, oz] = AREAS.bureau.origin, dz = R.lab[0] + 3.0;
   b.box(M.frame, 0.25, 1.3, 0.25, wx0 - 0.5, 0.65, dz - 0.9); b.box(cool, 0.04, 0.16, 0.12, wx0 - 0.63, 1.0, dz - 0.9);

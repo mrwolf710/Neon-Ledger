@@ -115,6 +115,28 @@
       },
       "fixedIn": "7b200d6",
       "note": "Reworked with the owner: camera faces north in the Exchange; route = south, east along the south lane, up the east wall, west through the middle aisle, up the left lane to Echo Chamber."
+    },
+    {
+      "id": 6,
+      "status": "open",
+      "text": "there's a fire escape blocking the end of the word SABLE on the sign outside the Sable Noodle House.",
+      "at": "2026-10-18T00:53:10.352Z",
+      "context": {
+        "area": "street",
+        "place": "Lowmarket Street",
+        "pos": [
+          1.4,
+          -3.1
+        ],
+        "objective": "",
+        "clock": "23:48",
+        "quality": "high",
+        "build": "8877a23 13:02",
+        "facts": 0,
+        "flags": 3,
+        "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/15",
+        "device": "mouse"
+      }
     }
   ]
 }
