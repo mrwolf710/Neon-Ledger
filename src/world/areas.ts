@@ -125,7 +125,7 @@ function begin(id: AreaId) {
 // Finish an area: bounds are local floor rectangles; returns the common record.
 export interface AreaExtra {
   train?: THREE.Group; trainGlow?: THREE.MeshBasicMaterial[]; trainStop?: [number, number];
-  labDoor?: THREE.Mesh; labLed?: THREE.Mesh; labCover?: THREE.Mesh; mess?: THREE.Group; blink?: THREE.MeshBasicMaterial[]; labScreen?: THREE.MeshBasicMaterial;
+  labDoor?: THREE.Mesh; labLed?: THREE.Mesh; labCover?: THREE.Mesh; mess?: THREE.Group; blink?: THREE.MeshBasicMaterial[]; labScreen?: THREE.MeshBasicMaterial; labOverlay?: THREE.Mesh;
 }
 export interface AreaRecord extends AreaExtra {
   id: AreaId; meta: AreaDef; group: THREE.Group; extra: AreaExtra;
@@ -510,15 +510,16 @@ function bureau(M: Materials, rng: Rng) {
   const labLed = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.06), new THREE.MeshBasicMaterial({ color: C.alarm })); labLed.position.set(ox + wx0 - 0.66, 1.2, oz + dz - 0.9);
   // The memory lab is a solid closed room (nothing of it can be seen from outside) until the code opens the door (syncLabDoor hides this).
   const labCover = new THREE.Mesh(boxGeo(wx1 - wx0 - 0.15, 2.7, R.lab[1] - R.lab[0] - 0.05), M.walls[1]); labCover.position.set(ox + (wx0 + wx1) / 2 + 0.07, 1.35, oz + (R.lab[0] + R.lab[1]) / 2 + 0.02);
+  const labOverlay = new THREE.Mesh(new THREE.PlaneGeometry(4.0, 1.55).rotateY(Math.PI), new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false })); labOverlay.position.set(ox + (wx0 + wx1) / 2, 1.5, oz + R.lab[1] - 0.12 - 0.105); labOverlay.visible = false;
   const cn2 = R.cells[1] - R.cells[0];
-  b.spot('labdoor', wx0 - 1.0, dz); b.spot('labscreen', lx, R.lab[1] - 0.12); b.spot('prisoner', cx0 + 2.2, R.cells[0] + cn2 / 2);
+  b.spot('labdoor', wx0 - 1.0, dz); b.spot('labscreen', lx, R.lab[1] - 0.12); b.spot('vjuno', lx, lz - 0.05); b.spot('vhale', lx + 1.6, lz - 0.1); b.spot('prisoner', cx0 + 2.2, R.cells[0] + cn2 / 2);
   const deskSpot = (name: string, [x, z]: [number, number]) => b.spot(name, x - 0.6, z + 0.7);   // beside the chair, in front of the screen
   deskSpot('roster', onDesks[1]); deskSpot('queue', onDesks[onDesks.length - 2]);   // two of the lit screens hold clues, the rest are mail (pc1, pc2...)
   onDesks.filter((_, i) => i !== 1 && i !== onDesks.length - 2).forEach((d, i) => deskSpot('pc' + (i + 1), d));
   b.box(M.frame, 0.22, 0.06, 0.16, -11.2, 0.84, 6.2); b.box(M.litWarm, 0.18, 0.02, 0.1, -11.2, 0.88, 6.2); b.box(M.frame, 0.06, 0.05, 0.2, -11.2, 0.92, 6.2); b.spot('phone', -11.5, 5.5);   // the phone on the archive table
   b.spot('start', 0, 7.4); b.spot('hale', hx - 1.0, R.hale[0] + 3.1); b.spot('chair', lx - 3.0, R.lab[1] - 1.5); b.spot('cell1', wx1 - 1.2, R.cells[0] + cn / 6); b.spot('archive', -11.5, 5.0);   // the reader log is read at the little table (cart) right of the big screen
-  const out = finish('bureau', b, [hx0, hz0, wx1, hz1], { labDoor, labLed, labCover, blink, labScreen });
-  out.group.add(labDoor, labLed, labCover);
+  const out = finish('bureau', b, [hx0, hz0, wx1, hz1], { labDoor, labLed, labCover, blink, labScreen, labOverlay });
+  out.group.add(labDoor, labLed, labCover, labOverlay);
   return out;
 }
 const P_COOL = BUREAU.colors.cool;

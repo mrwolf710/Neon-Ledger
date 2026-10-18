@@ -147,6 +147,12 @@ let deadTone: ReturnType<typeof synth.tone> | null = null; // the low tone held 
 const terminal = createTerminal({ sfx });
 const beats = createBeats({ terminal, trainSteam, input, world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, echo,
   dawn: () => clock.setTime(5, 40),
+  renderVideo: (vcam, rt, actors, yaw, dt) => {   // the lab's security camera: draws the room with the two recorded people into the big screen's render target (they are hidden from the normal view)
+    const m = CUTAWAY.minY; CUTAWAY.minY = 1e3; fog.cutaway(vcam, vcam.position, rt.width, rt.height); CUTAWAY.minY = m; // no see-through hole for this view (the main one is set again before the frame is drawn)
+    for (const a of actors) { a.root.visible = true; a.update(dt, yaw, world.current.lights); }
+    renderer.setRenderTarget(rt); renderer.render(scene, vcam); renderer.setRenderTarget(null);
+    for (const a of actors) a.root.visible = false;
+  },
   deadHour: () => { tod.setTimeOfDay('blackout', 0.5); lights.scale = 0.3; deadTone = synth.tone({ freq: 55, type: 'sine', dur: 40, vol: 0.3, attack: 2.5, release: 4, bus: 'music' }); }, // beat 7: signs die
   endDeadHour: () => { tod.setTimeOfDay('night', 1.5); lights.scale = 1; deadTone?.gain.gain.setTargetAtTime(0.0001, synth.now, 0.5); deadTone?.osc.stop(synth.now + 3); deadTone = null; }, // chapter 2: she decides to go, the signs and music return, one low tone
 
@@ -156,6 +162,7 @@ beats.register();
 const todMood = () => (phaseId === 'dawn' && !world.current.meta.outdoor ? 'night' : phaseId);
 // the memory lab room in the Bureau: the wing x range and the lab's z range, in the area's own coordinates
 const inLab = () => { if (world.current.id !== 'bureau') return false; const [ox, oz] = world.current.meta.origin, x = player.position.x - ox, z = player.position.z - oz; return x > BUREAU.wing[0] && x < BUREAU.wing[1] && z > BUREAU.rooms.lab[0] && z < BUREAU.rooms.lab[1]; };
+let blurOff = false, blurSaved = 0;
 let phaseId = '', sunsetT: number | null = null, lastAreaId: string | null = null, cameFromSable = false;
 const issues = issuesOn ? createIssues({ input, toast: (t) => hud.toast(t), context: () => ({
   area: world.current.id, place: world.placeAt(player.position.x, player.position.z).name, pos: [+player.position.x.toFixed(1), +player.position.z.toFixed(1)],
@@ -366,10 +373,10 @@ renderer.setAnimationLoop((now) => {
 
   input.update();
   if (input.pressed('resetView')) cam.reset();
-  cam.rotate((input.held('rotateR') ? 1 : 0) - (input.held('rotateL') ? 1 : 0) + input.lookX, dt);
-  cam.orbit(input.orbitDX, input.orbitDY);
+  if (!beats.focus) cam.rotate((input.held('rotateR') ? 1 : 0) - (input.held('rotateL') ? 1 : 0) + input.lookX, dt);
+  if (!beats.focus) cam.orbit(input.orbitDX, input.orbitDY);
   if (import.meta.env.MODE !== 'itch' && input.pressed('debug')) debug.toggle(); // the itch.io build (npm run itch) has no debug menu
-  cam.zoom(CAMERA.wheelZoom ** input.zoomSteps * CAMERA.keyZoom ** (input.zoom * dt) * input.zoomFactor);
+  if (!beats.focus) cam.zoom(CAMERA.wheelZoom ** input.zoomSteps * CAMERA.keyZoom ** (input.zoom * dt) * input.zoomFactor);
   touchUI.update();
   issues.update();
   const scrubAxis = input.moveX; // echo mode scrubs with the move axis
@@ -390,7 +397,7 @@ renderer.setAnimationLoop((now) => {
   if (input.click && beats.calling && !paused) beats.answerCall(); // a click or tap answers Hale's call (it is locked, so the click would otherwise be thrown away below)
   if (modal) { input.click = null; input.moveX = input.moveY = 0; }
   if (!trailer.active && !menuWasOpen && !tutorial.isOpen && !tutWasOpen && title.done && !world.busy && !caseFile.isOpen && !echo.active && !board.isOpen && !terminal.isOpen && input.pressed('pause')) menu.open();
-  cam.tilt((input.held('tiltDown') ? 1 : 0) - (input.held('tiltUp') ? 1 : 0), dt);
+  if (!beats.focus) cam.tilt((input.held('tiltDown') ? 1 : 0) - (input.held('tiltUp') ? 1 : 0), dt);
 
   // Click: a person/object walks there then interacts; the ground walks there.
   if (input.click) {
@@ -426,6 +433,10 @@ renderer.setAnimationLoop((now) => {
   const focus = trailer.focus ?? beats.focus ?? player.position; // cutscenes can point the camera elsewhere
   cam.follow(focus);
   cam.update(dt);
+  const vv = beats.videoView;   // the lab video shows the room through the lab's security camera; otherwise the normal field of view
+  if (vv) { cam.camera.position.copy(vv.pos); cam.camera.lookAt(vv.target); }
+  if (!!vv !== blurOff) { blurOff = !!vv; if (vv) { blurSaved = POST.tilt.maxBlur; POST.tilt.maxBlur = 0; } else POST.tilt.maxBlur = blurSaved; post.applyUniforms(); }   // the recorded feed is sharp: no miniature blur
+  if (cam.camera.fov !== (vv ? vv.fov : CAMERA.fov)) { cam.camera.fov = vv ? vv.fov : CAMERA.fov; cam.camera.updateProjectionMatrix(); }
 
   // Keep the tilt-shift sharp band on whatever the camera follows.
   headPos.copy(focus).setY(focus.y + 1).project(cam.camera);
@@ -459,14 +470,14 @@ renderer.setAnimationLoop((now) => {
   if (trailer.active && TRAILER.void) { (scene.background as THREE.Color).setRGB(0, 0, 0); scene.fog!.color.setRGB(0, 0, 0); } // trailer: no lit haze around the street
   platformSteam(dt, area.id);
   particles.update(dt, cam.target, cam.camera);
-  cast.update(dt, cam.yaw, area.lights);
+  cast.update(dt, vv ? vv.yaw : cam.yaw, area.lights);
   barks.update(dt, area.id, !modal);
   railTrain.update(trailer.trainZ() ?? sfx.trainZ());
   interactions.animate();
   if (modal) interactions.hide(); else interactions.update(player.position, player.facing, input.lastDevice, input.padType, cam.camera);
   fog.update(cam.camera, cam.target);
   const db = renderer.getDrawingBufferSize(bufSize);
-  fog.cutaway(cam.camera, trailer.subject ?? player.position, db.x, db.y); // the trailer centres it on whoever it is filming
+  { const m = CUTAWAY.minY; if (vv) CUTAWAY.minY = 1e3; fog.cutaway(cam.camera, trailer.subject ?? player.position, db.x, db.y); CUTAWAY.minY = m; } // the trailer centres it on whoever it is filming
   lights.focus(cam.target);
   lights.update(dt, cam.target);
   renderer.info.reset();

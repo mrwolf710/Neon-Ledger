@@ -50,17 +50,17 @@ export interface BeatsFade {
 }
 export interface BeatsSfx {
   trainArrive(seconds: number): void;
-  phoneRing?: () => void; phoneAnswer?: () => void; override?: (seconds: number) => void; carDrive?: (seconds: number) => void;
+  ui?: (kind: string) => void; phoneRing?: () => void; phoneAnswer?: () => void; override?: (seconds: number) => void; carDrive?: (seconds: number) => void;
 }
 export interface BeatsHud {
   show(): void; toast(text: string): void;
   setObjectiveText(text: string): void; setObjective(pos: { x: number; z: number } | null): void;
 }
-export interface BeatsCamera { yaw: number; follow(target: THREE.Vector3, snap?: boolean): void; set(opts: { yaw?: number }): void }
+export interface BeatsCamera { yaw: number; pitch: number; distance: number; follow(target: THREE.Vector3, snap?: boolean): void; set(opts: { yaw?: number; pitch?: number; distance?: number }): void }
 export interface BeatsDeps {
   terminal: BeatsTerminal; input: BeatsInput; world: World; cast: Cast; caseFile: CaseFile; dialogue: Dialogue; hud: BeatsHud;
   interactions: Interactions; fade: BeatsFade; sfx: BeatsSfx; player: Player; clock?: unknown; echo: Echo;
-  dawn?: () => void; deadHour?: () => void; endDeadHour?: () => void; trainSteam?: () => void; setExposure?: (v: number) => void; setVhs?: (v: number) => void; setCrt?: (v: number) => void;
+  renderVideo?: (cam: THREE.PerspectiveCamera, rt: THREE.WebGLRenderTarget, actors: CastMember[], yaw: number, dt: number) => void; dawn?: () => void; deadHour?: () => void; endDeadHour?: () => void; trainSteam?: () => void; setExposure?: (v: number) => void; setVhs?: (v: number) => void; setCrt?: (v: number) => void;
 }
 // What the beats read from specific area records (platform, bureau).
 interface PlatformArea {
@@ -78,6 +78,7 @@ export interface Beats {
   restoreStation(): void;
   visits: Record<string, number>;
   readonly focus: THREE.Vector3 | null;
+  readonly videoView: { pos: THREE.Vector3; target: THREE.Vector3; fov: number; yaw: number } | null;   // set while the lab video is shown full-screen: the game camera takes this view
   readonly calling: boolean;
   answerCall(): void;
   readonly ending: boolean;
@@ -96,7 +97,7 @@ export interface Beats {
   onEnter(area: { id: string }): void;
   update(dt: number): void;
 }
-export function createBeats({ terminal, input, world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, echo, dawn = () => {}, deadHour = () => {}, endDeadHour = () => {}, trainSteam = () => {}, setExposure = () => {}, setVhs = () => {}, setCrt = () => {} }: BeatsDeps): Beats {
+export function createBeats({ terminal, input, world, cast, caseFile, dialogue, hud, interactions, fade, sfx, player, clock, echo, renderVideo, dawn = () => {}, deadHour = () => {}, endDeadHour = () => {}, trainSteam = () => {}, setExposure = () => {}, setVhs = () => {}, setCrt = () => {} }: BeatsDeps): Beats {
   const timers: { left: number; res: () => void }[] = [], tweens: { t: number; s: number; fn: (u: number) => void; res: () => void }[] = [], frameHooks = new Set<(dt: number) => void>(); // frameHooks: functions run every frame (dt) while a scene needs them
   let ringing: { t: number } | null = null, answerWait: (() => void) | null = null, callHint = 0;                          // the intro phone: ring loop + the pending answer
   const callEl = document.createElement('div'); callEl.className = 'callprompt'; document.body.appendChild(callEl);
@@ -459,43 +460,88 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     location.reload();
   }
 
-  // Chapter 3: the reader's log plays as a low-fi "video" on the lab's big screen: Hale wipes Juno's memory (session 31). Pixel figures drawn on a canvas that is the screen's texture; the lines play in the dialogue box.
-  const VIDEO = { w: 192, h: 84, shake: 1.5, noise: 40 };
-  let labVideoOn = false;
+  // Chapter 3: the reader's log plays as a "video" on the lab's big screen: a security camera in the real memory-lab room films Juno in the chair and Hale beside her (their own sprites,
+  // drawn only for that camera) into a render target that is the screen's picture; a scanline / REC overlay is drawn over it. The lines play in the dialogue box; the camera zooms in on the screen.
+  const VIDEO = { w: 320, h: 124, fov: 40, cam: [0.6, 2.7, 0.1] as [number, number, number], aim: [0.65, 0.95, -2.2] as [number, number, number], sit: 0.2, shake: 0.03, noise: 36, distance: 5.4, pitchDeg: 0, zoomSeconds: 4.5 };   // cam / aim: security camera and target relative to the screen spot (x, y, z); sit = Juno's height in the chair; distance / pitchDeg: how close and how low the player camera looks at the screen
+  let labVideoOn = false, videoView: { pos: THREE.Vector3; target: THREE.Vector3; fov: number; yaw: number } | null = null;
   async function labVideo() {
-    const a = world.areas.bureau as unknown as { labScreen?: THREE.MeshBasicMaterial }, mat = a.labScreen, sp = world.spot('bureau', 'labscreen');
-    if (!mat || !sp || labVideoOn) return;
+    const a = world.areas.bureau as unknown as { labScreen?: THREE.MeshBasicMaterial; labOverlay?: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial> }, mat = a.labScreen, ov = a.labOverlay, sp = world.spot('bureau', 'labscreen');
+    const vj = cast.byId.vjuno, vh = cast.byId.vhale;
+    if (!mat || !ov || !sp || !vj || !vh || labVideoOn) return;
     labVideoOn = true; locked = true;
     caseFile.setFlag('lab_video_seen');
-    const cv = Object.assign(document.createElement('canvas'), { width: VIDEO.w, height: VIDEO.h }), g = cv.getContext('2d')!;
-    const tex = new THREE.CanvasTexture(cv); tex.magFilter = tex.minFilter = THREE.NearestFilter; tex.generateMipmaps = false; tex.colorSpace = THREE.SRGBColorSpace;
-    mat.map = tex; mat.color.set(0xffffff); mat.needsUpdate = true;
-    let t = 0, who = '', line = 0;
-    const rect = (c: string, x: number, y: number, w: number, h: number) => { g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), w, h); };
+    const rt = new THREE.WebGLRenderTarget(VIDEO.w, VIDEO.h, { magFilter: THREE.NearestFilter, minFilter: THREE.NearestFilter, generateMipmaps: false });
+    const vcam = new THREE.PerspectiveCamera(VIDEO.fov, VIDEO.w / VIDEO.h, 0.1, 60);
+    vcam.position.set(sp.x + VIDEO.cam[0], VIDEO.cam[1], sp.z + VIDEO.cam[2]); vcam.lookAt(sp.x + VIDEO.aim[0], VIDEO.aim[1], sp.z + VIDEO.aim[2]);
+    const vyaw = Math.atan2(vcam.position.x - (sp.x + VIDEO.aim[0]), vcam.position.z - (sp.z + VIDEO.aim[2]));   // the sprites turn to face this camera, not the player's
+    const jp = world.spot('bureau', 'vjuno')!, hp = world.spot('bureau', 'vhale')!;
+    vj.position.set(jp.x, 0, jp.z); vj.facing = 0; vj.anim = 'sit'; vj.lift = VIDEO.sit; vj.fpsScale = 0;   // fpsScale 0: she holds one sitting frame (the two-frame sit loop bobs up and down)
+    vh.position.set(hp.x, 0, hp.z); vh.facing = Math.atan2(jp.x - hp.x, jp.z - hp.z); vh.anim = 'idle';
+    const oc = Object.assign(document.createElement('canvas'), { width: VIDEO.w, height: VIDEO.h }), g = oc.getContext('2d')!, otex = new THREE.CanvasTexture(oc);
+    otex.magFilter = otex.minFilter = THREE.NearestFilter; otex.generateMipmaps = false; otex.colorSpace = THREE.SRGBColorSpace;
+    mat.map = rt.texture; mat.color.set(0xc8f0ff); mat.needsUpdate = true;
+    ov.material.map = otex; ov.material.needsUpdate = true; ov.visible = true;
+    let t = 0, line = 0;
     const draw = (dt: number) => {
-      t += dt; tex.needsUpdate = true;
-      const struggle = line >= 3 ? VIDEO.shake : 0, jx = struggle ? Math.sin(t * 40) * struggle : 0, talk = (s: string) => (who === s && Math.floor(t * 9) % 2 ? 3 : 1);
-      rect('#08141c', 0, 0, VIDEO.w, VIDEO.h); rect('#10303c', 0, 56, VIDEO.w, 28);                    // the lab: back wall and floor
-      for (let i = 0; i < 4; i++) rect(i % 2 ? '#1fd6e8' : '#ffb23a', 18 + i * 40, 10, 22, 10);        // wall monitors
-      rect('#24303c', 52, 44, 44, 16); rect('#24303c', 58, 24, 8, 24);                                 // the chair
-      rect('#c8b27a', 60 + jx, 30, 30, 26); rect('#e8c9a8', 66 + jx, 18, 14, 14); rect('#1a1a2a', 66 + jx, 16, 14, 5);   // Juno, seated: coat, face, hair
-      rect('#6a7a8a', 62 + jx, 12, 20, 10); rect(Math.floor(t * 6) % 2 ? '#ff3b4c' : '#5cf0a0', 70 + jx, 10, 3, 2);       // the head-piece and its LED
-      rect(who === 'juno' ? '#ff3b4c' : '#7a5a4a', 70 + jx, 28, 6, talk('juno'));                      // her mouth
-      rect('#c0243a', 126, 26, 26, 40); rect('#e8c9a8', 131, 14, 16, 14); rect('#e8e8f0', 129, 10, 20, 8); rect('#e8e8f0', 129, 18, 4, 14);   // Hale, standing: red coat, face, white hair
-      rect('#c0243a', 108, 30, 18, 6); rect('#6a7a8a', 100, 32, 10, 4);                                // her arm to the console
-      rect(who === 'hale' ? '#ff3b4c' : '#7a5a4a', 137, 26, 6, talk('hale'));                          // her mouth
-      for (let y = 0; y < VIDEO.h; y += 2) rect('rgba(0,0,0,0.35)', 0, y, VIDEO.w, 1);                  // scanlines
-      for (let i = 0; i < VIDEO.noise; i++) rect(`rgba(200,230,255,${Math.random() * 0.4})`, Math.random() * VIDEO.w, Math.random() * VIDEO.h, 1 + Math.random() * 12, 1);
-      rect('rgba(160,220,255,0.12)', 0, (t * 30) % (VIDEO.h + 10) - 5, VIDEO.w, 4);                        // a rolling tracking bar
-      g.font = '8px monospace'; g.fillStyle = '#9fe8ff'; g.fillText('BUREAU MEMORY AUDIT  SESSION 31', 4, 8);
-      g.fillStyle = '#ff3b4c'; g.fillText((Math.floor(t * 2) % 2 ? '\u25CF REC ' : '    ') + '23:' + String(10 + Math.floor(t / 4)).padStart(2, '0') + ':' + String(Math.floor(t * 7) % 60).padStart(2, '0'), 4, VIDEO.h - 4);
+      t += dt;
+      vj.position.x = jp.x + (line >= 3 ? Math.sin(t * 38) * VIDEO.shake : 0);                                   // she struggles once she begins to resist
+      if (!full) renderVideo?.(vcam, rt, [vj, vh], vyaw, dt);                                          // the screen's picture (until the full-screen cut)
+      g.clearRect(0, 0, VIDEO.w, VIDEO.h);
+      for (let y = 0; y < VIDEO.h; y += 3) { g.fillStyle = 'rgba(0,0,0,0.3)'; g.fillRect(0, y, VIDEO.w, 1); }          // scanlines
+      for (let k = 0; k < VIDEO.noise; k++) { g.fillStyle = `rgba(200,230,255,${Math.random() * 0.35})`; g.fillRect(Math.random() * VIDEO.w, Math.random() * VIDEO.h, 1 + Math.random() * 16, 1); }
+      g.fillStyle = 'rgba(160,220,255,0.10)'; g.fillRect(0, (t * 40) % (VIDEO.h + 12) - 6, VIDEO.w, 5);                  // a rolling tracking bar
+      g.font = '9px monospace'; g.fillStyle = '#9fe8ff'; g.fillText('BUREAU MEMORY AUDIT  SESSION 31  LAB CAM 2', 6, 11);
+      g.fillStyle = '#ff3b4c'; g.fillText((Math.floor(t * 2) % 2 ? '\u25CF REC ' : '      ') + '23:' + String(10 + Math.floor(t / 4)).padStart(2, '0') + ':' + String(Math.floor(t * 7) % 60).padStart(2, '0'), 6, 22);
+      otex.needsUpdate = true;
     };
-    frameHooks.add(draw);
-    focus = new THREE.Vector3(sp.x, 1.2, sp.z - 2.5);                      // the camera turns to the screen
-    await wait(1.2);
-    for (let i = 0; i < LAB_VIDEO.length; i++) { line = i; who = LAB_VIDEO[i].speaker; await dialogue.start(`lab_video_${i}`); }
-    who = ''; await wait(1.0);
-    frameHooks.delete(draw); mat.map = null; mat.needsUpdate = true; tex.dispose(); labVideoOn = false; focus = null;
+    const fo = Object.assign(document.createElement('canvas'), { width: VIDEO.w, height: VIDEO.h }), fg = fo.getContext('2d')!;   // the full-screen camera-feed overlay (the same scanlines / REC / noise) and the glitch bars
+    fo.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:4;pointer-events:none;image-rendering:pixelated;display:none';
+    document.body.appendChild(fo);
+    let full = false, glitching = false;
+    const aim = new THREE.Vector3(sp.x + VIDEO.aim[0], VIDEO.aim[1], sp.z + VIDEO.aim[2]), screenAt = new THREE.Vector3(sp.x, 0.5, sp.z);
+    const feed = (dt: number) => {
+      draw(dt);
+      fg.clearRect(0, 0, VIDEO.w, VIDEO.h);
+      if (full || glitching) fg.drawImage(oc, 0, 0);
+      if (glitching) for (let k = 0; k < 12; k++) { fg.fillStyle = ['rgba(0,229,255,0.5)', 'rgba(255,45,149,0.5)', 'rgba(255,255,255,0.6)', 'rgba(8,8,16,0.9)'][k % 4]; fg.fillRect(Math.random() * 40 - 20, Math.random() * VIDEO.h, VIDEO.w, 1 + Math.random() * 8); }
+    };
+    frameHooks.delete(draw); frameHooks.add(feed);
+    // The game camera is either on the screen (the room) or is the lab's security camera (the feed, full-screen). on = the feed. Also: only the recorded pair is drawn in the feed, and the real Juno is out of it.
+    const view = (on: boolean) => {
+      videoView = on ? { pos: vcam.position.clone(), target: aim, fov: VIDEO.fov, yaw: vyaw } : null;
+      focus = on ? aim.clone().setY(0) : screenAt;
+      vj.away = !on; vh.away = !on; cast.byId.juno.away = on; cast.apply();
+    };
+    // A glitch: the picture tears, flickers between the two views and flashes bars and noise, then settles on the target view.
+    const glitchTo = async (seconds: number, to: boolean) => {
+      glitching = true; fo.style.display = 'block'; sfx.ui?.('glitch');
+      if (to) dissolve(0);                                                  // the room is back for the recording
+      await tween(seconds, (u) => {
+        view(Math.random() < 0.2 + 0.7 * u ? to : !to);
+        fo.style.transform = `translateX(${(Math.random() - 0.5) * 60 * (1 - u)}px)`;
+        if (Math.random() < 0.08) sfx.ui?.('glitch');
+      });
+      view(to); fo.style.transform = ''; glitching = false; full = to; if (!to) fo.style.display = 'none';
+    };
+    const cam0 = { yaw: cam.yaw, pitch: cam.pitch, distance: cam.distance };
+    const zoom = (to: { yaw: number; pitch: number; distance: number }, seconds: number) => {   // a slow, smooth move of the player camera (yaw the short way round)
+      const from = { yaw: cam.yaw, pitch: cam.pitch, distance: cam.distance }, dy = Math.atan2(Math.sin(to.yaw - from.yaw), Math.cos(to.yaw - from.yaw));
+      return tween(seconds, (u) => { const e = u * u * (3 - 2 * u); cam.set({ yaw: from.yaw + dy * e, pitch: from.pitch + (to.pitch - from.pitch) * e, distance: from.distance + (to.distance - from.distance) * e }); });
+    };
+    const room = world.areas.bureau.group.children.filter((c) => c instanceof THREE.Mesh && (c as THREE.Mesh).material !== mat && c !== ov), order = room.map((_, k) => k).sort(() => Math.random() - 0.5);
+    const dissolve = (u: number) => room.forEach((c, k) => { c.visible = order[k] / room.length >= u; });   // the furniture and walls drop out one by one as the camera moves in (u 0 = all there, 1 = only the TV)
+    focus = screenAt;                                                       // 1: the player camera moves to the north side of the room and zooms slowly in on the screen (the player cannot move it)
+    await Promise.all([zoom({ yaw: Math.PI, pitch: THREE.MathUtils.degToRad(VIDEO.pitchDeg), distance: VIDEO.distance }, VIDEO.zoomSeconds), tween(VIDEO.zoomSeconds * 0.85, dissolve)]);
+    await wait(0.5);
+    await glitchTo(1.1, true);                                              // 2: it glitches out into the feed itself, full-screen: Hale wiping Juno's memory
+    await wait(0.8);
+    for (let i = 0; i < LAB_VIDEO.length; i++) { line = i; await dialogue.start(`lab_video_${i}`); }
+    await wait(1.0);
+    await glitchTo(0.9, false);                                             // 3: and glitches back to the room, then the camera pulls away
+    dissolve(0);
+    await zoom(cam0, 1.6);
+    frameHooks.delete(feed); fo.remove(); ov.visible = false; mat.map = null; mat.needsUpdate = true; rt.dispose(); otex.dispose();
+    labVideoOn = false; focus = null;
     await dialogue.start('lab_video_after');
     locked = false;
   }
@@ -551,7 +597,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
       interactions.add({ id: e.id, get area() { return e.id === 'arcade-door' && !flag('chapter4') ? '' : e.area; }, position: new THREE.Vector3(e.at[0], 0, e.at[1]), height: 1.2, verb: e.verb,
         onInteract: () => { if (e.id === 'dealer-door' && !flag('dealer_open')) dialogue.start('dealer_locked'); else if (e.id === 'arcade-door' && !flag('arcade_call')) dialogue.start('arcade_closed'); else if (e.id === 'sable-door' && flag('chapter4') && !flag('kit_warned')) dialogue.start('sable_kit_first'); else if (e.id === 'dealer-out' && flag('fixer_done') && !flag('auditors_done')) { if (!locked) outsideScene(); } else world.enter(e.to, e.spawn); } }); // the dealer's door stays shut until the locker deduction
     }
-    for (const id of ['fixer', 'aud1', 'aud2', 'aud3']) cast.byId[id].away = true; // scripted people appear only in their scenes
+    for (const id of ['fixer', 'aud1', 'aud2', 'aud3', 'vjuno', 'vhale']) cast.byId[id].away = true; // scripted people appear only in their scenes
     for (const x of EXAMINABLES) {
       const s = world.spot(x.area, x.spot)!;
       interactions.add({ id: `ex:${x.id}`, get area() { return x.area === 'sable' && flag('chapter4') ? '' : x.area; }, position: new THREE.Vector3(s.x, 0, s.z), height: 1.0, verb: x.verb, clue: () => !flag(`ex_${x.id}`) && !(x.area === 'sable' && flag('chapter4')) && (!DESK_CLUES.includes(x.id) || flag('aud_gone')) && (x.id !== 'haledesk' || flag('hale_left')),
@@ -664,6 +710,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     get locked() { return locked; },
     visits, // talks per person (a save game keeps them)
     get focus() { return focus; },
+    get videoView() { return videoView; },
     get calling() { return !!answerWait; },                       // Hale's call at the start is waiting to be answered
     answerCall() { answerWait?.(); answerWait = null; },
     get ending() { return ending; },

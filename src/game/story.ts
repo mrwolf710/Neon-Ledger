@@ -219,8 +219,7 @@ export const CONVERSATIONS: Record<string, Conversation> = {
     a: { speaker: 'juno', text: 'The reader wakes at my touch. My implant log: 23:10 to 23:57, a clean cut with a wipe signature. The same mark sits on the edge of every older gap.', next: 'b', effects: [{ addFact: 'wipe_signature' }, { setFlag: 'ex_reader' }] },
     b: { speaker: 'juno', text: "Operator: HALE, V. Every session, my case number, the same login. Director Hale, on this reader, every single time.", next: 'c' },
     c: { speaker: 'hale', text: "(A voice note, her voice.) Subject Vale, session complete. Standard story. She wakes on the platform believing she lost an hour.", next: 'd' },
-    d: { speaker: 'juno', text: "(Not a clerk. Not a system. Her. She sat in this chair, held me under, and walked me to the train.)", next: 'e' },
-    e: { speaker: 'juno', text: "(The reader logged my touch. She'll know within minutes. I'm not waiting for dawn.)", end: true, effects: [{ setFlag: 'bureau_deduced' }] },
+    d: { speaker: 'juno', text: "(Not a clerk. Not a system. Her. She sat me in this chair and put me under, over and over, and walked me to the train. There's a recording.)", end: true },
     again: { speaker: 'juno', text: 'HALE, V. Operator, every time.', end: true },
   } },
   ex_archive: examine('archive', 'clean_closes', "My case file. Thirty-one cases, every one closed inside a day, not one witness statement. Thirty-one clean closes.", 'Thirty-one cases. Thirty-one clean closes.'),
@@ -561,7 +560,8 @@ export const LAB_VIDEO: { speaker: string; text: string }[] = [
 LAB_VIDEO.forEach((l, i) => { CONVERSATIONS[`lab_video_${i}`] = { start: 'a', nodes: { a: { speaker: l.speaker, text: l.text, end: true } } }; });
 CONVERSATIONS.lab_video_after = { start: 'a', nodes: {
   a: { speaker: 'juno', text: "(That was me. That was Hale's voice, and my own, begging. And the date on the log is not the only one.)", next: 'b' },
-  b: { speaker: 'juno', text: "(Thirty-one sessions. She has done this to me thirty-one times.)", end: true },
+  b: { speaker: 'juno', text: "(Thirty-one sessions. She has done this to me thirty-one times.)", next: 'c' },
+  c: { speaker: 'juno', text: "(The reader logged my touch. She'll know within minutes. I'm not waiting for dawn.)", end: true, effects: [{ setFlag: 'bureau_deduced' }] },
 } };
 
 // Conversations made in the editor: lines play in order; active ones become what the person says when Juno talks to them.

@@ -52,6 +52,9 @@ export const CAST = [
   { id: 'dealer', area: 'dealer', at: 'dealer', facing: 0, booth: true },
   { id: 'fixer', area: 'dealer', at: 'fixer', sheet: 'walkerB', facing: -Math.PI / 4, ambient: true },
   { id: 'stranger', area: 'arcade', at: 'stranger', sheet: 'walkerD', facing: Math.PI / 2, ambient: true },   // chapter 4: the go-between at the arcade (borrowed sprite)
+  // Chapter 3: the two people in the memory lab's recorded wipe session (beats.labVideo). Never drawn in the room: they are shown only to the security camera that films the big screen.
+  { id: 'vjuno', area: 'bureau', at: 'vjuno', sheet: 'juno', facing: 0, pose: 'sit', ambient: true },
+  { id: 'vhale', area: 'bureau', at: 'vhale', sheet: 'hale', facing: 0, ambient: true },
   { id: 'aud1', area: 'exchange', at: [748.5, -7.2], facing: Math.PI / 2, ambient: true },
   { id: 'aud2', area: 'exchange', at: [751.5, -7.2], facing: -Math.PI / 2, ambient: true },
   { id: 'aud3', area: 'exchange', at: [750, -5.9], facing: Math.PI, ambient: true },

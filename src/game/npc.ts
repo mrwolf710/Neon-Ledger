@@ -89,7 +89,7 @@ export interface Sheet {
 export interface SpriteLight { color: number; intensity: number; base: number; position: THREE.Vector3 }
 export interface BillboardOpts { x?: number; z?: number; facing?: number; pose?: string; path?: [number, number][]; speed?: number; ghost?: boolean | number }
 export interface Billboard {
-  root: THREE.Group; position: THREE.Vector3; facing: number; anim: string; fpsScale: number;
+  root: THREE.Group; position: THREE.Vector3; facing: number; anim: string; fpsScale: number; lift: number; // lift: extra height above the ground (someone sitting in a chair)
   follow: { target: { position: THREE.Vector3 }; dist: number; speed: number } | null;
   away?: boolean; onStep?: (frame: number, anim: string) => void;
   update(dt: number, camYaw: number, lights: SpriteLight[]): void;
@@ -130,7 +130,7 @@ export function createBillboard(sheet: Sheet, opts: BillboardOpts): Billboard {
 
   // facing (radians, 0 = +z), anim (idle | walk | pose name) and fpsScale can be driven from outside (player.js).
   const api: Billboard = {
-    root, position: pos, facing: opts.facing ?? 0, anim: opts.pose ?? 'idle', fpsScale: 1, follow: null, // follow: { target, dist, speed }
+    root, position: pos, facing: opts.facing ?? 0, anim: opts.pose ?? 'idle', fpsScale: 1, lift: 0, follow: null, // follow: { target, dist, speed }
     // camYaw: camera yaw (radians); lights: registered lights [{ color, intensity, base, position }].
     update(dt: number, camYaw: number, lights: SpriteLight[]) {
       time += dt * api.fpsScale;
@@ -152,7 +152,7 @@ export function createBillboard(sheet: Sheet, opts: BillboardOpts): Billboard {
         anim = api.anim = 'walk';
       }
       pos.y = groundY(pos.z, pos.x);
-      root.position.copy(pos);
+      root.position.copy(pos); root.position.y += api.lift;
       sprite.rotation.y = camYaw; // Y-axis billboard: stays upright
 
       // Direction: facing relative to the camera. 0 = toward the camera (down / south), +90 deg = screen right (east).

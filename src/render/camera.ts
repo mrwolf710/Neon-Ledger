@@ -25,6 +25,8 @@ export interface CameraRig {
   camera: THREE.PerspectiveCamera;
   target: THREE.Vector3;
   readonly yaw: number;
+  readonly pitch: number;     // the goal pitch and distance (what the player chose), so a cutscene can restore them
+  readonly distance: number;
   reset(snap?: boolean): void;
   orbit(dx: number, dy: number): void;
   follow(p: THREE.Vector3, snap?: boolean): void;
@@ -55,6 +57,8 @@ export function createCamera(aspect: number): CameraRig {
     camera,
     target,
     get yaw() { return yaw; },
+    get pitch() { return goal.pitch; },
+    get distance() { return goal.distance; },
     reset,
     // Mouse drag in pixels: x turns, y tilts.
     orbit(dx: number, dy: number) {
