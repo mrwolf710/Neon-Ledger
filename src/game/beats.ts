@@ -462,9 +462,10 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
   // The memory lab's LEDs: each shared material flips on and off at its own random-looking rate.
   let labClock = 0;
   function blinkLab(dt: number) {
-    const m = (world.areas.bureau as unknown as { blink?: THREE.MeshBasicMaterial[] }).blink;
+    const a = world.areas.bureau as unknown as { blink?: THREE.MeshBasicMaterial[]; labScreen?: THREE.MeshBasicMaterial }, m = a.blink;
     if (!m) return;
     labClock += dt;
+    a.labScreen?.color.setHSL((labClock * 0.09 + 0.25 * Math.sin(labClock * 0.5)) % 1 + 1, 1, 0.5);   // the big screen drifts round every colour
     m.forEach((mat, i) => {
       const on = (Math.sin(Math.floor(labClock * (2 + (i % 5) * 1.3)) * 12.9898 + i * 4.1) * 43758.5453 % 1 + 1) % 1 > 0.45;
       mat.color.setHex(mat.userData.c).multiplyScalar(on ? 1 : 0.1);

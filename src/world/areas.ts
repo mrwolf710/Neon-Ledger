@@ -125,7 +125,7 @@ function begin(id: AreaId) {
 // Finish an area: bounds are local floor rectangles; returns the common record.
 export interface AreaExtra {
   train?: THREE.Group; trainGlow?: THREE.MeshBasicMaterial[]; trainStop?: [number, number];
-  labDoor?: THREE.Mesh; labLed?: THREE.Mesh; labCover?: THREE.Mesh; mess?: THREE.Group; blink?: THREE.MeshBasicMaterial[];
+  labDoor?: THREE.Mesh; labLed?: THREE.Mesh; labCover?: THREE.Mesh; mess?: THREE.Group; blink?: THREE.MeshBasicMaterial[]; labScreen?: THREE.MeshBasicMaterial;
 }
 export interface AreaRecord extends AreaExtra {
   id: AreaId; meta: AreaDef; group: THREE.Group; extra: AreaExtra;
@@ -472,6 +472,7 @@ function bureau(M: Materials, rng: Rng) {
   b.block(lx, lz, 1.3, 1.1);
   // Blinking LEDs: twelve shared materials (two per colour) the beats update flicker at different rates, so the whole lab winks.
   const blink = [0xff3b4c, 0x5cf0a0, 0xffb23a, 0x1fd6e8, 0xff6fb5, 0xe8f4ff].flatMap((c) => [0, 1].map(() => { const m = new THREE.MeshBasicMaterial({ color: c }); m.userData.c = c; return m; }));
+  const labScreen = new THREE.MeshBasicMaterial({ color: 0x1fd6e8 });
   let bi = 0;
   const led = (x: number, y: number, z: number) => b.box(blink[(bi += 5) % blink.length], 0.06, 0.06, 0.06, x, y, z, 0, 0, false);
   for (const [x, y, z] of [[lx - 0.55, 0.86, lz - 0.3], [lx - 0.55, 0.86, lz - 0.1], [lx - 0.55, 0.86, lz + 0.1], [lx + 0.55, 0.86, lz - 0.3], [lx + 0.55, 0.86, lz + 0.15], [lx - 0.2, 1.64, lz + 0.14], [lx + 0.2, 1.64, lz + 0.14], [lx, 1.84, lz - 0.15]]) led(x, y, z);
@@ -490,6 +491,8 @@ function bureau(M: Materials, rng: Rng) {
   b.box(PM.pole, 0.07, 0.03, 2.3, lx - 0.3, 0.02, 4.85); b.box(PM.pole, 3.7, 0.03, 0.07, lx + 2.35, 0.02, lz - 0.2); b.box(PM.pole, 0.07, 0.03, 2.4, lx + 1.0, 0.02, lz + 1.9);
   for (const sx of [-2.6, 0, 2.6]) for (let k = 0; k < 4; k++) led(lx + sx - 0.9 + k * 0.6, 0.93, R.lab[0] + 0.28);   // blinking buttons along each console
   b.light(0xff6fb5, 4, wx1 - 1.5, 1.4, 6);
+  // One big screen on the wall the chair faces (south), slowly cycling through colours (beats.blinkLab sets labScreen's colour). Lit on both faces so it also shows from the camera side.
+  b.box(M.frame, 4.4, 1.95, 0.14, lx, 1.5, R.lab[1] - 0.12); b.box(labScreen, 4.0, 1.55, 0.2, lx, 1.5, R.lab[1] - 0.12, 0, 0, false); b.block(lx, R.lab[1] - 0.12, 4.4, 0.2);
   // --- Echo archive (south-west): racks of glowing memory slots along the west and north walls, a table between.
   for (let i = 0; i < 3; i++) { const z = 4.2 + i * 1.5; b.box(M.metal, 0.5, 1.8, 1.3, hx0 + 0.45, 0.9, z); b.block(hx0 + 0.45, z, 0.5, 1.3); for (let k = 0; k < 5; k++) b.box(k % 2 ? cool : warm, 0.04, 0.12, 1.0, hx0 + 0.72, 0.3 + k * 0.34, z); }
   for (let i = 0; i < 2; i++) { const x = -13.2 + i * 2.6 + 1.0; b.box(M.metal, 1.5, 1.8, 0.5, x + 0.4, 0.9, hz1 - 0.45); b.block(x + 0.4, hz1 - 0.45, 1.5, 0.5); for (let k = 0; k < 5; k++) b.box(k % 2 ? warm : cool, 1.2, 0.12, 0.04, x + 0.4, 0.3 + k * 0.34, hz1 - 0.72); }
@@ -514,7 +517,7 @@ function bureau(M: Materials, rng: Rng) {
   onDesks.filter((_, i) => i !== 1 && i !== onDesks.length - 2).forEach((d, i) => deskSpot('pc' + (i + 1), d));
   b.box(M.frame, 0.22, 0.06, 0.16, -11.2, 0.84, 6.2); b.box(M.litWarm, 0.18, 0.02, 0.1, -11.2, 0.88, 6.2); b.box(M.frame, 0.06, 0.05, 0.2, -11.2, 0.92, 6.2); b.spot('phone', -11.5, 5.5);   // the phone on the archive table
   b.spot('start', 0, 7.4); b.spot('hale', hx - 1.0, R.hale[0] + 3.1); b.spot('chair', lx, lz + 0.9); b.spot('cell1', wx1 - 1.2, R.cells[0] + cn / 6); b.spot('archive', -11.5, 5.0);
-  const out = finish('bureau', b, [hx0, hz0, wx1, hz1], { labDoor, labLed, labCover, blink });
+  const out = finish('bureau', b, [hx0, hz0, wx1, hz1], { labDoor, labLed, labCover, blink, labScreen });
   out.group.add(labDoor, labLed, labCover);
   return out;
 }
