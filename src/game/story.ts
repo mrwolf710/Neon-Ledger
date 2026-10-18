@@ -524,7 +524,12 @@ export const CONVERSATIONS: Record<string, Conversation> = {
   code_found: { start: 'a', nodes: {
     a: { speaker: 'juno', text: "(There. The memory-audit lab: a door code, in a facilities e-mail, with a polite note to destroy it after reading. Nobody ever does.)", end: true, effects: [{ setFlag: 'lab_code_found' }] },
   } },
-  lab_sealed: { start: 'a', nodes: { a: { speaker: 'juno', text: '(The memory-audit lab. Four digits and a red light. Someone in this building must have written the code down.)', end: true } } },
+  lab_sealed: { start: [{ if: { flag: 'lab_seen' }, node: 'again' }, { node: 'a' }], nodes: {
+    a: { speaker: 'juno', text: "(The memory-audit lab. This is where they cut the forty-seven minutes out of my head. Four digits and a red light between me and the truth.)", next: 'b', effects: [{ setFlag: 'lab_seen' }] },
+    b: { speaker: 'juno', text: "(I NEED to get in there. The reader keeps a log of every wipe, with names and dates. If it says what I think it says, I can prove it all.)", next: 'c' },
+    c: { speaker: 'juno', text: "(Someone in this building must have written the code down. Nobody remembers four digits. Not even Hale.)", end: true },
+    again: { speaker: 'juno', text: "(Still sealed. I need that code. The answer to everything is behind this door.)", end: true },
+  } },
   hale_talk: { start: 'a', nodes: { a: { speaker: 'hale', text: "Rest, Juno. The doors are locked until dawn. It's for your own good.", end: true } } },
   // Chapter 3 end: Juno slips out through the front door once she has put it together.
   bureau_slip: { start: 'a', nodes: {
