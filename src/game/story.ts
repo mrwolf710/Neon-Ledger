@@ -549,6 +549,21 @@ export const CONVERSATIONS: Record<string, Conversation> = {
   nobody: { start: 'a', nodes: { a: { speaker: 'juno', text: 'Nothing to say yet.', end: true } } },
 };
 
+// Chapter 3: the recorded wipe session that plays as a "video" on the memory lab's big screen when Juno first uses the reader (beats.labVideo).
+// Each line is its own one-line conversation (lab_video_0, 1, ...) so the screen can show who is speaking.
+export const LAB_VIDEO: { speaker: string; text: string }[] = [
+  { speaker: 'hale', text: 'Session thirty-one. Subject Vale, Juno, auditor. Off-book job complete. Beginning standard recovery.' },
+  { speaker: 'juno', text: "Hale... I don't want to forget this one. He was already dying. I remember his hand." },
+  { speaker: 'hale', text: "That is exactly why, Juno. Rest now. You will wake up and the night will have been quiet." },
+  { speaker: 'juno', text: 'Please. Not again. I know what this is. Not a...' },
+  { speaker: 'hale', text: "Standard story: she fell asleep at her desk. The case closes on a burglar. Log it, and clean the chair." },
+];
+LAB_VIDEO.forEach((l, i) => { CONVERSATIONS[`lab_video_${i}`] = { start: 'a', nodes: { a: { speaker: l.speaker, text: l.text, end: true } } }; });
+CONVERSATIONS.lab_video_after = { start: 'a', nodes: {
+  a: { speaker: 'juno', text: "(That was me. That was Hale's voice, and my own, begging. And the date on the log is not the only one.)", next: 'b' },
+  b: { speaker: 'juno', text: "(Thirty-one sessions. She has done this to me thirty-one times.)", end: true },
+} };
+
 // Conversations made in the editor: lines play in order; active ones become what the person says when Juno talks to them.
 for (const [id, d] of Object.entries(EDITS._new ?? {})) {
   const nodes: Record<string, DialogueNode> = {};

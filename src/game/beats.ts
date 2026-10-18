@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { EXAMINABLES, TALK, FALLBACK, ENTRIES, BOARD, MAIL, conversationFor } from './story.ts';
+import { LAB_VIDEO, EXAMINABLES, TALK, FALLBACK, ENTRIES, BOARD, MAIL, conversationFor } from './story.ts';
 import { rng } from '../core/rng.ts';
 import type { Cast, CastMember } from './npc.ts';
 import type { CaseFile } from './casefile.ts';
@@ -459,13 +459,53 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     location.reload();
   }
 
+  // Chapter 3: the reader's log plays as a low-fi "video" on the lab's big screen: Hale wipes Juno's memory (session 31). Pixel figures drawn on a canvas that is the screen's texture; the lines play in the dialogue box.
+  const VIDEO = { w: 192, h: 84, shake: 1.5, noise: 40 };
+  let labVideoOn = false;
+  async function labVideo() {
+    const a = world.areas.bureau as unknown as { labScreen?: THREE.MeshBasicMaterial }, mat = a.labScreen, sp = world.spot('bureau', 'labscreen');
+    if (!mat || !sp || labVideoOn) return;
+    labVideoOn = true; locked = true;
+    caseFile.setFlag('lab_video_seen');
+    const cv = Object.assign(document.createElement('canvas'), { width: VIDEO.w, height: VIDEO.h }), g = cv.getContext('2d')!;
+    const tex = new THREE.CanvasTexture(cv); tex.magFilter = tex.minFilter = THREE.NearestFilter; tex.generateMipmaps = false; tex.colorSpace = THREE.SRGBColorSpace;
+    mat.map = tex; mat.color.set(0xffffff); mat.needsUpdate = true;
+    let t = 0, who = '', line = 0;
+    const rect = (c: string, x: number, y: number, w: number, h: number) => { g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), w, h); };
+    const draw = (dt: number) => {
+      t += dt; tex.needsUpdate = true;
+      const struggle = line >= 3 ? VIDEO.shake : 0, jx = struggle ? Math.sin(t * 40) * struggle : 0, talk = (s: string) => (who === s && Math.floor(t * 9) % 2 ? 3 : 1);
+      rect('#08141c', 0, 0, VIDEO.w, VIDEO.h); rect('#10303c', 0, 56, VIDEO.w, 28);                    // the lab: back wall and floor
+      for (let i = 0; i < 4; i++) rect(i % 2 ? '#1fd6e8' : '#ffb23a', 18 + i * 40, 10, 22, 10);        // wall monitors
+      rect('#24303c', 52, 44, 44, 16); rect('#24303c', 58, 24, 8, 24);                                 // the chair
+      rect('#c8b27a', 60 + jx, 30, 30, 26); rect('#e8c9a8', 66 + jx, 18, 14, 14); rect('#1a1a2a', 66 + jx, 16, 14, 5);   // Juno, seated: coat, face, hair
+      rect('#6a7a8a', 62 + jx, 12, 20, 10); rect(Math.floor(t * 6) % 2 ? '#ff3b4c' : '#5cf0a0', 70 + jx, 10, 3, 2);       // the head-piece and its LED
+      rect(who === 'juno' ? '#ff3b4c' : '#7a5a4a', 70 + jx, 28, 6, talk('juno'));                      // her mouth
+      rect('#c0243a', 126, 26, 26, 40); rect('#e8c9a8', 131, 14, 16, 14); rect('#e8e8f0', 129, 10, 20, 8); rect('#e8e8f0', 129, 18, 4, 14);   // Hale, standing: red coat, face, white hair
+      rect('#c0243a', 108, 30, 18, 6); rect('#6a7a8a', 100, 32, 10, 4);                                // her arm to the console
+      rect(who === 'hale' ? '#ff3b4c' : '#7a5a4a', 137, 26, 6, talk('hale'));                          // her mouth
+      for (let y = 0; y < VIDEO.h; y += 2) rect('rgba(0,0,0,0.35)', 0, y, VIDEO.w, 1);                  // scanlines
+      for (let i = 0; i < VIDEO.noise; i++) rect(`rgba(200,230,255,${Math.random() * 0.4})`, Math.random() * VIDEO.w, Math.random() * VIDEO.h, 1 + Math.random() * 12, 1);
+      rect('rgba(160,220,255,0.12)', 0, (t * 30) % (VIDEO.h + 10) - 5, VIDEO.w, 4);                        // a rolling tracking bar
+      g.font = '8px monospace'; g.fillStyle = '#9fe8ff'; g.fillText('BUREAU MEMORY AUDIT  SESSION 31', 4, 8);
+      g.fillStyle = '#ff3b4c'; g.fillText((Math.floor(t * 2) % 2 ? '\u25CF REC ' : '    ') + '23:' + String(10 + Math.floor(t / 4)).padStart(2, '0') + ':' + String(Math.floor(t * 7) % 60).padStart(2, '0'), 4, VIDEO.h - 4);
+    };
+    frameHooks.add(draw);
+    focus = new THREE.Vector3(sp.x, 1.2, sp.z - 2.5);                      // the camera turns to the screen
+    await wait(1.2);
+    for (let i = 0; i < LAB_VIDEO.length; i++) { line = i; who = LAB_VIDEO[i].speaker; await dialogue.start(`lab_video_${i}`); }
+    who = ''; await wait(1.0);
+    frameHooks.delete(draw); mat.map = null; mat.needsUpdate = true; tex.dispose(); labVideoOn = false; focus = null;
+    await dialogue.start('lab_video_after');
+    locked = false;
+  }
   // The memory lab's LEDs: each shared material flips on and off at its own random-looking rate.
   let labClock = 0;
   function blinkLab(dt: number) {
     const a = world.areas.bureau as unknown as { blink?: THREE.MeshBasicMaterial[]; labScreen?: THREE.MeshBasicMaterial }, m = a.blink;
     if (!m) return;
     labClock += dt;
-    a.labScreen?.color.setHSL((labClock * 0.09 + 0.25 * Math.sin(labClock * 0.5)) % 1 + 1, 1, 0.5);   // the big screen drifts round every colour
+    if (!labVideoOn) a.labScreen?.color.setHSL((labClock * 0.09 + 0.25 * Math.sin(labClock * 0.5)) % 1 + 1, 1, 0.5);   // the big screen drifts round every colour
     m.forEach((mat, i) => {
       const on = (Math.sin(Math.floor(labClock * (2 + (i % 5) * 1.3)) * 12.9898 + i * 4.1) * 43758.5453 % 1 + 1) % 1 > 0.45;
       mat.color.setHex(mat.userData.c).multiplyScalar(on ? 1 : 0.1);
@@ -515,7 +555,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     for (const x of EXAMINABLES) {
       const s = world.spot(x.area, x.spot)!;
       interactions.add({ id: `ex:${x.id}`, get area() { return x.area === 'sable' && flag('chapter4') ? '' : x.area; }, position: new THREE.Vector3(s.x, 0, s.z), height: 1.0, verb: x.verb, clue: () => !flag(`ex_${x.id}`) && !(x.area === 'sable' && flag('chapter4')) && (!DESK_CLUES.includes(x.id) || flag('aud_gone')) && (x.id !== 'haledesk' || flag('hale_left')),
-        onInteract: () => { if (x.id === 'haledesk' && !flag('hale_left')) dialogue.start('hale_watching'); else if (DESK_CLUES.includes(x.id) && !flag('aud_gone')) audBlock(); else dialogue.start(x.conv); } });
+        onInteract: () => { if (x.id === 'haledesk' && !flag('hale_left')) dialogue.start('hale_watching'); else if (DESK_CLUES.includes(x.id) && !flag('aud_gone')) audBlock(); else dialogue.start(x.conv).then(() => { if (x.id === 'reader' && !flag('lab_video_seen')) labVideo(); }); } });
     }
     for (const s of world.areas.street.spots.filter((p: Spot) => p.name === 'vending')) {
       interactions.add({ id: 'vending', area: 'street', position: new THREE.Vector3(s.x, 0, s.z), height: 1.8, verb: 'Use', onInteract: () => dialogue.start(TALK.vending) });
