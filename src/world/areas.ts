@@ -412,6 +412,8 @@ function bureau(M: Materials, rng: Rng) {
     }
     if (jr.rand() < 0.2) { const sc = jr.pick([pink, cool, alarm]); if (north) b.box(sc, w * 0.8, 1.6, 0.12, x, top - jr.range(2, 14), z + w / 2 + 0.08); else b.box(sc, 0.12, 1.6, w * 0.8, x + w / 2 + 0.08, top - jr.range(2, 14), z); }
   }
+  // The building under the floor: a solid dark body down out of sight, so nothing shows beneath her floor and the edge reads as one tall tower.
+  b.box(M.walls[1], wx1 - hx0 + 0.2, -SK.bottom - 0.05, hz1 - hz0 + 0.2, (hx0 + wx1) / 2, SK.bottom / 2 - 0.025, (hz0 + hz1) / 2);
   // --- Low (dollhouse) walls on the near sides: south, east, and every partition. Doors are gaps; they block movement.
   const lo = { h: 1.0, mat: M.walls[1], block: true };
   wallX(b, M, hz1 + T / 2, hx0, wx1, [[-1.2, 1.2]], lo);                                // south wall, the entrance in the middle
