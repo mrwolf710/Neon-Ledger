@@ -24,7 +24,7 @@ export const BEATS = {
   zoomSeconds: 3,         // after the title card: the CRT frame zooms away and the VHS noise fades out
   settle: 1.5,            // seconds Juno stands still before the title card, so the camera is centred on her
   boothRange: 3.0,     // vendors in the Echo Exchange stand behind a counter
-  talkRange: { mamaTeo: 3.0, prisoner: 3.0 } as Record<string, number>, // bigger Talk reach for people behind a counter (default INTERACT.range 1.6)
+  talkRange: { mamaTeo: 3.0, prisoner: 4.5 } as Record<string, number>, // bigger Talk reach for people behind a counter or a force field (default INTERACT.range 1.6)
   kitStreet: { x: 8.8, z: 3.3, facing: 0 }, // where the worker stands on the street (hostel side, near its door) until the key deduction (then he is at the hostel desk)
   patrol: { speed: 1.0, pause: 2.2 },   // chapter 3: the auditors pacing the desk aisles (local station coordinates)
   routes: { aud1: [[-12, 0.5], [4.5, 0.5]], aud2: [[4.5, 4.7], [-5, 4.7]], aud3: [[-4.5, -3.1], [5.5, -3.1]] } as Record<string, [number, number][]>,
