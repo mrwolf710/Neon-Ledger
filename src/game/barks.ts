@@ -16,7 +16,7 @@ export const BARKS = {
 interface BarkEntry { lines: string[]; flag?: string; notFlag?: string }
 const LINES: Record<string, BarkEntry[]> = {
   vendor: [
-    { flag: 'miso_joined', lines: ['That cat likes you. Cats know.', 'Feed him, he stays.'] },
+    { flag: 'miso_joined', notFlag: 'chapter1_done', lines: ['That cat likes you. Cats know.', 'Feed him, he stays.'] },
     { lines: ['Hot skewers. Rain keeps them warm.', 'Eat. Lowmarket is cold tonight.', 'You look lost, detective.'] },
   ],
   mamaTeo: [
@@ -29,7 +29,7 @@ const LINES: Record<string, BarkEntry[]> = {
   ],
   preacher: [{ lines: ['The Ledger sees all debts.', 'Repent in credits.', 'Neon is a kind of prayer.'] }],
   walker: [
-    { flag: 'miso_joined', lines: ['Nice cat.', 'Is that cat yours?'] },
+    { flag: 'miso_joined', notFlag: 'chapter1_done', lines: ['Nice cat.', 'Is that cat yours?'] },
     { lines: ['Nice night for a drowning.', "Watch it, it's slick.", 'Another corpo found dead, I heard.', 'Mind the pole.', 'Line 9 is late again.'] },
   ],
 };
