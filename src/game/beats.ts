@@ -437,6 +437,11 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     if (!flag('bureau_deduced')) { dialogue.start('bureau_locked'); return; }
     locked = true;
     await dialogue.start('bureau_slip');
+    await fade.out();
+    world.jump('street', world.exits.find((e) => e.id === 'sable-out')!.spawn);   // back on Lowmarket Street: Hale only calls once she's home
+    cast.apply();
+    await fade.in();
+    await wait(1.0);
     sfx.phoneRing?.(); await wait(BEATS.ringEvery * 0.6); sfx.phoneRing?.(); await wait(BEATS.ringEvery * 0.6); sfx.phoneAnswer?.(); // Hale calls as Juno steps out
     await dialogue.start('hale_threat');
     caseFile.setFlag('hale_hunting');
