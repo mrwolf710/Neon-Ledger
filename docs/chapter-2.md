@@ -1,6 +1,6 @@
 # Chapter 2 design (draft, agreed with the owner in conversation)
 
-Status: planning only, nothing built yet. Chapter 1 ends with Juno realizing she was in the room with Dex (she may or may not have killed him; undecided).
+Status: built and in the story flow (see Built so far). Chapter 1 ends with Juno realizing she was in the room with Dex (she may or may not have killed him; undecided).
 
 ## Premise
 Chapter 2 is about **Dex's secret echo**: proof that the Bureau wipes auditors' memories after off-book jobs. A **corporate fixer** also wants it. Juno follows the trail through the Echo Exchange to an implant dealer, then three auditors take her in for questioning, which leads into Bureau HQ and Hale (chapter 3).
@@ -68,14 +68,17 @@ Chapter 1 ends on Hale's question. Chapter 2 opens in the car:
 Hale's question -> car_reply -> car_decide -> Dead Hour ends (signs and music return) -> black -> "CHAPTER 2 / THE ECHO EXCHANGE" card -> Juno on the square's west side. The old end card ("CASE 01 CONTINUES", tap, reload) is gone; chapter 2 is always on.
 
 ## Built so far
-- 12 vendors with dialogue (story.js VENDOR_TALK; names: Vesper, Mari, Madame Lux, Tobbo, Gutter, Pim; brush-offs Oyo, Ruth, Slate, Jinx, Bolt, Petra), placeholder sprites borrowed from the street walkers/vendor (CAST `sheet`), talk range from behind the counter.
+- 12 vendors with dialogue (story.js VENDOR_TALK; names: Vesper, Mari, Madame Lux, Tobbo, Gutter, Pim; brush-offs Oyo, Ruth, Slate, Jinx, Bolt, Petra), owner sprites for the vendors drawn so far (Tobbo, Gutter, Slate, Ruth, Oyo, Pim, Bolt, the dealer, the auditors) and borrowed street-walker sheets for the rest (CAST `sheet`), talk range from behind the counter.
 - Six clues and four conclusions in ENTRIES/BOARD; the board shows only chapter 2's clues after `chapter1_done`; conclusion cards can be placed as clues (tier two); C4 sets `dealer_open`; the dealer door says it is locked until then.
-- Built (first pass, placeholder sprites): the dealer's shop interior (Locker 9, dealer NPC: show him the receipt), Dex's hidden echo teaser, the fixer's offer (refuse / think about it, both lead to the auditors), the three auditors on the square, an end-of-chapter card. Chapter 3 (Bureau HQ and Hale) is not built; the deal outcome is only stored as flag refused_deal.
+- Built (first pass, placeholder sprites): the dealer's shop interior (Locker 9, dealer NPC: show him the receipt), Dex's hidden echo teaser, the fixer's offer (refuse / think about it, both lead to the auditors), the three auditors on the square, an end-of-chapter card. Chapter 3 (the Bureau) is built, see chapter-3.md. The deal outcome is only stored as flag refused_deal; chapter 5 should have the fixer refer to it.
 
 ## Layout
 Booths are deliberately uneven (widths, angles, three styles: awning, kiosk, cart; no grid). See EXCHANGE in `src/world/areas.js`.
 
-## Open questions
-- Does the fixer know she is the woman? (He says so in the store if she made C5; otherwise he implies it.)
-- Vendor names, voices and sprite list; dealer name.
-- Does Juno take the deal, refuse, or is it interrupted by the auditors?
+## Decided in the build
+- The fixer knows she is the woman: he says so if she made C5, otherwise he implies it (`fixer_knows`).
+- Juno refuses or says she will think about it; both lead to the auditors waiting outside. Only `refused_deal` is stored.
+- The fixer's deal here (the case closes on a burglar) is a lie; the real offer is in the tower (chapter-5.md).
+
+## Still open
+- Remaining vendor sprites and voices; the dealer's name; the fixer's name.
