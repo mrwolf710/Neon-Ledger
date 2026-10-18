@@ -125,7 +125,7 @@ function begin(id: AreaId) {
 // Finish an area: bounds are local floor rectangles; returns the common record.
 export interface AreaExtra {
   train?: THREE.Group; trainGlow?: THREE.MeshBasicMaterial[]; trainStop?: [number, number];
-  labDoor?: THREE.Mesh; labLed?: THREE.Mesh; mess?: THREE.Group;
+  labDoor?: THREE.Mesh; labLed?: THREE.Mesh; mess?: THREE.Group; blink?: THREE.MeshBasicMaterial[];
 }
 export interface AreaRecord extends AreaExtra {
   id: AreaId; meta: AreaDef; group: THREE.Group; extra: AreaExtra;
@@ -459,9 +459,37 @@ function bureau(M: Materials, rng: Rng) {
   }
   // --- Memory-audit lab (south-east): a reader chair under a halo ring, a console with three screens on the north wall.
   const lx = (wx0 + wx1) / 2, lz = (R.lab[0] + R.lab[1]) / 2 + 0.6;
-  b.box(PM.vendBody, 1.1, 0.5, 1.1, lx, 0.25, lz); b.box(PM.vendBody, 1.1, 1.0, 0.18, lx, 0.8, lz - 0.55); b.block(lx, lz, 1.1, 1.1);
+  // The reader chair: a pedestal, cushion, tall back with a headrest, arms with controls and a footrest, and a head-piece on an arm from the halo, hanging at head height over the seat.
+  b.add(M.metal, new THREE.CylinderGeometry(0.5, 0.55, 0.12, 16).translate(lx, 0.06, lz)); b.box(M.metal, 0.25, 0.3, 0.25, lx, 0.25, lz);
+  b.box(PM.vendBody, 0.95, 0.14, 0.9, lx, 0.47, lz); b.box(PM.vendBody, 0.9, 1.1, 0.16, lx, 1.0, lz - 0.5, -0.12); b.box(M.frame, 0.5, 0.3, 0.14, lx, 1.75, lz - 0.55);
+  for (const sx of [-1, 1]) { b.box(M.frame, 0.12, 0.1, 0.8, lx + sx * 0.6, 0.78, lz - 0.05); b.box(M.frame, 0.08, 0.3, 0.08, lx + sx * 0.6, 0.6, lz + 0.2); }
+  b.box(cool, 0.1, 0.02, 0.3, lx + 0.6, 0.84, lz - 0.05);
+  b.box(M.metal, 0.6, 0.07, 0.3, lx, 0.12, lz + 0.72); b.box(cool, 0.4, 0.02, 0.06, lx, 0.165, lz + 0.72);
+  b.box(M.metal, 0.06, 0.8, 0.06, lx, 1.93, lz - 0.65); b.box(M.metal, 0.06, 0.06, 0.3, lx, 1.55, lz - 0.5);     // the arm from the halo's back rail
+  b.box(M.metal, 0.52, 0.34, 0.55, lx, 1.5, lz - 0.15); b.box(M.frame, 0.46, 0.1, 0.5, lx, 1.72, lz - 0.15);       // the head-piece shell and its crown
+  b.box(cool, 0.4, 0.08, 0.03, lx, 1.5, lz + 0.13); for (const sx of [-1, 1]) b.box(M.metal, 0.08, 0.22, 0.3, lx + sx * 0.3, 1.45, lz - 0.15); // visor strip, ear pods
+  for (const sx of [-0.18, 0.18]) b.box(PM.pole, 0.03, 0.6, 0.03, lx + sx, 2.0, lz - 0.1);                                  // cables up to the halo
+  b.block(lx, lz, 1.3, 1.1);
+  // Blinking LEDs: twelve shared materials (two per colour) the beats update flicker at different rates, so the whole lab winks.
+  const blink = [0xff3b4c, 0x5cf0a0, 0xffb23a, 0x1fd6e8, 0xff6fb5, 0xe8f4ff].flatMap((c) => [0, 1].map(() => { const m = new THREE.MeshBasicMaterial({ color: c }); m.userData.c = c; return m; }));
+  let bi = 0;
+  const led = (x: number, y: number, z: number) => b.box(blink[(bi += 5) % blink.length], 0.06, 0.06, 0.06, x, y, z, 0, 0, false);
+  for (const [x, y, z] of [[lx - 0.55, 0.86, lz - 0.3], [lx - 0.55, 0.86, lz - 0.1], [lx - 0.55, 0.86, lz + 0.1], [lx + 0.55, 0.86, lz - 0.3], [lx + 0.55, 0.86, lz + 0.15], [lx - 0.2, 1.64, lz + 0.14], [lx + 0.2, 1.64, lz + 0.14], [lx, 1.84, lz - 0.15]]) led(x, y, z);
   b.box(cool, 1.7, 0.06, 0.06, lx, 2.3, lz - 0.7); b.box(cool, 1.7, 0.06, 0.06, lx, 2.3, lz + 0.7); b.box(cool, 0.06, 0.06, 1.4, lx - 0.85, 2.3, lz); b.box(cool, 0.06, 0.06, 1.4, lx + 0.85, 2.3, lz);
   for (const sx of [-2.6, 0, 2.6]) { b.box(M.metal, 2.2, 0.9, 0.7, lx + sx, 0.45, R.lab[0] + 0.55); b.block(lx + sx, R.lab[0] + 0.55, 2.2, 0.7); b.box(M.frame, 1.4, 0.9, 0.06, lx + sx, 1.6, R.lab[0] + 0.3); b.box(cool, 1.26, 0.76, 0.03, lx + sx, 1.62, R.lab[0] + 0.34); }
+  // More lab kit: a rack of servers along the east wall, wall screens either side of the door, a cart with a tablet, a memory tank, crates and cables on the floor.
+  for (let i = 0; i < 4; i++) {
+    const z = 4.4 + i * 1.15;
+    b.box(M.metal, 0.7, 1.9, 0.95, wx1 - 0.5, 0.95, z); b.block(wx1 - 0.5, z, 0.7, 0.95);
+    for (let k = 0; k < 8; k++) { led(wx1 - 0.87, 0.3 + k * 0.22, z - 0.28); led(wx1 - 0.87, 0.3 + k * 0.22, z + 0.28); if (k % 2) b.box(cool, 0.03, 0.1, 0.36, wx1 - 0.86, 0.3 + k * 0.22, z); }
+  }
+  for (const z of [R.lab[0] + 1.2, R.lab[0] + 4.9]) { b.box(M.metal, 0.1, 0.9, 0.4, wx0 + 0.5, 0.45, z); b.box(M.frame, 0.06, 1.0, 1.3, wx0 + 0.4, 1.4, z); b.box(cool, 0.03, 0.85, 1.15, wx0 + 0.44, 1.42, z); led(wx0 + 0.43, 0.82, z - 0.55); led(wx0 + 0.43, 0.82, z + 0.55); b.block(wx0 + 0.5, z, 0.4, 1.3); }
+  b.box(M.metal, 0.9, 0.7, 0.6, lx - 3.0, 0.35, R.lab[1] - 0.8); b.box(M.frame, 0.4, 0.04, 0.3, lx - 3.0, 0.74, R.lab[1] - 0.8); b.box(cool, 0.34, 0.02, 0.24, lx - 3.0, 0.765, R.lab[1] - 0.8); led(lx - 3.4, 0.74, R.lab[1] - 0.55); b.block(lx - 3.0, R.lab[1] - 0.8, 0.9, 0.6);
+  b.add(cool, new THREE.CylinderGeometry(0.34, 0.34, 1.4, 12).translate(lx + 3.0, 0.9, R.lab[1] - 0.8)); b.add(M.metal, new THREE.CylinderGeometry(0.4, 0.4, 0.14, 12).translate(lx + 3.0, 0.14, R.lab[1] - 0.8)); b.add(M.metal, new THREE.CylinderGeometry(0.4, 0.4, 0.14, 12).translate(lx + 3.0, 1.66, R.lab[1] - 0.8)); led(lx + 3.0, 1.76, R.lab[1] - 0.8); b.block(lx + 3.0, R.lab[1] - 0.8, 0.8, 0.8);
+  crates(b, PM, lx - 4.0, R.lab[1] - 0.6, 2);
+  b.box(PM.pole, 0.07, 0.03, 2.3, lx - 0.3, 0.02, 4.85); b.box(PM.pole, 3.7, 0.03, 0.07, lx + 2.35, 0.02, lz - 0.2); b.box(PM.pole, 0.07, 0.03, 2.4, lx + 1.0, 0.02, lz + 1.9);
+  for (const sx of [-2.6, 0, 2.6]) for (let k = 0; k < 4; k++) led(lx + sx - 0.9 + k * 0.6, 0.93, R.lab[0] + 0.28);   // blinking buttons along each console
+  b.light(0xff6fb5, 4, wx1 - 1.5, 1.4, 6);
   // --- Echo archive (south-west): racks of glowing memory slots along the west and north walls, a table between.
   for (let i = 0; i < 3; i++) { const z = 4.2 + i * 1.5; b.box(M.metal, 0.5, 1.8, 1.3, hx0 + 0.45, 0.9, z); b.block(hx0 + 0.45, z, 0.5, 1.3); for (let k = 0; k < 5; k++) b.box(k % 2 ? cool : warm, 0.04, 0.12, 1.0, hx0 + 0.72, 0.3 + k * 0.34, z); }
   for (let i = 0; i < 2; i++) { const x = -13.2 + i * 2.6 + 1.0; b.box(M.metal, 1.5, 1.8, 0.5, x + 0.4, 0.9, hz1 - 0.45); b.block(x + 0.4, hz1 - 0.45, 1.5, 0.5); for (let k = 0; k < 5; k++) b.box(k % 2 ? warm : cool, 1.2, 0.12, 0.04, x + 0.4, 0.3 + k * 0.34, hz1 - 0.72); }
@@ -484,7 +512,7 @@ function bureau(M: Materials, rng: Rng) {
   onDesks.filter((_, i) => i !== 1 && i !== onDesks.length - 2).forEach((d, i) => deskSpot('pc' + (i + 1), d));
   b.box(M.frame, 0.22, 0.06, 0.16, -11.2, 0.84, 6.2); b.box(M.litWarm, 0.18, 0.02, 0.1, -11.2, 0.88, 6.2); b.box(M.frame, 0.06, 0.05, 0.2, -11.2, 0.92, 6.2); b.spot('phone', -11.5, 5.5);   // the phone on the archive table
   b.spot('start', 0, 7.4); b.spot('hale', hx - 1.0, R.hale[0] + 3.1); b.spot('chair', lx, lz + 0.9); b.spot('cell1', wx1 - 1.2, R.cells[0] + cn / 6); b.spot('archive', -11.5, 5.0);
-  const out = finish('bureau', b, [hx0, hz0, wx1, hz1], { labDoor, labLed });
+  const out = finish('bureau', b, [hx0, hz0, wx1, hz1], { labDoor, labLed, blink });
   out.group.add(labDoor, labLed);
   return out;
 }

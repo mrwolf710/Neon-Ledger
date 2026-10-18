@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { BUREAU } from './world/areas.ts';
 import { rng } from './core/rng.ts';
 import { input } from './core/input.ts';
 import { createCamera, CAMERA } from './render/camera.ts';
@@ -153,6 +154,8 @@ const beats = createBeats({ terminal, trainSteam, input, world, cast, caseFile, 
 beats.setCamera(cam);
 beats.register();
 const todMood = () => (phaseId === 'dawn' && !world.current.meta.outdoor ? 'night' : phaseId);
+// the memory lab room in the Bureau: the wing x range and the lab's z range, in the area's own coordinates
+const inLab = () => { if (world.current.id !== 'bureau') return false; const [ox, oz] = world.current.meta.origin, x = player.position.x - ox, z = player.position.z - oz; return x > BUREAU.wing[0] && x < BUREAU.wing[1] && z > BUREAU.rooms.lab[0] && z < BUREAU.rooms.lab[1]; };
 let phaseId = '', sunsetT: number | null = null, lastAreaId: string | null = null, cameFromSable = false;
 const issues = issuesOn ? createIssues({ input, toast: (t) => hud.toast(t), context: () => ({
   area: world.current.id, place: world.placeAt(player.position.x, player.position.z).name, pos: [+player.position.x.toFixed(1), +player.position.z.toFixed(1)],
@@ -445,7 +448,7 @@ renderer.setAnimationLoop((now) => {
   music.setMood(musicForce ? musicForce : trailer.active ? trailer.mood : beats.finale ? 'finale' : beats.ending ? 'silent' : echo.active ? 'echo' : board.isOpen ? 'board' : place.mood as string, trailer.active ? 0.25 : beats.finale ? 0.4 : undefined);
   sfx.setEcho(echo.active);
   sfx.update(dt, {
-    player: player.position, yaw: cam.yaw, signs: area.id === 'street' ? street.signs : [],
+    player: player.position, yaw: cam.yaw, lab: inLab(), signs: area.id === 'street' ? street.signs : [],
     rainScale: particles.rainScale * (area.meta.outdoor ? 1 : MAIN.indoorRain), noRain: area.id === 'platform',
   });
   // Sunset: starts when Juno first reaches the street, fades to the night mood over SUNSET.seconds.

@@ -459,6 +459,18 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     location.reload();
   }
 
+  // The memory lab's LEDs: each shared material flips on and off at its own random-looking rate.
+  let labClock = 0;
+  function blinkLab(dt: number) {
+    const m = (world.areas.bureau as unknown as { blink?: THREE.MeshBasicMaterial[] }).blink;
+    if (!m) return;
+    labClock += dt;
+    m.forEach((mat, i) => {
+      const on = (Math.sin(Math.floor(labClock * (2 + (i % 5) * 1.3)) * 12.9898 + i * 4.1) * 43758.5453 % 1 + 1) % 1 > 0.45;
+      mat.color.setHex(mat.userData.c).multiplyScalar(on ? 1 : 0.1);
+    });
+  }
+
   // Chapter 4: the Sable is just a noodle shop again. Dex's body, the cups, the broken lamp and the glass are gone, the back room has nothing to examine and no echo to scan.
   function clearSable() {
     cast.byId.dex.away = true; cast.apply();
@@ -647,6 +659,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     },
     update(dt: number) {
       placeKit();
+      if (world.current.id === 'bureau') blinkLab(dt);
       for (const h of frameHooks) h(dt);
       syncLabDoor(); updatePatrols(dt);
       if (flag('ex_haledesk') && flag('hale_left') && !flag('hale_back') && !haleWalking && !dialogue.active && !locked) { haleWalking = true; walkHale(true); }   // she heads home once Juno has read her desk

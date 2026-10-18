@@ -32,6 +32,7 @@ export const TUNING = {
   motor: { start: 0.05, swellAt: 0.4, stopLevel: 0.35, idleGain: 0.07, idleAfter: 0.4, idleTime: 0.9,
     body: { fast: 480, slow: 140, idle: 90, vol: 0.9, drive: 4, grit: 11 }, hiss: { fast: 2400, slow: 520, idle: 300, vol: 0.45 },
     squeal: { from: 3400, to: 1100, vol: 0.06, dur: 1.9 }, airVol: 0.09 },
+  lab: { vol: 0.022, gap: [0.35, 1.6] as [number, number], freqs: [660, 880, 990, 1320, 1760, 523] }, // the memory lab's quiet beeps and boops (only while Juno is in the lab)
   ui: { vol: 0.16 },
   stinger: { vol: 0.4, sub: 46, chord: [220, 233.1, 329.6], dur: 2.6 }, // the big reveal: a sub thud, a dissonant chord and a falling shriek
   ring: { vol: 0.07, freqs: [440, 480], rings: 2, pulses: 18, pulseGap: 0.045, pulseDur: 0.035, period: 1.35 }, // intro: Juno's phone rings (Hale calling), each ring = a quick trill
@@ -53,7 +54,7 @@ export function surfaceAt(x: number, z: number): string {
 }
 
 interface XYZ { x: number; y: number; z: number }
-export interface SfxUpdate { player: XYZ; yaw: number; rainScale?: number; noRain?: boolean; signs?: { light: { position: THREE.Vector3; intensity: number; base?: number } }[] }
+export interface SfxUpdate { player: XYZ; yaw: number; lab?: boolean; rainScale?: number; noRain?: boolean; signs?: { light: { position: THREE.Vector3; intensity: number; base?: number } }[] }
 export type UiSound = 'move' | 'confirm' | 'back' | 'case' | 'linkOk' | 'linkWrong' | 'echoOn' | 'echoOff' | 'glitch';
 export interface Sfx {
   update(dt: number, s: SfxUpdate): void;
@@ -84,7 +85,7 @@ export function createSfx(synth: Synth): Sfx {
   let ambient: GainNode | null = null, rumble: { g: GainNode } | null = null, echoOn = false, echoApplied: boolean | null = null;
   let motor: { out: GainNode; nodes: AudioBufferSourceNode[] } | null = null;
   let rain: RainState | null = null, hum: { out: GainNode; p: PannerNode }[] | null = null, train: TrainState | null = null, lastPlayer: XYZ = { x: 0, y: 0, z: 0 }, lastYaw = 0;
-  let droplet = 0, humTimer = 0, trainTimer = T.train.first, voiceCount = 0, rainLevel = 1;
+  let labTimer = 0, droplet = 0, humTimer = 0, trainTimer = T.train.first, voiceCount = 0, rainLevel = 1;
 
   // ---------- Rain (built lazily once audio is ready) ----------
   function buildRain() {
@@ -241,6 +242,17 @@ export function createSfx(synth: Synth): Sfx {
         ambient.gain.setTargetAtTime(echoOn ? E.ambientLevel : 1, t, echoOn ? E.fadeOut : E.fadeIn);
         rumble!.g.gain.setTargetAtTime(echoOn ? E.rumble.vol : 0, t, echoOn ? E.rumble.in : 0.4);
       }
+      if (s.lab) {   // memory lab: a quiet beep, a two-note boop, a rising chirp or a tiny run of notes at random
+        labTimer -= dt;
+        if (labTimer <= 0) {
+          const L = T.lab, f = () => L.freqs[Math.floor(synth.rand() * L.freqs.length)], kind = Math.floor(synth.rand() * 4), vol = L.vol * (0.6 + synth.rand() * 0.6);
+          labTimer = L.gap[0] + synth.rand() * (L.gap[1] - L.gap[0]);
+          if (kind === 0) synth.tone({ freq: f(), type: 'square', dur: 0.07, vol, release: 0.03 });
+          else if (kind === 1) { const a = f(); synth.tone({ freq: a, type: 'sine', dur: 0.08, vol, release: 0.03 }); synth.tone({ freq: a * 0.75, type: 'sine', t: synth.now + 0.1, dur: 0.1, vol, release: 0.04 }); }
+          else if (kind === 2) synth.tone({ freq: f() * 0.5, type: 'triangle', dur: 0.22, vol, slide: 1400, release: 0.05 });
+          else for (let n = 0; n < 4; n++) synth.tone({ freq: f(), type: 'sine', t: synth.now + n * 0.06, dur: 0.04, vol: vol * 0.8, release: 0.02 });
+        }
+      } else labTimer = 0.5;
       if (!rain) buildRain();
       if (!hum) buildHum();
       // Rain: brighter hiss in the open, drumming patter under awnings.
