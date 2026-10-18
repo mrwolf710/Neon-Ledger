@@ -10,7 +10,8 @@ import type { BusName, Synth } from '../audio/synth.ts';
 // (Web Audio needs it, iOS especially). title.save = the save data to load, or null for a new game.
 export const TITLE = {
   scale: 8,                 // screen pixels per title pixel
-  color: '#ffffff', sub: '#1fd6e8', dim: '#4a4a62', bg: 'rgba(7,7,15,.6)',
+  color: '#ffffff', neon: ['#ff3b2f', '#ff8a1f', '#ffd23a', '#2f8bff', '#2fe07a', '#a43bff', '#ff3bb0', '#1fd6e8'], // the title letters cycle through these booth-sign colours (areas.ts EXCHANGE.neon)
+  sub: '#1fd6e8', dim: '#4a4a62', bg: 'rgba(7,7,15,.6)',
   itemScale: 4,             // pixel size of menu rows
   gap: 14,                  // px between rows
   touchBottom: 12,          // % of the screen height kept clear at the bottom on phones (browser bars, thumbs)
@@ -35,7 +36,7 @@ export function createTitle(onStart: (() => void) | undefined, { saves, synth }:
   const list = document.createElement('div');
   list.style.cssText = `display:flex;flex-direction:column;gap:${T.gap}px;max-height:${T.listMaxVh}vh;overflow-y:auto;padding:6px 10px 6px 0;scrollbar-width:none`;
   const note = document.createElement('div');
-  el.append(spaceText('NEON ECHOES', T.color, T.scale), list, note);
+  el.append(spaceText('NEON ECHOES', T.neon, T.scale), list, note);
   document.body.appendChild(el);
 
   const state = { done: false, save: null } as Title;

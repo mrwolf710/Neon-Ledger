@@ -49,7 +49,7 @@ const GLYPHS: Record<string, Pts[]> = {
 };
 
 // Returns a canvas for `text`, as tall as the pixel font would be at `scale` (5 px per scale), sized in CSS pixels.
-export function spaceText(text: string, color: string, scale: number): HTMLCanvasElement {
+export function spaceText(text: string, color: string | string[], scale: number): HTMLCanvasElement {
   const u = (5 * scale) / 6, S_ = SPACE, str = text.toUpperCase();
   const adv = (ch: string) => (ch === ' ' ? S_.space : 4 + S_.gap);
   const wU = [...str].reduce((w, ch) => w + adv(ch), 0) - S_.gap, pad = S_.glow * 2;
@@ -58,9 +58,11 @@ export function spaceText(text: string, color: string, scale: number): HTMLCanva
   const g = cv.getContext('2d')!;
   g.scale(r, r); g.translate(pad * u, pad * u);
   g.lineWidth = S_.stroke * u; g.lineCap = 'square'; g.lineJoin = 'miter';
-  g.strokeStyle = color; g.shadowColor = color; g.shadowBlur = S_.glow * u;
-  let x = 0;
+  g.shadowBlur = S_.glow * u;
+  let x = 0, n = 0;
   for (const ch of str) {
+    const c = typeof color === 'string' ? color : color[n++ % color.length];
+    g.strokeStyle = c; g.shadowColor = c;
     for (const path of GLYPHS[ch] ?? []) {
       g.beginPath();
       path.forEach(([px, py], i) => (i ? g.lineTo(x + px * u, py * u) : g.moveTo(x + px * u, py * u)));
