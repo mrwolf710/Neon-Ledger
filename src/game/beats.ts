@@ -70,7 +70,7 @@ interface PlatformArea {
 }
 interface BureauArea {
   collision?: { grid: { nx: number; nz: number; x0: number; z0: number; cell: number; solid: Uint8Array } };
-  labDoor: THREE.Object3D; labLed: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
+  labDoor: THREE.Object3D; labCover?: THREE.Object3D; labLed: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
 }
 interface Step { id: string; text: string | (() => string); area: string; pos?: () => { x: number; z: number } | null | undefined; done: () => boolean }
 export interface Beats {
@@ -358,7 +358,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     if (open === labState) return;
     labState = open;
     const a = world.areas.bureau as unknown as BureauArea, g = a.collision?.grid, [ox, oz] = origin('bureau');
-    a.labDoor.visible = !open; a.labLed.material.color.set(open ? 0x5cf0a0 : 0xff3b4c);
+    a.labDoor.visible = !open; if (a.labCover) a.labCover.visible = !open; a.labLed.material.color.set(open ? 0x5cf0a0 : 0xff3b4c);
     if (!g) return;
     for (let j = 0; j < g.nz; j++) for (let i = 0; i < g.nx; i++) {
       const cx = g.x0 + (i + 0.5) * g.cell, cz = g.z0 + (j + 0.5) * g.cell;

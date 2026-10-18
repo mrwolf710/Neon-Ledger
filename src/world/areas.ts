@@ -125,7 +125,7 @@ function begin(id: AreaId) {
 // Finish an area: bounds are local floor rectangles; returns the common record.
 export interface AreaExtra {
   train?: THREE.Group; trainGlow?: THREE.MeshBasicMaterial[]; trainStop?: [number, number];
-  labDoor?: THREE.Mesh; labLed?: THREE.Mesh; mess?: THREE.Group; blink?: THREE.MeshBasicMaterial[];
+  labDoor?: THREE.Mesh; labLed?: THREE.Mesh; labCover?: THREE.Mesh; mess?: THREE.Group; blink?: THREE.MeshBasicMaterial[];
 }
 export interface AreaRecord extends AreaExtra {
   id: AreaId; meta: AreaDef; group: THREE.Group; extra: AreaExtra;
@@ -505,6 +505,8 @@ function bureau(M: Materials, rng: Rng) {
   b.box(M.frame, 0.25, 1.3, 0.25, wx0 - 0.5, 0.65, dz - 0.9); b.box(cool, 0.04, 0.16, 0.12, wx0 - 0.63, 1.0, dz - 0.9);
   const labDoor = new THREE.Mesh(boxGeo(0.22, 1.5, 1.2), M.metal); labDoor.position.set(ox + wx0, 0.75, oz + dz);
   const labLed = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.06), new THREE.MeshBasicMaterial({ color: C.alarm })); labLed.position.set(ox + wx0 - 0.66, 1.2, oz + dz - 0.9);
+  // The memory lab is a solid closed room (nothing of it can be seen from outside) until the code opens the door (syncLabDoor hides this).
+  const labCover = new THREE.Mesh(boxGeo(wx1 - wx0 - 0.15, 2.7, R.lab[1] - R.lab[0] - 0.05), M.walls[1]); labCover.position.set(ox + (wx0 + wx1) / 2 + 0.07, 1.35, oz + (R.lab[0] + R.lab[1]) / 2 + 0.02);
   const cn2 = R.cells[1] - R.cells[0];
   b.spot('labdoor', wx0 - 1.0, dz); b.spot('prisoner', cx0 + 2.2, R.cells[0] + cn2 / 2);
   const deskSpot = (name: string, [x, z]: [number, number]) => b.spot(name, x - 0.6, z + 0.7);   // beside the chair, in front of the screen
@@ -512,8 +514,8 @@ function bureau(M: Materials, rng: Rng) {
   onDesks.filter((_, i) => i !== 1 && i !== onDesks.length - 2).forEach((d, i) => deskSpot('pc' + (i + 1), d));
   b.box(M.frame, 0.22, 0.06, 0.16, -11.2, 0.84, 6.2); b.box(M.litWarm, 0.18, 0.02, 0.1, -11.2, 0.88, 6.2); b.box(M.frame, 0.06, 0.05, 0.2, -11.2, 0.92, 6.2); b.spot('phone', -11.5, 5.5);   // the phone on the archive table
   b.spot('start', 0, 7.4); b.spot('hale', hx - 1.0, R.hale[0] + 3.1); b.spot('chair', lx, lz + 0.9); b.spot('cell1', wx1 - 1.2, R.cells[0] + cn / 6); b.spot('archive', -11.5, 5.0);
-  const out = finish('bureau', b, [hx0, hz0, wx1, hz1], { labDoor, labLed, blink });
-  out.group.add(labDoor, labLed);
+  const out = finish('bureau', b, [hx0, hz0, wx1, hz1], { labDoor, labLed, labCover, blink });
+  out.group.add(labDoor, labLed, labCover);
   return out;
 }
 const P_COOL = BUREAU.colors.cool;
