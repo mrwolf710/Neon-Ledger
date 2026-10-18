@@ -5,7 +5,7 @@ import { input } from './core/input.ts';
 import { createCamera, CAMERA } from './render/camera.ts';
 import { createDebugPanel, showSprites } from './debug/panel.ts';
 import { getSheets } from './gen/sprites.ts';
-import { loadJunoSheet, loadTeoSheet, loadPriestSheet, loadDexSheet, loadCatSheet, loadDexStandSheet, loadKitSheet, loadAuditorSheet, loadVendorSheet, loadWalkerSheet, MARKET1_ART, MARKET3_ART, MARKET4_ART, MARKET5_ART, MARKET6_ART, MARKET7_ART, DEALER_ART, AUDITOR_ART, WALKER2_ART, WALKER3_ART, WALKER4_ART, loadHaleSheet } from './gen/junoart.ts';
+import { loadJunoSheet, loadTeoSheet, loadPriestSheet, loadDexSheet, loadCatSheet, loadDexStandSheet, loadKitSheet, loadAuditorSheet, loadVendorSheet, loadWalkerSheet, MARKET1_ART, MARKET8_ART, MARKET3_ART, MARKET4_ART, MARKET5_ART, MARKET6_ART, MARKET7_ART, DEALER_ART, AUDITOR_ART, WALKER2_ART, WALKER3_ART, WALKER4_ART, loadHaleSheet } from './gen/junoart.ts';
 import { createCast } from './game/npc.ts';
 import './ui/styles.css';
 import { createTouchUI } from './ui/touch.ts';
@@ -77,6 +77,7 @@ try { getSheets().gutter = await loadKitSheet(MARKET3_ART); } catch (e) { consol
 try { getSheets().slate = await loadKitSheet(MARKET4_ART); } catch (e) { console.warn('Slate art not loaded, using their borrowed sprite:', (e as Error).message); getSheets().slate = getSheets().walkerD; }
 try { getSheets().ruth = await loadKitSheet(MARKET5_ART); } catch (e) { console.warn('Ruth art not loaded, using her borrowed sprite:', (e as Error).message); getSheets().ruth = getSheets().vendor; }
 try { getSheets().pim = await loadKitSheet(MARKET7_ART); } catch (e) { console.warn('Pim art not loaded, using their borrowed sprite:', (e as Error).message); getSheets().pim = getSheets().walkerC; }
+try { getSheets().bolt = await loadKitSheet(MARKET8_ART); } catch (e) { console.warn('Bolt art not loaded, using his borrowed sprite:', (e as Error).message); getSheets().bolt = getSheets().walkerA; }
 try { getSheets().dealer = await loadKitSheet(DEALER_ART); } catch (e) { console.warn('Dealer art not loaded, using their borrowed sprite:', (e as Error).message); getSheets().dealer = getSheets().walkerC; }
 try { getSheets().oyo = await loadKitSheet(MARKET6_ART); } catch (e) { console.warn('Oyo art not loaded, using his borrowed sprite:', (e as Error).message); getSheets().oyo = getSheets().walkerA; }
 try { const aud = await loadAuditorSheet(AUDITOR_ART); Object.assign(getSheets(), { aud1: aud, aud2: aud, aud3: aud }); } catch (e) { console.warn('Auditor art not loaded, using borrowed sprites:', (e as Error).message); Object.assign(getSheets(), { aud1: getSheets().walkerA, aud2: getSheets().walkerD, aud3: getSheets().walkerC }); }

@@ -49,6 +49,7 @@ export const VENDOR_ART = { base: 'sprites/vendor', cell: 64, pxPerUnit: 24, fps
 // Echo Exchange vendors drawn by the owner (public/sprites/<name>/sheet.png, same layout as the vendor: 64 px cells, row 0 = 8 stills, rows 1-8 = a 4-frame breathing loop). market1 = Tobbo, the cable seller.
 export const MARKET1_ART = { base: 'sprites/market1', cell: 64, pxPerUnit: 24, fps: 4, foot: 11, frames: 4, dirs: JUNO_ART.dirs };
 export const MARKET7_ART = { ...MARKET1_ART, base: 'sprites/market7', cell: 68, fps: 8, frames: 8, foot: 11 }; // market7 = Pim, the umbrella seller (short, red tee, stovepipe hat): 68 px cells, 8-frame idle, feet 11 px above the cell bottom
+export const MARKET8_ART = { ...MARKET7_ART, base: 'sprites/market8' }; // market8 = Bolt, the drone seller (white tee, black jacket, red trousers, long black hair, cane): 68 px cells, 8-frame idle
 export const MARKET6_ART = { ...MARKET1_ART, base: 'sprites/market6', cell: 80, foot: 16 }; // market6 = Oyo, the noodle seller (potbelly, dirty tee, flip-flops): 80 px cells, feet 16 px above the cell bottom
 export const MARKET5_ART = { ...MARKET1_ART, base: 'sprites/market5', foot: 10 }; // market5 = Ruth, the jewellery seller (gray long hair, glasses, red tee); her feet sit 10 px above the cell bottom
 export const DEALER_ART = { ...MARKET1_ART, base: 'sprites/dealer', cell: 68, fps: 8, frames: 8, foot: 11 }; // the implant dealer: 68 px cells, 8-frame idle, feet 11 px above the cell bottom (portrait still to come)
