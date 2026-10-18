@@ -29,6 +29,7 @@ export const AREAS = {
   bureau:   { origin: [1050, 0], name: 'Civic Audit Bureau',     district: 'Civic Centre', outdoor: false, mood: 'bureau', surface: 'tile' }, // chapter 3 hub (docs/chapter-3.md)
   dealer:   { origin: [900, 0],  name: 'Implants',               district: 'Undercity', outdoor: false, mood: 'dealer',  surface: 'tile' }, // chapter 2: the implant dealer's shop (docs/chapter-2.md)
   drive:    { origin: [1200, 0], name: 'The Road',              district: 'Lowmarket', outdoor: false, mood: 'scene',  surface: null }, // chapter 1 ending: the car alone in the dark while it drives (no floor, no walls)
+  arcade:   { origin: [1350, 0], name: 'Pachinko Arcade',       district: 'Lowmarket', outdoor: false, mood: 'bazaar', surface: 'tile' }, // chapter 4 ending: a stranger sets up the fixer's tower
   exchange: { origin: [750, 0],  name: 'The Echo Exchange',      district: 'Undercity', outdoor: true,  mood: 'bazaar', surface: 'asphalt' }, // chapter 2 hub (docs/chapter-2.md)
 } satisfies Record<string, AreaDef>;
 export type AreaId = keyof typeof AREAS;
@@ -49,6 +50,8 @@ const EXIT_DEFS: ExitDef[] = [
   { id: 'car-door', area: 'street', at: [-13.5, -0.1], to: 'car', spawn: [...at('car', 0.4, 0), H], verb: 'Get in the car' },
   { id: 'dealer-door', area: 'exchange', at: at('exchange', 0, -8.8), to: 'dealer', spawn: [...at('dealer', 0, 2.0), Math.PI], verb: 'Go into the implant shop' },
   { id: 'dealer-out', area: 'dealer', at: at('dealer', 0, 2.9), to: 'exchange', spawn: [...at('exchange', 0, -7.6), 0], verb: 'Leave' },
+  { id: 'arcade-door', area: 'street', at: [-6, -4.15], to: 'arcade', spawn: [...at('arcade', 0, 2.0), Math.PI], verb: 'Enter the arcade' },
+  { id: 'arcade-out', area: 'arcade', at: at('arcade', 0, 2.9), to: 'street', spawn: [-6, -3.3, 0], verb: 'Leave' },
   { id: 'car-out', area: 'car', at: at('car', -0.4, 1.3), to: 'street', spawn: [-13.5, 0.7, 0], verb: 'Get out' },
 ];
 export const EXITS = EXIT_DEFS;
@@ -238,7 +241,7 @@ function sable(M: Materials) {
   for (let i = 0; i < 9; i++) mess.box(M.litCool, 0.1, 0.03, 0.07, 2.4 + (i % 3) * 0.28, 0.03, -0.9 + (i >> 1) * 0.12);  // glass
   b.light(P.white, 18, 4.6, 2.5, 0.6);                      // the forensic lamp over the table: Dex, the cups and the floor around them
   b.light(P.cyanLight, 12, 3.2, 2.2, -1.6); b.light(P.magenta, 7, 6.8, 2.0, -1.4); b.light(P.cyan, 9, 3.2, 1.6, 2.0); b.light(P.cyan, 7, 6.8, 1.8, 1.6);
-  b.spot('teo', -3.2, -2.45); b.spot('dex', 4.6, 0.95); b.spot('body', 5.5, 1.5); b.spot('port', 3.7, 1.0);
+  b.spot('kitmeet', 6.4, 1.3); b.spot('teomeet', 6.4, -0.6); b.spot('teo', -3.2, -2.45); b.spot('dex', 4.6, 0.95); b.spot('body', 5.5, 1.5); b.spot('port', 3.7, 1.0);
   b.spot('cups', 4.55, -0.9); b.spot('terminal', 5.6, -2.0); b.spot('lamp', 3.0, -0.7); b.spot('echo', 6.0, 1.9);
   b.spot('backroom', 3.0, 0); b.spot('frontdoor', -5.4, 0); b.spot('backdoor', 7.4, 0);
   const area = finish('sable', b, [-6, -3, 8, 3], { mess: mess.build() });
@@ -294,6 +297,30 @@ function hostel(M: Materials) {
   b.spot('gear', 3.8, 0.3);
   b.spot('kit', 1.2, 0.6); b.spot('door', 0, 2.9); b.spot('capsule3f', -0.6, -1.9); // Dex's capsule: the middle stack
   return finish('hostel', b, [-5, -3.5, 5, 3.5]);
+}
+
+// ---------- Chapter 4: the pachinko arcade (a quick scene). Spots: door, stranger. ----------
+function arcade(M: Materials) {
+  const b = begin('arcade'), PM = propMats(M);
+  floor(b, M.walls[2], -5, -3.5, 5, 3.5);
+  wallX(b, M, -3.5 - T / 2, -5 - T, 5 + T); wallX(b, M, 3.5 + T / 2, -5 - T, 5 + T, [[-0.9, 0.9]]);
+  wallZ(b, M, -5 - T / 2, -3.5, 3.5); wallZ(b, M, 5 + T / 2, -3.5, 3.5);
+  doorMat(b, M, 0, 3.1, 1.4, 0.6);
+  const glow = [P.pink, P.cyan, P.amber, P.magenta];
+  for (let i = 0; i < 6; i++) {        // the back row of arcade cabinets: dark bodies with lit screens and a marquee
+    const x = -4.0 + i * 1.6;
+    b.box(M.metal, 1.2, 1.8, 0.8, x, 0.9, -3.0); b.box(i % 2 ? M.litCool : M.litWarm, 0.9, 0.6, 0.04, x, 1.25, -2.58); b.box(signMat(['GO', 'HI', 'VS', 'FX', 'XP', 'UP'][i], glow[i % 4], false), 0.8, 0.25, 0.04, x, 1.72, -2.58, 0, 0, false);
+  }
+  b.block(0, -3.0, 9.6, 0.8);
+  for (const sx of [-1, 1]) for (let k = 0; k < 3; k++) {  // pachinko machines along both side walls, facing in
+    const z = -1.6 + k * 1.7, x = sx * 4.35;
+    b.box(M.metal, 0.8, 1.7, 1.1, x, 0.85, z); b.box(k % 2 ? M.litWarm : M.litCool, 0.04, 1.0, 0.8, x - sx * 0.42, 1.05, z); b.block(x, z, 0.8, 1.1);
+  }
+  b.box(PM.wood, 2.4, 1.0, 0.8, 2.0, 0.5, 1.2); b.box(M.metal, 2.5, 0.06, 0.9, 2.0, 1.03, 1.2); b.block(2.0, 1.2, 2.4, 0.8);   // the prize counter
+  b.box(signMat('ARCADE', P.pink), 3.4, 0.8, 0.1, 0, 2.8, -1.8, 0, 0, false);
+  b.light(P.pink, 14, -2.5, 2.2, -1.5); b.light(P.cyan, 14, 2.5, 2.2, -1.5); b.light(P.amber, 10, 0, 2.2, 1.5); b.light(P.magenta, 8, 0, 1.8, -2.4);
+  b.spot('door', 0, 2.9); b.spot('stranger', -0.8, 0.2);
+  return finish('arcade', b, [-5, -3.5, 5, 3.5]);
 }
 
 // ---------- Chapter 2: the implant dealer's shop (the only interior of the Exchange). Locker 9 is Dex's. Spots: door, dealer (behind the counter), locker (in front of Locker 9), locker7 / 8 / 10 / 11, fixer (where the suit steps in). ----------
@@ -639,6 +666,7 @@ function streetExtras(M: Materials) {
   b.setTransform(0, 0, 0);
   b.box(signMat('SABLE', P.amber), 6, 1.2, 0.1, 0, 3.1, -4.0, 0, 0, false);           // covers the random shop sign on that building; hangs out past the random balcony / fire-escape rails (0.7 deep) so nothing hides the letters
   b.light(P.amberLight, 4.5, 0, 3.0, -4.2);
+  b.box(signMat('ARCADE', P.pink), 3.4, 0.8, 0.1, -6, 3.0, -4.0, 0, 0, false);       // over the arcade door (x -6, z -4.15), out past any balcony rails
   b.box(signMat('CAPSULE', P.pink), 3.4, 0.8, 0.1, 10.6, 3.0, 4.82, 0, 0, false);       // over the hostel entrance (the door is at x 10.6, z 4.15)
   junoCar(b, M);
   for (const e of EXIT_DEFS.filter((x) => x.area === 'street')) b.box(M.litCool, 1.2, 0.03, 0.8, e.at[0], 0.03 + (Math.abs(e.at[1]) > 3 ? 0.15 : 0), e.at[1]);
@@ -666,7 +694,7 @@ export function buildAreas(rng: Rng) {
     blocks: [...d.userData.blocks, ...ex.blocks], spots: d.userData.spots, lights: [...d.userData.lights, ...ex.lights],
     signs: d.userData.signs, steam: d.userData.steam, bounds: streetBounds(), road: [-3, 3],
   };
-  const areas: Record<AreaId, AreaRecord> = { street, platform: platform(M), sable: sable(M), alley: alley(M), hostel: hostel(M), car: car(M), dealer: dealer(M), bureau: bureau(M, rng.fork('bureau')), exchange: exchange(M, rng.fork('exchange')), drive: driveArea(M) };
+  const areas: Record<AreaId, AreaRecord> = { street, platform: platform(M), sable: sable(M), alley: alley(M), hostel: hostel(M), car: car(M), dealer: dealer(M), arcade: arcade(M), bureau: bureau(M, rng.fork('bureau')), exchange: exchange(M, rng.fork('exchange')), drive: driveArea(M) };
   // The train is a child of the platform group so it shows and hides with it.
   areas.platform.group.add(areas.platform.train!);
   for (const e of EXIT_DEFS) (areas[e.area].exits ??= []).push(e);

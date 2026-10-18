@@ -51,6 +51,7 @@ export const CAST = [
   // The implant dealer's shop and the scripted people of the chapter 2 ending (beats.dealerScene): borrowed sheets until the owner draws them. ambient = no Talk prompt.
   { id: 'dealer', area: 'dealer', at: 'dealer', facing: 0, booth: true },
   { id: 'fixer', area: 'dealer', at: 'fixer', sheet: 'walkerB', facing: -Math.PI / 4, ambient: true },
+  { id: 'stranger', area: 'arcade', at: 'stranger', sheet: 'walkerD', facing: Math.PI / 2, ambient: true },   // chapter 4: the go-between at the arcade (borrowed sprite)
   { id: 'aud1', area: 'exchange', at: [748.5, -7.2], facing: Math.PI / 2, ambient: true },
   { id: 'aud2', area: 'exchange', at: [751.5, -7.2], facing: -Math.PI / 2, ambient: true },
   { id: 'aud3', area: 'exchange', at: [750, -5.9], facing: Math.PI, ambient: true },

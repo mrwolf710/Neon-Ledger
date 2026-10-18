@@ -32,6 +32,7 @@ export const SPEAKERS: Record<string, Speaker> = {
   oyo: { name: 'Oyo', color: '#ffb347' }, ruth: { name: 'Ruth', color: '#ff9a3c' }, slate: { name: 'Slate', color: '#ff4a2c' },
   jinx: { name: 'Jinx', color: '#ffc83a' }, bolt: { name: 'Bolt', color: '#ff8030' }, petra: { name: 'Petra', color: '#ff5a50' },
   // The implant dealer's shop and the chapter 2 ending (names are placeholders until the owner picks them).
+  stranger: { name: 'Stranger', color: '#d58bff' },
   dealer: { name: 'Dealer', color: '#ff5a3c' }, fixer: { name: 'Fixer', color: '#ffb347' }, aud1: { name: 'Auditor', color: '#c8d0e8' }, aud2: { name: 'Auditor', color: '#c8d0e8' },
 };
 
@@ -113,6 +114,8 @@ const DONE_EFFECTS = { Capsule_after_Teo: [{ setFlag: 'kit_paid' }], Mama_Teo_Po
 export function conversationFor(personId: string, visit: number, ctx: ConversationContext = {}): string {
   if (personId === 'bolt' && ctx.flag?.('has_lens') && !ctx.flag('has_coil')) return 'bolt_trade'; // the errand: Gutter's cracked lens for Bolt's relay coil
   if (personId === 'mamaTeo' && ctx.has?.('kit_outside') && !ctx.has('kit_name')) return 'teo_worker'; // the worker's echo is in the case file: Teo names him
+  if (personId === 'vendor' && ctx.flag?.('chapter4')) return ctx.flag('vendor_watch') ? 'vendor_ch4_after' : 'vendor_ch4';   // chapter 4: Juno asks her to watch for auditors
+  if (personId === 'mamaTeo' && ctx.flag?.('teo_meet')) return 'teo_ch4_after';
   if (personId === 'kit' && ctx.flag?.('chapter4')) return ctx.flag('kit_warned') ? 'kit_ch4_after' : 'kit_ch4'; // chapter 4: Juno warns him first
   if (personId === 'kit' && !ctx.flag?.('key_deduced')) return 'kit_hey'; // he is out on the street until the Sable clues are put together: he only says hello
   if (personId === 'kit' && ctx.flag?.('kit_paid')) return ctx.flag('kit_deduced') ? 'kit' : 'kit_wait'; // once paid: a short line until the board names him, then the interview
@@ -279,14 +282,54 @@ export const CONVERSATIONS: Record<string, Conversation> = {
   // Kit (the hostel worker). Out on the street until the key deduction (flag key_deduced) he only says hello (kit_hey). Before the board names him he only says capsule 3F is open (kit_wait). After the deduction (flag kit_named) Juno calls him Kit,
   // he claims he left capsule 3F at 23:00 ; present kit_outside (his echo) to break the story, then kit_saw_them for the coat.
   kit_wait: { start: 'a', nodes: { a: { speaker: 'kit', text: 'Capsule 3F is open, like I said. Thanks for the credits, they go straight to the collection. There is a Gen-3 interface arm coming up at auction. Come back when you know something worth another 30.', end: true } } },
-  // Chapter 4: dawn at the hostel. Juno has to get Kit out of Lowmarket before Hale's auditors come looking (sets kit_warned, which opens the Sable door).
+  // Chapter 4: dawn at the hostel. Juno asks Kit about his gear (foreshadows the finale), then asks him to meet her at Mama Teo's (sets kit_warned, which opens the Sable door).
   kit_ch4: { start: 'a', nodes: {
-    a: { speaker: 'juno', text: "Kit. Listen. Hale's auditors are coming down Lowmarket this morning, for you and for Mama Teo. I need you out of here.", next: 'b' },
-    b: { speaker: 'kit', text: "Auditors? Here? I just rent out capsules! I told you everything, I swear!", next: 'c' },
-    c: { speaker: 'juno', text: "You told me enough to scare her. Pack your gear, all of it, especially that shelf, and keep your head down. I'll find you when I need it.", next: 'd' },
-    d: { speaker: 'kit', text: "The shelf. Right. The good stuff. Nobody gets the good stuff. I'll go out the back.", end: true, effects: [{ setFlag: 'kit_warned' }] },
+    a: { speaker: 'juno', text: "Kit. That shelf of yours, behind the cage. The Bureau-grade gear. What exactly have you got?", next: 'b' },
+    b: { speaker: 'kit', text: "You want to see the collection? Okay, okay. Signal jammers, a stripped reader, a door-breaker with no serial. And the pride of the shelf: an override damper. Real Bureau issue.", next: 'c' },
+    c: { speaker: 'juno', text: 'What does a damper do?', next: 'd' },
+    d: { speaker: 'kit', text: "Anything an auditor's override code can lock, it unlocks. Ports, doors, collars. It only has one charge, and it only works up close. I've never dared use it.", next: 'e' },
+    e: { speaker: 'juno', text: "(A key to the one lock that burned Dex's port. And he keeps it behind a cage.)", next: 'f' },
+    f: { speaker: 'juno', text: "Kit, bring it with you. Meet me at Mama Teo's, in the back room. Don't tell anyone, and don't use the front door.", next: 'g' },
+    g: { speaker: 'kit', text: "The Sable? Now? You're scaring me. Fine. Fine! The back room. I'll bring the good stuff.", end: true, effects: [{ setFlag: 'kit_warned' }] },
   } },
-  kit_ch4_after: { start: 'a', nodes: { a: { speaker: 'kit', text: "Packing. Quietly. Tell Mama Teo I said... no, don't tell her anything. Go.", end: true } } },
+  kit_ch4_after: { start: 'a', nodes: { a: { speaker: 'kit', text: "I'm going, I'm going. Back room at the Sable, and I'll use the alley. Don't wait for me.", end: true } } },
+  vendor_ch4: { start: 'a', nodes: {
+    a: { speaker: 'juno', text: "Morning. I need a favour. If any Bureau auditors come down the street, grey coats, badges, too polite, I want to know.", next: 'b' },
+    b: { speaker: 'vendor', text: "A favour. From me. For free. And what do I get, detective, a medal?", next: 'c' },
+    c: { speaker: 'juno', text: 'My thanks. And the Sable stays standing.', next: 'd' },
+    d: { speaker: 'vendor', text: "Cheap. But Teo's soup is the only thing on this street worth the walk. Fine. I'll shout if I smell a badge. Now buy a skewer or move along.", end: true, effects: [{ setFlag: 'vendor_watch' }] },
+  } },
+  vendor_ch4_after: { start: 'a', nodes: { a: { speaker: 'vendor', text: "Still no grey coats. Buy a skewer, you're scaring my customers.", end: true } } },
+  // Chapter 4: the back room of the Sable. Juno says they are not safe; Teo and Kit refuse to leave; a call arrives (beats.sableMeeting).
+  ch4_meeting: { start: 'a', nodes: {
+    a: { speaker: 'juno', text: "Both of you. Hale knows you helped me. She's sent auditors to 'look in' on you, for your safety. You aren't safe here. You have to get out of Lowmarket for a while.", next: 'b' },
+    b: { speaker: 'mamaTeo', text: "Leave? Forty years I have stood behind that counter. Lowmarket is my home, girl. And I'm too old to go running anywhere.", next: 'c' },
+    c: { speaker: 'juno', text: "Teo, these people don't ask twice.", next: 'd' },
+    d: { speaker: 'mamaTeo', text: "Then they can sit down and eat soup like everybody else. I am not leaving.", next: 'e' },
+    e: { speaker: 'kit', text: "I don't want to leave either. I mean, I'm terrified. But this is the only place I've got. I can help. I've got the damper, and I know every back door on this street.", next: 'f' },
+    f: { speaker: 'juno', text: "(Neither of them will go. Then I'll have to be the one who ends this.)", end: true },
+  } },
+  ch4_call: { start: 'a', nodes: {
+    a: { speaker: 'juno', text: "(An unknown number.) Vale.", next: 'b' },
+    b: { speaker: 'stranger', text: "Detective. Don't say my name, you don't know it. The pachinko arcade on Lowmarket Street. Come alone. Someone wants to talk to you about Hale.", next: 'c' },
+    c: { speaker: 'juno', text: 'Who is this?', next: 'd' },
+    d: { speaker: 'stranger', text: "Someone who wants her gone as much as you do. Come now, before her auditors arrive.", next: 'e' },
+    e: { speaker: 'juno', text: "I'll be there.", next: 'f' },
+    f: { speaker: 'mamaTeo', text: "Who calls this early? Nobody good. Go. Kit and I will mind the soup.", end: true },
+  } },
+  teo_ch4_after: { start: 'a', nodes: { a: { speaker: 'mamaTeo', text: "I'm not going anywhere. Go and see your caller, and come back and eat.", end: true } } },
+  arcade_closed: { start: 'a', nodes: { a: { speaker: 'juno', text: "(The pachinko arcade. Shuttered, for now. I have no reason to be there.)", end: true } } },
+  // Chapter 4 ending: the arcade, a stranger sets up the meeting with the fixer at the tower (beats.arcadeScene).
+  arcade_stranger: { start: 'a', nodes: {
+    a: { speaker: 'stranger', text: "Detective Vale. Sit anywhere, the machines are too loud for anyone to listen. You came alone. Good.", next: 'b' },
+    b: { speaker: 'juno', text: "You made the call. Who are you?", next: 'c' },
+    c: { speaker: 'stranger', text: "A voice that gets paid to be in the right place. The man you want does not do phones, or arcades, or daylight. He does a tower.", next: 'd' },
+    d: { speaker: 'juno', text: 'The man in the dark suit from the Exchange.', next: 'e' },
+    e: { speaker: 'stranger', text: "The Meridian Tower. The forty-first floor. Tell the lift that Dex sent you. It is the only password he accepts.", next: 'f' },
+    f: { speaker: 'juno', text: 'Dex is dead.', next: 'g' },
+    g: { speaker: 'stranger', text: "Yes. That is why it works. Hale's auditors reach the Sable by eight. Go before then, or after, but go. He is offering you your forty-seven minutes back. And the others.", next: 'h' },
+    h: { speaker: 'juno', text: "(The others. How many more nights has she taken from me?)", end: true },
+  } },
   sable_kit_first: { start: 'a', nodes: { a: { speaker: 'juno', text: "(Not yet. I have to see Kit first. There's something I need him to do before the auditors get here.)", end: true } } },
   kit_hey: { start: 'a', nodes: { a: { speaker: 'kit', text: "Hey, what's up?", end: true } } },
   // Mama Teo names the worker from the alley echo (the only way Juno learns his name; sets kit_named so he is called Kit from here on).

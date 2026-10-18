@@ -435,6 +435,30 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     locked = false;                                              // the station is hers to walk
   }
 
+  // Chapter 4: Juno steps into the back room where Kit and Teo wait; they refuse to leave Lowmarket; then the phone rings (the arcade).
+  async function sableMeeting() {
+    locked = true;
+    await wait(0.4);
+    await dialogue.start('ch4_meeting');
+    sfx.phoneRing?.(); await wait(BEATS.ringEvery * 0.6); sfx.phoneRing?.(); await wait(BEATS.ringEvery * 0.6); sfx.phoneAnswer?.();
+    await dialogue.start('ch4_call');
+    caseFile.setFlag('teo_meet'); caseFile.setFlag('arcade_call');
+    locked = false;
+  }
+  // Chapter 4 ending: a stranger in the arcade points Juno at the fixer's tower, then the chapter card (chapter 5 is not built).
+  async function arcadeScene() {
+    locked = true;
+    await wait(0.6);
+    await dialogue.start('arcade_stranger');
+    caseFile.setFlag('arcade_met');
+    const st = cast.byId.stranger; st.away = true; cast.apply();
+    await fade.out();
+    fade.card([{ text: 'END OF CHAPTER 4', color: '#ffffff', scale: 5 }, { text: 'CHAPTER 5: THE MERIDIAN TOWER - COMING SOON', color: '#ff9a3c', scale: 3 }, { text: 'TAP OR PRESS ANY BUTTON', color: '#8a8aa8', scale: 2 }], 3600);
+    await wait(BEATS.finaleGuard);
+    await anyInput(Infinity);
+    location.reload();
+  }
+
   // Chapter 4: the Sable is just a noodle shop again. Dex's body, the cups, the broken lamp and the glass are gone, the back room has nothing to examine and no echo to scan.
   function clearSable() {
     cast.byId.dex.away = true; cast.apply();
@@ -471,8 +495,8 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
   // ---- Interactables: doors, clues, people ----
   function register() {
     for (const e of world.exits) {
-      interactions.add({ id: e.id, area: e.area, position: new THREE.Vector3(e.at[0], 0, e.at[1]), height: 1.2, verb: e.verb,
-        onInteract: () => { if (e.id === 'dealer-door' && !flag('dealer_open')) dialogue.start('dealer_locked'); else if (e.id === 'sable-door' && flag('chapter4') && !flag('kit_warned')) dialogue.start('sable_kit_first'); else if (e.id === 'dealer-out' && flag('fixer_done') && !flag('auditors_done')) { if (!locked) outsideScene(); } else world.enter(e.to, e.spawn); } }); // the dealer's door stays shut until the locker deduction
+      interactions.add({ id: e.id, get area() { return e.id === 'arcade-door' && !flag('chapter4') ? '' : e.area; }, position: new THREE.Vector3(e.at[0], 0, e.at[1]), height: 1.2, verb: e.verb,
+        onInteract: () => { if (e.id === 'dealer-door' && !flag('dealer_open')) dialogue.start('dealer_locked'); else if (e.id === 'arcade-door' && !flag('arcade_call')) dialogue.start('arcade_closed'); else if (e.id === 'sable-door' && flag('chapter4') && !flag('kit_warned')) dialogue.start('sable_kit_first'); else if (e.id === 'dealer-out' && flag('fixer_done') && !flag('auditors_done')) { if (!locked) outsideScene(); } else world.enter(e.to, e.spawn); } }); // the dealer's door stays shut until the locker deduction
     }
     for (const id of ['fixer', 'aud1', 'aud2', 'aud3']) cast.byId[id].away = true; // scripted people appear only in their scenes
     for (const x of EXAMINABLES) {
@@ -520,12 +544,14 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
   // The worker stands on the street until the key deduction (the Sable clues put together), then he is at the hostel desk.
   let kitPlace: string | null = null;
   function placeKit() {
-    const b = cast.byId.kit, at = flag('key_deduced') ? 'hostel' : 'street';
+    const b = cast.byId.kit, at = flag('chapter4') && flag('kit_warned') ? 'sable' : flag('key_deduced') ? 'hostel' : 'street';
     if (!b || kitPlace === at) return;
     kitPlace = at;
-    const h = at === 'hostel' ? world.spot('hostel', 'kit') : BEATS.kitStreet;
+    const h = at === 'sable' ? world.spot('sable', 'kitmeet') : at === 'hostel' ? world.spot('hostel', 'kit') : BEATS.kitStreet;
     if (!h) return;
-    b.area = at; b.position.set(h.x, b.position.y, h.z); b.facing = h.facing ?? 0;
+    b.area = at; b.position.set(h.x, b.position.y, h.z); b.facing = at === 'sable' ? -Math.PI / 2 : h.facing ?? 0;
+    const t = at === 'sable' ? world.spot('sable', 'teomeet') : null;   // chapter 4: Teo joins him in the back room
+    if (t) { const teo = cast.byId.mamaTeo; teo.position.set(t.x, teo.position.y, t.z); teo.facing = -Math.PI / 2; }
     cast.apply();
   }
   function afterTalk(b: CastMember) {
@@ -570,8 +596,9 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     { id: 'hale', text: 'Face Hale in her office', area: 'bureau', pos: () => spotXZ('bureau', 'hale'), done: () => flag('hale_met') },
     { id: 'station', text: () => (flag('lab_open') ? 'Use the reader in the memory lab' : flag('lab_code_found') ? 'Open the memory-audit lab (the keypad, east side)' : flag('aud_gone') ? (stationClues() ? 'Search the desk computers for the lab code' : 'Search the station: the archive, the desks and the cells') : flag('pc_tried') ? 'Get the auditors away from the desks' : "Look for clues about what's going on"), area: 'bureau', done: () => flag('bureau_deduced') },
     { id: 'slip', text: 'Slip out through the front door', area: 'bureau', pos: () => spotXZ('bureau', 'frontdoor'), done: () => flag('chapter4') },
-    { id: 'kit4', text: 'Warn Kit at the capsule hostel', area: 'hostel', pos: () => spotXZ('hostel', 'kit'), done: () => flag('kit_warned') },
-    { id: 'warn', text: "Warn Mama Teo and Kit before Hale's auditors reach them", area: 'sable', pos: () => spotXZ('sable', 'teo'), done: () => false },   // chapter 4 (not built yet)
+    { id: 'kit4', text: 'Talk to Kit at the capsule hostel about his gear', area: 'hostel', pos: () => spotXZ('hostel', 'kit'), done: () => flag('kit_warned') },
+    { id: 'meet', text: "Meet Kit and Mama Teo in the Sable's back room", area: 'sable', pos: () => spotXZ('sable', 'teomeet'), done: () => flag('teo_meet') },
+    { id: 'arcade', text: 'Go to the pachinko arcade', area: 'arcade', pos: () => spotXZ('arcade', 'stranger'), done: () => flag('arcade_met') },   // the chapter 4 ending
   ];
   function markFor(step: Step) {
     const here = world.current.id;
@@ -632,6 +659,10 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
         const u = Math.min(1, t.t / t.s);
         t.fn(u);
         if (u >= 1) { t.res(); tweens.splice(i, 1); }
+      }
+      if (!locked && !dialogue.active && flag('chapter4')) {
+        if (world.current.id === 'sable' && flag('kit_warned') && !flag('teo_meet') && player.position.x > world.current.meta.origin[0] + 2.4) sableMeeting();
+        else if (world.current.id === 'arcade' && !flag('arcade_met')) arcadeScene();
       }
       // Beat 3 trigger: Juno steps into the back room.
       if (world.current.id === 'sable' && !flag('seen_backroom') && player.position.x > world.current.meta.origin[0] + 2.4) {
