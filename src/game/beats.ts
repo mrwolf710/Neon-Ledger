@@ -528,7 +528,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
       const from = { yaw: cam.yaw, pitch: cam.pitch, distance: cam.distance }, dy = Math.atan2(Math.sin(to.yaw - from.yaw), Math.cos(to.yaw - from.yaw));
       return tween(seconds, (u) => { const e = u * u * (3 - 2 * u); cam.set({ yaw: from.yaw + dy * e, pitch: from.pitch + (to.pitch - from.pitch) * e, distance: from.distance + (to.distance - from.distance) * e }); });
     };
-    const room = world.areas.bureau.group.children.filter((c) => c instanceof THREE.Mesh && (c as THREE.Mesh).material !== mat && c !== ov), order = room.map((_, k) => k).sort(() => Math.random() - 0.5);
+    const room = world.areas.bureau.group.children.filter((c) => c instanceof THREE.Mesh && (c as THREE.Mesh).material !== mat && c !== ov && c.visible), order = room.map((_, k) => k).sort(() => Math.random() - 0.5);
     const dissolve = (u: number) => room.forEach((c, k) => { c.visible = order[k] / room.length >= u; });   // the furniture and walls drop out one by one as the camera moves in (u 0 = all there, 1 = only the TV)
     focus = screenAt;                                                       // 1: the player camera moves to the north side of the room and zooms slowly in on the screen (the player cannot move it)
     await Promise.all([zoom({ yaw: Math.PI, pitch: THREE.MathUtils.degToRad(VIDEO.pitchDeg), distance: VIDEO.distance }, VIDEO.zoomSeconds), tween(VIDEO.zoomSeconds * 0.85, dissolve)]);
