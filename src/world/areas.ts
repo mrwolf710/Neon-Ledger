@@ -379,7 +379,7 @@ export const BUREAU = {
   columns: { xs: [-8, -2], zs: [-4] },                                // the only columns: two down the middle aisle (none at x 4: the auditors walk through it outside Hale's office)
   mullion: 3,                                                          // spacing of the thin window bars (no pier columns)
   screenOn: 0.75,                                                      // share of desk monitors that are switched on (night shift, mostly empty)
-  skyline: { towers: 70, from: 3.5, to: 30, minH: 12, maxH: 40, lit: 0.85 },   // how many towers and how far out (outside the window walls)
+  skyline: { towers: 90, from: 3.5, to: 30, minTop: -34, maxTop: 22, bottom: -90, rows: 16, lit: 0.85 },   // how many towers and how far out (outside the window walls); the Bureau is on a high floor, so most roofs are BELOW the floor (top = roof height, minTop..maxTop, 0 = the Bureau's floor) and every tower runs down out of sight (bottom)
   colors: { cool: 0x1fd6e8, white: 0xdfeaff, alarm: 0xff3b4c, warm: 0xf2a93b },
   field: { color: 0xff2a3c, opacity: 0.28, lines: 5 },                 // the red force field across each cell doorway
 };
@@ -401,16 +401,16 @@ function bureau(M: Materials, rng: Rng) {
   // --- The city outside: a skyline of dark towers with lit windows, beyond the north and west window walls.
   const jr = rng.fork('skyline'), tw = [PM.crates[1], M.walls[1], M.metal], SK = BUREAU.skyline, pink = lit(0xff6fb5);
   for (let i = 0; i < SK.towers; i++) {
-    const north = i % 2 === 0, d = jr.range(SK.from, SK.to), w = jr.range(3, 6.5), h = jr.range(SK.minH, SK.maxH);
+    const north = i % 2 === 0, d = jr.range(SK.from, SK.to), w = jr.range(3, 6.5), top = jr.range(SK.minTop, SK.maxTop), h = top - SK.bottom;
     const x = north ? jr.range(hx0 - 24, wx1 + 14) : hx0 - d, z = north ? hz0 - d : jr.range(hz0 - 24, hz1 + 14);
-    b.box(tw[i % 3], w, h, w, x, h / 2, z);
+    b.box(tw[i % 3], w, h, w, x, SK.bottom + h / 2, z);
     const fx = north ? 0 : 1; // windows go on the face that looks at the station (south face of the north towers, east face of the west towers)
-    for (let k = 0; k < Math.floor(h / 2); k++) for (let c = 0; c < 3; c++) {
+    for (let k = 0; k < SK.rows; k++) for (let c = 0; c < 3; c++) {   // window rows hang down from the roof
       if (jr.rand() > SK.lit) continue;
       const off = (c - 1) * (w / 3.4), ww = w / 5.5, mat = jr.rand() < 0.08 ? pink : jr.pick([cool, cool, warm, warm, alarm]);
-      if (north) b.box(mat, ww, 0.8, 0.08, x + off, 1.2 + k * 2, z + w / 2 + 0.05); else b.box(mat, 0.08, 0.8, ww, x + w / 2 + 0.05, 1.2 + k * 2, z + off);
+      if (north) b.box(mat, ww, 0.8, 0.08, x + off, top - 1.2 - k * 2, z + w / 2 + 0.05); else b.box(mat, 0.08, 0.8, ww, x + w / 2 + 0.05, top - 1.2 - k * 2, z + off);
     }
-    if (jr.rand() < 0.2) { const sc = jr.pick([pink, cool, alarm]); if (north) b.box(sc, w * 0.8, 1.6, 0.12, x, h * jr.range(0.4, 0.9), z + w / 2 + 0.08); else b.box(sc, 0.12, 1.6, w * 0.8, x + w / 2 + 0.08, h * jr.range(0.4, 0.9), z); }
+    if (jr.rand() < 0.2) { const sc = jr.pick([pink, cool, alarm]); if (north) b.box(sc, w * 0.8, 1.6, 0.12, x, top - jr.range(2, 14), z + w / 2 + 0.08); else b.box(sc, 0.12, 1.6, w * 0.8, x + w / 2 + 0.08, top - jr.range(2, 14), z); }
   }
   // --- Low (dollhouse) walls on the near sides: south, east, and every partition. Doors are gaps; they block movement.
   const lo = { h: 1.0, mat: M.walls[1], block: true };
