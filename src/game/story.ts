@@ -561,7 +561,7 @@ LAB_VIDEO.forEach((l, i) => { CONVERSATIONS[`lab_video_${i}`] = { start: 'a', no
 CONVERSATIONS.lab_video_after = { start: 'a', nodes: {
   a: { speaker: 'juno', text: "(That was me. That was Hale's voice, and my own, begging. And the date on the log is not the only one.)", next: 'b' },
   b: { speaker: 'juno', text: "(Thirty-one sessions. She has done this to me thirty-one times.)", next: 'c' },
-  c: { speaker: 'juno', text: "(The reader logged my touch. She'll know within minutes. I'm not waiting for dawn.)", end: true, effects: [{ setFlag: 'bureau_deduced' }] },
+  c: { speaker: 'juno', text: "(I have to get out of here. Now. The reader logged my touch, she'll know within minutes, and if she finds me in this room I'm back in that chair. I'm not waiting for dawn.)", end: true, effects: [{ setFlag: 'bureau_deduced' }] },
 } };
 
 // Conversations made in the editor: lines play in order; active ones become what the person says when Juno talks to them.

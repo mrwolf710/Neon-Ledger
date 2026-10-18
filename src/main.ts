@@ -159,7 +159,7 @@ const beats = createBeats({ terminal, trainSteam, input, world, cast, caseFile, 
   setExposure: (v) => { renderer.toneMappingExposure = MAIN.exposure * v; }, setVhs: (a) => post.setVhs(a), setCrt: (a) => { post.setCrt(a); crtFrame.set(a); fade.cardScale(crtFrame.ratio); } });
 beats.setCamera(cam);
 beats.register();
-const todMood = () => (phaseId === 'dawn' && !world.current.meta.outdoor ? 'night' : phaseId);
+const todMood = (a = world.current) => (phaseId === 'dawn' && !a.meta.outdoor ? 'night' : phaseId);
 // the memory lab room in the Bureau: the wing x range and the lab's z range, in the area's own coordinates
 const inLab = () => { if (world.current.id !== 'bureau') return false; const [ox, oz] = world.current.meta.origin, x = player.position.x - ox, z = player.position.z - oz; return x > BUREAU.wing[0] && x < BUREAU.wing[1] && z > BUREAU.rooms.lab[0] && z < BUREAU.rooms.lab[1]; };
 let blurOff = false, blurSaved = 0;
@@ -244,7 +244,7 @@ function onAreaEnter(area: Area, spawn: Spawn | undefined) {
   cast.setArea(area.id); interactions.setArea(area.id); echo.setArea(area.id);
   particles.active = area.meta.outdoor; particles.motes = area.id !== 'exchange'; // no floating motes in the market
   tod.setIndoor(!area.meta.outdoor);
-  if (phaseId === 'dawn') tod.setTimeOfDay(todMood()); // the orange sunup is for exteriors only: rooms keep the night look
+  if (phaseId === 'dawn') tod.setTimeOfDay(todMood(area)); // the orange sunup is for exteriors only: rooms keep the night look
   CUTAWAY.minY = area.id === 'exchange' ? 1e3 : area.meta.outdoor ? 0.3 : 1.15; // exchange: never cut, the booths must always be visible; // indoors, tables and the counter stay solid; only walls and signs above them are cut
   tod.setScene(area.id);
   if (area.id === 'exchange') { cam.set({ yaw: (CAMERA.exchangeYawDeg * Math.PI) / 180 }); cam.snap(); } // the market route is laid out for a north-facing view
