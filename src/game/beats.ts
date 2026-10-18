@@ -322,15 +322,18 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     terminal.mail(mail.owner, mail.items).then(() => { if (hasCode && !flag('lab_code_found')) dialogue.start('code_found'); });
   }
   // Hale walks the route (sliding, she has no walk frames) and stops facing the cells; flag hale_left when she arrives.
-  function walkHale() {
-    const h = cast.byId.hale, [ox, oz] = origin('bureau'), J = BEATS.haleJail;
-    const pts: [number, number][] = [[h.position.x, h.position.z], ...J.route.map(([x, z]): [number, number] => [ox + x, oz + z])];
+  // back = the return trip: once Juno has her desk clue Hale walks home so the cells are free for Juno to talk to the prisoner (flag hale_back).
+  let haleWalking = false;
+  function walkHale(back = false) {
+    const h = cast.byId.hale, [ox, oz] = origin('bureau'), J = BEATS.haleJail, hs = world.spot('bureau', 'hale')!;
+    const route: [number, number][] = back ? [...J.route].reverse().slice(1) : J.route;
+    const pts: [number, number][] = [[h.position.x, h.position.z], ...route.map(([x, z]): [number, number] => [ox + x, oz + z]), ...(back ? [[hs.x, hs.z] as [number, number]] : [])];
     const lens = pts.slice(1).map((p, i) => Math.hypot(p[0] - pts[i][0], p[1] - pts[i][1])), total = lens.reduce((a, b) => a + b, 0);
     tween(total / J.speed, (u) => {
       let d = u * total, i = 0; while (i < lens.length - 1 && d > lens[i]) d -= lens[i++];
       const k = lens[i] ? Math.min(1, d / lens[i]) : 1, [ax, az] = pts[i], [bx, bz] = pts[i + 1];
-      h.position.set(ax + (bx - ax) * k, 0, az + (bz - az) * k); h.facing = u >= 1 ? Math.PI / 2 : Math.atan2(bx - ax, bz - az); h.anim = u >= 1 ? 'idle' : 'walk';
-    }).then(() => caseFile.setFlag('hale_left'));
+      h.position.set(ax + (bx - ax) * k, 0, az + (bz - az) * k); h.facing = u >= 1 ? (back ? -Math.PI / 2 : Math.PI / 2) : Math.atan2(bx - ax, bz - az); h.anim = u >= 1 ? 'idle' : 'walk';
+    }).then(() => caseFile.setFlag(back ? 'hale_back' : 'hale_left'));
   }
   async function fakeCall() {
     locked = true;
@@ -378,7 +381,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
       const a = cast.byId[id]; a.away = !here;
       if (here) { const r = BEATS.routes[id]; a.position.set(ox + r[0][0], 0, oz + r[0][1]); startPatrol(a, r); }
     }
-    if (gone) { const [jx, jz] = BEATS.haleJail.route[BEATS.haleJail.route.length - 1], h = cast.byId.hale; h.position.set(ox + jx, 0, oz + jz); h.facing = Math.PI / 2; caseFile.setFlag('hale_left'); }
+    if (gone) { const [jx, jz] = BEATS.haleJail.route[BEATS.haleJail.route.length - 1], h = cast.byId.hale, hs = world.spot('bureau', 'hale')!; if (flag('hale_back') || flag('ex_haledesk')) { h.position.set(hs.x, 0, hs.z); h.facing = -Math.PI / 2; caseFile.setFlag('hale_back'); } else { h.position.set(ox + jx, 0, oz + jz); h.facing = Math.PI / 2; } caseFile.setFlag('hale_left'); }
     cast.apply();
   }
   async function bureauArrival() {
@@ -604,6 +607,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
       placeKit();
       for (const h of frameHooks) h(dt);
       syncLabDoor(); updatePatrols(dt);
+      if (flag('ex_haledesk') && flag('hale_left') && !flag('hale_back') && !haleWalking && !dialogue.active && !locked) { haleWalking = true; walkHale(true); }   // she heads home once Juno has read her desk
       if (ringing && (ringing.t += dt) >= BEATS.ringEvery) { ringing.t = 0; sfx.phoneRing?.(); }
       if (answerWait && (input.pressed('interact') || input.click)) api.answerCall();
       if (!locked) beatTimes[api.beatNo - 1] += dt;

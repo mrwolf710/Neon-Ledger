@@ -419,7 +419,7 @@ function bureau(M: Materials, rng: Rng) {
   for (let i = 0; i < 3; i++) {
     const z0 = R.cells[0] + (i * cn) / 3, z1 = z0 + cn / 3, zc = (z0 + z1) / 2;
     for (let z = z0 + 0.2; z < z1; z += 0.34) if (!(z > zc - 0.5 && z < zc + 0.5)) b.box(M.metal, 0.07, 2.4, 0.07, cx0, 1.2, z); // each cell has an open doorway in its bars
-    b.box(M.metal, 0.12, 0.12, cn / 3, cx0, 2.4, zc); b.block(cx0, z0 + 0.25, 0.2, 0.5); b.block(cx0, z1 - 0.25, 0.2, 0.5); // bars block either side of a 1-unit doorway
+    b.box(M.metal, 0.12, 0.12, cn / 3, cx0, 2.4, zc); b.block(cx0, z0 + 0.25, 0.2, 0.5); b.block(cx0, z1 - 0.25, 0.2, 0.5); b.block(cx0, zc, 0.2, 1.0); // bars block either side of a 1-unit doorway; the force field blocks the doorway itself
     b.add(field, new THREE.PlaneGeometry(1.0, 2.4).rotateY(Math.PI / 2).translate(cx0, 1.2, zc));        // force field across the doorway, with glowing bands
     for (let k = 0; k < BUREAU.field.lines; k++) b.box(alarm, 0.03, 0.04, 1.0, cx0, 0.2 + k * (2.0 / (BUREAU.field.lines - 1)), zc);
     if (i < 2) { b.box(M.walls[1], wx1 - cx0, 1.0, T, (cx0 + wx1) / 2, 0.5, z1); b.block((cx0 + wx1) / 2, z1, wx1 - cx0, T); }
