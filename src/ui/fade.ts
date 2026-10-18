@@ -1,7 +1,10 @@
 import { drawText, measure } from '../gen/pixelfont.ts';
+import { rng } from '../core/rng.ts';
+import { spaceText } from '../gen/spacefont.ts';
 import { CRT_FRAME } from './crtframe.ts';
 
 // Full-screen black fade (area changes) and a pixel-font title card (cold open, end card).
+export const LINES = { count: 70, color: '#9fe8ff', alpha: 0.55, minLen: 90, maxLen: 380, minSpeed: 1400, maxSpeed: 2600, width: 2 }; // the driving streaks: lengths and speeds in screen px (per second)
 export const FADE = { seconds: 0.35, cardY: 50, cardGap: 5 }; // cardY: % from the top where a split title's row is centred (where Juno stands in the cold open); cardGap: vh between its words
 
 export interface CardLine { text: string; color?: string; scale?: number; parts?: string[]; corner?: string | boolean }
@@ -14,6 +17,7 @@ export interface Fade {
   log(hold?: number): Promise<void>;
   hideCard(s?: number): Promise<void>;
   card(lines: CardLine[], hold?: number, bottom?: number): Promise<void>;
+  speedLines(seconds: number, dirX: number, dirY: number): Promise<void>;
 }
 
 export function createFade(): Fade {
@@ -27,12 +31,37 @@ export function createFade(): Fade {
   document.body.appendChild(card);
   let zooming = false;
   const line = (text: string, color: string, scale: number) => {
+    if (!text.startsWith('TAP OR PRESS')) { const sp = spaceText(text, color, scale); sp.style.maxWidth = '92vw'; sp.style.height = 'auto'; return sp; } // titles in the space-age lettering; the small hint stays pixel font
     const cv = Object.assign(document.createElement('canvas'), { width: measure(text), height: 5 });
     drawText(cv.getContext('2d')!, text, 0, 0, color);
     cv.style.cssText = `width:${cv.width * scale}px;height:${cv.height * scale}px;image-rendering:pixelated;max-width:44vw;height:auto`;
     return cv;
   };
+  // Streaks racing past the windows while Juno drives (over the world, under the black fade); resolves after `seconds`.
+  const speedLines = (seconds: number, dirX: number, dirY: number) => new Promise<void>((done) => {
+    const L = LINES, r = rng.fork('speedlines'), cv = document.createElement('canvas'), n = Math.hypot(dirX, dirY) || 1, ux = dirX / n, uy = dirY / n; // (ux, uy): the way the streaks flow on screen (opposite to the car's heading)
+    cv.width = window.innerWidth; cv.height = window.innerHeight;
+    cv.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:13;transition:opacity 0.35s ease';
+    document.body.appendChild(cv);
+    const g = cv.getContext('2d')!, cx = cv.width / 2, cy = cv.height / 2, R = Math.hypot(cx, cy) + L.maxLen;
+    const spawn = (back: number) => { const p = r.range(-R, R); return { x: cx - ux * back - uy * p, y: cy - uy * back + ux * p }; }; // a point on the line across the screen, `back` px upstream of the centre
+    const lines = Array.from({ length: L.count }, () => ({ ...spawn(r.range(-R, R)), len: r.range(L.minLen, L.maxLen), v: r.range(L.minSpeed, L.maxSpeed), a: r.range(0.3, 1) }));
+    let last = performance.now(), left = seconds;
+    const tick = (now: number) => {
+      const dt = Math.min(0.05, (now - last) / 1000); last = now; left -= dt;
+      g.clearRect(0, 0, cv.width, cv.height); g.lineWidth = L.width; g.strokeStyle = L.color;
+      for (const l of lines) {
+        l.x += ux * l.v * dt; l.y += uy * l.v * dt;
+        if ((l.x - cx) * ux + (l.y - cy) * uy > R) Object.assign(l, spawn(R));
+        g.globalAlpha = L.alpha * l.a; g.beginPath(); g.moveTo(l.x, l.y); g.lineTo(l.x - ux * l.len, l.y - uy * l.len); g.stroke();
+      }
+      if (left > 0) requestAnimationFrame(tick);
+      else { cv.style.opacity = '0'; setTimeout(() => cv.remove(), 400); done(); }
+    };
+    requestAnimationFrame(tick);
+  });
   return {
+    speedLines,
     async out() { el.style.opacity = '1'; await wait(FADE.seconds); },
     async in() { el.style.opacity = '0'; await wait(FADE.seconds); },
     set black(on: boolean) { el.style.transition = 'none'; el.style.opacity = on ? '1' : '0'; void el.offsetWidth; el.style.transition = `opacity ${FADE.seconds}s ease`; },

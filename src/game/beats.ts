@@ -27,6 +27,7 @@ export const BEATS = {
   kitStreet: { x: 8.8, z: 3.3, facing: 0 }, // where the worker stands on the street (hostel side, near its door) until the key deduction (then he is at the hostel desk)
   patrol: { speed: 1.0, pause: 2.2 },   // chapter 3: the auditors pacing the desk aisles (local station coordinates)
   routes: { aud1: [[-12, 0.5], [4.5, 0.5]], aud2: [[4.5, 4.7], [-5, 4.7]], aud3: [[-4.5, -3.1], [5.5, -3.1]] } as Record<string, [number, number][]>,
+  haleJail: { route: [[9.4, -5.9], [6.2, -5.9], [6.2, 0], [11, 0]] as [number, number][], speed: 1.6 },   // after the fake call Hale walks out of her office and along the hall to the holding cells (station-local x, z)
   callWalk: 3.6,          // seconds the auditors take to hurry out of the station after the fake threat
   ringEvery: 4,           // seconds between rings while Juno's phone waits to be answered
   cardHold: 2.4,          // title card hold, seconds
@@ -41,7 +42,7 @@ export interface BeatsTerminal { mail(owner: string, items: { from: string; subj
 export interface BeatsInput { lastDevice?: string; padType?: string; click?: unknown; pressed(action: string): boolean }
 export interface BeatsFade {
   black: boolean;
-  in(): Promise<void>; out(): Promise<void>;
+  in(): Promise<void>; out(): Promise<void>; speedLines(seconds: number, dirX: number, dirY: number): Promise<void>;
   card(lines: { text: string; color: string; scale: number; corner?: string }[], seconds: number): Promise<void>;
   cardZoom(u: number): void; hideCard(seconds: number): Promise<void>; log(): Promise<void>;
 }
@@ -72,6 +73,7 @@ interface BureauArea {
 interface Step { id: string; text: string | (() => string); area: string; pos?: () => { x: number; z: number } | null | undefined; done: () => boolean }
 export interface Beats {
   readonly locked: boolean;
+  restoreStation(): void;
   visits: Record<string, number>;
   readonly focus: THREE.Vector3 | null;
   readonly calling: boolean;
@@ -192,6 +194,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     locked = true;
     await dialogue.start('chip_open');
     const juno = cast.byId.juno, home = [player.position.x, player.position.z, juno.facing], room = world.spot('sable', 'backroom')!;
+    cast.setHidden(true);                                             // nobody real (Juno included) shows while the scene fades into the echo; echo.exit() brings them back
     await world.enter('sable', [room.x, room.z, 0]);                  // the echo plays in the back room where Dex died, not in the car
     const R = BEATS.reveal, yaw0 = cam.yaw, turn = Math.atan2(Math.sin(R.yaw - yaw0), Math.cos(R.yaw - yaw0)); // shortest way round
     const played = new Promise<void>((res) => echo.start('dex_backup', res));   // Dex's backup, from his eyes
@@ -226,9 +229,11 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     await dialogue.start('car_reply');                           // chapter 2 opens: Juno answers Hale, not coming in yet
     await dialogue.start('car_decide');                          // she decides: the Echo Exchange
     chapter1Done = true; caseFile.setFlag('chapter1_done');
+    { const miso = cast.byId.miso; miso.follow = null; miso.away = true; cast.apply(); }   // Miso stays behind: he does not come past chapter 1
     await wait(0.6);
+    sfx.carDrive?.(BEATS.driveSeconds);                          // she drives to the Exchange: streaks race past the windows, then black
+    { const c = Math.cos(cam.yaw), sn = Math.sin(cam.yaw); await fade.speedLines(BEATS.driveSeconds - 2.9, c, sn * 0.7); }   // the car heads west (-x): on screen that is (-cos, -sin * 0.7), so the streaks flow the other way
     await fade.out();
-    sfx.carDrive?.(BEATS.driveSeconds);                          // over black: she drives to the Exchange
     const sp = world.spot('exchange', 'start')!;
     world.jump('exchange', [sp.x, sp.z, Math.PI / 2]);           // while the screen is black
     await fade.card([{ text: 'CHAPTER 2', color: '#ff8a1f', scale: 6 }, { text: 'THE ECHO EXCHANGE', color: '#ffd23a', scale: 3 }], BEATS.driveSeconds - 3.6); // held so the drive sound plays out under it
@@ -293,16 +298,30 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     }
   }
   const fillers = (() => { const r = rng.fork('mail'), a = [...MAIL.filler]; for (let i = a.length - 1; i > 0; i--) { const j = r.int(0, i); [a[i], a[j]] = [a[j], a[i]]; } return a; })();
+  let pcCount = 0;
   const stationClues = () => ['archive', 'roster', 'haledesk', 'cellwall', 'queue'].every((id) => flag(`ex_${id}`)); // the five clues outside the lab
+  const DESK_CLUES = ['roster', 'queue', 'haledesk'];   // desk screens: the auditors yell at her for touching any of them
+  function audBlock() { caseFile.setFlag('pc_tried'); dialogue.start('aud_block'); }
   function useComputer(n: number) {
     if (locked) return;
-    if (!flag('aud_gone')) { dialogue.start('aud_block').then(() => { if (flag('make_call') && !flag('aud_gone')) fakeCall(); }); return; }
-    const ranks = [1, 2, 3, 4], have = (k: number) => ranks.find((r) => flag(`pc${k}_r${r}`));
+    if (!flag('aud_gone')) { audBlock(); return; }
+    const ranks = [1, 2, 3, 4], have = (k: number) => ranks.find((r) => flag(`pc${k}_r${r}`)), opened = () => Array.from({ length: pcCount }, (_, i) => i + 1).filter(have).length;
     let rank = have(n);
-    if (!rank && ranks.filter((k) => have(k)).length === 2 && !stationClues()) { dialogue.start('pc_dark'); return; } // the third screen stays dark until she has the other five clues
-    if (!rank) { rank = 1 + ranks.filter((k) => have(k)).length; caseFile.setFlag(`pc${n}_r${rank}`); }   // the 1st and 2nd computer she opens are filler, the 3rd always holds the code
-    const mail = rank === 3 ? MAIL.code : fillers[n - 1];
+    if (!rank && opened() === 2 && !stationClues()) { dialogue.start('pc_dark'); return; } // the third screen stays dark until she has the other five clues
+    if (!rank) { rank = 1 + opened(); caseFile.setFlag(`pc${n}_r${rank}`); }   // the 1st and 2nd computer she opens are filler, the 3rd always holds the code
+    const mail = rank === 3 ? MAIL.code : fillers[(n - 1) % fillers.length];
     terminal.mail(mail.owner, mail.items).then(() => { if (rank === 3 && !flag('lab_code_found')) dialogue.start('code_found'); });
+  }
+  // Hale walks the route (sliding, she has no walk frames) and stops facing the cells; flag hale_left when she arrives.
+  function walkHale() {
+    const h = cast.byId.hale, [ox, oz] = origin('bureau'), J = BEATS.haleJail;
+    const pts: [number, number][] = [[h.position.x, h.position.z], ...J.route.map(([x, z]): [number, number] => [ox + x, oz + z])];
+    const lens = pts.slice(1).map((p, i) => Math.hypot(p[0] - pts[i][0], p[1] - pts[i][1])), total = lens.reduce((a, b) => a + b, 0);
+    tween(total / J.speed, (u) => {
+      let d = u * total, i = 0; while (i < lens.length - 1 && d > lens[i]) d -= lens[i++];
+      const k = lens[i] ? Math.min(1, d / lens[i]) : 1, [ax, az] = pts[i], [bx, bz] = pts[i + 1];
+      h.position.set(ax + (bx - ax) * k, 0, az + (bz - az) * k); h.facing = u >= 1 ? Math.PI / 2 : Math.atan2(bx - ax, bz - az);
+    }).then(() => caseFile.setFlag('hale_left'));
   }
   async function fakeCall() {
     locked = true;
@@ -315,6 +334,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
       a.facing = Math.atan2(x - a.position.x, z - a.position.z) || a.facing; a.position.x = x; a.position.z = z; a.anim = 'walk';
     }));
     auds.forEach((a) => { a.away = true; a.anim = 'idle'; });
+    walkHale();                                                  // Hale crosses her office and goes to the cells; her desk is free to read once she is gone
     cast.apply();
     caseFile.setFlag('aud_gone');
     locked = false;
@@ -341,6 +361,17 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
 
   // Chapter 3: the three auditors walk Juno straight through the station to Hale's office. Slow, serious music (the area's own); the auditors stop at the office door.
   const origin = (id: string) => world.areas[id].meta.origin as [number, number];
+  // After loading a save: the auditors pace the desks (and Hale sits in her office) until the fake call sends them away; before the arrival scene they are not there yet.
+  function restoreStation() {
+    const [ox, oz] = origin('bureau'), gone = flag('aud_gone'), here = (flag('hale_met') || flag('bureau_arrived') || flag('visited_bureau')) && !gone;
+    patrols.length = 0;
+    for (const id of ['aud1', 'aud2', 'aud3']) {
+      const a = cast.byId[id]; a.away = !here;
+      if (here) { const r = BEATS.routes[id]; a.position.set(ox + r[0][0], 0, oz + r[0][1]); startPatrol(a, r); }
+    }
+    if (gone) { const [jx, jz] = BEATS.haleJail.route[BEATS.haleJail.route.length - 1], h = cast.byId.hale; h.position.set(ox + jx, 0, oz + jz); h.facing = Math.PI / 2; caseFile.setFlag('hale_left'); }
+    cast.apply();
+  }
   async function bureauArrival() {
     locked = true;
     await fade.out();
@@ -414,8 +445,8 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     for (const id of ['fixer', 'aud1', 'aud2', 'aud3']) cast.byId[id].away = true; // scripted people appear only in their scenes
     for (const x of EXAMINABLES) {
       const s = world.spot(x.area, x.spot)!;
-      interactions.add({ id: `ex:${x.id}`, area: x.area, position: new THREE.Vector3(s.x, 0, s.z), height: 1.0, verb: x.verb,
-        onInteract: () => dialogue.start(x.conv) });
+      interactions.add({ id: `ex:${x.id}`, area: x.area, position: new THREE.Vector3(s.x, 0, s.z), height: 1.0, verb: x.verb, clue: () => !flag(`ex_${x.id}`) && (!DESK_CLUES.includes(x.id) || flag('aud_gone')) && (x.id !== 'haledesk' || flag('hale_left')),
+        onInteract: () => { if (x.id === 'haledesk' && !flag('hale_left')) dialogue.start('hale_watching'); else if (DESK_CLUES.includes(x.id) && !flag('aud_gone')) audBlock(); else dialogue.start(x.conv); } });
     }
     for (const s of world.areas.street.spots.filter((p: Spot) => p.name === 'vending')) {
       interactions.add({ id: 'vending', area: 'street', position: new THREE.Vector3(s.x, 0, s.z), height: 1.8, verb: 'Use', onInteract: () => dialogue.start(TALK.vending) });
@@ -427,22 +458,26 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
       const l = world.spot('dealer', `locker${n}`)!;
       interactions.add({ id: `locker${n}`, area: 'dealer', position: new THREE.Vector3(l.x, 0, l.z), height: 1.2, verb: `Look at Locker ${n}`, onInteract: () => { if (!locked) dialogue.start(`locker_${n}`); } });
     }
-    for (let n = 1; n <= 4; n++) {                              // desk computers Juno can snoop on (chapter 3)
+    for (let n = 1; world.spot('bureau', `pc${n}`); n++) {      // the lit desk computers Juno can snoop on (chapter 3)
+      pcCount = n;
       const c = world.spot('bureau', `pc${n}`)!;
       interactions.add({ id: `pc${n}`, area: 'bureau', position: new THREE.Vector3(c.x, 0, c.z), height: 1.0, verb: 'Use the computer', onInteract: () => useComputer(n) });
     }
+    const ph = world.spot('bureau', 'phone')!;                    // the desk phone on the archive table: the fake threat is called in from here
+    interactions.add({ id: 'phone', area: 'bureau', position: new THREE.Vector3(ph.x, 0, ph.z), height: 1.0, verb: 'Use the phone',
+      onInteract: () => { if (locked || flag('aud_gone')) return; if (flag('call_idea')) fakeCall(); else dialogue.start('phone_early'); } });
     const ld = world.spot('bureau', 'labdoor')!;
     interactions.add({ id: 'labdoor', area: 'bureau', position: new THREE.Vector3(ld.x, 0, ld.z), height: 1.2, verb: 'Use the keypad', onInteract: labKeypad });
     syncLabDoor();
     const fd = world.spot('bureau', 'frontdoor')!;                // the Bureau's front door: locked until the deduction, then Juno slips out
     interactions.add({ id: 'bureau_door', area: 'bureau', position: new THREE.Vector3(fd.x, 0, fd.z), height: 1.2, verb: 'Try the door', onInteract: () => bureauSlip() });
     const seat = world.spot('car', 'seat')!;
-    interactions.add({ id: 'chip', area: 'car', position: new THREE.Vector3(seat.x, 0, seat.z), height: 1.0, verb: "Slot Dex's chip",
+    interactions.add({ id: 'chip', area: 'car', position: new THREE.Vector3(seat.x, 0, seat.z), height: 2.3, verb: "Slot Dex's chip",
       onInteract: () => { if (locked) return; if (flag('kit_coat') && flag('ex_capsule')) cliffhanger(); else dialogue.start('chip_early'); } });
     for (const b of cast.list) {
       if (b.id === 'juno' || b.id === 'dex' || b.ambient) continue;       // Dex is examined, not spoken to
       interactions.add({
-        id: b.id, get area() { return b.area; }, position: b.position, range: BEATS.talkRange[b.id] ?? (b.booth ? BEATS.boothRange : undefined), height: b.id === 'miso' ? 0.8 : 2, verb: b.id === 'miso' ? 'Pet' : 'Talk',
+        id: b.id, get area() { return b.away ? '' : b.area; }, position: b.position, range: BEATS.talkRange[b.id] ?? (b.booth ? BEATS.boothRange : undefined), height: b.id === 'miso' ? 0.8 : 2, verb: b.id === 'miso' ? 'Pet' : 'Talk',
         onInteract: () => {
           if (b.anim !== 'walk' && b.anim !== 'slump' && !b.follow) b.facing = Math.atan2(player.position.x - b.position.x, player.position.z - b.position.z);
           dialogue.start(conversationFor(b.id, visits[b.id] = (visits[b.id] ?? 0) + 1, { has: (f) => caseFile.has(f), talked: (p) => (visits[p] ?? 0) > 0, flag })).then(() => afterTalk(b));
@@ -495,13 +530,13 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     { id: 'kit2', text: 'Go back to the capsule hostel and talk to the worker', area: 'hostel', pos: () => spotXZ('hostel', 'kit'), done: () => flag('kit_met') },
     { id: 'kitbreak', text: 'Present the alley echo to Kit', area: 'hostel', pos: () => spotXZ('hostel', 'kit'), done: () => flag('kit_broken') },
     { id: 'press', text: 'Press Kit about what he saw', area: 'hostel', pos: () => spotXZ('hostel', 'kit'), done: () => flag('kit_coat') },
-    { id: 'chip', text: "Slot Dex's backup chip in your car", area: 'car', pos: () => spotXZ('car', 'seat'), done: () => chapter1Done },
+    { id: 'chip', text: "Slot Dex's backup chip in your car", area: 'car', pos: () => spotXZ('car', 'seat'), done: () => chapter1Done || flag('chapter1_done') },
     { id: 'exchange', text: "Ask around the Echo Exchange about Dex's echo", area: 'exchange', done: () => flag('dealer_open') },
     { id: 'dealer', text: "Go into the implant dealer's shop", area: 'exchange', pos: () => spotXZ('exchange', 'dealerDoor'), done: () => flag('visited_dealer') },
     { id: 'locker', text: "Show the dealer Dex's receipt, then open Locker 9", area: 'dealer', pos: () => spotXZ('dealer', flag('locker_ok') ? 'locker' : 'dealer'), done: () => flag('locker_done') },
     { id: 'out', text: 'Leave the shop', area: 'dealer', pos: () => spotXZ('dealer', 'door'), done: () => flag('auditors_done') },
     { id: 'hale', text: 'Face Hale in her office', area: 'bureau', pos: () => spotXZ('bureau', 'hale'), done: () => flag('hale_met') },
-    { id: 'station', text: () => (flag('lab_open') ? 'Use the reader in the memory lab' : flag('lab_code_found') ? 'Open the memory-audit lab (the keypad, east side)' : flag('aud_gone') ? (stationClues() ? 'Search the desk computers for the lab code' : 'Search the station: the archive, the desks and the cells') : 'Get the auditors away from the desks'), area: 'bureau', done: () => flag('bureau_deduced') },
+    { id: 'station', text: () => (flag('lab_open') ? 'Use the reader in the memory lab' : flag('lab_code_found') ? 'Open the memory-audit lab (the keypad, east side)' : flag('aud_gone') ? (stationClues() ? 'Search the desk computers for the lab code' : 'Search the station: the archive, the desks and the cells') : flag('pc_tried') ? 'Get the auditors away from the desks' : "Look for clues about what's going on"), area: 'bureau', done: () => flag('bureau_deduced') },
     { id: 'slip', text: 'Slip out through the front door', area: 'bureau', pos: () => spotXZ('bureau', 'frontdoor'), done: () => false },
   ];
   function markFor(step: Step) {
@@ -521,6 +556,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     get finale() { return finale; },
     get beatNo() { return STEP_BEAT[STEPS.find((s) => !s.done())?.id as string] ?? 7; },
     beatTimes,
+    restoreStation,
     cliffhanger, bureauArrival, // also for the ?hooks test driver
     dealerScene, outsideScene, // debug panel: play the chapter 2 ending
     // Debug. n = 2-7: start of chapter 1 beat n, with every clue Juno would hold by then. 8: Chapter 2 start (all chapter 1 clues). 9: Exchange with all six vendor clues.

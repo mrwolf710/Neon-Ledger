@@ -62,6 +62,7 @@ export interface AreaMeta { origin: [number, number]; name: string; district: st
 export interface Interactable {
   id: string; area?: string; position: THREE.Vector3; height: number; verb: string;
   range?: number; glyph?: string; onInteract?: () => void;
+  clue?: () => boolean;   // true while there is still something to find: shows a small red pulse on it
 }
 
 // ---------- Names for the main shapes that live next to the code that builds them ----------

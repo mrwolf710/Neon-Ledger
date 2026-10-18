@@ -13,6 +13,7 @@ export const ECHO = {
   glitchSeconds: 0.2,   // seam stutter + pixel tear
   showRange: 7,         // hotspot markers appear within this distance of Juno
   marker: { color: 0x1fd6e8, size: 0.26, height: 1.5, bob: 0.12, spin: 1.2 },
+  wave: { rings: 3, period: 2.2, maxScale: 3, opacity: 0.7, thickness: 0.04 },   // expanding rings that pulse out of each marker
 };
 
 const fmt = (t: number) => t.toFixed(1).padStart(4, '0');
@@ -68,6 +69,8 @@ export function createEcho({ scene, sheets, post, caseFile, hud, cast, areas }: 
   // --- Hotspots and their floating markers ---
   const hotspots: EchoHotspot[] = [];
   const mGeo = new THREE.OctahedronGeometry(ECHO.marker.size), mMat = new THREE.MeshBasicMaterial({ color: ECHO.marker.color, transparent: true, opacity: 0.9, fog: false });
+  const rGeo = new THREE.RingGeometry(ECHO.marker.size * (1 - ECHO.wave.thickness / 0.1), ECHO.marker.size, 40).rotateX(-Math.PI / 2);
+  const rMats = Array.from({ length: ECHO.wave.rings }, () => new THREE.MeshBasicMaterial({ color: ECHO.marker.color, transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false }));
   for (const h of HOTSPOTS) {
     let x: number, z: number;
     if (Array.isArray(h.at)) [x, z] = h.at as unknown as [number, number];
@@ -79,6 +82,7 @@ export function createEcho({ scene, sheets, post, caseFile, hud, cast, areas }: 
     const marker = new THREE.Mesh(mGeo, mMat);
     marker.position.set(x, ECHO.marker.height, z);
     marker.visible = false;
+    for (const m of rMats) marker.add(new THREE.Mesh(rGeo, m));
     scene.add(marker);
     hotspots.push({ ...h, area: h.area ?? 'street', position: new THREE.Vector3(x, 0, z), marker });
   }
@@ -170,6 +174,7 @@ export function createEcho({ scene, sheets, post, caseFile, hud, cast, areas }: 
       total.textContent = fmt(def.duration);
       buildBar();
       if (def.entry) caseFile.add(def.entry);
+      caseFile.setFlag(`echo_seen_${hotspotId}`);   // stops the marker's pulse
       api.onUi?.('echoOn');
     },
     exit() {
@@ -193,7 +198,11 @@ export function createEcho({ scene, sheets, post, caseFile, hud, cast, areas }: 
       post.setEcho(fade);
       // Hotspot markers: bob and spin while Juno is near.
       const time = performance.now() / 1000;
+      const W = ECHO.wave;
+      rMats.forEach((m, i) => { const t = (time / W.period + i / W.rings) % 1; m.opacity = W.opacity * (1 - t); m.userData.s = 1 + t * (W.maxScale - 1); });
       for (const h of hotspots) {
+        const fresh = !caseFile.hasFlag(`echo_seen_${h.id}`);
+        h.marker.children.forEach((c, i) => { c.visible = fresh; c.scale.setScalar(rMats[i].userData.s); });
         h.marker.visible = !active && !h.hidden && h.area === areaId && Math.hypot(h.position.x - playerPos.x, h.position.z - playerPos.z) < ECHO.showRange;
         h.marker.rotation.y = time * ECHO.marker.spin;
         h.marker.position.y = ECHO.marker.height + Math.sin(time * 2) * ECHO.marker.bob;

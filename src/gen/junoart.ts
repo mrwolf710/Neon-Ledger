@@ -73,12 +73,13 @@ const FRAMES: FrameTable = {
   sneak: [['sneak', false, 0, [1, 0]], ['sneak', false, 1], ['sneak', 'legs', 0, [0, 1]], ['sneak', 'legs', 1]],
   tablet: [['tablet', false, 0], ['tablet', true, 0]],
   listening: [['listening', false, 0], ['listening', false, 1]],
+  sit: [['sit', false, 0], ['sit', false, 1]],
 };
 
 const load = (url: string) => new Promise<HTMLImageElement>((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error(`could not load ${url}`)); i.src = url; });
 
 // Returns a sheet in the same shape the billboard expects, with 8 directions per animation (sheet.dirs = 8).
-export const loadJunoSheet = () => loadSheet(JUNO_ART, FRAMES, ['idle', 'walk', 'sneak', 'tablet', 'listening']);
+export const loadJunoSheet = () => loadSheet(JUNO_ART, FRAMES, ['idle', 'walk', 'sneak', 'tablet', 'listening', 'sit']);
 export async function loadPriestSheet(): Promise<SpriteSheet> {
   const S = PRIEST_ART.size, grid = await load(`${import.meta.env.BASE_URL}${PRIEST_ART.base}/sheet.png`), imgs: Record<string, CanvasImageSource> = {};
   PRIEST_ART.dirs.forEach((d, i) => {
@@ -119,7 +120,7 @@ export async function loadDexSheet(): Promise<SpriteSheet> {
 export const loadTeoSheet = () => loadSheet(TEO_ART, TEO_FRAMES, ['']);
 export const loadVendorSheet = () => loadKitSheet(VENDOR_ART);
 // The three Bureau auditors (chapter 2 ending): eight 48 px stills (<dir>.png) and a 4-frame breathing loop (64 px frames, idle-<dir>-<n>.png) for south, north and south-east; other directions hold their still.
-export const AUDITOR_ART = { ...MARKET1_ART, base: 'sprites/auditors', foot: 11, walk: { file: 'walk/sheet', walkFps: 8 } }; // the three Bureau auditors share one owner sheet (64 px cells, 8 directions, 4-frame idle) and portrait
+export const AUDITOR_ART = { ...MARKET1_ART, base: 'sprites/auditors', pxPerUnit: 20, foot: 11, walk: { file: 'walk/sheet', walkFps: 8 } }; // the three Bureau auditors share one owner sheet (64 px cells, 8 directions, 4-frame idle) and portrait
 export async function loadHaleSheet(): Promise<SpriteSheet> {
   const A = HALE_ART, grid = await load(`${import.meta.env.BASE_URL}${A.base}/sheet.png`), imgs: Record<string, CanvasImageSource> = {};
   A.dirs.forEach((dir, i) => {

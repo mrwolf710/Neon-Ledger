@@ -1,0 +1,36 @@
+{
+  "group_id": "fa127344-9861-4566-9546-543dc6826707",
+  "states": [
+    {
+      "character": {
+        "id": "5b7ad4b3-dc19-41dc-9eb3-435556d86960",
+        "name": "sitting down",
+        "prompt": "cyberpunk style private investigator.  Dark grey trech coat.  Female.  Dark short hair.  pale.  Sleek, cool.  Dark pallette.",
+        "size": {
+          "width": 48,
+          "height": 48
+        },
+        "template_id": "mannequin",
+        "directions": 8,
+        "view": "low top-down",
+        "created_at": "2026-10-17T18:15:53.066259+00:00"
+      },
+      "folder": "sitting_down",
+      "frames": {
+        "rotations": {
+          "south": "sitting_down/rotations/south.png",
+          "south-east": "sitting_down/rotations/south-east.png",
+          "east": "sitting_down/rotations/east.png",
+          "north-east": "sitting_down/rotations/north-east.png",
+          "north": "sitting_down/rotations/north.png",
+          "north-west": "sitting_down/rotations/north-west.png",
+          "west": "sitting_down/rotations/west.png",
+          "south-west": "sitting_down/rotations/south-west.png"
+        },
+        "animations": {}
+      }
+    }
+  ],
+  "export_version": "3.1",
+  "export_date": "2026-10-17T18:24:51.702824"
+}

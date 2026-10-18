@@ -48,7 +48,7 @@ const EXIT_DEFS: ExitDef[] = [
   { id: 'car-door', area: 'street', at: [-13.5, -0.1], to: 'car', spawn: [...at('car', 0.4, 0), H], verb: 'Get in the car' },
   { id: 'dealer-door', area: 'exchange', at: at('exchange', 0, -8.8), to: 'dealer', spawn: [...at('dealer', 0, 2.0), Math.PI], verb: 'Go into the implant shop' },
   { id: 'dealer-out', area: 'dealer', at: at('dealer', 0, 2.9), to: 'exchange', spawn: [...at('exchange', 0, -7.6), 0], verb: 'Leave' },
-  { id: 'car-out', area: 'car', at: at('car', 0.5, 1.3), to: 'street', spawn: [-13.5, 0.7, 0], verb: 'Get out' },
+  { id: 'car-out', area: 'car', at: at('car', -0.4, 1.3), to: 'street', spawn: [-13.5, 0.7, 0], verb: 'Get out' },
 ];
 export const EXITS = EXIT_DEFS;
 
@@ -201,6 +201,14 @@ function platform(M: Materials) {
   return finish('platform', b, [-10, -3, 10, 3], { train, trainGlow: [trainWarm, trainCool, trainHead, trainTail], trainStop: [AREAS.platform.origin[0] - 0.5, -4.6] });
 }
 
+// A round bowl (lathe, closed profile) with its base at y=0, and a cup: tapered body, dark coffee disc, handle.
+const bowlGeo = (r: number, h: number) => new THREE.LatheGeometry([[0, 0], [r * 0.45, 0], [r * 0.8, h * 0.35], [r, h], [r * 0.9, h], [r * 0.72, h * 0.4], [0, h * 0.3]].map(([x, y]) => new THREE.Vector2(x, y)), 14);
+function cup(b: ReturnType<typeof begin>, body: THREE.Material, dark: THREE.Material, x: number, y: number, z: number) {
+  b.add(body, new THREE.CylinderGeometry(0.1, 0.075, 0.17, 10).translate(x, y + 0.085, z));
+  b.add(dark, new THREE.CylinderGeometry(0.085, 0.085, 0.01, 10).translate(x, y + 0.168, z));
+  b.add(body, new THREE.TorusGeometry(0.045, 0.014, 5, 8).translate(x + 0.105, y + 0.09, z));
+}
+
 // ---------- Sable Noodle House: front counter (west) and the back room (east) ----------
 function sable(M: Materials) {
   const b = begin('sable'), PM = propMats(M);
@@ -214,14 +222,14 @@ function sable(M: Materials) {
   doorMat(b, M, -5.55, 0, 0.8, 1.4); doorMat(b, M, 7.6, 0, 0.8, 1.4);
   // Front room: counter, pots, two tables.
   b.box(PM.wood, 5.0, 1.0, 0.7, -3.2, 0.5, -1.5); b.box(M.metal, 5.1, 0.06, 0.8, -3.2, 1.03, -1.5); b.block(-3.2, -1.5, 5.0, 0.7);   // counter stands clear of the back wall: Mama Teo has room to stand behind it
-  for (const x of [-4.6, -3.4, -2.2]) b.box(PM.lantern, 0.3, 0.2, 0.3, x, 1.16, -1.5);
+  for (const x of [-4.6, -3.4, -2.2]) b.add(PM.lantern, bowlGeo(0.24, 0.17).translate(x, 1.06, -1.5));
   table(b, PM, -3.7, 1.5); stool(b, PM, -4.4, 2.3); stool(b, PM, -3.0, 2.3);
   table(b, PM, -0.4, 1.4); stool(b, PM, -1.0, 2.2); stool(b, PM, 0.2, 2.2);
   b.box(signMat('NOODLES', P.magenta), 3.0, 0.8, 0.1, -3.2, 2.9, -2.6, 0, 0, false);   // hangs above Teo's head (she is 2 units tall)
   b.light(P.amberLight, 13, -2.5, 2.4, 0.5); b.light(P.amber, 9, -4.6, 2.2, 1.6); b.light(P.amberLight, 8, -3.2, 1.8, -1.2);
   // Back room: the table, two cups, shelves, the terminal, a smashed lamp.
   table(b, PM, 4.6, 0.2, 1.8, 1.0); stool(b, PM, 4.6, 1.15);
-  b.box(PM.crates[0], 0.14, 0.12, 0.14, 4.1, 0.85, 0.05); b.box(PM.crates[1], 0.14, 0.12, 0.14, 5.0, 0.85, 0.35);
+  cup(b, PM.crates[0], PM.pole, 4.1, 0.79, 0.05); cup(b, PM.crates[1], PM.pole, 5.0, 0.79, 0.35);
   crates(b, PM, 6.9, -2.5, 2); crates(b, PM, 7.6, -2.5, 3); b.box(PM.crates[2], 1.6, 1.2, 0.5, 3.1, 0.6, -2.7); b.block(3.1, -2.7, 1.6, 0.5);
   b.box(M.frame, 0.6, 1.0, 0.4, 5.6, 0.5, -2.75); b.block(5.6, -2.75, 0.6, 0.4); b.box(M.litCool, 0.4, 0.35, 0.02, 5.6, 0.85, -2.54);
   b.box(PM.pole, 0.9, 0.07, 0.07, 3.0, 0.08, -1.2); b.box(PM.lamp, 0.35, 0.18, 0.35, 3.55, 0.12, -1.15);   // the broken lamp lying down, its head still glowing
@@ -314,13 +322,17 @@ function car(M: Materials) {
   floor(b, M.rail, -3, -1.6, 3, 1.6);
   wallX(b, M, -1.6 - T / 2, -3 - T, 3 + T, [], { h: 1.1, mat: M.rail }); wallX(b, M, 1.6 + T / 2, -3 - T, 3 + T, [[-0.7, 0.7]], { h: 1.1, mat: M.rail });
   wallZ(b, M, -3 - T / 2, -1.6, 1.6, [], { h: 1.1, mat: M.rail }); wallZ(b, M, 3 + T / 2, -1.6, 1.6, [], { h: 1.1, mat: M.rail });
-  for (const z of [-0.95, 0.95]) { b.box(PM.vendBody, 0.8, 0.6, 0.8, -0.4, 0.3, z); b.box(PM.vendBody, 0.2, 0.9, 0.8, -0.8, 0.75, z); b.block(-0.4, z, 0.8, 0.8); } // front seats
+  for (const z of [-0.95, 0.95]) { b.box(PM.vendBody, 0.8, 0.6, 0.8, -0.4, 0.3, z); b.box(PM.vendBody, 0.2, 0.9, 0.8, 0.0, 0.75, z); b.block(-0.4, z, 0.8, 0.8); } // front seats
   b.box(PM.vendBody, 0.9, 0.5, 2.6, 1.6, 0.25, 0); b.block(1.6, 0, 0.9, 2.6);                                                                        // back bench
   b.box(M.frame, 0.6, 0.7, 3.0, -2.5, 0.35, 0); b.box(M.litCool, 0.04, 0.35, 1.4, -2.18, 0.65, 0); b.block(-2.5, 0, 0.6, 3.0);                          // dashboard + glowing screen
   b.box(M.litCool, 0.03, 0.03, 2.8, -2.17, 0.9, 0);
+  b.box(M.litCool, 0.6, 0.03, 1.2, -2.35, 0.72, 0);                                                                                                  // the screen on top of the dash, lit
+  b.box(M.litWarm, 0.04, 0.12, 0.5, -2.19, 0.82, 0.95);                                                                                              // the driver's gauges
+  b.add(PM.pole, new THREE.TorusGeometry(0.26, 0.035, 6, 16).rotateY(Math.PI / 2).rotateZ(0.35).translate(-1.7, 1.0, 0.95));                          // steering wheel
+  b.box(PM.pole, 0.55, 0.06, 0.06, -1.97, 0.82, 0.95);                                                                                               // and its column
   b.light(P.cyan, 16, -2.0, 1.4, 0); b.light(P.amber, 12, 1.5, 2.0, 0); b.light(P.white, 10, 0.2, 2.2, 0);
-  doorMat(b, M, 0.5, 1.35, 1.0, 0.4);
-  b.spot('seat', 0.4, 0); b.spot('door', 0.5, 1.3);
+  doorMat(b, M, -0.4, 1.35, 1.0, 0.4);
+  b.spot('seat', -0.4, 0.95); b.spot('door', -0.4, 1.3);   // seat = the driver's seat: Juno sits here (the chip slot is on it)
   return finish('car', b, [-3, -1.6, 3, 1.6]);
 }
 
@@ -338,11 +350,12 @@ export const BUREAU = {
   screenOn: 0.75,                                                      // share of desk monitors that are switched on (night shift, mostly empty)
   skyline: { towers: 70, from: 3.5, to: 30, minH: 12, maxH: 40, lit: 0.85 },   // how many towers and how far out (outside the window walls)
   colors: { cool: 0x1fd6e8, white: 0xdfeaff, alarm: 0xff3b4c, warm: 0xf2a93b },
+  field: { color: 0xff2a3c, opacity: 0.28, lines: 5 },                 // the red force field across each cell doorway
 };
 function bureau(M: Materials, rng: Rng) {
   const b = begin('bureau'), PM = propMats(M), [hx0, hz0, hx1, hz1] = BUREAU.hall, [wx0, wx1] = BUREAU.wing, R = BUREAU.rooms, C = BUREAU.colors;
   const lit = (c: number) => new THREE.MeshBasicMaterial({ color: new THREE.Color(c).multiplyScalar(BUILDINGS.windowGlow) });
-  const cool = lit(C.cool), alarm = lit(C.alarm), warm = lit(C.warm), floorMat = M.walls[2];
+  const field = new THREE.MeshBasicMaterial({ color: BUREAU.field.color, transparent: true, opacity: BUREAU.field.opacity, side: THREE.DoubleSide, depthWrite: false }), cool = lit(C.cool), alarm = lit(C.alarm), warm = lit(C.warm), floorMat = M.walls[2];
   floor(b, floorMat, hx0, hz0, wx1, hz1);
   // --- Tall window walls on the far sides (north z = hz0, west x = hx0): piers, a sill, a head beam and a mullion in each bay. Open between, so the skyline shows.
   const H5 = BUREAU.winH, P = BUREAU.pier, Mu = BUREAU.mullion;
@@ -382,9 +395,11 @@ function bureau(M: Materials, rng: Rng) {
   b.box(M.frame, 0.06, 0.06, R.hale[1] - R.hale[0] - 0.4, wx0, 2.3, (R.hale[0] + R.hale[1]) / 2 - 0.2);
   // --- The main hall: rows of desks with chairs and glowing monitors; the desks face the north windows.
   const D = BUREAU.desks, sr = rng.fork('screens');
+  const onDesks: [number, number][] = [];   // desks whose monitor is on: the only ones Juno can read
   for (const z of D.zs) for (const x of D.xs) {
+    if (x === D.xs[0] && z === D.zs[2]) continue;   // its chair would sit inside the archive wall
     b.box(PM.wood, D.w, 0.08, D.d, x, 0.78, z); for (const sx of [-1, 1]) b.box(PM.pole, 0.07, 0.76, D.d - 0.1, x + sx * (D.w / 2 - 0.08), 0.38, z); b.block(x, z, D.w, D.d);
-    b.box(M.frame, 0.7, 0.45, 0.05, x, 1.05, z - 0.25); if (sr.rand() < BUREAU.screenOn) b.box(cool, 0.62, 0.37, 0.03, x, 1.06, z - 0.22);   // monitor, screen toward the chair (some are off)
+    b.box(M.frame, 0.7, 0.45, 0.05, x, 1.05, z - 0.25); if (sr.rand() < BUREAU.screenOn) { b.box(cool, 0.62, 0.37, 0.03, x, 1.06, z - 0.22); onDesks.push([x, z]); }   // monitor, screen toward the chair (some are off)
     b.box(M.metal, 0.5, 0.03, 0.18, x, 0.83, z + 0.1);                                                              // keyboard
     b.box(PM.vendBody, 0.5, 0.08, 0.5, x + 0.1, 0.5, z + 0.95, 0, 0.15); b.box(PM.vendBody, 0.5, 0.55, 0.07, x + 0.1, 0.8, z + 1.2, 0, 0.15); b.block(x + 0.1, z + 1.0, 0.5, 0.5); // chair
   }
@@ -392,10 +407,10 @@ function bureau(M: Materials, rng: Rng) {
   b.box(signMat('CIVIC AUDIT BUREAU', 0x2a6b72, true), 6.4, 0.8, 0.1, -4, 3.9, hz0 + 0.1, 0, 0, false);              // a sign on the north wall's inside
   // --- Hale's office (north-east): her desk, chair, shelves and a sofa. Warm light, the only warm room.
   const hx = (wx0 + wx1) / 2, hz = (R.hale[0] + R.hale[1]) / 2;
-  b.box(PM.wood, 2.6, 0.9, 1.1, hx + 1.0, 0.45, hz - 0.6); b.box(M.metal, 2.7, 0.06, 1.2, hx + 1.0, 0.93, hz - 0.6); b.block(hx + 1.0, hz - 0.6, 2.6, 1.1);
-  b.box(M.frame, 0.9, 0.55, 0.05, hx + 1.0, 1.25, hz - 0.95); b.box(cool, 0.8, 0.45, 0.03, hx + 1.0, 1.26, hz - 0.92);   // the monitor
-  b.box(M.frame, 0.12, 0.35, 0.12, hx + 2.0, 1.1, hz - 0.75); b.box(warm, 0.3, 0.12, 0.3, hx + 2.0, 1.34, hz - 0.75);    // the desk lamp
-  b.box(PM.vendBody, 0.7, 0.1, 0.7, hx + 1.0, 0.55, hz + 0.4); b.box(PM.vendBody, 0.7, 0.7, 0.1, hx + 1.0, 0.95, hz + 0.75); b.block(hx + 1.0, hz + 0.5, 0.7, 0.7);
+  b.box(PM.wood, 1.1, 0.9, 2.6, hx - 0.6, 0.45, hz - 0.6); b.box(M.metal, 1.2, 0.06, 2.7, hx - 0.6, 0.93, hz - 0.6); b.block(hx - 0.6, hz - 0.6, 1.1, 2.6);   // her desk runs north-south, the chair on its west side with its back to the glass
+  b.box(M.frame, 0.05, 0.55, 0.9, hx - 0.35, 1.25, hz - 0.6); b.box(cool, 0.03, 0.45, 0.8, hx - 0.38, 1.26, hz - 0.6);   // the monitor, facing the chair
+  b.box(M.frame, 0.12, 0.35, 0.12, hx - 0.5, 1.1, hz - 1.6); b.box(warm, 0.3, 0.12, 0.3, hx - 0.5, 1.34, hz - 1.6);    // the desk lamp
+  b.box(PM.vendBody, 0.7, 0.1, 0.7, hx - 1.4, 0.55, hz - 0.6); b.box(PM.vendBody, 0.1, 0.7, 0.7, hx - 1.75, 0.95, hz - 0.6); b.block(hx - 1.4, hz - 0.6, 0.7, 0.7);
   b.box(PM.wood, 3.0, 1.9, 0.35, hx - 1.2, 0.95, R.hale[0] + 0.45); b.block(hx - 1.2, R.hale[0] + 0.45, 3.0, 0.35);
   b.box(PM.vendBody, 2.0, 0.5, 0.8, hx - 2.4, 0.25, hz + 1.9); b.block(hx - 2.4, hz + 1.9, 2.0, 0.8);
   // --- Holding cells (east): three cells behind bars; a bench and a dull red light in each. The corridor in front stays open.
@@ -404,6 +419,8 @@ function bureau(M: Materials, rng: Rng) {
     const z0 = R.cells[0] + (i * cn) / 3, z1 = z0 + cn / 3, zc = (z0 + z1) / 2;
     for (let z = z0 + 0.2; z < z1; z += 0.34) if (!(z > zc - 0.5 && z < zc + 0.5)) b.box(M.metal, 0.07, 2.4, 0.07, cx0, 1.2, z); // each cell has an open doorway in its bars
     b.box(M.metal, 0.12, 0.12, cn / 3, cx0, 2.4, zc); b.block(cx0, z0 + 0.25, 0.2, 0.5); b.block(cx0, z1 - 0.25, 0.2, 0.5); // bars block either side of a 1-unit doorway
+    b.add(field, new THREE.PlaneGeometry(1.0, 2.4).rotateY(Math.PI / 2).translate(cx0, 1.2, zc));        // force field across the doorway, with glowing bands
+    for (let k = 0; k < BUREAU.field.lines; k++) b.box(alarm, 0.03, 0.04, 1.0, cx0, 0.2 + k * (2.0 / (BUREAU.field.lines - 1)), zc);
     if (i < 2) { b.box(M.walls[1], wx1 - cx0, 1.0, T, (cx0 + wx1) / 2, 0.5, z1); b.block((cx0 + wx1) / 2, z1, wx1 - cx0, T); }
     b.box(PM.vendBody, 2.2, 0.4, 0.6, wx1 - 1.2, 0.2, zc); b.box(alarm, 0.4, 0.04, 0.4, cx0 + 0.9, 0.04, zc);
   }
@@ -419,9 +436,9 @@ function bureau(M: Materials, rng: Rng) {
   // --- Lights (kept few for the iPhone): the screens are the light. Dim cyan pools at the desk clusters, one lamp and one screen glow in Hale's office,
   // the lab's screens, a dull red wash for the cells and the archive racks' faint glow. No ceiling lamps.
   for (const [x, z] of [[-11, -5.3], [-4, -5.3], [3, -5.3], [-11, -1.3], [-4, -1.3], [3, -1.3]]) b.light(C.cool, 5, x, 1.5, z);
-  b.light(C.warm, 6, hx + 2.0, 1.6, hz - 0.75); b.light(C.cool, 3, hx + 1.0, 1.4, hz - 0.5);
+  b.light(C.warm, 6, hx - 0.5, 1.6, hz - 1.6); b.light(C.cool, 3, hx - 0.6, 1.4, hz - 0.5);
   b.light(C.cool, 6, lx, 2.0, lz - 1.0); b.light(C.alarm, 6, wx1 - 2.0, 2.0, (R.cells[0] + R.cells[1]) / 2); b.light(C.cool, 4, -11.5, 2.0, 6.2);
-  b.spot('frontdoor', 0, 8.3); b.spot('roster', -6.5, -2.9); b.spot('queue', 2.5, 1.0); b.spot('haledesk', hx + 1.0, hz + 1.3);   // clue spots: a desk roster, a desk's clean-up queue, Hale's desk terminal
+  b.spot('frontdoor', 0, 8.3); b.spot('haledesk', hx - 0.6, hz + 1.1);   // clue spots: a desk roster, a desk's clean-up queue, Hale's desk terminal
   // --- The lab's door: a sliding slab in the doorway (hidden when the code is entered; beats.js clears the collision too), a keypad post beside it with a red/green LED.
   const [ox, oz] = AREAS.bureau.origin, dz = R.lab[0] + 3.0;
   b.box(M.frame, 0.25, 1.3, 0.25, wx0 - 0.5, 0.65, dz - 0.9); b.box(cool, 0.04, 0.16, 0.12, wx0 - 0.63, 1.0, dz - 0.9);
@@ -429,7 +446,10 @@ function bureau(M: Materials, rng: Rng) {
   const labLed = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.06), new THREE.MeshBasicMaterial({ color: C.alarm })); labLed.position.set(ox + wx0 - 0.66, 1.2, oz + dz - 0.9);
   const cn2 = R.cells[1] - R.cells[0];
   b.spot('labdoor', wx0 - 1.0, dz); b.spot('prisoner', cx0 + 2.2, R.cells[0] + cn2 / 2);
-  for (const [n, [x, z]] of Object.entries({ pc1: [-11, -6], pc2: [-2, -6], pc3: [2.5, -6], pc4: [-6.5, 2] })) b.spot(n, x, z + 0.5);   // desk computers Juno can snoop on
+  const deskSpot = (name: string, [x, z]: [number, number]) => b.spot(name, x - 0.6, z + 0.7);   // beside the chair, in front of the screen
+  deskSpot('roster', onDesks[1]); deskSpot('queue', onDesks[onDesks.length - 2]);   // two of the lit screens hold clues, the rest are mail (pc1, pc2...)
+  onDesks.filter((_, i) => i !== 1 && i !== onDesks.length - 2).forEach((d, i) => deskSpot('pc' + (i + 1), d));
+  b.box(M.frame, 0.22, 0.06, 0.16, -11.2, 0.84, 6.2); b.box(M.litWarm, 0.18, 0.02, 0.1, -11.2, 0.88, 6.2); b.box(M.frame, 0.06, 0.05, 0.2, -11.2, 0.92, 6.2); b.spot('phone', -11.5, 5.5);   // the phone on the archive table
   b.spot('start', 0, 7.4); b.spot('hale', hx - 1.0, R.hale[0] + 3.1); b.spot('chair', lx, lz + 0.9); b.spot('cell1', wx1 - 1.2, R.cells[0] + cn / 6); b.spot('archive', -11.5, 5.0);
   const out = finish('bureau', b, [hx0, hz0, wx1, hz1], { labDoor, labLed });
   out.group.add(labDoor, labLed);

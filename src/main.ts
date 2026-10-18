@@ -188,9 +188,11 @@ function loadGame(s: SaveData) {
   sunsetT = s.sunsetT;
   const miso = cast.byId.miso;
   miso.follow = s.miso.follow ? { target: cast.byId.juno, ...BEATS.misoFollow } : null;
+  miso.away = caseFile.hasFlag('chapter1_done');
   miso.area = s.miso.area; miso.position.set(s.miso.pos[0], 0, s.miso.pos[1]);
   world.jump(s.area, [s.pos[0], s.pos[1], s.facing]); // places Juno and (if he follows) Miso, and refreshes who is drawn
   if (miso.follow) miso.position.set(s.pos[0] + 0.7, 0, s.pos[1] + 0.7);
+  beats.restoreStation();
   cam.follow(player.position, true);
   hud.show();
   hud.toast('Game loaded');
@@ -210,6 +212,7 @@ phaseId = clock.phase.id;
 tod.setTimeOfDay(phaseId);
 
 // What changes when the player moves to another area: collision, who is drawn, what can be used, rain, the minimap.
+const CAR_SEAT = { y: 0.3, facing: -Math.PI / 2 }; // Juno's height on the cushion (raise if she sinks into it) and which way she faces (west = the dashboard)
 function onAreaEnter(area: Area, spawn: Spawn | undefined) {
   player.setCollision(area.collision);
   hud.setCollision(area.collision);
@@ -228,6 +231,7 @@ function onAreaEnter(area: Area, spawn: Spawn | undefined) {
     cast.byId.juno.facing = spawn[2] ?? 0;
     cam.follow(player.position, true);
   }
+  if (area.id === 'car') { const st = world.spot('car', 'seat')!; player.position.set(st.x, CAR_SEAT.y, st.z); cast.byId.juno.facing = CAR_SEAT.facing; cam.follow(player.position, true); player.setPose('sit'); } else if (cast.byId.juno.anim === 'sit') player.setPose(null); // Juno sits while she is in her car
   const miso = cast.byId.miso;
   if (miso.follow && spawn) { miso.area = area.id; miso.position.set(spawn[0] + 0.7, 0, spawn[1] + 0.7); cast.apply(); } // Miso comes along
   beats.onEnter(area);
@@ -441,6 +445,7 @@ renderer.setAnimationLoop((now) => {
   cast.update(dt, cam.yaw, area.lights);
   barks.update(dt, area.id, !modal);
   railTrain.update(trailer.trainZ() ?? sfx.trainZ());
+  interactions.animate();
   if (modal) interactions.hide(); else interactions.update(player.position, player.facing, input.lastDevice, input.padType, cam.camera);
   fog.update(cam.camera, cam.target);
   const db = renderer.getDrawingBufferSize(bufSize);

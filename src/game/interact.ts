@@ -10,6 +10,7 @@ export const INTERACT = {
   pickPixels: 48,     // click this close to an interactable on screen to target it
   promptScale: 3,     // screen pixels per prompt pixel (whole numbers stay crisp)
   promptGap: 0.3,     // units above the interactable's height
+  pulse: { color: 0xff3a4a, size: 0.07, height: 0.9, bob: 0.04, rings: 2, period: 1.8, maxScale: 3, opacity: 0.8 },   // the tiny red clue indicator
   colors: { bubble: P.ink, border: P.cyan, text: P.white, key: P.grey6, keyText: P.ink, xbox: 0x3fae2a, ps: 0x4a7fe0 },
 };
 
@@ -55,11 +56,30 @@ export interface Interactions {
   nearest(pos: { x: number; z: number }, facing: number): Interactable | null;
   pick(click: { x: number; y: number }, camera: THREE.Camera): Interactable | null;
   hide(): void;
+  animate(): void;
   update(pos: { x: number; z: number }, facing: number, device: string, padType: string, camera: THREE.Camera): void;
 }
 // Interactables: { position: Vector3 (live), height, verb, onInteract, id }.
-export function createInteractions(scene: unknown): Interactions {
+export function createInteractions(scene: THREE.Scene): Interactions {
   const items: Interactable[] = [];
+  // Tiny red pulse over unexamined clues: a small diamond with rings, like the echo markers but smaller.
+  const PU = INTERACT.pulse, pulses = new Map<Interactable, THREE.Mesh>();
+  const pGeo = new THREE.OctahedronGeometry(PU.size), rGeo = new THREE.RingGeometry(PU.size * 0.8, PU.size, 24).rotateX(-Math.PI / 2);
+  const mk = () => new THREE.MeshBasicMaterial({ color: PU.color, transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false });
+  const pMat = mk(), rMats = Array.from({ length: PU.rings }, mk);
+  const animate = () => {
+    const time = performance.now() / 1000;
+    rMats.forEach((m, i) => { const t = (time / PU.period + i / PU.rings) % 1; m.opacity = PU.opacity * (1 - t); m.userData.s = 1 + t * (PU.maxScale - 1); });
+    for (const it of items) {
+      if (!it.clue) continue;
+      let m = pulses.get(it);
+      if (!m) { m = new THREE.Mesh(pGeo, pMat); for (const r of rMats) m.add(new THREE.Mesh(rGeo, r)); m.position.set(it.position.x, PU.height, it.position.z); scene.add(m); pulses.set(it, m); }
+      m.visible = here(it) && it.clue();
+      m.rotation.y = time * 2;
+      m.position.y = PU.height + Math.sin(time * 2.5) * PU.bob;
+      m.children.forEach((c, i) => c.scale.setScalar(rMats[i].userData.s));
+    }
+  };
   // Drawn as a screen overlay (not in 3D) so bloom and tilt-shift never blur it.
   let canvas: HTMLCanvasElement | null = null;
   const el = document.createElement('div');
@@ -71,6 +91,7 @@ export function createInteractions(scene: unknown): Interactions {
   const v = new THREE.Vector3();
 
   return {
+    animate,
     items,
     add(item: InteractableInput) { item.height ??= 2; items.push(item as Interactable); },
     setArea(id: string) { area = id; },

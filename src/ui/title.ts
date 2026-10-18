@@ -1,4 +1,5 @@
 import { drawText, measure } from '../gen/pixelfont.ts';
+import { spaceText } from '../gen/spacefont.ts';
 import { TIERS, settings, QUALITY_KEY } from '../core/settings.ts';
 import type { TierName } from '../core/settings.ts';
 import type { createSaves } from '../core/saves.ts';
@@ -34,7 +35,7 @@ export function createTitle(onStart: (() => void) | undefined, { saves, synth }:
   const list = document.createElement('div');
   list.style.cssText = `display:flex;flex-direction:column;gap:${T.gap}px;max-height:${T.listMaxVh}vh;overflow-y:auto;padding:6px 10px 6px 0;scrollbar-width:none`;
   const note = document.createElement('div');
-  el.append(word('NEON ECHOES', T.color, T.scale), list, note);
+  el.append(spaceText('NEON ECHOES', T.color, T.scale), list, note);
   document.body.appendChild(el);
 
   const state = { done: false, save: null } as Title;

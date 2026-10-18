@@ -41,6 +41,7 @@ export function createPlayer(billboard: Billboard, initialCollision: PlayerColli
     walkTo(point: { x: number; z: number }, reach = 0.15, onArrive: (() => void) | null = null) { goal = { point, reach, onArrive }; stuck = 0; },
     // idleOk: false during conversations / menus, so she doesn't start fidgeting mid-scene.
     update(dt: number, input: PlayerInput, camYaw: number, idleOk = true) {
+      if (pose === 'sit') { goal = null; vel.set(0, 0); billboard.anim = 'sit'; billboard.fpsScale = 1; return; } // seated (the car): she stays in her seat
       // Stick/keys: W is up the screen at any camera angle.
       const cx = Math.cos(camYaw), sx = Math.sin(camYaw);
       let wx = input.moveX * cx - input.moveY * sx, wz = -input.moveX * sx - input.moveY * cx;

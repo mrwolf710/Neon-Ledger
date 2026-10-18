@@ -452,8 +452,9 @@ export const CONVERSATIONS: Record<string, Conversation> = {
     a2: { speaker: 'juno', text: "(Three of them circling the desks, watching every screen. Hale's idea of rest.)", next: 'a3' },
     a3: { speaker: 'juno', text: "(I'll never get at a screen with them here. They jump at anything on the emergency line. A threat, called in, from somewhere they have to go.)", end: true, effects: [{ setFlag: 'call_idea' }] },
     b: { speaker: 'aud1', text: 'Step away from the desk, Auditor Juno.', next: 'b2' },
-    b2: { speaker: 'juno', text: '(Still watching. Time to make that call?)', choices: [{ text: 'Call in a fake threat.', end: true, effects: [{ setFlag: 'make_call' }] }, { text: 'Not yet.', end: true }] },
+    b2: { speaker: 'juno', text: '(Still watching. The phone on the archive table, then.)', end: true },
   } },
+  phone_early: { start: 'a', nodes: { a: { speaker: 'juno', text: "(A desk phone. Calling anyone with three auditors in earshot is a bad idea. I need a reason to clear the floor first.)", end: true } } },
   fake_call: { start: 'a', nodes: {
     a: { speaker: 'juno', text: "(Dial the emergency line. Keep my voice thin and scared.)", next: 'b' },
     b: { speaker: 'juno', text: "Civic Audit Bureau? There's a man on the Line 9 platform with a case. It's ticking. He says it's for the Bureau. No. I won't give my name.", next: 'c' },
@@ -461,6 +462,7 @@ export const CONVERSATIONS: Record<string, Conversation> = {
     d: { speaker: 'aud2', text: 'Leave the floor. Now.', next: 'e' },
     e: { speaker: 'juno', text: "(Boots on the stairs, then nothing. The floor is mine, for a while.)", end: true },
   } },
+  hale_watching: { start: 'a', nodes: { a: { speaker: 'juno', text: "(Her terminal, right under her nose. Not while she's sitting there.)", end: true } } },
   pc_dark: { start: 'a', nodes: { a: { speaker: 'juno', text: "(Dead screen. The rest of the mail is nothing, so what the lab needs isn't on this floor yet. I need to know more about what they've done before I know what to look for.)", end: true } } },
   mail_cold: { start: 'a', nodes: { a: { speaker: 'juno', text: '(Nothing there but work and weather. Try another desk.)', end: true } } },
   code_found: { start: 'a', nodes: {
