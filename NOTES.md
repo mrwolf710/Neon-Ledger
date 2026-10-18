@@ -6,7 +6,7 @@ Short index. Full per-feature detail (the old long NOTES) is in `docs/notes-arch
 - Next step: owner answers the ch.5 open questions (fixer name/corporation, Hale's fate, Teo and Kit's fate, echo handed over or not), then rework the arcade and build the tower. `refused_deal` (ch.2) is stored but unused.
 - Open issues: none (issues.json).
 - OWNER TODO: auditors' walk sheet `public/sprites/auditors/walk/sheet.png` (68 px cells, rows 1-8 = directions; optional, they slide in idle until then).
-- Not browser-verified: Hale jail walk, car seat height, speed-line direction, force field, gamepad Y/RT on the board.
+- Not browser-verified: Hale jail walk, force field, gamepad Y/RT on the board.
 
 ## Layout (src/, all strict .ts; shared shapes in src/types.ts)
 - core: rng (seeded; all randomness), input (action layer), settings (tiers high/medium/mobile)
@@ -25,7 +25,7 @@ Short index. Full per-feature detail (the old long NOTES) is in `docs/notes-arch
 - Save: one slot in localStorage `nl.save`; quality in `nl.quality`. Issue box: F9 / touch "!" / both stick clicks, dev server or `?issues`.
 
 ## Chapters in one line each
-- Ch.1 Sable murder, Kit named via hostel chain, Dex backup echo, car chip, Hale's call. Ch.2 Echo Exchange (12 vendors, 6 clues, ring -> `dealer_open`), dealer shop, fixer offer, auditors. Ch.3 Bureau: Hale scene, 6 clues, lab reader + video is the climax (`bureau_deduced`), slip out. Ch.4 dawn Lowmarket: Kit/vendor, Sable back-room meeting, call, arcade.
+- Ch.1 Sable murder, Kit named via hostel chain, Dex backup echo (chip slotted into Kit's reader, hostel spot `reader`; the car is street scenery only, its door removed), Hale's call, then Juno takes the Line 9 train to the Exchange (train sound, no drive scene). Ch.2 Echo Exchange (12 vendors, 6 clues, ring -> `dealer_open`), dealer shop, fixer offer, auditors. Ch.3 Bureau: Hale scene, 6 clues, lab reader + video is the climax (`bureau_deduced`), slip out. Ch.4 dawn Lowmarket: Kit/vendor, Sable back-room meeting, call, arcade.
 - Hale is female (she/her). Kit is "Worker" until `kit_named`.
 
 ## Testing

@@ -112,8 +112,8 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     3: { flags: ['visited_sable'], to: 'sable' },
     4: { flags: ['seen_backroom', 'ex_body', 'ex_port', 'ex_cups', 'ex_terminal', 'ex_lamp'], add: ['burned_port'], to: 'sable' },
     5: { add: ['teo_back_room', 'two_voices'], to: 'sable' },
-    6: { flags: ['teo_met', 'teo_cracked', 'teo_pointed', 'key_deduced', 'teo_asked_door', 'ex_glove', 'kit_paid', 'ex_capsule', 'kit_named'], add: ['mamaTeo', 'door_unlocked', 'someone_had_key', 'alley_echo', 'gloved_hand', 'kit_echo', 'kit_outside', 'kit_name'], to: 'car' },
-    7: { flags: ['kit_deduced', 'kit_named', 'kit_met', 'kit_broken', 'kit_coat'], add: ['kit', 'kit_name', 'override_used', 'kit_alley', 'kit_saw_them'], to: 'car' },
+    6: { flags: ['teo_met', 'teo_cracked', 'teo_pointed', 'key_deduced', 'teo_asked_door', 'ex_glove', 'kit_paid', 'ex_capsule', 'kit_named'], add: ['mamaTeo', 'door_unlocked', 'someone_had_key', 'alley_echo', 'gloved_hand', 'kit_echo', 'kit_outside', 'kit_name'], to: 'hostel' },
+    7: { flags: ['kit_deduced', 'kit_named', 'kit_met', 'kit_broken', 'kit_coat'], add: ['kit', 'kit_name', 'override_used', 'kit_alley', 'kit_saw_them'], to: 'hostel' },
   };
 
   // ---- tiny async helpers driven by update(dt) (so cutscenes pause with the game, not wall-clock) ----
@@ -207,7 +207,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     });
     await played;
     focus = null; cam.set({ yaw: yaw0 });                           // back to the player's view
-    await world.enter('car', home);                                  // and back to the car
+    await world.enter('hostel', home);                               // and back to the hostel
     await wait(0.9);
     await fade.log();                                            // the red 47-minute gap
     await dialogue.start('log_open');
@@ -227,24 +227,19 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     fade.card([{ text: 'NEON ECHOES', color: '#ffffff', scale: 6 }, { text: 'CASE 01 CONTINUES', color: '#1fd6e8', scale: 3 }, { text: 'TAP OR PRESS ANY BUTTON', color: '#8a8aa8', scale: 2 }], Infinity);
     await anyInput(BEATS.finaleSeconds);                         // BEATS.finaleSeconds of music, or any tap, click, key or pad button after BEATS.finaleGuard
     await fade.hideCard(0.4);                                    // quick fade to black
-    finale = false;                                              // the car's own quiet music comes back; she is still in the car
+    finale = false;                                              // she is back in the hostel
     await fade.in();
     await dialogue.start('car_reply');                           // chapter 2 opens: Juno answers Hale, not coming in yet
     await dialogue.start('car_decide');                          // she decides: the Echo Exchange
     chapter1Done = true; caseFile.setFlag('chapter1_done');
     { const miso = cast.byId.miso; miso.follow = null; miso.away = true; cast.apply(); }   // Miso stays behind: he does not come past chapter 1
     await wait(0.6);
-    sfx.carDrive?.(BEATS.driveSeconds);                          // she drives to the Exchange: streaks race past the windows, then black
-    await fade.out();                                            // cut to the whole car in the dark (the 'drive' area), Juno hidden
-    cast.setHidden(true);
-    world.jump('drive', [...origin('drive'), 0]);
-    await fade.in();
-    { const c = Math.cos(cam.yaw), sn = Math.sin(cam.yaw); await fade.speedLines(BEATS.driveLines, c, sn * 0.7); }   // the car heads west (-x): on screen that is (-cos, -sin * 0.7), so the streaks flow the other way
+    sfx.trainArrive?.(BEATS.driveSeconds);                       // she takes the Line 9 train to the Exchange: the train sound under the black and the chapter card
     await fade.out();
     const sp = world.spot('exchange', 'start')!;
     world.jump('exchange', [sp.x, sp.z, Math.PI / 2]);           // while the screen is black
     cast.setHidden(false);
-    await fade.card([{ text: 'CHAPTER 2', color: '#ff8a1f', scale: 6 }, { text: 'THE ECHO EXCHANGE', color: '#ffd23a', scale: 3 }], BEATS.driveSeconds - 3.6); // held so the drive sound plays out under it
+    await fade.card([{ text: 'CHAPTER 2', color: '#ff8a1f', scale: 6 }, { text: 'THE ECHO EXCHANGE', color: '#ffd23a', scale: 3 }], BEATS.driveSeconds - 1); // held so the train sound plays out under it
     await fade.in();
     locked = false;
   }
@@ -613,7 +608,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
   // ---- Interactables: doors, clues, people ----
   function register() {
     for (const e of world.exits) {
-      interactions.add({ id: e.id, get area() { return e.id === 'arcade-door' && !flag('chapter4') ? '' : e.area; }, position: new THREE.Vector3(e.at[0], 0, e.at[1]), height: 1.2, verb: e.verb,
+      interactions.add({ id: e.id, get area() { return (e.id === 'arcade-door' && !flag('chapter4')) || e.id === 'car-door' ? '' : e.area; }, position: new THREE.Vector3(e.at[0], 0, e.at[1]), height: 1.2, verb: e.verb,
         onInteract: () => { if (e.id === 'dealer-door' && !flag('dealer_open')) dialogue.start('dealer_locked'); else if (e.id === 'arcade-door' && !flag('arcade_call')) dialogue.start('arcade_closed'); else if (e.id === 'sable-door' && flag('chapter4') && !flag('kit_warned')) dialogue.start('sable_kit_first'); else if (e.id === 'dealer-out' && flag('fixer_done') && !flag('auditors_done')) { if (!locked) outsideScene(); } else world.enter(e.to, e.spawn); } }); // the dealer's door stays shut until the locker deduction
     }
     for (const id of ['fixer', 'aud1', 'aud2', 'aud3', 'vjuno', 'vhale']) cast.byId[id].away = true; // scripted people appear only in their scenes
@@ -645,8 +640,8 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     syncLabDoor();
     const fd = world.spot('bureau', 'frontdoor')!;                // the Bureau's front door: locked until the deduction, then Juno slips out
     interactions.add({ id: 'bureau_door', area: 'bureau', position: new THREE.Vector3(fd.x, 0, fd.z), height: 1.2, verb: 'Try the door', onInteract: () => bureauSlip() });
-    const seat = world.spot('car', 'seat')!;
-    interactions.add({ id: 'chip', area: 'car', position: new THREE.Vector3(seat.x, 0, seat.z), height: 2.3, verb: "Slot Dex's chip",
+    const seat = world.spot('hostel', 'reader')!;                  // Kit's stripped reader: the chip is slotted here once Juno has it
+    interactions.add({ id: 'chip', get area() { return flag('ex_capsule') ? 'hostel' : ''; }, position: new THREE.Vector3(seat.x, 0, seat.z), height: 1.2, verb: "Slot Dex's chip into Kit's reader",
       onInteract: () => { if (locked) return; if (flag('kit_coat') && flag('ex_capsule')) cliffhanger(); else dialogue.start('chip_early'); } });
     for (const b of cast.list) {
       if (b.id === 'juno' || b.id === 'dex' || b.ambient) continue;       // Dex is examined, not spoken to
@@ -707,7 +702,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     { id: 'kit2', text: 'Go back to the capsule hostel and talk to the worker', area: 'hostel', pos: () => spotXZ('hostel', 'kit'), done: () => flag('kit_met') },
     { id: 'kitbreak', text: 'Present the alley echo to Kit', area: 'hostel', pos: () => spotXZ('hostel', 'kit'), done: () => flag('kit_broken') },
     { id: 'press', text: 'Press Kit about what he saw', area: 'hostel', pos: () => spotXZ('hostel', 'kit'), done: () => flag('kit_coat') },
-    { id: 'chip', text: "Slot Dex's backup chip in your car", area: 'car', pos: () => spotXZ('car', 'seat'), done: () => chapter1Done || flag('chapter1_done') },
+    { id: 'chip', text: "Slot Dex's backup chip into Kit's reader", area: 'hostel', pos: () => spotXZ('hostel', 'reader'), done: () => chapter1Done || flag('chapter1_done') },
     { id: 'exchange', text: "Ask around the Echo Exchange about Dex's echo", area: 'exchange', done: () => flag('dealer_open') },
     { id: 'dealer', text: "Go into the implant dealer's shop", area: 'exchange', pos: () => spotXZ('exchange', 'dealerDoor'), done: () => flag('visited_dealer') },
     { id: 'locker', text: "Show the dealer Dex's receipt, then open Locker 9", area: 'dealer', pos: () => spotXZ('dealer', flag('locker_ok') ? 'locker' : 'dealer'), done: () => flag('locker_done') },

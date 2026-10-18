@@ -294,7 +294,7 @@ function hostel(M: Materials) {
   // Kit's shelf of rare cyber gear on the east wall (glowing parts behind a locked cage); it is what lets him stop Hale in the finale.
   b.box(M.metal, 0.5, 1.7, 1.3, 4.7, 0.85, 0.3); b.block(4.7, 0.3, 0.5, 1.3); for (let k = 0; k < 5; k++) b.box(k % 2 ? M.litCool : M.litWarm, 0.04, 0.12, 1.0, 4.42, 0.3 + k * 0.32, 0.3);
   b.light(P.cyan, 5, 4.0, 1.6, 0.3);
-  b.spot('gear', 3.8, 0.3);
+  b.spot('gear', 3.8, 0.3); b.spot('reader', 3.2, 1.3);   // 'reader': where Juno slips Dex's chip into Kit's stripped reader (end of chapter 1)
   b.spot('kit', 1.2, 0.6); b.spot('door', 0, 2.9); b.spot('capsule3f', -0.6, -1.9); // Dex's capsule: the middle stack
   return finish('hostel', b, [-5, -3.5, 5, 3.5]);
 }

@@ -378,7 +378,7 @@ export const CONVERSATIONS: Record<string, Conversation> = {
   } },
   // Beat 7: the cliffhanger lines (beats.js plays them in order).
   chip_open: { start: 'a', nodes: {
-    a: { speaker: 'juno', text: "Dex's backup chip, from under his bunk in capsule 3F. The one echo he was afraid of.", next: 'b' },
+    a: { speaker: 'juno', text: "Dex's backup chip, from under his bunk in capsule 3F. Kit's stripped reader will take it, and he'll look the other way.", next: 'b' },
     b: { speaker: 'juno', text: 'Fine. Let us see what scared him.', end: true },
   } },
   chip_early: { start: 'a', nodes: { a: { speaker: 'juno', text: 'Not yet. I need to find Dex backup and know who is lying to me first.', end: true } } },
@@ -401,7 +401,7 @@ export const CONVERSATIONS: Record<string, Conversation> = {
     c: { speaker: 'juno', text: "Not yet. If I walk into the Bureau with a dead broker and a hole in my memory, I won't walk out. I need to know what Dex was carrying first.", end: true },
   } },
   car_decide: { start: 'a', nodes: {
-    a: { speaker: 'juno', text: '(Brokers all end up in one place. The Echo Exchange. Somebody there knows what he was selling. Time for a little drive.)', end: true },
+    a: { speaker: 'juno', text: '(Brokers all end up in one place. The Echo Exchange. Somebody there knows what he was selling. Time to ride the line.)', end: true },
   } },
   // ---- Chapter 2: the Echo Exchange (docs/chapter-2.md). Each clue vendor gives their clue on the first talk, in any order; later talks give a short repeat line. ----
   // The implant dealer: show him the receipt for Locker 9, then Juno can open it (beats.dealerScene).
