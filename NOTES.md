@@ -2,8 +2,8 @@
 Short index. Full per-feature detail (the old long NOTES) is in `docs/notes-archive.md`; read the section you need there. Story plans: `docs/story-bible.md`, `docs/chapter-2..5.md`. Seed 1337.
 
 ## Status
-- Chapters 1-4 built (ch.1 shipped on itch.io, zip via `npm run itch`, then `npm run build`). Ch.4 ends on the arcade stranger and a "COMING SOON" card. Ch.5 is plan only: `docs/chapter-5.md` (arcade rework, Meridian Tower, memory montage, Lowmarket plea, Line 9 showdown, self-wipe, closing loop).
-- Next step: owner answers the ch.5 open questions (fixer name/corporation, Hale's fate, Teo and Kit's fate, echo handed over or not), then rework the arcade and build the tower. `refused_deal` (ch.2) is stored but unused.
+- Chapters 1-5 built (ch.1 shipped on itch.io, zip via `npm run itch`, then `npm run build`). Ch.5 (beats.ts `chapter5`, story.ts ch.5 block, area `tower`): Voss (fixer) offers a deal, 5-echo memory montage, plea to Kit and Teo in the Sable, Line 9 showdown (Kit's damper disables Hale), Juno wipes herself, LATER card, THE END. Debug panel has a jump-to-scene list.
+- Next step: owner fixes dialogue and adds sprites. Ch.5 showdown/plea/montage run headless without errors but are only partly eyeballed. Undone ch.3 additions: grey glove use, prisoner detail, 22:40 vs 23:10 clock.
 - Open issues: none (issues.json).
 - OWNER TODO: auditors' walk sheet `public/sprites/auditors/walk/sheet.png` (68 px cells, rows 1-8 = directions; optional, they slide in idle until then).
 - Not browser-verified: Hale jail walk, force field, gamepad Y/RT on the board.

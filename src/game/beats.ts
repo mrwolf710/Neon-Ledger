@@ -90,6 +90,9 @@ export interface Beats {
   dealerScene(): Promise<void>;
   outsideScene(): Promise<void>;
   skipTo(n: number): void;
+  jumpScene(id: string): void;
+  chapter5(from?: 'tower' | 'montage' | 'plea' | 'showdown' | 'ending'): Promise<void>;
+  scenes: { id: string; label: string }[];
   setCamera(c: BeatsCamera): void;
   coldOpen(): Promise<void>;
   skipOpen(): void;
@@ -453,11 +456,131 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     locked = true;
     await wait(0.4);
     const st = cast.byId.stranger; st.away = true; cast.apply();
+    await chapter5('tower');
+  }
+
+  // ---- Chapter 5 (docs/chapter-5.md): the Meridian Tower, the restored memories, the plea, the Line 9 showdown, the self-wipe, the closing loop. One chain: each stage starts black. ----
+  const CH5 = {
+    cardSeconds: 2.6,        // the CHAPTER 5 title card
+    haleWalk: 3.0,           // Hale crossing the platform from the train door to Juno
+    jamSeconds: 1.0,         // the damper burst: tape-glitch look
+    kneelScale: 0.62,        // Hale's height when the damper drops her (1 = standing)
+    kneelSeconds: 1.2,
+    wipeSeconds: 2.6,        // the low tone and held breath before Juno's self-wipe
+    juno: { x: -152.5, z: 0.8 },      // showdown marks on the platform (world coordinates)
+    hale: { x: -150.2, z: 0.8 },
+    kit: { x: -143.5, z: 1.2 },
+    teo: { x: -144.7, z: 1.9 },
+  };
+  const platformArea = () => world.areas.platform as unknown as PlatformArea;
+  const trainX0 = platformArea().train.position.x;                     // where the Line 9 train waits before it rolls in
+  async function trainIn() {                                           // the train rolls to its stop (sound and motion), steam when it halts
+    const p = platformArea(), stopX = p.trainStop[0];
+    p.train.position.x = trainX0; p.trainGlow.forEach((m) => m.color.copy(m.userData.base));
+    sfx.trainArrive(BEATS.trainSeconds);
+    await tween(BEATS.trainSeconds, (u) => { p.train.position.x = trainX0 + (stopX - trainX0) * (1 - (1 - u) ** 3); });
+    trainSteam();
+  }
+  const toTower = (id: string) => { const sp = world.spot('tower', id)!; world.jump('tower', [sp.x, sp.z, Math.PI]); };
+  const seatFixer = () => { const f = cast.byId.fixer, fx = world.spot('tower', 'fixer')!; f.area = 'tower'; f.away = false; f.position.set(fx.x, 0, fx.z); f.facing = 0; };
+  async function towerScene() {
+    locked = true;
     await fade.out();
-    fade.card([{ text: 'END OF CHAPTER 4', color: '#ffffff', scale: 5 }, { text: 'CHAPTER 5: THE MERIDIAN TOWER - COMING SOON', color: '#ff9a3c', scale: 3 }, { text: 'TAP OR PRESS ANY BUTTON', color: '#8a8aa8', scale: 2 }], 3600);
+    await fade.card([{ text: 'CHAPTER 5', color: '#ff9a3c', scale: 6 }, { text: 'THE MERIDIAN TOWER', color: '#ffffff', scale: 3 }], CH5.cardSeconds);
+    const lift = world.spot('tower', 'lift')!, desk = world.spot('tower', 'desk')!;
+    world.jump('tower', [lift.x, lift.z, Math.PI]); seatFixer(); cast.apply();
+    await fade.in();
+    await dialogue.start('tower_lift');
+    await walkTo(desk.x, desk.z, 0.2, 5);
+    cast.byId.juno.facing = Math.PI;
+    await dialogue.start('tower_offer');
+  }
+  async function montage() {                                           // the restore: five kills, each in the place it happened, each shorter than the last
+    locked = true;
+    const at: [string, string, string][] = [['m1', 'platform', 'start'], ['m2', 'hostel', 'kit'], ['m3', 'exchange', 'start'], ['m4', 'dealer', 'dealer'], ['m5', 'sable', 'backroom']];
+    for (const [id, area, spot] of at) {
+      await fade.out();
+      cast.setHidden(true);
+      const sp = world.spot(area, spot)!;
+      world.jump(area, [sp.x, sp.z, 0]);
+      await fade.in();
+      await new Promise<void>((res) => echo.start(id, res));           // echo.exit() brings the cast back when it ends
+    }
+    await fade.out();
+    toTower('desk'); seatFixer(); cast.apply();
+    await fade.in();
+    await dialogue.start('tower_after');
+  }
+  async function pleaScene() {                                         // back in the Sable: Juno asks Kit and Teo for help
+    locked = true;
+    await fade.out();
+    const k = world.spot('sable', 'kitmeet')!, t = world.spot('sable', 'teomeet')!;
+    world.jump('sable', [k.x - 0.8, (k.z + t.z) / 2, Math.PI / 2]);
+    const kit = cast.byId.kit, teo = cast.byId.mamaTeo;
+    kit.area = 'sable'; kit.away = false; kit.position.set(k.x, 0, k.z); kit.facing = -Math.PI / 2;
+    teo.area = 'sable'; teo.away = false; teo.position.set(t.x, 0, t.z); teo.facing = -Math.PI / 2;
+    cast.apply();
+    await fade.in();
+    await dialogue.start('plea');
+  }
+  async function showdown() {                                          // the empty Line 9 platform: Hale steps off the train, Kit's damper stops her
+    locked = true;
+    await fade.out();
+    const p = platformArea(), stopX = p.trainStop[0], door = world.spot('platform', 'start')!;
+    const hale = cast.byId.hale, kit = cast.byId.kit, teo = cast.byId.mamaTeo;
+    p.train.position.x = trainX0;
+    world.jump('platform', [CH5.juno.x, CH5.juno.z, Math.PI / 2]);
+    for (const [b, m] of [[kit, CH5.kit], [teo, CH5.teo]] as const) { b.area = 'platform'; b.away = false; b.position.set(m.x, 0, m.z); b.facing = -Math.PI / 2; }
+    hale.area = 'platform'; hale.away = true; hale.root.scale.y = 1; hale.position.set(stopX, 0, door.z);
+    cast.apply();
+    await fade.in();
+    await trainIn();
+    finale = true;                                                     // the fast hard music from the chapter 1 ending
+    hale.away = false; hale.facing = 0; hale.anim = 'walk'; cast.apply();
+    const hx = stopX, hz = door.z;
+    await tween(CH5.haleWalk, (u) => { hale.position.set(hx + (CH5.hale.x - hx) * u, 0, hz + (CH5.hale.z - hz) * u); hale.facing = Math.atan2(CH5.juno.x - hale.position.x, CH5.juno.z - hale.position.z); });
+    hale.anim = 'idle';
+    await dialogue.start('showdown_a');
+    sfx.override?.(1.2); await wait(1.2);                              // she raises her weapon: the alarm
+    sfx.ui?.('glitch'); setVhs(1); hud.toast('Override damper online: weapon and implant dead');   // Kit uses his gear
+    await wait(CH5.jamSeconds); setVhs(0);
+    await tween(CH5.kneelSeconds, (u) => { hale.root.scale.y = 1 - (1 - CH5.kneelScale) * u; });   // she drops to her knees
+    await dialogue.start('showdown_b');
+    finale = false;
+    await dialogue.start('wipe');
+    deadHour(); ending = true;                                         // the signs die and one low tone holds
+    await wait(CH5.wipeSeconds);
+    sfx.ui?.('glitch'); setVhs(1); await wait(0.7);
+    await fade.out(); setVhs(0);
+    endDeadHour(); ending = false;
+  }
+  async function endingScene() {                                       // the loop closes: the same platform, the same train, the same line
+    locked = true;
+    if (!fade.black) await fade.out();
+    for (const id of ['kit', 'mamaTeo', 'hale']) cast.byId[id].away = true;
+    await fade.card([{ text: 'LATER', color: '#8a8aa8', scale: 3 }], 2.0);
+    const p = platformArea(), stopX = p.trainStop[0], door = world.spot('platform', 'start')!, juno = cast.byId.juno;
+    p.train.position.x = trainX0; juno.away = true;
+    world.jump('platform', [stopX, door.z + 1.6, 0]);
+    cast.apply();
+    await fade.in();
+    await trainIn();
+    player.position.set(stopX, 0, door.z); juno.facing = 0; juno.away = false; cast.apply();
+    await walkTo(stopX, door.z + 1.6);
+    await wait(0.8);
+    await dialogue.start('ending_line');                               // "I think I lost an hour on that train."
+    await wait(1.4);
+    await fade.out();
+    finale = true;
+    fade.card([{ text: 'NEON ECHOES', color: '#ffffff', scale: 6 }, { text: 'THE END', color: '#1fd6e8', scale: 3 }, { text: 'HALE WAS FOUND ON THE LINE 9 PLATFORM, UNARMED. THE BUREAU SAID NOTHING.', color: '#ff9a3c', scale: 2 }, { text: 'TAP OR PRESS ANY BUTTON', color: '#8a8aa8', scale: 2 }], Infinity);
     await wait(BEATS.finaleGuard);
     await anyInput(Infinity);
     location.reload();
+  }
+  type Ch5Stage = 'tower' | 'montage' | 'plea' | 'showdown' | 'ending';
+  async function chapter5(from: Ch5Stage = 'tower') {
+    const stages: [Ch5Stage, () => Promise<void>][] = [['tower', towerScene], ['montage', montage], ['plea', pleaScene], ['showdown', showdown], ['ending', endingScene]];
+    for (const [, run] of stages.slice(stages.findIndex(([n]) => n === from))) await run();
   }
 
   // Chapter 3: the reader's log plays as a "video" on the lab's big screen: a security camera in the real memory-lab room films Juno in the chair and Hale beside her (their own sprites,
@@ -552,8 +675,8 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
   let labClock = 0;
   // The arcade: every screen and bulb (shared materials) winks at its own quick rate.
   let arcClock = 0;
-  function blinkArcade(dt: number) {
-    const m = (world.areas.arcade as unknown as { blink?: THREE.MeshBasicMaterial[] }).blink;
+  function blinkArcade(dt: number, id = 'arcade') {
+    const m = (world.areas[id as 'arcade'] as unknown as { blink?: THREE.MeshBasicMaterial[] }).blink;
     if (!m) return;
     arcClock += dt;
     m.forEach((mat, i) => {
@@ -721,7 +844,38 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     return ex ? { x: ex.at[0], z: ex.at[1] } : null;
   }
 
+  // Debug 'jump to scene': the flags a player would hold at that scene (scenes that trigger on a flag are reset so they play again), then drop into it.
+  const CH3_FLAGS = ['visited_street', 'chapter1_done', 'dealer_open', 'locker_ok', 'fixer_done', 'auditors_done'];
+  const CH4_FLAGS = [...CH3_FLAGS, 'bureau_arrived', 'hale_met', 'aud_gone', 'hale_left', 'hale_back', 'bureau_deduced', 'hale_hunting', 'chapter4'];
+  const SCENES: { id: string; label: string; flags: string[]; clear?: string[]; go: () => void }[] = [
+    { id: 'ch3_hall', label: 'Ch3: the Bureau hall (auditors patrolling)', flags: [...CH3_FLAGS, 'bureau_arrived', 'hale_met'], clear: ['aud_gone', 'hale_left', 'chapter4'],
+      go: () => { const s = world.spot('bureau', 'start')!; world.jump('bureau', [s.x, s.z, 0]); restoreStation(); } },
+    { id: 'ch3_slip', label: 'Ch3 ending: slip out, Hale calls, then ch4 begins', flags: [...CH3_FLAGS, 'bureau_arrived', 'hale_met', 'bureau_deduced'], clear: ['chapter4'], go: () => { bureauSlip(); } },
+    { id: 'ch4_street', label: 'Ch4: Lowmarket Street at dawn', flags: [...CH4_FLAGS], clear: ['kit_warned', 'teo_meet', 'arcade_call', 'arcade_seen', 'arcade_met'],
+      go: () => { dawn(); world.jump('street', world.exits.find((e) => e.id === 'sable-out')!.spawn); clearSable(); placeKit(); cast.apply(); } },
+    { id: 'ch4_hostel', label: 'Ch4: the hostel, Kit and his gear', flags: [...CH4_FLAGS, 'ex_capsule', 'kit_paid', 'kit_named', 'key_deduced'], clear: ['kit_warned', 'teo_meet', 'arcade_call', 'arcade_seen', 'arcade_met'],
+      go: () => { dawn(); clearSable(); placeKit(); world.jump('hostel', world.exits.find((e) => e.to === 'hostel')?.spawn ?? null); cast.apply(); } },
+    { id: 'ch4_sable', label: 'Ch4: the Sable, Kit and Teo in the back room', flags: [...CH4_FLAGS, 'ex_capsule', 'kit_paid', 'kit_named', 'key_deduced', 'kit_warned'], clear: ['teo_meet', 'arcade_call', 'arcade_seen', 'arcade_met'],
+      go: () => { dawn(); clearSable(); placeKit(); world.jump('sable', world.exits.find((e) => e.to === 'sable')?.spawn ?? null); cast.apply(); } },
+    { id: 'ch4_arcade', label: 'Ch4: the pachinko arcade (find the go-between)', flags: [...CH4_FLAGS, 'ex_capsule', 'kit_paid', 'kit_named', 'key_deduced', 'kit_warned', 'teo_meet', 'arcade_call'], clear: ['arcade_seen', 'arcade_met'],
+      go: () => { dawn(); clearSable(); placeKit(); world.jump('arcade', world.exits.find((e) => e.to === 'arcade')?.spawn ?? null); cast.apply(); } },
+    { id: 'ch5_tower', label: 'Ch5: the Meridian Tower and the fixer (then the whole finale)', flags: [...CH4_FLAGS, 'ex_capsule', 'kit_paid', 'kit_named', 'key_deduced', 'kit_warned', 'teo_meet', 'arcade_call', 'arcade_met'], go: () => { chapter5('tower'); } },
+    { id: 'ch5_montage', label: 'Ch5: the memory montage (then the finale)', flags: [...CH4_FLAGS, 'ex_capsule', 'kit_paid', 'kit_named', 'key_deduced', 'kit_warned', 'teo_meet', 'arcade_call', 'arcade_met'], go: () => { chapter5('montage'); } },
+    { id: 'ch5_plea', label: 'Ch5: the plea to Kit and Teo (then the finale)', flags: [...CH4_FLAGS, 'ex_capsule', 'kit_paid', 'kit_named', 'key_deduced', 'kit_warned', 'teo_meet', 'arcade_call', 'arcade_met'], go: () => { chapter5('plea'); } },
+    { id: 'ch5_showdown', label: 'Ch5: the Line 9 showdown (then the ending)', flags: [...CH4_FLAGS, 'ex_capsule', 'kit_paid', 'kit_named', 'key_deduced', 'kit_warned', 'teo_meet', 'arcade_call', 'arcade_met'], go: () => { chapter5('showdown'); } },
+    { id: 'ch5_ending', label: 'Ch5: the closing loop on the platform', flags: [...CH4_FLAGS, 'ex_capsule', 'kit_paid', 'kit_named', 'key_deduced', 'kit_warned', 'teo_meet', 'arcade_call', 'arcade_met'], go: () => { chapter5('ending'); } },
+  ];
+
   const api: Beats = {
+    chapter5,
+    scenes: SCENES.map(({ id, label }) => ({ id, label })),
+    jumpScene(id: string) {
+      const sc = SCENES.find((s) => s.id === id);
+      if (!sc) return;
+      fade.black = false; hud.show(); ending = finale = false; locked = false; chapter1Done = true;
+      sc.clear?.forEach((f) => caseFile.clearFlag(f)); sc.flags.forEach((f) => caseFile.setFlag(f));
+      sc.go();
+    },
     get locked() { return locked; },
     visits, // talks per person (a save game keeps them)
     get focus() { return focus; },
@@ -763,7 +917,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     update(dt: number) {
       placeKit();
       if (world.current.id === 'bureau') blinkLab(dt);
-      else if (world.current.id === 'arcade') blinkArcade(dt);
+      else if (world.current.id === 'arcade' || world.current.id === 'tower') blinkArcade(dt, world.current.id);
       for (const h of frameHooks) h(dt);
       syncLabDoor(); updatePatrols(dt);
       if (flag('ex_haledesk') && flag('hale_left') && !flag('hale_back') && !haleWalking && !dialogue.active && !locked) { haleWalking = true; walkHale(true); }   // she heads home once Juno has read her desk

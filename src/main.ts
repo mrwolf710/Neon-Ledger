@@ -5,7 +5,7 @@ import { input } from './core/input.ts';
 import { createCamera, CAMERA } from './render/camera.ts';
 import { createDebugPanel, showSprites } from './debug/panel.ts';
 import { getSheets } from './gen/sprites.ts';
-import { loadJunoSheet, loadTeoSheet, loadPriestSheet, loadDexSheet, loadCatSheet, loadDexStandSheet, loadKitSheet, loadAuditorSheet, loadVendorSheet, loadWalkerSheet, MARKET1_ART, MARKET8_ART, MARKET3_ART, MARKET4_ART, MARKET5_ART, MARKET6_ART, MARKET7_ART, DEALER_ART, AUDITOR_ART, WALKER2_ART, WALKER3_ART, WALKER4_ART, loadHaleSheet } from './gen/junoart.ts';
+import { loadJunoSheet, loadTeoSheet, loadPriestSheet, loadDexSheet, loadCatSheet, loadDexStandSheet, loadKitSheet, loadAuditorSheet, loadVendorSheet, loadWalkerSheet, MARKET1_ART, MARKET8_ART, MARKET9_ART, ARCADE1_ART, ARCADE2_ART, ARCADE3_ART, MARKET10_ART, MARKET3_ART, MARKET4_ART, MARKET5_ART, MARKET6_ART, MARKET7_ART, DEALER_ART, AUDITOR_ART, WALKER2_ART, WALKER3_ART, WALKER4_ART, loadHaleSheet } from './gen/junoart.ts';
 import { createCast } from './game/npc.ts';
 import './ui/styles.css';
 import { createTouchUI } from './ui/touch.ts';
@@ -77,6 +77,11 @@ try { getSheets().gutter = await loadKitSheet(MARKET3_ART); } catch (e) { consol
 try { getSheets().slate = await loadKitSheet(MARKET4_ART); } catch (e) { console.warn('Slate art not loaded, using their borrowed sprite:', (e as Error).message); getSheets().slate = getSheets().walkerD; }
 try { getSheets().ruth = await loadKitSheet(MARKET5_ART); } catch (e) { console.warn('Ruth art not loaded, using her borrowed sprite:', (e as Error).message); getSheets().ruth = getSheets().vendor; }
 try { getSheets().pim = await loadKitSheet(MARKET7_ART); } catch (e) { console.warn('Pim art not loaded, using their borrowed sprite:', (e as Error).message); getSheets().pim = getSheets().walkerC; }
+try { getSheets().kid3 = await loadKitSheet(ARCADE3_ART); } catch (e) { console.warn('Arcade kid 3 art not loaded, using a borrowed sprite:', (e as Error).message); getSheets().kid3 = getSheets().walkerA; }
+try { getSheets().vesper = await loadKitSheet(MARKET10_ART); } catch (e) { console.warn('Vesper art not loaded, using a borrowed sprite:', (e as Error).message); getSheets().vesper = getSheets().walkerB; }
+try { getSheets().kid2 = await loadKitSheet(ARCADE2_ART); } catch (e) { console.warn('Arcade kid 2 art not loaded, using a borrowed sprite:', (e as Error).message); getSheets().kid2 = getSheets().walkerA; }
+try { getSheets().kid = await loadKitSheet(ARCADE1_ART); } catch (e) { console.warn('Arcade kid art not loaded, using a borrowed sprite:', (e as Error).message); getSheets().kid = getSheets().walkerA; }
+try { getSheets().jinx = await loadKitSheet(MARKET9_ART); } catch (e) { console.warn('Jinx art not loaded, using a borrowed sprite:', (e as Error).message); getSheets().jinx = getSheets().walkerB; }
 try { getSheets().bolt = await loadKitSheet(MARKET8_ART); } catch (e) { console.warn('Bolt art not loaded, using his borrowed sprite:', (e as Error).message); getSheets().bolt = getSheets().walkerA; }
 try { getSheets().dealer = await loadKitSheet(DEALER_ART); } catch (e) { console.warn('Dealer art not loaded, using their borrowed sprite:', (e as Error).message); getSheets().dealer = getSheets().walkerC; }
 try { getSheets().oyo = await loadKitSheet(MARKET6_ART); } catch (e) { console.warn('Oyo art not loaded, using his borrowed sprite:', (e as Error).message); getSheets().oyo = getSheets().walkerA; }
@@ -163,7 +168,8 @@ beats.register();
 const todMood = (a = world.current) => (phaseId === 'dawn' && !a.meta.outdoor ? 'night' : phaseId);
 // the memory lab room in the Bureau: the wing x range and the lab's z range, in the area's own coordinates
 const inLab = () => { if (world.current.id !== 'bureau') return false; const [ox, oz] = world.current.meta.origin, x = player.position.x - ox, z = player.position.z - oz; return x > BUREAU.wing[0] && x < BUREAU.wing[1] && z > BUREAU.rooms.lab[0] && z < BUREAU.rooms.lab[1]; };
-let blurOff = false, blurSaved = 0;
+let blurOff = false, blurSaved = 0, talkBand = false, bandSaved = 0;
+const TALK_BAND = 0.45; // sharp band half-height (screen 0..1) during conversations, so the person you talk to stays in focus
 let phaseId = '', sunsetT: number | null = null, lastAreaId: string | null = null, cameFromSable = false;
 const issues = issuesOn ? createIssues({ input, toast: (t) => hud.toast(t), context: () => ({
   area: world.current.id, place: world.placeAt(player.position.x, player.position.z).name, pos: [+player.position.x.toFixed(1), +player.position.z.toFixed(1)],
@@ -296,6 +302,14 @@ debug.tab('Story');
 debug.heading('Jump to a point in the story (with the clues you would hold)');
 debug.select('jump to', { '': '-', ...STORY_JUMPS }, '', (n) => { if (n) { beats.skipTo(+n); solveHeld(); } });
 debug.heading('Scenes');
+debug.select('jump to scene', { '': '-', ch1_end: 'Ch1 ending: Dex chip, the log, Hale', ch2_dealer: 'Ch2: the dealer shop (receipt shown)', ch2_auditors: 'Ch2 ending: the auditors outside the shop', ch3_arrival: 'Ch3: the auditors walk Juno into the Bureau', ...Object.fromEntries(beats.scenes.map((s) => [s.id, s.label])) }, '', (id) => {
+  if (!id) return;
+  if (id === 'ch1_end') { beats.skipTo(7); solveHeld(); beats.cliffhanger(); }
+  else if (id === 'ch2_dealer') { beats.skipTo(10); solveHeld(); caseFile.setFlag('locker_ok'); world.jump('dealer', world.exits.find((e) => e.id === 'dealer-door')!.spawn); }
+  else if (id === 'ch2_auditors') { beats.skipTo(10); solveHeld(); beats.outsideScene(); }
+  else if (id === 'ch3_arrival') beats.bureauArrival();
+  else beats.jumpScene(id);
+});
 debug.button('Play the chapter 1 ending', () => { beats.skipTo(7); solveHeld(); beats.cliffhanger(); });
 debug.button('Chapter 2: dealer shop, receipt shown (then open Locker 9)', () => { beats.skipTo(10); solveHeld(); caseFile.setFlag('locker_ok'); const s = world.exits.find((e) => e.id === 'dealer-door')!.spawn; world.jump('dealer', s); });
 debug.heading('Case file');
@@ -442,6 +456,7 @@ renderer.setAnimationLoop((now) => {
   // Keep the tilt-shift sharp band on whatever the camera follows.
   headPos.copy(focus).setY(focus.y + 1).project(cam.camera);
   POST.tilt.center = (headPos.y + 1) / 2;
+  if (dialogue.active !== talkBand) { talkBand = dialogue.active; if (talkBand) { bandSaved = POST.tilt.band; POST.tilt.band = TALK_BAND; } else POST.tilt.band = bandSaved; }
   post.applyUniforms();
 
   // Clock: runs once the title is dismissed; the phase picks the time-of-day mood.

@@ -87,7 +87,7 @@ export interface Sheet {
 }
 // A registered scene light as the sprite shader sees it.
 export interface SpriteLight { color: number; intensity: number; base: number; position: THREE.Vector3 }
-export interface BillboardOpts { x?: number; z?: number; facing?: number; pose?: string; path?: [number, number][]; speed?: number; ghost?: boolean | number }
+export interface BillboardOpts { x?: number; z?: number; facing?: number; pose?: string; path?: [number, number][]; speed?: number; ghost?: boolean | number; phase?: number }   // phase: seconds into the animation loop at the start, so two people sharing a loop do not move in sync
 export interface Billboard {
   root: THREE.Group; position: THREE.Vector3; facing: number; anim: string; fpsScale: number; lift: number; // lift: extra height above the ground (someone sitting in a chair)
   follow: { target: { position: THREE.Vector3 }; dist: number; speed: number } | null;
@@ -120,7 +120,7 @@ export function createBillboard(sheet: Sheet, opts: BillboardOpts): Billboard {
   root.add(sprite, shadow);
 
   const pos = new THREE.Vector3(opts.x ?? 0, 0, opts.z ?? 0);
-  let time = 0, leg = 0, lastStep = -1;
+  let time = opts.phase ?? 0, leg = 0, lastStep = -1;
   const path = opts.path, speed = opts.speed ?? 2;
   if (path) pos.set(path[0][0], 0, path[0][1]);
 
@@ -198,7 +198,7 @@ export interface Cast {
   update(dt: number, camYaw: number, lights: SpriteLight[]): void;
   setArea(id: string): void; setHidden(h: boolean): void;
 }
-interface CastDef { id: string; area?: string; at: string | [number, number]; facing?: number; pose?: string; path?: [number, number][]; speed?: number; ghost?: boolean | number; sheet?: string; ambient?: boolean; booth?: boolean }
+interface CastDef { id: string; area?: string; at: string | [number, number]; facing?: number; pose?: string; path?: [number, number][]; speed?: number; ghost?: boolean | number; phase?: number; sheet?: string; ambient?: boolean; booth?: boolean }
 export function createCast(scene: THREE.Object3D, sheets: Record<string, Sheet>, areas: Record<string, { spots: Spot[] }>): Cast {
   const list = (CAST as CastDef[]).map((c) => {
     const spots = areas[c.area ?? 'street']?.spots ?? [];
@@ -209,7 +209,7 @@ export function createCast(scene: THREE.Object3D, sheets: Record<string, Sheet>,
       [x, z] = s ? [s.x, s.z] : [0, 0];
       if (s && c.facing === undefined) facing = s.facing!;
     } else [x, z] = c.at;
-    const b = createBillboard(sheets[c.sheet ?? c.id], { x, z, facing, pose: c.pose, path: c.path, speed: c.speed, ghost: c.ghost }) as CastMember;
+    const b = createBillboard(sheets[c.sheet ?? c.id], { x, z, facing, pose: c.pose, path: c.path, speed: c.speed, ghost: c.ghost, phase: c.phase }) as CastMember;
     b.id = c.id; b.area = c.area ?? 'street'; b.ambient = !!c.ambient; b.booth = !!c.booth;
     scene.add(b.root);
     return b;

@@ -36,29 +36,31 @@ export const CAST = [
   { id: 'walkerC', ambient: true, area: 'street', at: [0, -0.7], path: [[0, -0.7], [-19, -0.7], [19, -0.7]], speed: 1.0 },
   { id: 'walkerD', ambient: true, area: 'street', at: [8, -1.8], path: [[8, -1.8], [19, -1.8], [-10.2, -1.8]], speed: 1.9 }, // turns round before Juno's car (x -15.2 to -11.9, z -2.7 to -1.1)
   // Chapter 2: the Echo Exchange vendors (docs/chapter-2.md). sheet = a borrowed placeholder sprite until each vendor gets their own art; booth = talk from behind the counter's reach.
-  { id: 'vesper', area: 'exchange', at: 'v_echoes', sheet: 'walkerB', facing: 0, booth: true },
-  { id: 'mari', area: 'exchange', at: 'v_sauce', sheet: 'vendor', facing: 0, booth: true },
-  { id: 'lux', area: 'exchange', at: 'v_tarot', sheet: 'walkerC', facing: 0, booth: true },
+  { id: 'vesper', area: 'exchange', at: 'v_echoes', facing: 0, booth: true }, // own art: sheets.vesper (public/sprites/market10)
+  { id: 'mari', area: 'exchange', at: 'v_sauce', sheet: 'oyo', facing: 0, booth: true },   // no art of her own yet: repeats Oyo's (owner art)
+  { id: 'lux', area: 'exchange', at: 'v_tarot', sheet: 'ruth', facing: 0, booth: true },   // repeats Ruth's art until Madame Lux is drawn
   { id: 'tobbo', area: 'exchange', at: 'v_cables', facing: 0, booth: true }, // own art: sheets.tobbo (public/sprites/market1)
   { id: 'gutter', area: 'exchange', at: 'v_parts', facing: Math.PI, booth: true }, // own art: sheets.gutter (public/sprites/market3)
   { id: 'pim', area: 'exchange', at: 'v_umbrellas', facing: Math.PI, booth: true },
   { id: 'oyo', area: 'exchange', at: 'v_noodles', facing: 0, booth: true }, // own art: sheets.oyo (public/sprites/market6)
   { id: 'ruth', area: 'exchange', at: 'v_jewels', facing: Math.PI, booth: true }, // own art: sheets.ruth (public/sprites/market5)
   { id: 'slate', area: 'exchange', at: 'v_idprint', facing: Math.PI, booth: true }, // own art: sheets.slate (public/sprites/market4)
-  { id: 'jinx', area: 'exchange', at: 'v_stim', sheet: 'walkerB', facing: 0, booth: true },
+  { id: 'jinx', area: 'exchange', at: 'v_stim', facing: 0, booth: true }, // own art: sheets.jinx (public/sprites/market9, a silver robot)
   { id: 'bolt', area: 'exchange', at: 'v_drones', facing: Math.PI, booth: true }, // own art: sheets.bolt (public/sprites/market8)
-  { id: 'petra', area: 'exchange', at: 'v_flowers', sheet: 'vendor', facing: Math.PI, booth: true },
+  { id: 'petra', area: 'exchange', at: 'v_flowers', sheet: 'slate', facing: Math.PI, booth: true },   // repeats Slate's art until Petra is drawn
   // The implant dealer's shop and the scripted people of the chapter 2 ending (beats.dealerScene): borrowed sheets until the owner draws them. ambient = no Talk prompt.
   { id: 'dealer', area: 'dealer', at: 'dealer', facing: 0, booth: true },
   { id: 'fixer', area: 'dealer', at: 'fixer', sheet: 'walkerB', facing: -Math.PI / 4, ambient: true },
   { id: 'stranger', area: 'arcade', at: 'stranger', sheet: 'walkerD', facing: 0 },   // chapter 4: the fixer's go-between at the arcade, the one person not playing (borrowed sprite); Talk
   // The arcade crowd (borrowed sheets, standing at the machines; local arcade x = world x - 1350). ambient = no Talk prompt.
-  { id: 'gam1', area: 'arcade', at: [1346.7, 0.1], sheet: 'walkerA', facing: -Math.PI / 2, ambient: true },
-  { id: 'gam2', area: 'arcade', at: [1353.3, -1.6], sheet: 'walkerB', facing: Math.PI / 2, ambient: true },
-  { id: 'gam3', area: 'arcade', at: [1347.8, -2.1], sheet: 'walkerC', facing: Math.PI, ambient: true },
-  { id: 'gam4', area: 'arcade', at: [1352.4, -2.1], sheet: 'walkerA', facing: Math.PI, ambient: true },
-  { id: 'gam5', area: 'arcade', at: [1353.3, 1.8], sheet: 'walkerB', facing: Math.PI / 2, ambient: true },
-  { id: 'gam6', area: 'arcade', at: [1346.7, -1.6], sheet: 'walkerC', facing: -Math.PI / 2, ambient: true },
+  { id: 'kid2', area: 'arcade', at: [1351.7, 0.95], facing: Math.PI, ambient: true, phase: 0.5 },   // owner art (public/sprites/arcade2): the second kid, at the other island machine; sheets.kid2
+  { id: 'kid', area: 'arcade', at: [1348.3, 0.95], facing: Math.PI, ambient: true },   // owner art (public/sprites/arcade1): a kid pulling a machine's lever; sheets.kid
+  { id: 'gam1', area: 'arcade', at: [1347.1, 0.1], sheet: 'kid3', facing: -Math.PI / 2, ambient: true, phase: 0.1 },   // the crowd repeats the three owner kids (arcade1-3), each out of step with the others
+  { id: 'gam2', area: 'arcade', at: [1352.9, -1.6], sheet: 'kid', facing: Math.PI / 2, ambient: true, phase: 0.3 },
+  { id: 'gam3', area: 'arcade', at: [1347.8, -1.45], sheet: 'kid2', facing: Math.PI, ambient: true, phase: 0.7 },
+  { id: 'gam4', area: 'arcade', at: [1352.4, -1.45], sheet: 'kid3', facing: Math.PI, ambient: true, phase: 0.9 },
+  { id: 'gam5', area: 'arcade', at: [1352.9, 0.1], sheet: 'kid2', facing: Math.PI / 2, ambient: true, phase: 0.4 },
+  { id: 'gam6', area: 'arcade', at: [1347.1, -1.6], sheet: 'kid', facing: -Math.PI / 2, ambient: true, phase: 0.6 },
   // Chapter 3: the two people in the memory lab's recorded wipe session (beats.labVideo). Never drawn in the room: they are shown only to the security camera that films the big screen.
   { id: 'vjuno', area: 'bureau', at: 'vjuno', sheet: 'juno', facing: 0, pose: 'sit', ambient: true },
   { id: 'vhale', area: 'bureau', at: 'vhale', sheet: 'hale', facing: 0, ambient: true },

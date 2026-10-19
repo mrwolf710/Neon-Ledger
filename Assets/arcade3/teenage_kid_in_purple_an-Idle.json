@@ -1,0 +1,109 @@
+{
+  "character": {
+    "id": "829ec483-7c34-4f21-b223-09c53f25b07d",
+    "name": "Idle",
+    "prompt": "teenage kid in purple and green cyberpunk style clothes",
+    "size": {
+      "width": 48,
+      "height": 48
+    },
+    "directions": 8,
+    "view": "low top-down"
+  },
+  "spritesheet": {
+    "path": "teenage_kid_in_purple_an-Idle.png",
+    "cell_size": {
+      "width": 80,
+      "height": 80
+    },
+    "sheet_size": {
+      "width": 640,
+      "height": 720
+    },
+    "columns": 8,
+    "pivot": "cell-center",
+    "rows": [
+      {
+        "row": 0,
+        "type": "rotations",
+        "frame_count": 8,
+        "directions": [
+          "south",
+          "south-east",
+          "east",
+          "north-east",
+          "north",
+          "north-west",
+          "west",
+          "south-west"
+        ]
+      },
+      {
+        "row": 1,
+        "type": "animation",
+        "frame_count": 6,
+        "animation": "Pull Object",
+        "animation_group_id": "1fb6a025-97da-441c-bc5d-243440a34794",
+        "direction": "south"
+      },
+      {
+        "row": 2,
+        "type": "animation",
+        "frame_count": 6,
+        "animation": "Pull Object",
+        "animation_group_id": "1fb6a025-97da-441c-bc5d-243440a34794",
+        "direction": "south-east"
+      },
+      {
+        "row": 3,
+        "type": "animation",
+        "frame_count": 6,
+        "animation": "Pull Object",
+        "animation_group_id": "1fb6a025-97da-441c-bc5d-243440a34794",
+        "direction": "east"
+      },
+      {
+        "row": 4,
+        "type": "animation",
+        "frame_count": 6,
+        "animation": "Pull Object",
+        "animation_group_id": "1fb6a025-97da-441c-bc5d-243440a34794",
+        "direction": "north-east"
+      },
+      {
+        "row": 5,
+        "type": "animation",
+        "frame_count": 6,
+        "animation": "Pull Object",
+        "animation_group_id": "1fb6a025-97da-441c-bc5d-243440a34794",
+        "direction": "north"
+      },
+      {
+        "row": 6,
+        "type": "animation",
+        "frame_count": 6,
+        "animation": "Pull Object",
+        "animation_group_id": "1fb6a025-97da-441c-bc5d-243440a34794",
+        "direction": "north-west"
+      },
+      {
+        "row": 7,
+        "type": "animation",
+        "frame_count": 6,
+        "animation": "Pull Object",
+        "animation_group_id": "1fb6a025-97da-441c-bc5d-243440a34794",
+        "direction": "west"
+      },
+      {
+        "row": 8,
+        "type": "animation",
+        "frame_count": 6,
+        "animation": "Pull Object",
+        "animation_group_id": "1fb6a025-97da-441c-bc5d-243440a34794",
+        "direction": "south-west"
+      }
+    ]
+  },
+  "export_version": "1.0",
+  "export_date": "2026-10-18T13:51:13.899344+00:00"
+}

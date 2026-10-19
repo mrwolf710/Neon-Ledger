@@ -1,0 +1,36 @@
+{
+  "group_id": "fcc1e3ef-a3eb-4da7-8d73-2c3e69e508ba",
+  "states": [
+    {
+      "character": {
+        "id": "8b20ce14-2f5a-4d63-a6b0-9836b9689d3d",
+        "name": "Idle",
+        "prompt": "humanoid robot, silver, smiling face",
+        "size": {
+          "width": 48,
+          "height": 48
+        },
+        "template_id": "mannequin",
+        "directions": 8,
+        "view": "low top-down",
+        "created_at": "2026-10-18T13:17:55.501952+00:00"
+      },
+      "folder": "Idle",
+      "frames": {
+        "rotations": {
+          "south": "Idle/rotations/south.png",
+          "south-east": "Idle/rotations/south-east.png",
+          "east": "Idle/rotations/east.png",
+          "north-east": "Idle/rotations/north-east.png",
+          "north": "Idle/rotations/north.png",
+          "north-west": "Idle/rotations/north-west.png",
+          "west": "Idle/rotations/west.png",
+          "south-west": "Idle/rotations/south-west.png"
+        },
+        "animations": {}
+      }
+    }
+  ],
+  "export_version": "3.1",
+  "export_date": "2026-10-18T13:26:42.110858"
+}

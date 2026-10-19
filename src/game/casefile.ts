@@ -15,6 +15,7 @@ export interface CaseFile {
   has(id: string): boolean;
   add(id: string): boolean;
   setFlag(name: string): Set<string>;
+  clearFlag(name: string): boolean;
   dump(): CaseFileSave;
   restore(d: CaseFileSave): void;
   apply(effects?: Effect[]): void;
@@ -116,6 +117,7 @@ export function createCaseFile(hud: { toast(text: string): void }, clock?: Clock
       return true;
     },
     setFlag: (name: string) => flags.add(name),
+    clearFlag: (name: string) => flags.delete(name),
     // Save games: what Juno knows (ids + order) and the story flags. restore() rebuilds both without toasts or sounds.
     dump: () => ({ known: [...known].map(([id, e]) => [id, e.order]), flags: [...flags] }),
     restore(d: CaseFileSave) {

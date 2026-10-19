@@ -33,7 +33,7 @@ export const SPEAKERS: Record<string, Speaker> = {
   jinx: { name: 'Jinx', color: '#ffc83a' }, bolt: { name: 'Bolt', color: '#ff8030' }, petra: { name: 'Petra', color: '#ff5a50' },
   // The implant dealer's shop and the chapter 2 ending (names are placeholders until the owner picks them).
   stranger: { name: 'Stranger', color: '#d58bff' },
-  dealer: { name: 'Dealer', color: '#ff5a3c' }, fixer: { name: 'Fixer', color: '#ffb347' }, aud1: { name: 'Auditor', color: '#c8d0e8' }, aud2: { name: 'Auditor', color: '#c8d0e8' },
+  dealer: { name: 'Dealer', color: '#ff5a3c' }, dying: { name: 'Dying man', color: '#9aa0b8' }, fixer: { name: 'Fixer', alias: { flag: 'fixer_named', name: 'Voss' }, color: '#ffb347' }, aud1: { name: 'Auditor', color: '#c8d0e8' }, aud2: { name: 'Auditor', color: '#c8d0e8' },
 };
 
 // Case file entries. kind decides the tab: people | facts | echoes. source = where Juno learned it.
@@ -485,7 +485,10 @@ export const CONVERSATIONS: Record<string, Conversation> = {
     d2: { speaker: 'juno', text: "(Close it. Not look into it. Close it. Three auditors dragged me across the city for a case she wants shut.)", next: 'e' },
     e: { speaker: 'juno', text: 'I was in that room, Hale.', next: 'f' },
     f: { speaker: 'hale', text: "You were exhausted, and you lost time. It happens to all of us. Rest. I'll deal with the rest.", next: 'f2' },
-    f2: { speaker: 'juno', text: "(She never asked what I saw. Not once. Someone who wanted the truth would ask.)", next: 'g' },
+    f2: { speaker: 'juno', text: "(She never asked what I saw. Not once. Someone who wanted the truth would ask.)", next: 'h1' },
+    h1: { speaker: 'hale', text: "Before you rest: Dex's echo, and your badge. Procedure.", next: 'h2' },
+    h2: { speaker: 'juno', text: "(Neither. Not while I don't know what she is.) The echo is logged in my case file. You'll have it at dawn, when the doors open.", next: 'h3' },
+    h3: { speaker: 'hale', text: 'Dawn, then. Do not be late.', next: 'g' },
     g: { speaker: 'hale', text: "The doors are locked until dawn, for your protection. Walk the floor, get some air, and I'll see you in the morning.", next: 'g2' },
     g2: { speaker: 'juno', text: "(Locked in. For my protection. She smiles like she's tucking me in, and every door in this building has just become a wall.)", next: 'g3' },
     g3: { speaker: 'juno', text: "(Something is very wrong here. Whatever happened to Dex, she is part of it. I need proof before dawn.)", end: true },
@@ -541,7 +544,9 @@ export const CONVERSATIONS: Record<string, Conversation> = {
     a: { speaker: 'hale', text: "Juno. You left without saying goodnight. I'm not angry. I was worried.", next: 'b' },
     b: { speaker: 'juno', text: 'Hale.', next: 'c' },
     c: { speaker: 'hale', text: "I've asked a few auditors to look in on Mama Teo and that nervous boy at the hostel. For their safety, you understand. You know how Lowmarket is after dark.", next: 'd' },
-    d: { speaker: 'juno', text: 'Leave them out of this.', next: 'e' },
+    d: { speaker: 'juno', text: 'How do you know about Kit? I never told you.', next: 'd2' },
+    d2: { speaker: 'hale', text: "Your implant logs where you have been, Juno. It always has. Every doorway, every conversation.", next: 'd3' },
+    d3: { speaker: 'juno', text: 'Leave them out of this.', next: 'e' },
     e: { speaker: 'hale', text: "Come home, Juno, and nobody needs looking in on. I'll be waiting.", next: 'f' },
     f: { speaker: 'juno', text: "(Dead line. 'For their safety.' The same voice that locked my door.)", next: 'g' },
     g: { speaker: 'juno', text: "(Teo. Kit. They're in this because of me. I have to warn them and get them out of Lowmarket before her auditors reach the Sable.)", end: true },
@@ -673,13 +678,13 @@ export const ECHOES: Record<string, EchoData> = {
   dex_secret: {
     title: "Dex's hidden echo", owner: 'dex', entry: 'dex_secret', duration: 7,
     tracks: [
-      { sprite: 'dex', keys: [{ t: 0, x: 901.4, z: -0.6, facing: Math.PI, anim: 'idle' }, { t: 7, x: 901.4, z: -0.6, facing: Math.PI, anim: 'idle' }] },
+      { sprite: 'walkerD', keys: [{ t: 0, x: 901.4, z: -0.6, facing: Math.PI, anim: 'idle' }, { t: 7, x: 901.4, z: -0.6, facing: Math.PI, anim: 'idle' }] },   // the dying man: the program's first victim, not Dex
       { sprite: 'juno', show: [1.4, 5.2], keys: [{ t: 1.4, x: 903.6, z: 1.2, facing: -2.2, anim: 'walk' }, { t: 3.4, x: 902.2, z: 0.2, facing: -2.2, anim: 'walk' }, { t: 3.6, x: 902.2, z: 0.2, facing: -2.2, anim: 'idle' }, { t: 5.2, x: 902.2, z: 0.2, facing: -2.2, anim: 'idle' }] },
     ],
     voices: [
-      { t0: 0.6, t1: 2.2, speaker: 'dex', text: 'Not... you.' },
-      { t0: 2.3, t1: 3.7, speaker: 'juno', text: '(Dex, dying. A woman in a grey coat is reaching for his implant.)' },
-      { t0: 3.8, t1: 5.0, speaker: 'dex', text: "Don't. I recorded it. All of it." },
+      { t0: 0.6, t1: 2.2, speaker: 'dying', text: 'Not... you.' },
+      { t0: 2.3, t1: 3.7, speaker: 'juno', text: '(A dying man in a chair. A woman in a grey coat is reaching for his implant.)' },
+      { t0: 3.8, t1: 5.0, speaker: 'dex', text: "(Dex's own voice, from behind the lens.) Don't. I'm recording it. All of it." },
       { t0: 5.3, t1: 7, speaker: 'juno', text: '(The memory cuts off. The woman in grey... is me.)' },
     ],
     seams: [5.2], tags: [],
@@ -741,3 +746,99 @@ export const BOARD: BoardData = {
       line: "(My schedule and the override, both through Hale's account. Hale, or someone using her name.)", effects: [{ addFact: 'runs_through_hale' }, { setFlag: 'bureau_deduced' }] },
   ],
 };
+
+// ---------- Chapter 5: the Meridian Tower and the Line 9 platform (docs/chapter-5.md; scenes in beats.chapter5) ----------
+// Decisions made to finish the game (owner can change): the fixer is Voss of Meridian; Hale is disabled by Kit's damper and left on the platform;
+// Teo and Kit live; Juno keeps the echo from him and wipes herself on the platform.
+Object.assign(CONVERSATIONS, {
+  tower_lift: { start: 'a', nodes: {
+    a: { speaker: 'juno', text: "(Forty-one floors. The lift asks for a name. I give it a dead man's, and it believes me.)", end: true },
+  } },
+  tower_offer: { start: 'a', nodes: {
+    a: { speaker: 'fixer', text: "Ms. Vale. You used a dead man's name to ride up here, and the lift believed you. That is how everything works in this city.", next: 'b' },
+    b: { speaker: 'juno', text: "You said you'd give me back my forty-seven minutes. And the others.", next: 'c' },
+    c: { speaker: 'fixer', text: "I did. My name is Voss. Meridian is one of the Bureau's quiet clients: we pay, the Bureau sends a gifted auditor, a problem ends, and the auditor forgets. Hale's design. Forgetting is her idea of mercy.", next: 'd', effects: [{ setFlag: 'fixer_named' }] },
+    d: { speaker: 'fixer', text: "What Hale never mentions is that a client who pays for a clean job wants insurance. Meridian kept a copy of every wipe. Every session, every night she took from you. They are in this room.", next: 'e' },
+    e: { speaker: 'juno', text: "(The wall behind him: rows of glowing vials, each one with a date. Hundreds of them.)", next: 'f' },
+    f: { speaker: 'fixer', text: "Dex was a broker at the very first job. He kept a copy of it and tried to sell it, and the Bureau could not allow that. Hale sent the one person Dex would let through his door.", next: 'g' },
+    g: { speaker: 'juno', text: "...Me.", next: 'h' },
+    h: { speaker: 'fixer', text: "You. Now, my offer. Give me Dex's echo, the proof of what the Bureau does. Meridian will use it to make the Bureau behave. In return, you may have yourself back.", choices: [
+      { text: 'Show me. All of it.', next: 'go' }, { text: 'Why do you want it?', next: 'why' }] },
+    why: { speaker: 'fixer', text: "Leverage. A Bureau that fears us stays quiet about us. There are no heroes in this room, Ms. Vale.", next: 'h' },
+    go: { speaker: 'fixer', text: "Sit. This will not be gentle. Watch your own hands.", end: true, effects: [{ setFlag: 'restore_accepted' }] },
+  } },
+  tower_after: { start: 'a', nodes: {
+    a: { speaker: 'juno', text: "(Every night. Every name. Hundreds of them, and every one cut out of me as soon as it was done. I have been wiped over and over and over.)", next: 'b' },
+    b: { speaker: 'fixer', text: "Now you know what Hale knows. The echo, Ms. Vale.", next: 'c' },
+    c: { speaker: 'juno', text: "No. Dex died so it wouldn't end up in a drawer, and nobody gets to use it as a leash. Not you. Not Hale.", next: 'd' },
+    d: { speaker: 'fixer', text: "Then you have chosen to be hunted. Hale will be on the Line 9 platform at dawn. She always meets her tools where she leaves them.", next: 'e' },
+    e: { speaker: 'juno', text: "(Line 9. Where it all started. And Teo and Kit are on the way, if I do nothing.)", next: 'f' },
+    f: { speaker: 'juno', text: "(I can't do this alone. I never could.)", end: true, effects: [{ setFlag: 'tower_done' }] },
+  } },
+  plea: { start: 'a', nodes: {
+    a: { speaker: 'juno', text: "I know everything now. Every night she took from me. Hale is coming for me on the Line 9 platform at dawn.", next: 'b' },
+    b: { speaker: 'mamaTeo', text: "Sit, girl. You are shaking.", next: 'c' },
+    c: { speaker: 'juno', text: "I need help, and I can't ask you for it. So I'm asking.", next: 'd' },
+    d: { speaker: 'kit', text: "The damper. Her weapon and her implant, dead, if I'm within ten metres. It's what the shelf was for.", next: 'e' },
+    e: { speaker: 'mamaTeo', text: "And I will be there, because somebody has to see this done properly. And because I told you years ago to get out of that building.", next: 'f' },
+    f: { speaker: 'juno', text: "Teo...", next: 'g' },
+    g: { speaker: 'mamaTeo', text: "After tonight, you leave. Whatever it costs.", next: 'h' },
+    h: { speaker: 'kit', text: "Platform, dawn. I'll be by the stairs. Just keep her talking.", end: true, effects: [{ setFlag: 'plea_done' }] },
+  } },
+  showdown_a: { start: 'a', nodes: {
+    a: { speaker: 'hale', text: "Juno. You came to the platform on your own. Good girl.", next: 'b' },
+    b: { speaker: 'juno', text: "I saw all of it, Hale. Every job. Every wipe.", next: 'c' },
+    c: { speaker: 'hale', text: "Then you know how kind I've been. You'd have gone mad years ago. I gave you sleep.", next: 'd' },
+    d: { speaker: 'juno', text: "You gave me a leash.", next: 'e' },
+    e: { speaker: 'hale', text: "I gave you a purpose. Come home, Juno.", next: 'f' },
+    f: { speaker: 'juno', text: "No.", next: 'g' },
+    g: { speaker: 'hale', text: "Then I'm sorry. (She raises her weapon.) This one won't hurt.", end: true },
+  } },
+  showdown_b: { start: 'a', nodes: {
+    a: { speaker: 'hale', text: "My weapon... my implant... what have you done?", next: 'b' },
+    b: { speaker: 'kit', text: "Told you I collected the good stuff.", next: 'c' },
+    c: { speaker: 'mamaTeo', text: "Sit down, Director. You're finished.", next: 'd' },
+    d: { speaker: 'hale', text: "You don't understand what they'll do to you. They'll find her. They always find her.", end: true },
+  } },
+  wipe: { start: 'a', nodes: {
+    a: { speaker: 'juno', text: "(She can't touch anyone now. But I know what I am. Hundreds of nights. Hundreds of names.)", next: 'b' },
+    b: { speaker: 'juno', text: "Teo. Kit. I can't carry it. I won't.", next: 'c' },
+    c: { speaker: 'mamaTeo', text: "Juno, don't. We can help you carry it.", next: 'd' },
+    d: { speaker: 'juno', text: "You already have. That's why it has to be me, and it has to be tonight. The proof goes with it. Nobody uses it again.", next: 'e' },
+    e: { speaker: 'kit', text: "Will you remember us?", next: 'f' },
+    f: { speaker: 'juno', text: "No. That's the mercy, and the price.", next: 'g' },
+    g: { speaker: 'mamaTeo', text: "Then let me say it now, so someone hears it: you were good, Juno. You were always good.", next: 'h' },
+    h: { speaker: 'juno', text: "(Hale's session pad, still warm on the platform. One session. Hers, for once.)", end: true, effects: [{ setFlag: 'juno_wiped' }] },
+  } },
+  ending_line: { start: 'a', nodes: { a: { speaker: 'juno', text: "I think I lost an hour on that train.", end: true } } },
+});
+Object.assign(ECHOES, {
+  // The restore: five kills, each a little shorter than the last. Juno walks up, the target is gone at the cut (nothing is shown that is not already in the dealer's echo).
+  m1: { title: 'Session 3', owner: 'juno', entry: '', duration: 6, tracks: [
+    { sprite: 'walkerA', show: [0, 5], keys: [{ t: 0, x: -146, z: 0.2, facing: -Math.PI / 2, anim: 'idle' }, { t: 6, x: -146, z: 0.2, facing: -Math.PI / 2, anim: 'idle' }] },
+    { sprite: 'juno', keys: [{ t: 0, x: -150.5, z: 0.2, facing: Math.PI / 2, anim: 'walk' }, { t: 3, x: -147.2, z: 0.2, facing: Math.PI / 2, anim: 'walk' }, { t: 3.1, x: -147.2, z: 0.2, facing: Math.PI / 2, anim: 'idle' }, { t: 6, x: -147.2, z: 0.2, facing: Math.PI / 2, anim: 'idle' }] },
+  ], voices: [{ t0: 0.4, t1: 2.6, speaker: 'hale', text: 'Platform nine. Quiet. One contact.' }, { t0: 3.4, t1: 5.4, speaker: 'juno', text: "(My hand. Steady. Why is it steady?)" }] },
+  m2: { title: 'Session 9', owner: 'juno', entry: '', duration: 5, tracks: [
+    { sprite: 'walkerB', show: [0, 4.2], keys: [{ t: 0, x: 452, z: 0.8, facing: -Math.PI / 2, anim: 'idle' }, { t: 5, x: 452, z: 0.8, facing: -Math.PI / 2, anim: 'idle' }] },
+    { sprite: 'juno', keys: [{ t: 0, x: 448.5, z: 0.8, facing: Math.PI / 2, anim: 'walk' }, { t: 2.4, x: 450.8, z: 0.8, facing: Math.PI / 2, anim: 'walk' }, { t: 2.5, x: 450.8, z: 0.8, facing: Math.PI / 2, anim: 'idle' }, { t: 5, x: 450.8, z: 0.8, facing: Math.PI / 2, anim: 'idle' }] },
+  ], voices: [{ t0: 0.3, t1: 2.2, speaker: 'hale', text: 'Capsule fourteen. He does not wake.' }, { t0: 2.8, t1: 4.6, speaker: 'juno', text: '(Again.)' }] },
+  m3: { title: 'Session 14', owner: 'juno', entry: '', duration: 4, tracks: [
+    { sprite: 'walkerC', show: [0, 3.4], keys: [{ t: 0, x: 751.5, z: -7.2, facing: Math.PI / 2, anim: 'idle' }, { t: 4, x: 751.5, z: -7.2, facing: Math.PI / 2, anim: 'idle' }] },
+    { sprite: 'juno', keys: [{ t: 0, x: 747.8, z: -7.2, facing: -Math.PI / 2, anim: 'walk' }, { t: 2, x: 750.2, z: -7.2, facing: -Math.PI / 2, anim: 'walk' }, { t: 2.1, x: 750.2, z: -7.2, facing: -Math.PI / 2, anim: 'idle' }, { t: 4, x: 750.2, z: -7.2, facing: -Math.PI / 2, anim: 'idle' }] },
+  ], voices: [{ t0: 0.2, t1: 1.8, speaker: 'hale', text: 'Market. Clean it up.' }, { t0: 2.4, t1: 3.8, speaker: 'juno', text: '(Stop. Stop.)' }] },
+  m4: { title: 'Session 22', owner: 'juno', entry: '', duration: 3, tracks: [
+    { sprite: 'walkerD', show: [0, 2.6], keys: [{ t: 0, x: 901.4, z: -0.6, facing: Math.PI, anim: 'idle' }, { t: 3, x: 901.4, z: -0.6, facing: Math.PI, anim: 'idle' }] },
+    { sprite: 'juno', keys: [{ t: 0, x: 903.6, z: 1.2, facing: -2.2, anim: 'walk' }, { t: 1.4, x: 902.2, z: 0.2, facing: -2.2, anim: 'walk' }, { t: 1.5, x: 902.2, z: 0.2, facing: -2.2, anim: 'idle' }, { t: 3, x: 902.2, z: 0.2, facing: -2.2, anim: 'idle' }] },
+  ], voices: [{ t0: 0.2, t1: 1.4, speaker: 'hale', text: 'Locker nine. Quick.' }] },
+  m5: { title: 'Session 31', owner: 'juno', entry: '', duration: 2.4, tracks: [
+    { sprite: 'dexStanding', show: [0, 2.2], keys: [{ t: 0, x: 153.2, z: 0.4, facing: Math.PI / 2, anim: 'idle' }, { t: 2.4, x: 153.2, z: 0.4, facing: Math.PI / 2, anim: 'idle' }] },
+    { sprite: 'juno', keys: [{ t: 0, x: 156.0, z: 0.4, facing: -Math.PI / 2, anim: 'idle' }, { t: 2.4, x: 156.0, z: 0.4, facing: -Math.PI / 2, anim: 'idle' }] },
+  ], voices: [{ t0: 0.1, t1: 2.2, speaker: 'dex', text: "...you won't remember this." }] },
+});
+HOTSPOTS.push(
+  { id: 'm1', area: 'platform', echo: 'm1', at: { spot: 'start' }, radius: 1, hidden: true },
+  { id: 'm2', area: 'hostel', echo: 'm2', at: { spot: 'kit' }, radius: 1, hidden: true },
+  { id: 'm3', area: 'exchange', echo: 'm3', at: { spot: 'start' }, radius: 1, hidden: true },
+  { id: 'm4', area: 'dealer', echo: 'm4', at: { spot: 'dealer' }, radius: 1, hidden: true },
+  { id: 'm5', area: 'sable', echo: 'm5', at: { spot: 'backroom' }, radius: 1, hidden: true },
+);

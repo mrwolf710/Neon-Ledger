@@ -142,11 +142,12 @@ export function createTimeOfDay({ scene, lights, post, particles, signs, rng }: 
   api.update = (dt: number) => {
     time += dt;
     const sun = api.indoor ? 0 : api.sunset * api.sunsetScale;
-    if (t < 1) {
+    const blending = t < 1; // true on the frame a blend finishes too (an instant switch, seconds = 0, finishes in one frame and still has to be drawn)
+    if (blending) {
       t = dur > 0 ? Math.min(1, t + dt / dur) : 1;
       cur = blend(from!, to!, t);
     }
-    if (t < 1 || sun > 0 || sunWas > 0) apply(sun > 0 ? blend(withOver(cur!), sunsetMood, sun) : withOver(cur!), true); // grade is only written while blending, so debug sliders stick afterwards
+    if (blending || sun > 0 || sunWas > 0) apply(sun > 0 ? blend(withOver(cur!), sunsetMood, sun) : withOver(cur!), true); // grade is only written while blending, so debug sliders stick afterwards
     sunWas = sun;
     signs.forEach((sg, i) => {
       const p = per[i];

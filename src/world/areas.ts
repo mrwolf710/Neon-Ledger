@@ -30,6 +30,7 @@ export const AREAS = {
   dealer:   { origin: [900, 0],  name: 'Implants',               district: 'Undercity', outdoor: false, mood: 'dealer',  surface: 'tile' }, // chapter 2: the implant dealer's shop (docs/chapter-2.md)
   drive:    { origin: [1200, 0], name: 'The Road',              district: 'Lowmarket', outdoor: false, mood: 'scene',  surface: null }, // chapter 1 ending: the car alone in the dark while it drives (no floor, no walls)
   arcade:   { origin: [1350, 0], name: 'Pachinko Arcade',       district: 'Lowmarket', outdoor: false, mood: 'bazaar', surface: 'tile' }, // chapter 4 ending: a stranger sets up the fixer's tower
+  tower:    { origin: [1500, 0], name: 'Meridian Tower, 41st floor', district: 'Civic Centre', outdoor: false, mood: 'scene', surface: 'tile' }, // chapter 5: the fixer's office and his wall of copies
   exchange: { origin: [750, 0],  name: 'The Echo Exchange',      district: 'Undercity', outdoor: true,  mood: 'bazaar', surface: 'asphalt' }, // chapter 2 hub (docs/chapter-2.md)
 } satisfies Record<string, AreaDef>;
 export type AreaId = keyof typeof AREAS;
@@ -297,6 +298,30 @@ function hostel(M: Materials) {
   b.spot('gear', 3.8, 0.3); b.spot('reader', 3.2, 1.3);   // 'reader': where Juno slips Dex's chip into Kit's stripped reader (end of chapter 1)
   b.spot('kit', 1.2, 0.6); b.spot('door', 0, 2.9); b.spot('capsule3f', -0.6, -1.9); // Dex's capsule: the middle stack
   return finish('hostel', b, [-5, -3.5, 5, 3.5]);
+}
+
+// ---------- Chapter 5: the Meridian Tower, 41st floor. Bright, clean, gold and white: the opposite of the Bureau. Spots: lift, desk, fixer. The wall of copies blinks (beats.blinkArcade). ----------
+function tower(M: Materials) {
+  const b = begin('tower'), PM = propMats(M);
+  floor(b, M.sidewalk, -7, -4.5, 7, 4.5);
+  b.box(M.litWarm, 14, 0.02, 0.1, 0, 0.01, 2.6); b.box(M.litWarm, 14, 0.02, 0.1, 0, 0.01, -3.4);                                  // gold floor strips
+  wallX(b, M, -4.5 - T / 2, -7 - T, 7 + T, [], { mat: M.walls[1] }); wallX(b, M, 4.5 + T / 2, -7 - T, 7 + T, [[-0.9, 0.9]], { mat: M.walls[1] });
+  wallZ(b, M, -7 - T / 2, -4.5, 4.5, [], { mat: M.walls[1] }); wallZ(b, M, 7 + T / 2, -4.5, 4.5, [], { mat: M.walls[1] });
+  b.box(M.litCool, 1.6, 2.0, 0.08, 0, 1.0, 4.45); b.box(M.frame, 1.8, 2.2, 0.06, 0, 1.1, 4.5);                                   // the lift doors
+  const blink = [0xffd78a, 0xf2a93b, 0x1fd6e8, 0xe8f4ff].flatMap((c) => [0, 1].map(() => { const m = new THREE.MeshBasicMaterial({ color: c }); m.userData.c = c; return m; }));
+  let bi = 0;
+  for (let r = 0; r < 4; r++) for (let k = 0; k < 18; k++) {                                                                    // the wall of copies: a vial for every wipe, each with a date
+    const x = -6.1 + k * 0.72, y = 0.5 + r * 0.55;
+    b.box(M.frame, 0.5, 0.45, 0.08, x, y, -4.38); b.box(blink[(bi += 3) % blink.length], 0.14, 0.3, 0.05, x, y, -4.32, 0, 0, false);
+  }
+  b.box(PM.wood, 3.2, 0.9, 1.1, 0, 0.45, -1.8); b.box(M.metal, 3.3, 0.06, 1.2, 0, 0.93, -1.8); b.block(0, -1.8, 3.2, 1.1);       // the desk
+  b.box(M.litWarm, 0.5, 0.02, 0.35, -0.9, 0.97, -1.8, 0, 0, false); b.box(M.litCool, 0.9, 0.5, 0.04, 0.6, 1.2, -2.25, 0, 0, false);
+  b.box(M.frame, 0.7, 1.0, 0.4, 0, 0.5, -3.95);                                                                                   // his chair, behind where he stands (not around him)
+  for (const x of [-1.2, 1.2]) { b.box(M.frame, 0.7, 0.5, 0.6, x, 0.25, 0.1); b.block(x, 0.1, 0.7, 0.6); }                       // two visitor chairs
+  for (let k = 0; k < 6; k++) b.box(M.litCool, 0.12, 2.6, 0.06, 6.95, 1.5, -3.6 + k * 1.45, 0, 0, false);                      // the city glowing past the east windows
+  b.light(P.amberLight, 60, 0, 2.6, -1.2); b.light(P.amberLight, 45, -4.5, 2.4, 1.5); b.light(P.amberLight, 45, 4.5, 2.4, 1.5); b.light(P.white, 30, 0, 2.8, 2.5); b.light(P.cyan, 14, 0, 1.6, -4.0);   // warm and bright: the one clean place in the game
+  b.spot('lift', 0, 3.7); b.spot('desk', 0, 0.9); b.spot('fixer', 0, -3.1);
+  return finish('tower', b, [-7, -4.5, 7, 4.5], { blink });
 }
 
 // ---------- Chapter 4: the pachinko arcade. Spots: door, stranger. Loud and packed; the screens and bulbs wink on shared materials (beats.blinkArcade). ----------
@@ -750,7 +775,7 @@ export function buildAreas(rng: Rng) {
     blocks: [...d.userData.blocks, ...ex.blocks], spots: d.userData.spots, lights: [...d.userData.lights, ...ex.lights],
     signs: d.userData.signs, steam: d.userData.steam, bounds: streetBounds(), road: [-3, 3],
   };
-  const areas: Record<AreaId, AreaRecord> = { street, platform: platform(M), sable: sable(M), alley: alley(M), hostel: hostel(M), car: car(M), dealer: dealer(M), arcade: arcade(M), bureau: bureau(M, rng.fork('bureau')), exchange: exchange(M, rng.fork('exchange')), drive: driveArea(M) };
+  const areas: Record<AreaId, AreaRecord> = { street, platform: platform(M), sable: sable(M), alley: alley(M), hostel: hostel(M), car: car(M), dealer: dealer(M), arcade: arcade(M), tower: tower(M), bureau: bureau(M, rng.fork('bureau')), exchange: exchange(M, rng.fork('exchange')), drive: driveArea(M) };
   // The train is a child of the platform group so it shows and hides with it.
   areas.platform.group.add(areas.platform.train!);
   for (const e of EXIT_DEFS) (areas[e.area].exits ??= []).push(e);
