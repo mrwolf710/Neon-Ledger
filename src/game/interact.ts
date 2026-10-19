@@ -74,7 +74,7 @@ export function createInteractions(scene: THREE.Scene): Interactions {
       if (!it.clue) continue;
       let m = pulses.get(it);
       if (!m) { m = new THREE.Mesh(pGeo, pMat); for (const r of rMats) m.add(new THREE.Mesh(rGeo, r)); m.position.set(it.position.x, PU.height, it.position.z); scene.add(m); pulses.set(it, m); }
-      m.visible = here(it) && it.clue();
+      m.visible = here(it) && it.clue() && !document.body.classList.contains('trailer'); // no clue pulses in the trailer
       m.rotation.y = time * 2;
       m.position.y = PU.height + Math.sin(time * 2.5) * PU.bob;
       m.children.forEach((c, i) => c.scale.setScalar(rMats[i].userData.s));

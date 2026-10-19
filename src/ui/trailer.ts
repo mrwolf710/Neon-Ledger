@@ -32,7 +32,7 @@ const H = Math.PI / 2;
 //  from/to   camera yaw, pitch (degrees) and distance; the move eases between them
 //  margin    cutaway depth margin override: only things this far nearer than the subject are cut (keeps a counter in front of her solid)
 //  train     seconds into the Line 9 train's 8.5 s run to join the shot at (0 = from the start; it crosses the street at x 17 about 4 s in, during the final zoom-out)
-//  card      pixel-font lines;  fx: 'echo' (seam glitch);  ui: sfx.ui kind
+//  echo      hotspot id: plays that real echo (ghost replay) in the shot, the scrub bar hidden;  card      pixel-font lines;  fx: 'echo' (seam glitch);  ui: sfx.ui kind
 //  mood      music mood at the cut (echo = heartbeat + tension, finale = fast and hard, silent = drop);  hit: boom at the cut;  riser: seconds of rising noise
 //  events    [{ t, hit, mood }] things that happen t seconds into the shot
 interface ShotEvent { t: number; hit?: string; mood?: string; done?: boolean }
@@ -40,7 +40,7 @@ interface Shot {
   area: string; subject?: string; both?: boolean;
   juno: { at: [number, number]; face?: number; walk?: [number, number] };
   dur: number; from: { yaw: number; pitch: number; dist: number }; to: { yaw: number; pitch: number; dist: number };
-  pan?: [number, number]; lift?: number; margin?: number; train?: number;
+  pan?: [number, number]; lift?: number; margin?: number; train?: number; echo?: string;
   card?: { text: string; color: string; scale: number }[]; fx?: string; ui?: string; mood?: string; hit?: string; riser?: number; end?: boolean;
   events?: ShotEvent[];
 }
@@ -55,24 +55,31 @@ const SHOTS: Shot[] = [
   { area: 'platform', juno: { at: [-3, -2], face: 0.5, walk: [-1.4, -0.9] }, dur: 3.2, from: { yaw: 35, pitch: 28, dist: 8 }, to: { yaw: 50, pitch: 34, dist: 20 }, ui: 'echoOn', mood: 'echo', riser: 3.2 },
   { area: 'street', juno: { at: [-9, 1.3], face: H, walk: [5, 1.3] }, dur: 4, from: { yaw: 28, pitch: 32, dist: 34 }, to: { yaw: 60, pitch: 38, dist: 38 }, pan: [2, 0], hit: 'small',
     card: [{ text: 'LOWMARKET. 23:40.', color: TRAILER.cyan, scale: 5 }, { text: 'THE RAIN NEVER STOPS.', color: TRAILER.white, scale: 4 }] },
-  { area: 'street', subject: 'preacher', both: true, juno: { at: [-13, 1.0], face: H, walk: [-11, 0.4] }, dur: 2.8, from: { yaw: 40, pitch: 33, dist: 34 }, to: { yaw: 46, pitch: 32, dist: 26 }, hit: 'small',
-    card: [{ text: 'THE CITY IS WATCHING.', color: TRAILER.red, scale: 4 }] },
-  { area: 'street', subject: 'miso', both: true, juno: { at: [9, 1.0], face: H, walk: [11.2, 2.0] }, dur: 2.4, from: { yaw: 30, pitch: 33, dist: 34 }, to: { yaw: 45, pitch: 34, dist: 27 }, hit: 'small', riser: 2.4 },
-  { area: 'sable', subject: 'mamaTeo', both: true, juno: { at: [-4.6, 0], face: H, walk: [-3, -1.2] }, dur: 3, from: { yaw: 40, pitch: 33, dist: 34 }, to: { yaw: 40, pitch: 32, dist: 28 }, margin: 2.2, hit: 'big', mood: 'finale' },
-  { area: 'sable', subject: 'dex', both: true, juno: { at: [2.2, 0.2], face: H, walk: [3.2, 0.1] }, dur: 3, from: { yaw: 42, pitch: 42, dist: 14 }, to: { yaw: 44, pitch: 34, dist: 7.5 }, hit: 'small',
+  { area: 'sable', subject: 'mamaTeo', both: true, juno: { at: [-5.2, 0], face: H, walk: [-2.2, 0] }, dur: 3, from: { yaw: 40, pitch: 33, dist: 34 }, to: { yaw: 40, pitch: 32, dist: 28 }, margin: 2.2, hit: 'big', mood: 'finale' },
+  { area: 'sable', subject: 'dex', both: true, juno: { at: [1.6, 0.1], face: H, walk: [2.8, 0.1] }, dur: 3, from: { yaw: 42, pitch: 42, dist: 14 }, to: { yaw: 44, pitch: 34, dist: 7.5 }, hit: 'small',
     card: [{ text: 'ONE DEAD CORPO.', color: TRAILER.white, scale: 4 }, { text: 'ONE MISSING MEMORY.', color: TRAILER.green, scale: 4 }] },
-  { area: 'sable', juno: { at: [4.8, 1.6], face: 0.6 }, dur: 3, from: { yaw: 36, pitch: 34, dist: 7 }, to: { yaw: 52, pitch: 36, dist: 15 }, fx: 'echo', hit: 'small',
+  { area: 'sable', juno: { at: [4.8, 1.6], face: 0.6 }, pan: [1.4, -1.2], dur: 6, from: { yaw: 36, pitch: 34, dist: 8 }, to: { yaw: 50, pitch: 36, dist: 13 }, echo: 'teo_back_room', hit: 'small',
     card: [{ text: 'REPLAY THE PAST.', color: TRAILER.cyan, scale: 6 }] },
   { area: 'alley', juno: { at: [0, -1.5], face: 0, walk: [0, 2.6] }, dur: 2.6, from: { yaw: 22, pitch: 36, dist: 12 }, to: { yaw: 38, pitch: 40, dist: 8 }, hit: 'small' },
+  { area: 'street', subject: 'preacher', both: true, juno: { at: [-13, 1.0], face: H, walk: [-11, 0.4] }, dur: 2.8, from: { yaw: 40, pitch: 33, dist: 34 }, to: { yaw: 46, pitch: 32, dist: 26 }, hit: 'small',
+    card: [{ text: 'THE CITY IS WATCHING.', color: TRAILER.red, scale: 4 }] },
   { area: 'hostel', subject: 'kit', both: true, juno: { at: [-1.4, -0.8], face: H, walk: [0, 0.2] }, dur: 2.4, from: { yaw: 48, pitch: 38, dist: 14 }, to: { yaw: 40, pitch: 34, dist: 10 }, hit: 'small', ui: 'glitch' },
-  { area: 'car', juno: { at: [0.4, 0], face: H }, dur: 2.2, from: { yaw: 50, pitch: 36, dist: 9 }, to: { yaw: 38, pitch: 32, dist: 6 }, hit: 'small' },
+  { area: 'exchange', juno: { at: [-12.5, 5.8], face: H, walk: [-4, 5.8] }, dur: 3.2, from: { yaw: 40, pitch: 34, dist: 38 }, to: { yaw: 52, pitch: 40, dist: 30 }, pan: [3, 0], hit: 'small',
+    card: [{ text: 'THE ECHO EXCHANGE.', color: TRAILER.cyan, scale: 5 }, { text: 'MEMORIES FOR SALE.', color: TRAILER.white, scale: 4 }] },
+  { area: 'exchange', subject: 'vesper', both: true, juno: { at: [-12.5, -6.5], face: H, walk: [-9, -6.5] }, dur: 2.8, from: { yaw: 42, pitch: 33, dist: 12 }, to: { yaw: 48, pitch: 34, dist: 8 }, fx: 'echo', hit: 'small', ui: 'echoOn', riser: 2.8 },
+  { area: 'dealer', subject: 'dealer', both: true, juno: { at: [-4.2, -1.6], face: H, walk: [-2.0, -1.6] }, dur: 2.6, from: { yaw: 40, pitch: 34, dist: 14 }, to: { yaw: 46, pitch: 32, dist: 9 }, hit: 'small',
+    card: [{ text: 'EVERY MEMORY HAS A PRICE.', color: TRAILER.red, scale: 4 }] },
+  { area: 'bureau', juno: { at: [0, 7.4], face: Math.PI, walk: [0, 4.5] }, dur: 3.2, from: { yaw: 30, pitch: 36, dist: 34 }, to: { yaw: 50, pitch: 42, dist: 24 }, hit: 'big', mood: 'finale',
+    card: [{ text: 'THE BUREAU KEEPS ITS SECRETS.', color: TRAILER.white, scale: 4 }] },
+  { area: 'arcade', subject: 'kid', both: true, juno: { at: [-2.6, 2.2], face: H, walk: [-0.8, 2.2] }, dur: 2.6, from: { yaw: 40, pitch: 36, dist: 14 }, to: { yaw: 48, pitch: 34, dist: 9 }, hit: 'small',
+    card: [{ text: 'TRUST NO ONE.', color: TRAILER.green, scale: 5 }] },
   { area: 'street', juno: { at: [-9, 1.3], face: H, walk: [6, 1.3] }, dur: 8.5, from: { yaw: 55, pitch: 28, dist: 28 }, to: { yaw: 60, pitch: 44, dist: 52 }, end: true, train: 0, hit: 'small', riser: 3,
     events: [{ t: 1.6, mood: 'silent' }, { t: 3.1, hit: 'big', mood: 'finale' }] },
 ];
 
-export function createTrailer({ cam, world, player, post, fade, cast, sfx, synth, onStart }: {
+export function createTrailer({ cam, world, player, post, fade, cast, sfx, synth, onStart, echo }: {
   cam: CamLike; world: WorldLike; player: PlayerLike; post: PostLike; fade: Fade; cast: { byId: Record<string, { position: THREE.Vector3 }> };
-  sfx?: Sfx; synth: Synth; onStart?: () => void;
+  sfx?: Sfx; synth: Synth; onStart?: () => void; echo?: { start(id: string, cine?: () => void): void; exit(): void; readonly active: boolean };
 }): Trailer {
   const state: TrailerState = { active: false, focus: null, subject: null, mood: 'silent' }; // mood: what main tells the music to play
   let t = 0, stop = false, resolveWait: (() => void) | null = null, waitLeft = 0, shot = null as Shot | null;
@@ -101,6 +108,7 @@ export function createTrailer({ cam, world, player, post, fade, cast, sfx, synth
   const style = document.createElement('style');
   style.textContent = `body.trailer #hud,body.trailer .ring,body.trailer .knob,body.trailer .btn,body.trailer .icons{display:none!important}
     body.trailer{cursor:none}
+    body.trailer #echo{display:none!important}
     #trailer-bars div{position:fixed;left:0;right:0;background:#000;z-index:12;pointer-events:none}`;
   document.head.appendChild(style);
   const bars = document.createElement('div'); bars.id = 'trailer-bars';
@@ -141,16 +149,18 @@ export function createTrailer({ cam, world, player, post, fade, cast, sfx, synth
       if (shot.riser) riser(shot.riser);
       cam.follow(focus, true); cam.snap();
       post.setEcho(0); post.setGlitch(0);
+      if (shot.echo) echo?.start(shot.echo, () => {}); // a real echo: the ghosts replay, then it ends by itself
       if (shot.ui) sfx?.ui(shot.ui);
       if (shot.train != null) sfx?.trainNow(shot.train);
       fade.in(); // real-time fade, runs beside the shot
       if (shot.card) setTimeout(() => fade.card(shot!.card!, Math.max(0.8, shot!.dur - 3.4), cardY()), 500);
       if (shot.end) setTimeout(() => fade.card([{ text: TRAILER.title, color: TRAILER.green, scale: 8 }, { text: TRAILER.tagline, color: TRAILER.cyan, scale: 3 }], TRAILER.endHold), (shot.dur - 2.2) * 1000); // once the camera is high and Juno is small
       await wait(shot.dur);
+      if (echo?.active) echo.exit();
       if (shot.end) { await wait(TRAILER.endHold - 1.5); await fade.out(); } // end card, then fade to black: stop recording when the screen is black
       if (!shot.end) { fade.out(); await wait(TRAILER.gap); }
     }
-    post.setEcho(0); post.setGlitch(0); Object.assign(CUTAWAY, saved);
+    if (echo?.active) echo.exit(); post.setEcho(0); post.setGlitch(0); Object.assign(CUTAWAY, saved);
     state.active = false; state.focus = state.subject = null; document.body.classList.remove('trailer'); bars.remove();
   }
 
@@ -168,7 +178,7 @@ export function createTrailer({ cam, world, player, post, fade, cast, sfx, synth
         aim(Math.min(1, t / shot.dur));
         for (const e of shot.events ?? []) if (t >= e.t && !e.done) { e.done = true; if (e.hit) hit(e.hit); if (e.mood) state.mood = e.mood; }
         const kick = Math.max(0, TRAILER.kick * (1 - t / 0.35)); // a glitch burst on every cut
-        if (shot.fx === 'echo') { // the seam: the world tears, then settles
+        if (shot.echo) { /* the echo drives the grade and glitches itself */ } else if (shot.fx === 'echo') { // the seam: the world tears, then settles
           post.setEcho(Math.min(1, t / 1.2) * 0.9);
           post.setGlitch(t > 1.6 && t < 2.2 || t > 3 && t < 3.3 ? 0.85 : Math.max(kick, Math.max(0, Math.sin(t * 1.3)) * 0.12));
         } else post.setGlitch(kick);

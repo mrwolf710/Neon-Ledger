@@ -203,7 +203,7 @@ export function createEcho({ scene, sheets, post, caseFile, hud, cast, areas }: 
       for (const h of hotspots) {
         const fresh = !caseFile.hasFlag(`echo_seen_${h.id}`);
         h.marker.children.forEach((c, i) => { c.visible = fresh; c.scale.setScalar(rMats[i].userData.s); });
-        h.marker.visible = !active && !h.hidden && h.area === areaId && Math.hypot(h.position.x - playerPos.x, h.position.z - playerPos.z) < ECHO.showRange;
+        h.marker.visible = !active && !document.body.classList.contains('trailer') && !h.hidden && h.area === areaId && Math.hypot(h.position.x - playerPos.x, h.position.z - playerPos.z) < ECHO.showRange;
         h.marker.rotation.y = time * ECHO.marker.spin;
         h.marker.position.y = ECHO.marker.height + Math.sin(time * 2) * ECHO.marker.bob;
       }

@@ -177,7 +177,7 @@ const issues = issuesOn ? createIssues({ input, toast: (t) => hud.toast(t), cont
   facts: caseFile.facts().length, flags: caseFile.dump().flags.length, ua: navigator.userAgent.slice(0, 90),
 }) }) : { isOpen: false, update() {} };
 const trailerOn = new URLSearchParams(location.search).has('trailer'); // ?trailer plays a scripted teaser (src/ui/trailer.js)
-const trailer = createTrailer({ cam, world, player, post, fade, cast, sfx, synth });
+const trailer = createTrailer({ cam, world, player, post, fade, cast, sfx, synth, echo });
 const startParam = new URLSearchParams(location.search).get('start'); // ?start=sable jumps straight to an area (testing)
 // Thumbnail of the current view for a save slot: render one frame, then copy it out before the browser clears the buffer.
 const SHOT = { w: 192, h: 108, quality: 0.7 };
