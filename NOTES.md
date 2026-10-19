@@ -7,6 +7,7 @@ Short index. Full per-feature detail (the old long NOTES) is in `docs/notes-arch
 - Open issues: none (issues.json).
 - OWNER TODO: auditors' walk sheet `public/sprites/auditors/walk/sheet.png` (68 px cells, rows 1-8 = directions; optional, they slide in idle until then).
 - Not browser-verified: Hale jail walk, force field, gamepad Y/RT on the board.
+- Latest (2fb76cf): talking widens the tilt-shift sharp band (`TALK_BAND` in main.ts) so Voss and other partners stay in focus; plea scene puts Juno at `kit.x - 0.8` (clear of the back-room table). Itch zip rebuilt (no debug menu, no issue box). Both fixes not yet eyeballed in the browser.
 
 ## Layout (src/, all strict .ts; shared shapes in src/types.ts)
 - core: rng (seeded; all randomness), input (action layer), settings (tiers high/medium/mobile)
