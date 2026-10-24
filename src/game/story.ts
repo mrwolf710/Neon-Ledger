@@ -113,7 +113,8 @@ const TEO_POINTS = 'Mama_Teo_Points_to_Capsule_Hotel';
 const DONE_EFFECTS = { Capsule_after_Teo: [{ setFlag: 'kit_paid' }], Mama_Teo_Points_to_Capsule_Hotel: [{ setFlag: 'teo_pointed' }, { setFlag: 'teo_cracked' }] };
 export function conversationFor(personId: string, visit: number, ctx: ConversationContext = {}): string {
   if (personId === 'bolt' && ctx.flag?.('has_lens') && !ctx.flag('has_coil')) return 'bolt_trade'; // the errand: Gutter's cracked lens for Bolt's relay coil
-  if (personId === 'mamaTeo' && ctx.has?.('kit_outside') && !ctx.has('kit_name')) return 'teo_worker'; // the worker's echo is in the case file: Teo names him
+  if (personId === 'mamaTeo' && ctx.flag?.('teo_met') && ctx.has?.('kit_outside') && !ctx.has('kit_name')) return 'teo_worker'; // only once she has said hello (and so can still be asked about the door) // the worker's echo is in the case file: Teo names him
+  if (personId === 'vendor' && visit >= 2 && !ctx.flag?.('chapter4')) return '2nd_Vendor';   // every later visit: the short brush-off (the full speech played once)
   if (personId === 'vendor' && ctx.flag?.('chapter4')) return ctx.flag('vendor_watch') ? 'vendor_ch4_after' : 'vendor_ch4';   // chapter 4: Juno asks her to watch for auditors
   if (personId === 'mamaTeo' && ctx.flag?.('teo_meet')) return 'teo_ch4_after';
   if (personId === 'kit' && ctx.flag?.('chapter4')) return ctx.flag('kit_warned') ? 'kit_ch4_after' : 'kit_ch4'; // chapter 4: Juno warns him first
@@ -151,7 +152,7 @@ export const EXAMINABLES: Examinable[] = [
   { id: 'kitgear', area: 'hostel', spot: 'gear', verb: 'Examine', conv: 'ex_kitgear' },
   { id: 'reader', area: 'bureau', spot: 'chair', verb: 'Read the log', conv: 'ex_reader' }, { id: 'archive', area: 'bureau', spot: 'archive', verb: 'Read my file', conv: 'ex_archive' },
   { id: 'roster', area: 'bureau', spot: 'roster', verb: 'Read', conv: 'ex_roster' }, { id: 'haledesk', area: 'bureau', spot: 'haledesk', verb: 'Read', conv: 'ex_haledesk' },
-  { id: 'cellwall', area: 'bureau', spot: 'cell1', verb: 'Read the wall', conv: 'ex_cellwall' }, { id: 'queue', area: 'bureau', spot: 'queue', verb: 'Read', conv: 'ex_queue' },   // Kit's shelf of rare cyber gear (sets up the finale)
+  { id: 'cellwall', area: 'bureau', spot: 'cell1', verb: 'Read the wall', conv: 'ex_cellwall', range: 4.5 }, { id: 'queue', area: 'bureau', spot: 'queue', verb: 'Read', conv: 'ex_queue' },   // Kit's shelf of rare cyber gear (sets up the finale)
 ];
 
 // One-line examine conversation: Juno speaks, adds the fact and sets the flag ex_<id>; examining again gives a shorter line.
@@ -335,10 +336,10 @@ export const CONVERSATIONS: Record<string, Conversation> = {
   // Mama Teo names the worker from the alley echo (the only way Juno learns his name; sets kit_named so he is called Kit from here on).
   teo_worker: { start: [{ if: { flag: 'teo_pointed' }, node: 'a2' }, { node: 'a' }], nodes: {
     a2: { speaker: 'juno', text: 'The worker at the capsule hostel was out in the alley behind your place at 23:40. Who is he?', next: 'b2' },
-    b2: { speaker: 'mamaTeo', text: "Kit. Kit Lacroix, the boy at the desk you've already been sent to. He thinks I don't see him smoking behind my kitchen.", effects: [{ addFact: 'kit_name' }, { setFlag: 'kit_named' }, { setFlag: 'teo_pointed' }, { setFlag: 'teo_cracked' }], end: true },
+    b2: { speaker: 'mamaTeo', text: "Kit. Kit Lacroix, the boy at the desk you've already been sent to. He thinks I don't see him smoking behind my kitchen.", effects: [{ addFact: 'kit_name' }, { setFlag: 'kit_named' }, { setFlag: 'teo_pointed' }], end: true },
     a: { speaker: 'juno', text: 'The worker at the capsule hostel was out in the alley behind your place at 23:40. Who is he?', next: 'b' },
     b: { speaker: 'mamaTeo', text: "Kit. Kit Lacroix. Nights at the Capsule hostel since spring. He thinks I don't see him smoking behind my kitchen.", next: 'c' },
-    c: { speaker: 'mamaTeo', text: 'Talks too much, that boy. Go see him. He is easy to find, he never leaves the front desk.', effects: [{ addFact: 'kit_name' }, { setFlag: 'kit_named' }, { setFlag: 'teo_pointed' }, { setFlag: 'teo_cracked' }], end: true },
+    c: { speaker: 'mamaTeo', text: 'Talks too much, that boy. Go see him. He is easy to find, he never leaves the front desk.', effects: [{ addFact: 'kit_name' }, { setFlag: 'kit_named' }, { setFlag: 'teo_pointed' }], end: true },
   } },
   kit: {
     start: [{ if: { flag: 'kit_coat' }, node: 'done' }, { if: { flag: 'kit_broken' }, node: 'after' }, { if: { flag: 'kit_met' }, node: 'again' }, { node: 'hello' }],

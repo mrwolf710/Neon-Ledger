@@ -28,6 +28,7 @@ type Option = Choice & { present?: boolean };
 export function createDialogue({ hud, caseFile, clock }: { hud: { dialogue: DialogueUi }; caseFile: CaseFile; clock?: Clock }): Dialogue {
   const ui = hud.dialogue;
   let endResolve: (() => void) | null = null;
+  const queue: { id: string; res: () => void }[] = []; // conversations asked for while another is playing: they wait their turn (a second start() would orphan the first one's promise and hang any scene awaiting it)
   let conv: Conversation | null = null, node: DialogueNode | null = null, nodeId = '', shown = 0, typing = false, options: Option[] = [], sel = 0, backTo: string | null = null, skipHold = false, clicked = false;
 
   const holds = (c?: Condition) => !c
@@ -76,9 +77,10 @@ export function createDialogue({ hud, caseFile, clock }: { hud: { dialogue: Dial
     onChar: null, // (char, speakerId) per typed character; Stage 8 plays voice blips from it
     // Returns a promise that resolves when the conversation ends (cutscenes await it).
     start(id: string) {
+      if (conv) return new Promise<void>((res) => { queue.push({ id, res }); });
       const done = new Promise<void>((res) => { endResolve = res; });
       conv = CONVERSATIONS[id] ?? CONVERSATIONS[FALLBACK];
-      const first = Array.isArray(conv.start) ? conv.start.find((s) => holds(s.if))!.node : conv.start;
+      const first = Array.isArray(conv.start) ? (conv.start.find((s) => holds(s.if)) ?? conv.start[conv.start.length - 1]).node : conv.start;   // no branch fits: the last one (the default)
       document.body.classList.add('talking'); document.body.classList.toggle('alarm', ALARM_CONVS.has(id));
       skipHold = true; // the press that opened the conversation must not also skip its first line
       run(first);
@@ -88,6 +90,8 @@ export function createDialogue({ hud, caseFile, clock }: { hud: { dialogue: Dial
       conv = node = null; ui.hide();
       document.body.classList.remove('talking', 'alarm');
       endResolve?.(); endResolve = null;
+      const next = queue.shift();
+      if (next) api.start(next.id).then(next.res);
     },
     // Call each frame while active. Interact: finish the line, then advance / pick.
     update(dt: number, input: DialogueInput) {

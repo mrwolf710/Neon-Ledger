@@ -36,7 +36,7 @@ export interface BoardConclusion {
 export interface BoardData { wrongLines: string[]; partialLine: string; hintLine: string; conclusions: BoardConclusion[] }
 
 // ---------- Story: examine spots, echoes ----------
-export interface Examinable { id: string; area: string; spot: string; verb: string; conv: string }
+export interface Examinable { id: string; area: string; spot: string; verb: string; conv: string; range?: number }   // range: how close Juno must stand (default INTERACT.range); the cell wall is read through the force field
 export interface EchoKey { t: number; x: number; z: number; facing?: number; anim?: 'idle' | 'walk' | string }
 export interface EchoTrack { sprite: string; keys: EchoKey[]; show?: [number, number]; redacted?: boolean }
 export interface EchoVoice { t0: number; t1: number; speaker: string; text: string }

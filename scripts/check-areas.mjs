@@ -11,12 +11,13 @@ const areas = buildAreas(rng);
 const R = 0.3; // Juno's radius
 for (const [id, a] of Object.entries(areas)) {
   a.collision = createCollision(a.blocks, a.bounds, { road: a.road });
-  assert.ok(a.spots.length || id === 'street', `${id}: has spots`);
+  assert.ok(a.spots.length || id === 'street' || id === 'drive', `${id}: has spots`);
 }
 const free = (id, x, z) => !areas[id].collision.hits(x, z, R);
 
 // Doors and where they drop you must be standable.
 for (const e of EXITS) {
+  if (e.id === 'car-door' || e.id === 'car-out') continue; // the car is street scenery now (its door is switched off in beats.ts)
   assert.ok(free(e.area, e.at[0], e.at[1]), `exit ${e.id} sits on open floor of ${e.area} (${e.at})`);
   assert.ok(free(e.to, e.spawn[0], e.spawn[1]), `exit ${e.id} lands on open floor of ${e.to} (${e.spawn.slice(0, 2)})`);
 }
@@ -42,10 +43,12 @@ const START = { street: [-0.3, -3.3], platform: null, sable: null, alley: null, 
 for (const e of EXITS) if (!START[e.to]) START[e.to] = e.spawn;
 for (const id of ['exchange', 'bureau']) { const st = areas[id].spots.find((q) => q.name === 'start'); START[id] = [st.x, st.z]; } // areas with no door in start from their 'start' spot
 START.platform = areas.platform.spots.find((s) => s.name === 'start') ? [areas.platform.spots.find((s) => s.name === 'start').x, areas.platform.spots.find((s) => s.name === 'start').z] : START.platform;
+for (const [id, a] of Object.entries(areas)) if (!START[id]) { const st = a.spots.find((q) => q.name === 'start') ?? a.spots.find((q) => q.name === 'lift') ?? a.spots[0]; if (st) START[id] = [st.x, st.z]; } // tower, drive: no door in
 for (const [id, a] of Object.entries(areas)) {
+  if (!START[id]) continue;
   const can = reach(id, START[id]);
-  for (const e of EXITS.filter((x) => x.area === id)) assert.ok(can(e.at[0], e.at[1], 0.6), `${id}: exit ${e.id} reachable`);
-  for (const s of a.spots.filter((q) => q.name !== 'trainstop')) assert.ok(can(s.x, s.z, s.name.startsWith('v_') ? 3.0 : 1.5), `${id}: spot ${s.name} within reach (${s.x.toFixed(1)}, ${s.z.toFixed(1)})`);
+  for (const e of EXITS.filter((x) => x.area === id && x.id !== 'car-out')) assert.ok(can(e.at[0], e.at[1], 0.6), `${id}: exit ${e.id} reachable`);
+  for (const s of a.spots.filter((q) => q.name !== 'trainstop')) assert.ok(can(s.x, s.z, s.name.startsWith('v_') ? 3.0 : s.name === 'prisoner' || s.name === 'cell1' ? 4.5 : 1.5), `${id}: spot ${s.name} within reach (${s.x.toFixed(1)}, ${s.z.toFixed(1)})`);
   for (const e of EXITS.filter((x) => x.to === id)) assert.ok(can(e.spawn[0], e.spawn[1], 0.4), `${id}: spawn from ${e.id} connects to the rest`);
 }
 // The cold open: Juno appears at the train door and walks 1.6 units out; none of that may be blocked.

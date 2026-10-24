@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { LAB_VIDEO, EXAMINABLES, TALK, FALLBACK, ENTRIES, BOARD, MAIL, conversationFor } from './story.ts';
+import { LAB_VIDEO, EXAMINABLES, HOTSPOTS, TALK, FALLBACK, ENTRIES, BOARD, MAIL, conversationFor } from './story.ts';
 import { rng } from '../core/rng.ts';
 import type { Cast, CastMember } from './npc.ts';
 import type { CaseFile } from './casefile.ts';
@@ -374,7 +374,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
   const origin = (id: string) => world.areas[id].meta.origin as [number, number];
   // After loading a save: the auditors pace the desks (and Hale sits in her office) until the fake call sends them away; before the arrival scene they are not there yet.
   function restoreStation() {
-    if (flag('chapter4')) clearSable();
+    if (flag('chapter4')) clearSable(); else showSable();   // loading an earlier save after playing on: the Sable is a crime scene again
     const [ox, oz] = origin('bureau'), gone = flag('aud_gone'), here = (flag('hale_met') || flag('bureau_arrived') || flag('visited_bureau')) && !gone;
     patrols.length = 0;
     for (const id of ['aud1', 'aud2', 'aud3']) {
@@ -696,6 +696,11 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
   }
 
   // Chapter 4: the Sable is just a noodle shop again. Dex's body, the cups, the broken lamp and the glass are gone, the back room has nothing to examine and no echo to scan.
+  function showSable() {
+    cast.byId.dex.away = false; cast.apply();
+    const m = world.areas.sable.mess; if (m) m.visible = true;
+    for (const h of echo.hotspots) if (h.area === 'sable') h.hidden = !!HOTSPOTS.find((d) => d.id === h.id)?.hidden;   // back to the story's own setting (the scripted ones stay hidden)
+  }
   function clearSable() {
     cast.byId.dex.away = true; cast.apply();
     const m = world.areas.sable.mess; if (m) m.visible = false;
@@ -737,7 +742,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     for (const id of ['fixer', 'aud1', 'aud2', 'aud3', 'vjuno', 'vhale']) cast.byId[id].away = true; // scripted people appear only in their scenes
     for (const x of EXAMINABLES) {
       const s = world.spot(x.area, x.spot)!;
-      interactions.add({ id: `ex:${x.id}`, get area() { return x.area === 'sable' && flag('chapter4') ? '' : x.area; }, position: new THREE.Vector3(s.x, 0, s.z), height: 1.0, verb: x.verb, clue: () => !flag(`ex_${x.id}`) && !(x.area === 'sable' && flag('chapter4')) && (!DESK_CLUES.includes(x.id) || flag('aud_gone')) && (x.id !== 'haledesk' || flag('hale_left')),
+      interactions.add({ id: `ex:${x.id}`, get area() { return x.area === 'sable' && flag('chapter4') ? '' : x.area; }, position: new THREE.Vector3(s.x, 0, s.z), range: x.range, height: 1.0, verb: x.verb, clue: () => !flag(`ex_${x.id}`) && !(x.area === 'sable' && flag('chapter4')) && (!DESK_CLUES.includes(x.id) || flag('aud_gone')) && (x.id !== 'haledesk' || flag('hale_left')),
         onInteract: () => { if (x.id === 'haledesk' && !flag('hale_left')) dialogue.start('hale_watching'); else if (DESK_CLUES.includes(x.id) && !flag('aud_gone')) audBlock(); else dialogue.start(x.conv).then(() => { if (x.id === 'reader' && !flag('lab_video_seen')) labVideo(); }); } });
     }
     for (const s of world.areas.street.spots.filter((p: Spot) => p.name === 'vending')) {
@@ -763,9 +768,10 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     syncLabDoor();
     const fd = world.spot('bureau', 'frontdoor')!;                // the Bureau's front door: locked until the deduction, then Juno slips out
     interactions.add({ id: 'bureau_door', area: 'bureau', position: new THREE.Vector3(fd.x, 0, fd.z), height: 1.2, verb: 'Try the door', onInteract: () => bureauSlip() });
+    // The chip reader is chapter 1 only: back in the hostel in chapter 4 it must not replay the cliffhanger.
     const seat = world.spot('hostel', 'reader')!;                  // Kit's stripped reader: the chip is slotted here once Juno has it
-    interactions.add({ id: 'chip', get area() { return flag('ex_capsule') ? 'hostel' : ''; }, position: new THREE.Vector3(seat.x, 0, seat.z), height: 1.2, verb: "Slot Dex's chip into Kit's reader",
-      onInteract: () => { if (locked) return; if (flag('kit_coat') && flag('ex_capsule')) cliffhanger(); else dialogue.start('chip_early'); } });
+    interactions.add({ id: 'chip', get area() { return flag('ex_capsule') && !flag('chapter1_done') ? 'hostel' : ''; }, position: new THREE.Vector3(seat.x, 0, seat.z), height: 1.2, verb: "Slot Dex's chip into Kit's reader",
+      onInteract: () => { if (locked || flag('chapter1_done')) return; if (flag('kit_coat') && flag('ex_capsule')) cliffhanger(); else dialogue.start('chip_early'); } });
     for (const b of cast.list) {
       if (b.id === 'juno' || b.id === 'dex' || b.ambient) continue;       // Dex is examined, not spoken to
       interactions.add({
@@ -778,16 +784,18 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     }
   }
   // The worker stands on the street until the key deduction (the Sable clues put together), then he is at the hostel desk.
-  let kitPlace: string | null = null;
+  let kitPlace: string | null = null, teoMoved = false;
   function placeKit() {
     const b = cast.byId.kit, at = flag('chapter4') && flag('kit_warned') ? 'sable' : flag('key_deduced') ? 'hostel' : 'street';
-    if (!b || kitPlace === at) return;
+    if (!b || kitPlace === at || dialogue.active) return;   // not mid-conversation: the flag that moves him is set by his own last line
     kitPlace = at;
     const h = at === 'sable' ? world.spot('sable', 'kitmeet') : at === 'hostel' ? world.spot('hostel', 'kit') : BEATS.kitStreet;
     if (!h) return;
     b.area = at; b.position.set(h.x, b.position.y, h.z); b.facing = at === 'sable' ? -Math.PI / 2 : h.facing ?? 0;
     const t = at === 'sable' ? world.spot('sable', 'teomeet') : null;   // chapter 4: Teo joins him in the back room
-    if (t) { const teo = cast.byId.mamaTeo; teo.position.set(t.x, teo.position.y, t.z); teo.facing = -Math.PI / 2; }
+    const teo = cast.byId.mamaTeo, home = world.spot('sable', 'teo');
+    if (t) { teo.position.set(t.x, teo.position.y, t.z); teo.facing = -Math.PI / 2; teoMoved = true; }
+    else if (teoMoved && home) { teo.position.set(home.x, teo.position.y, home.z); teo.facing = home.facing ?? 0; teoMoved = false; }   // an earlier save was loaded: Teo is back at her counter
     cast.apply();
   }
   function afterTalk(b: CastMember) {
@@ -837,6 +845,8 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     { id: 'meet', text: "Meet Kit and Mama Teo in the Sable's back room", area: 'sable', pos: () => spotXZ('sable', 'teomeet'), done: () => flag('teo_meet') },
     { id: 'arcade', text: 'Find the go-between at the pachinko arcade', area: 'arcade', pos: () => spotXZ('arcade', 'stranger'), done: () => flag('arcade_met') },   // the chapter 4 ending
   ];
+  // The objective is the step after the furthest one she has finished: an optional step she skipped (the lamp, a scan) must not pull the objective back for the rest of the game.
+  function currentStep(): Step | undefined { let last = -1; STEPS.forEach((st, i) => { if (st.done()) last = i; }); return STEPS[last + 1]; }
   function markFor(step: Step) {
     const here = world.current.id;
     if (step.area === here) return step.pos?.() ?? null;
@@ -884,7 +894,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
     answerCall() { answerWait?.(); answerWait = null; },
     get ending() { return ending; },
     get finale() { return finale; },
-    get beatNo() { return STEP_BEAT[STEPS.find((s) => !s.done())?.id as string] ?? 7; },
+    get beatNo() { return STEP_BEAT[currentStep()?.id as string] ?? 7; },
     beatTimes,
     restoreStation,
     cliffhanger, bureauArrival, // also for the ?hooks test driver
@@ -940,7 +950,7 @@ export function createBeats({ terminal, input, world, cast, caseFile, dialogue, 
         caseFile.setFlag('seen_backroom');
         hud.toast('The scene');
       }
-      const step = STEPS.find((s) => !s.done());
+      const step = currentStep();
       if (!step) { hud.setObjectiveText(''); hud.setObjective(null); return; }
       if (lastStep && lastStep !== step.id && lastStep === 'examine') hud.toast('Scene examined');
       lastStep = step.id;

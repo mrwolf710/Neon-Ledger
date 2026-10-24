@@ -417,7 +417,7 @@ renderer.setAnimationLoop((now) => {
   // Click: a person/object walks there then interacts; the ground walks there.
   if (input.click) {
     const it = interactions.pick(input.click, cam.camera);
-    if (it) player.walkTo(it.position, INTERACT.range - 0.2, it.onInteract);
+    if (it) player.walkTo(it.position, (it.range ?? INTERACT.range) - 0.2, () => { if (!dialogue.active && !beats.locked && !terminal.isOpen && !echo.active && !board.isOpen && !caseFile.isOpen) it.onInteract?.(); }); // arriving during a scene or a conversation (or with a screen open) must not start a second one on top
     else {
       ndc.set((input.click.x / window.innerWidth) * 2 - 1, -(input.click.y / window.innerHeight) * 2 + 1);
       ray.setFromCamera(ndc, cam.camera);
